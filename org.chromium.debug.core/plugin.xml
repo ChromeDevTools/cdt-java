@@ -1,0 +1,33 @@
+<plugin>
+
+  <!-- Breakpoint-related extensions -->
+  <extension point="org.eclipse.core.runtime.adapters">
+    <factory
+        class="org.chromium.debug.core.model.BreakpointAdapterFactory"
+        adaptableType="org.eclipse.ui.texteditor.ITextEditor">
+      <adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget" /> 
+    </factory>
+  </extension>
+  
+  <extension point="org.eclipse.debug.core.breakpoints">
+      <breakpoint
+        class="org.chromium.debug.core.model.JsLineBreakpoint"
+        name="JS Line Breakpoints"
+        markerType="org.chromium.debug.core.LineBP"
+        id="org.chromium.debug.core.lineBreakpoint"/>
+  </extension>
+  
+  <!-- id is relative to PLUGIN_ID -->
+  <extension
+      id="LineBP"
+      name="JS Line Breakpoint Marker"
+      point="org.eclipse.core.resources.markers">
+    <super type="org.eclipse.debug.core.lineBreakpointMarker"/>
+    <persistent value="true"/>
+  </extension>
+
+  <extension point="org.eclipse.ui.startup">
+    <startup class="org.chromium.debug.core.ChromiumDebugPlugin"/>
+  </extension>
+  
+</plugin>
