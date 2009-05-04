@@ -25,7 +25,7 @@ public class HandleManager {
     refToHandle.putAll(map);
   }
 
-  JSONObject getHandle(Long ref) {
+  public JSONObject getHandle(Long ref) {
     return refToHandle.get(ref);
   }
 }

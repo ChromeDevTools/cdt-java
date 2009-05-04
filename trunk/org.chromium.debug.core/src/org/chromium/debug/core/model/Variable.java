@@ -6,15 +6,16 @@ package org.chromium.debug.core.model;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.tools.v8.BlockingV8RequestCommand;
 import org.chromium.debug.core.tools.v8.Protocol;
 import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler.MessageReplyCallback;
 import org.chromium.debug.core.tools.v8.model.mirror.Execution;
+import org.chromium.debug.core.tools.v8.model.mirror.HandleManager;
 import org.chromium.debug.core.tools.v8.model.mirror.ValueMirror;
 import org.chromium.debug.core.tools.v8.model.mirror.ValueMirror.PropertyReference;
 import org.chromium.debug.core.tools.v8.model.mirror.ValueMirror.Type;
@@ -71,16 +72,14 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
   }
 
   /**
-   * Constructs a variable contained in the given stack frame with the given
-   * name.
+   * Constructs a variable contained in the given stack frame with the given name.
    *
    * @param frame owning stack frame
    * @param mirror the V8 ValueMirror for this variable
    * @param fullQual fully qualified expression of this variable
    * @param stop whether to halt drilling in for any properties of type object
    */
-  public Variable(StackFrame frame, ValueMirror mirror, String fullQual,
-      boolean stop) {
+  public Variable(StackFrame frame, ValueMirror mirror, String fullQual, boolean stop) {
     super(frame.getHandler());
     this.stackFrame = frame;
     this.local = mirror;
@@ -105,8 +104,8 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
       if (isObjectType()) {
         StringBuilder evalExpr = null;
 
-        Vector<Variable> sendVars = new Vector<Variable>();
-        Variable[] vars = (value.getVariables());
+        List<Variable> sendVars = new ArrayList<Variable>();
+        Variable[] vars = value.getVariables();
         if (vars != null) {
           for (Variable v : vars) {
             if (v.getValue() != null && v.local.getType() == Type.JS_OBJECT) {
@@ -126,12 +125,10 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
           }
         }
 
-        if (evalExpr != null) {
+        if (!sendVars.isEmpty()) {
           evalExpr.append(CLOSE_BRACKET);
 
-          final Variable[] newVars =
-              sendVars.toArray(new Variable[sendVars.size()]);
-
+          final Variable[] newVars = sendVars.toArray(new Variable[sendVars.size()]);
           V8Request command =
               V8Request.evaluate(evalExpr.toString(), stackFrame.getIdentifier(), null, null);
           this.setPendingReq();
@@ -139,7 +136,7 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
               new BlockingV8RequestCommand(getHandler(), command,
                   new MessageReplyCallback() {
                     public void replyReceived(JSONObject reply) {
-                      updateVariablesFromReply(newVars, reply);
+                      updateVariablesFromEvalReply(newVars, reply);
                     }
                   });
           runner.run();
@@ -151,52 +148,6 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
     }
 
     return value;
-  }
-
-  private void ensureProperties(PropertyReference[] props)
-      throws DebugException {
-    final Variable[] vars = new Variable[props.length];
-    int idx = 0;
-
-    StringBuffer evalExpr = new StringBuffer(OPEN_BRACKET);
-
-    for (PropertyReference prop : props) {
-      String propName = prop.getName();
-      ValueMirror valueMirror = new ValueMirror(propName, prop.getRef(), local.getRef());
-      String fullQual;
-
-      try {
-        Integer.parseInt(propName);
-        fullQual = getName() + OPEN_BRACKET + propName + CLOSE_BRACKET;
-      } catch (NumberFormatException nfe) {
-        if (propName.startsWith(DOT)) {
-          // ".arguments" is not legal
-          continue;
-        }
-        fullQual = getName() + DOT + propName;
-      }
-
-      evalExpr = evalExpr.append(fullQual + COMMA);
-      vars[idx++] = new Variable(stackFrame, valueMirror, fullQual, false);
-    }
-
-    evalExpr = evalExpr.append(CLOSE_BRACKET);
-
-    this.value = new Value(getHandler(), this.local, vars);
-    V8Request command = V8Request.evaluate(
-        evalExpr.toString(), stackFrame.getIdentifier(), null, null);
-    BlockingV8RequestCommand runner =
-        new BlockingV8RequestCommand(getHandler(), command,
-            new MessageReplyCallback() {
-              @Override
-              public void replyReceived(JSONObject reply) {
-                updateVariablesFromReply(vars, reply);
-              }
-            });
-    runner.run();
-    if (runner.getException() != null) {
-      ChromiumDebugPlugin.log(runner.getException());
-    }
   }
 
   public int getRef() {
@@ -290,63 +241,23 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
 
   // Used for object prop filling
   public synchronized void setProperties(PropertyReference[] props) {
-    if (props != null) { // This object may not be known completely yet...
-      final List<Variable> varsList = new ArrayList<Variable>(props.length);
-
-      StringBuffer evalExpr = new StringBuffer(OPEN_BRACKET);
-
-      for (PropertyReference prop : props) {
-        String varName = prop.getName();
-        ValueMirror valueMirror =
-            new ValueMirror(varName, prop.getRef(), local.getRef());
-        String fullQual;
-        try {
-          Integer.parseInt(varName);
-          fullQual =
-              getFullQualExpression() + OPEN_BRACKET + varName + CLOSE_BRACKET;
-        } catch (NumberFormatException nfe) {
-          if (varName.startsWith(DOT)) {
-            // Chrome can return .arguments which we need not handle
-            continue;
-          } else {
-            fullQual = getFullQualExpression() + DOT + varName;
-          }
-        }
-        evalExpr = evalExpr.append(fullQual + COMMA);
-        varsList.add(new Variable(stackFrame, valueMirror, fullQual, false));
+    if (props != null) {
+      try {
+        ensureProperties(props);
+        local.setProperties(props);
+      } catch (DebugException e) {
+        ChromiumDebugPlugin.log(e);
       }
-
-      final Variable[] vars = varsList.toArray(new Variable[varsList.size()]);
-
-      // Drill in to wait until asked?
-      if (!this.isWaitDrilling()) {
-        evalExpr = evalExpr.append(CLOSE_BRACKET);
-
-        V8Request command =
-            V8Request.evaluate(evalExpr.toString(), stackFrame.getIdentifier(), null, null);
-        this.setPendingReq();
-        try {
-          getHandler().sendV8Command(command.getMessage(),
-              new MessageReplyCallback() {
-                @Override
-                public void replyReceived(
-                    JSONObject reply) {
-                  updateVariablesFromReply(vars, reply);
-                }
-              });
-        } catch (IOException e) {
-          ChromiumDebugPlugin.log(e);
-          return;
-        }
-      }
-
-      local.setProperties(props);
-      this.value = new Value(getHandler(), local, vars);
     }
   }
 
   public String getFullQualExpression() {
-    return evalExpr;
+    try {
+      return evalExpr != null ? evalExpr : getName();
+    } catch (DebugException e) {
+      ChromiumDebugPlugin.log(e);
+      return null;
+    }
   }
 
   public boolean isWaitDrilling() {
@@ -369,17 +280,85 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
     pendingReq = false;
   }
 
-  private void updateVariablesFromReply(Variable[] vars, JSONObject obj) {
-    boolean success = JsonUtil.getAsBoolean(obj, Protocol.KEY_SUCCESS);
+  private void ensureProperties(PropertyReference[] properties) throws DebugException {
+    HandleManager handleManager = getHandleManager();
+    // Use linked map to preserve the original (somewhat alphabetical) properties order
+    final Map<Long, Variable> refToVariable = new LinkedHashMap<Long, Variable>();
+
+    for (PropertyReference prop : properties) {
+      String propName = prop.getName();
+      if (propName.isEmpty()) {
+        // Do not provide a synthetic "hidden properties" property.
+        continue;
+      }
+      ValueMirror valueMirror = new ValueMirror(propName, prop.getRef(), local.getRef());
+      String fullQual;
+
+      try {
+        Integer.parseInt(propName);
+        fullQual = getFullQualExpression() + OPEN_BRACKET + propName + CLOSE_BRACKET;
+      } catch (NumberFormatException nfe) {
+        if (propName.startsWith(DOT)) {
+          // ".arguments" is not legal
+          continue;
+        }
+        fullQual = getFullQualExpression() + DOT + propName;
+      }
+
+      Variable variable = new Variable(stackFrame, valueMirror, fullQual, false);
+      JSONObject handle = handleManager.getHandle(Long.valueOf(prop.getRef()));
+      if (handle != null) {
+        // do not re-request from V8
+        fillVariable(variable, handle);
+      }
+      refToVariable.put(Long.valueOf(prop.getRef()), variable);
+    }
+
+    final Variable[] vars = refToVariable.values().toArray(
+        new Variable[refToVariable.values().size()]);
+
+    this.value = new Value(getHandler(), this.local, vars);
+    V8Request command = V8Request.lookup(new ArrayList<Long>(refToVariable.keySet()));
+    BlockingV8RequestCommand runner =
+        new BlockingV8RequestCommand(getHandler(), command,
+            new MessageReplyCallback() {
+              @Override
+              public void replyReceived(JSONObject reply) {
+                updateVariablesFromLookupReply(refToVariable, reply);
+              }
+            });
+    runner.run();
+    if (runner.getException() != null) {
+      ChromiumDebugPlugin.log(runner.getException());
+    }
+  }
+
+  private HandleManager getHandleManager() {
+    return getStackFrame().getHandler().getExecution().getHandleManager();
+  }
+
+  private void updateVariablesFromLookupReply(Map<Long, Variable> refToVariable, JSONObject reply) {
+    boolean success = JsonUtil.getAsBoolean(reply, Protocol.KEY_SUCCESS);
     if (!success) {
-      ChromiumDebugPlugin.logWarning(obj.toString());
+      ChromiumDebugPlugin.logWarning(reply.toString());
       return;
     }
-    JSONObject body = JsonUtil.getAsJSON(obj, Protocol.FRAME_BODY);
+    JSONObject body = JsonUtil.getAsJSON(reply, Protocol.FRAME_BODY);
+    for (Map.Entry<Long, Variable> entry : refToVariable.entrySet()) {
+      fillVariable(entry.getValue(), JsonUtil.getAsJSON(body, String.valueOf(entry.getKey())));
+    }
+  }
+
+  private void updateVariablesFromEvalReply(Variable[] vars, JSONObject reply) {
+    boolean success = JsonUtil.getAsBoolean(reply, Protocol.KEY_SUCCESS);
+    if (!success) {
+      ChromiumDebugPlugin.logWarning(reply.toString());
+      return;
+    }
+    JSONObject body = JsonUtil.getAsJSON(reply, Protocol.FRAME_BODY);
     String className = JsonUtil.getAsString(body, Protocol.REF_CLASSNAME);
-    JSONArray props =
-        JsonUtil.getAsJSONArray(body, Protocol.REF_PROPERTIES);
-    JSONArray refs = JsonUtil.getAsJSONArray(obj, Protocol.FRAME_REFS);
+    JSONArray props = JsonUtil.getAsJSONArray(body, Protocol.REF_PROPERTIES);
+    JSONArray refs = JsonUtil.getAsJSONArray(reply, Protocol.FRAME_REFS);
 
     if (props != null && Protocol.CLASSNAME_ARRAY.equals(className)) {
       // Find all the handles we might need.
@@ -389,38 +368,43 @@ public class Variable extends DebugElementImpl implements IVariable, IAdaptable 
       for (Variable var : vars) {
         JSONObject entry = (JSONObject) props.get(idx++);
         Long ref = JsonUtil.getAsLong(entry, Protocol.REF_PROP_REF);
-        String typeString = null;
-        String val = null;
-        JSONObject handle = refToHandle.get(ref);
-        if (handle != null) {
-          typeString = JsonUtil.getAsString(handle, Protocol.REF_TYPE);
-          val = JsonUtil.getAsString(handle, Protocol.REF_TEXT);
-        }
-
-        if (typeString != null) {
-          Type type =
-              Type.fromJsonTypeAndClassName(typeString,
-                  JsonUtil.getAsString(handle, Protocol.REF_CLASSNAME));
-          if (isObjectType(type)) {
-            if (!var.isPendingReq()) {
-              PropertyReference[] propertyRefs =
-                  Execution.extractObjectProperties(handle);
-              if (!var.isWaitDrilling()) {
-                var.setProperties(propertyRefs);
-              }
-              var.resetDrilling();
-            }
-          } else if (val != null) {
-            var.setTypeValue(type, val);
-            var.resetPending();
-          } else {
-            ChromiumDebugPlugin.logWarning(
-                Messages.Variable_NotScalarOrObjectFormat, type.jsonType);
-          }
-        } else {
-          ChromiumDebugPlugin.logWarning(Messages.Variable_NullTypeForAVariable);
-        }
+        JSONObject handleObject = refToHandle.get(ref);
+        fillVariable(var, handleObject);
       }
+    }
+  }
+
+  private void fillVariable(Variable var, JSONObject handleObject) {
+    if (handleObject == null) {
+      // it has not been requested and var data are already known
+      return;
+    }
+    String typeString = null;
+    String valueString = null;
+    if (handleObject != null) {
+      typeString = JsonUtil.getAsString(handleObject, Protocol.REF_TYPE);
+      valueString = JsonUtil.getAsString(handleObject, Protocol.REF_TEXT);
+    }
+    if (typeString != null) {
+      Type type = Type.fromJsonTypeAndClassName(typeString,
+          JsonUtil.getAsString(handleObject, Protocol.REF_CLASSNAME));
+      if (isObjectType(type)) {
+        if (!var.isPendingReq()) {
+          PropertyReference[] propertyRefs = Execution.extractObjectProperties(handleObject);
+          if (!var.isWaitDrilling()) {
+            var.setProperties(propertyRefs);
+          }
+          var.resetDrilling();
+        }
+      } else if (valueString != null) {
+        var.setTypeValue(type, valueString);
+        var.resetPending();
+      } else {
+        ChromiumDebugPlugin.logWarning(
+            Messages.Variable_NotScalarOrObjectFormat, type.jsonType);
+      }
+    } else {
+      ChromiumDebugPlugin.logWarning(Messages.Variable_NullTypeForAVariable);
     }
   }
 

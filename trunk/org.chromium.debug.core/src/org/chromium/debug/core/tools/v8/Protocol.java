@@ -210,4 +210,15 @@ public class Protocol {
     return -1L;
   }
 
+  /**
+   * Returns the value of "ref" field in object corresponding to the fieldName in parent.
+   * @return ref value or null if fieldName or "ref" not found
+   */
+  public static Long getObjectRef(JSONObject parent, String fieldName) {
+    JSONObject child = JsonUtil.getAsJSON(parent, fieldName);
+    if (child == null) {
+      return null;
+    }
+    return JsonUtil.getAsLong(child, VALUE_REF);
+  }
 }

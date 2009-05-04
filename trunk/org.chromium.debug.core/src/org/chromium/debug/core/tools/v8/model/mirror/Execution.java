@@ -44,6 +44,11 @@ public class Execution {
   private static final Pattern FRAME_TEXT_PATTERN =
       Pattern.compile(FRAME_TEXT_REGEX);
 
+  /**
+   * The name of the "this" object.
+   */
+  private static final String THIS_NAME = "this";  //$NON-NLS-1$
+
   private final ScriptManager scriptManager;
 
   private final HandleManager handleManager;
@@ -52,7 +57,10 @@ public class Execution {
 
   private String url = ""; //$NON-NLS-1$
 
+  private final DebugTargetImpl debugTarget;
+
   public Execution(DebugTargetImpl debugTarget) {
+    this.debugTarget = debugTarget;
     this.scriptManager = new ScriptManager(debugTarget);
     this.handleManager = new HandleManager();
   }
@@ -71,8 +79,7 @@ public class Execution {
     for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
       JSONObject frame = (JSONObject) framesResp.get(frameIdx);
 
-      String frameName =
-          MessageFormat.format(DISP_FRAME_NAME_FORMAT, +frameIdx);
+      String frameName = MessageFormat.format(DISP_FRAME_NAME_FORMAT, +frameIdx);
       String frameFunc = DISP_FUNC_NAME;
       String url;
 
@@ -86,8 +93,7 @@ public class Execution {
         continue;
       }
 
-      int currentLine =
-          JsonUtil.getAsLong(frame, Protocol.BODY_FRAME_LINE).intValue();
+      int currentLine = JsonUtil.getAsLong(frame, Protocol.BODY_FRAME_LINE).intValue();
 
       // If we stopped because of the debugger keyword then we're the next
       // line.
@@ -128,9 +134,16 @@ public class Execution {
     Map<Long, JSONObject> refHandleMap = Protocol.getRefHandleMap(refs);
     handleManager.putAll(refHandleMap);
 
-    int totalLen = args.size() + locals.size();
+    int totalLen = args.size() + locals.size() + 1;
 
     List<ValueMirror> values = new ArrayList<ValueMirror>(totalLen);
+
+    // Receiver ("this")
+    Long receiverRef = Protocol.getObjectRef(body, Protocol.FRAME_RECEIVER);
+    if (receiverRef != null) {
+      JSONObject receiver = handleManager.getHandle(receiverRef);
+      values.add(createValueMirror(receiver, THIS_NAME));
+    }
 
     // Arguments
     for (int i = 0; i < args.size(); i++) {
@@ -256,5 +269,9 @@ public class Execution {
 
   public HandleManager getHandleManager() {
     return handleManager;
+  }
+
+  public DebugTargetImpl getDebugTarget() {
+    return debugTarget;
   }
 }
