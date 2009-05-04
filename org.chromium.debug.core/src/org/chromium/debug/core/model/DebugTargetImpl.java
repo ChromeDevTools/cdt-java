@@ -69,7 +69,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       throw newCoreException(Messages.DebugTargetImpl_CannotStartMultipleDebuggers, null);
     }
     this.launch = launch;
-    this.v8DebuggerHandler = new V8DebuggerToolHandler(execution, this);
+    this.v8DebuggerHandler = new V8DebuggerToolHandler(execution);
     this.devToolsServiceHandler = new DevToolsServiceHandler(this);
     this.getSocketConnection().setToolHandler(ToolName.V8_DEBUGGER, this.v8DebuggerHandler);
     this.getSocketConnection().setToolHandler(

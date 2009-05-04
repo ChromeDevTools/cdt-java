@@ -20,6 +20,7 @@ public enum V8Command {
   SETBREAKPOINT("setbreakpoint"), //$NON-NLS-1$
   CHANGEBREAKPOINT("changebreakpoint"), //$NON-NLS-1$
   CLEARBREAKPOINT("clearbreakpoint"), //$NON-NLS-1$
+  LOOKUP("lookup"), //$NON-NLS-1$
 
   // Event
   BREAK("break"), //$NON-NLS-1$

@@ -35,6 +35,8 @@ public class Messages extends NLS {
 
   public static String JsThread_ThreadLabelSuspended;
 
+  public static String StackFrame_NameFormat;
+
   public static String Variable_NotScalarOrObjectFormat;
 
   public static String Variable_NullTypeForAVariable;

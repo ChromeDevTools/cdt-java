@@ -12,6 +12,7 @@ import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
 import org.eclipse.debug.core.model.IVariable;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Represents Chromium V8 VM stack frame.
@@ -86,7 +87,12 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public String getName() throws DebugException {
-    return frameM.getFunctionName();
+    String name = frameM.getFunctionName();
+    int line = getLineNumber();
+    if (line != -1) {
+      name = NLS.bind(Messages.StackFrame_NameFormat, name, line);
+    }
+    return name;
   }
 
   public IRegisterGroup[] getRegisterGroups() throws DebugException {

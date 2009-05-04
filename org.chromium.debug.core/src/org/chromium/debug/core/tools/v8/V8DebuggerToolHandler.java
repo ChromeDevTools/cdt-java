@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JsThread;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.tools.ToolHandler;
@@ -25,8 +24,8 @@ import org.chromium.debug.core.tools.v8.request.V8DebugRequestMessage;
 import org.chromium.debug.core.tools.v8.request.V8Request;
 import org.chromium.debug.core.transport.Message;
 import org.chromium.debug.core.transport.MessageFactory;
-import org.chromium.debug.core.util.LoggingUtil;
 import org.chromium.debug.core.util.JsonUtil;
+import org.chromium.debug.core.util.LoggingUtil;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.osgi.util.NLS;
@@ -88,8 +87,8 @@ public class V8DebuggerToolHandler extends ToolHandler {
 
   private StackFrame[] frames;
 
-  public V8DebuggerToolHandler(Execution execution, DebugTargetImpl debugTarget) {
-    super(debugTarget);
+  public V8DebuggerToolHandler(Execution execution) {
+    super(execution.getDebugTarget());
     this.execution = execution;
     this.thread = new JsThread(this);
 
@@ -121,8 +120,8 @@ public class V8DebuggerToolHandler extends ToolHandler {
         isAttached = true;
 
         try {
-          sendV8Command(V8Request.scripts(ScriptsRequestMessage.SCRIPTS_NORMAL,
-              true).getMessage(), null);
+          sendV8Command(
+              V8Request.scripts(ScriptsRequestMessage.SCRIPTS_NORMAL, true).getMessage(), null);
           sendEvaluateJavascript();
         } catch (IOException e) {
           ChromiumDebugPlugin.log(e);

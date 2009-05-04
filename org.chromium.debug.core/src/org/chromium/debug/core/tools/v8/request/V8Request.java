@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.tools.v8.request;
 
+import java.util.List;
+
 import org.chromium.debug.core.model.JsLineBreakpoint;
 import org.chromium.debug.core.tools.v8.BreakpointType;
 import org.chromium.debug.core.tools.v8.StepAction;
@@ -68,5 +70,9 @@ public class V8Request {
 
   public static V8Request clearBreakpoint(JsLineBreakpoint breakpoint) {
     return new V8Request(new ClearBreakpointRequestMessage(breakpoint.getId()));
+  }
+
+  public static V8Request lookup(List<Long> refs) {
+    return new V8Request(new LookupRequestMessage(refs));
   }
 }
