@@ -22,6 +22,12 @@ public class Messages extends NLS {
   public static String JavascriptLineBreakpointPage_IgnoreCount;
 
   public static String JavascriptLineBreakpointPage_IgnoreCountErrorMessage;
+
+  public static String JsLineBreakpointPage_LineNumberLabel;
+
+  public static String JsLineBreakpointPage_ResourceLabel;
+
+  public static String JsLineBreakpointPage_UnknownLineNumber;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
