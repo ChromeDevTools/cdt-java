@@ -24,6 +24,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
@@ -47,8 +48,9 @@ public class JsLineBreakpointPage extends PropertyPage {
   @Override
   protected Control createContents(Composite parent) {
     noDefaultAndApplyButton();
-    Composite mainComposite = createComposite(parent, 2);
+    Composite mainComposite = createComposite(parent, 2, 1);
     try {
+      createInfoControls(mainComposite);
       createEnabledControls(mainComposite);
       createIgnoreCountControls(mainComposite);
       createConditionControls(mainComposite);
@@ -59,7 +61,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     return mainComposite;
   }
 
-  @Override
+ @Override
   public boolean performOk() {
     IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
       public void run(IProgressMonitor monitor) throws CoreException {
@@ -90,7 +92,26 @@ public class JsLineBreakpointPage extends PropertyPage {
     breakpoint.setCondition(condition);
   }
 
-  private void createEnabledControls(Composite parent) throws CoreException {
+   private void createInfoControls(Composite parent) {
+     Composite infoComposite = createComposite(parent, 2, 2);
+     Label resourceLabel = new Label(infoComposite, SWT.NONE);
+     resourceLabel.setText(Messages.JsLineBreakpointPage_ResourceLabel);
+     Label resourceNameLabel = new Label(infoComposite, SWT.NONE);
+     resourceNameLabel.setText(getBreakpoint().getMarker().getResource().getName());
+
+     Label lineNumberLabel = new Label(infoComposite, SWT.NONE);
+     lineNumberLabel.setText(Messages.JsLineBreakpointPage_LineNumberLabel);
+     Label lineNumberValueLabel = new Label(infoComposite, SWT.NONE);
+     String lineNumber = Messages.JsLineBreakpointPage_UnknownLineNumber;
+     try {
+       lineNumber = String.valueOf(getBreakpoint().getLineNumber());
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
+    }
+    lineNumberValueLabel.setText(lineNumber);
+}
+
+   private void createEnabledControls(Composite parent) throws CoreException {
     enabledCheckbox = new Button(parent, SWT.CHECK);
     GridData gd = new GridData();
     gd.horizontalSpan = 2;
@@ -211,7 +232,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     }
   }
 
-  private Composite createComposite(Composite parent, int columns) {
+  private Composite createComposite(Composite parent, int columns, int horizontalSpan) {
     Composite composite = new Composite(parent, SWT.NONE);
     GridLayout layout = new GridLayout(columns, false);
     layout.marginWidth = 0;
@@ -219,6 +240,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     composite.setLayout(layout);
     composite.setFont(parent.getFont());
     GridData gridData = new GridData(GridData.FILL_HORIZONTAL);
+    gridData.horizontalSpan = horizontalSpan;
     composite.setLayoutData(gridData);
     return composite;
   }
