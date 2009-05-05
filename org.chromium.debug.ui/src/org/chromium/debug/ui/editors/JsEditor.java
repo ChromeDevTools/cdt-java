@@ -19,8 +19,9 @@ public class JsEditor extends TextEditor {
   public static final String EDITOR_CONTEXT = EDITOR_ID + ".context"; //$NON-NLS-1$
 
   /** The ID of the editor ruler context menu */
-  public static final String RULER_CONTEXT = EDITOR_CONTEXT + ".ruler"; //$NON-NLS-1$
+  public static final String RULER_CONTEXT = EDITOR_ID + ".ruler"; //$NON-NLS-1$
 
+  @Override
   protected void initializeEditor() {
     super.initializeEditor();
     setEditorContextMenuId(EDITOR_CONTEXT);
