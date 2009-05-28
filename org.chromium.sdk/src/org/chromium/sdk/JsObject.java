@@ -10,6 +10,11 @@ package org.chromium.sdk;
 public interface JsObject extends JsValue {
 
   /**
+   * @return the class name of this object
+   */
+  String getClassName();
+
+  /**
    * @return the properties of this compound value
    */
   JsVariable[] getProperties();
