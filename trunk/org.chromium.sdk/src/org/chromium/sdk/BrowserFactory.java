@@ -4,9 +4,7 @@
 
 package org.chromium.sdk;
 
-// TODO(apavlov): uncomment 2 lines broken without the implementation
-
-// import org.chromium.sdk.internal.BrowserFactoryImpl;
+import org.chromium.sdk.internal.BrowserFactoryImpl;
 
 /**
  * A factory for Browser instances. Each instance connects to a single endpoint
@@ -19,6 +17,10 @@ package org.chromium.sdk;
  * considered different.
  */
 public abstract class BrowserFactory {
+
+  /** The host that will be used when specifying only the browser port. */
+  public static final String LOCALHOST = "127.0.0.1";
+
   private static BrowserFactory instance;
 
   /**
@@ -30,14 +32,15 @@ public abstract class BrowserFactory {
    */
   public static BrowserFactory getInstance() {
     if (instance == null) {
-//      instance = new BrowserFactoryImpl();
+      instance = new BrowserFactoryImpl();
     }
     return instance;
   }
 
   /**
-   * Constructs a Browser implementor instance that talks to a browser instance
-   * listening at 127.0.0.1 (localhost) on {@code port}.
+   * Returns a Browser implementor instance that talks to a browser listening at
+   * 127.0.0.1 (localhost) on {@code port}. Returns a previously created
+   * instance if one was created earlier for localhost and {@code port}.
    *
    * @param port the browser is listening on at 127.0.0.1 (localhost)
    * @return a Browser instance for the (127.0.0.1, port) endpoint
@@ -45,8 +48,9 @@ public abstract class BrowserFactory {
   public abstract Browser create(int port);
 
   /**
-   * Constructs a Browser implementor instance that talks to a browser instance
-   * listening at {@code host} and {@code port}.
+   * Constructs a Browser implementor instance that talks to a browser listening
+   * at {@code host} and {@code port}. Returns a previously created
+   * instance if one was created earlier for {@code host} and {@code port}.
    *
    * @param host the browser is running at
    * @param port the browser is listening on
