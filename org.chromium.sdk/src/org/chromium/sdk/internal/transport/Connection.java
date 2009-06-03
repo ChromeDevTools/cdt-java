@@ -33,51 +33,6 @@ public interface Connection {
   }
 
   /**
-   * Objects of this class should be returned by any
-   * {@link Connection#getEndpoint()} implementation.
-   */
-  public class Endpoint {
-
-    private final String host;
-
-    private final int port;
-
-    public Endpoint(String host, int port) {
-      this.host = host;
-      this.port = port;
-    }
-
-    /**
-     * @return the host of this endpoint
-     */
-    public String getHost() {
-      return host;
-    }
-
-    /**
-     * @return the port of this endpoint
-     */
-    public int getPort() {
-      return port;
-    }
-
-    @Override
-    public int hashCode() {
-      return host.hashCode() + port;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj == null || getClass() != obj.getClass()) {
-        return false;
-      }
-      Endpoint that = (Endpoint) obj;
-      return this.port == that.port && this.host.equals(that.host);
-    }
-
-  }
-
-  /**
    * Sets a callback that will be notified of network events. The callback will
    * be set before calling {@link #start()} and it cannot be changed over the
    * connection lifetime (even though it should be possible to set the same
@@ -115,12 +70,4 @@ public interface Connection {
    *         been invoked yet
    */
   boolean isConnected();
-
-  /**
-   * Returns an Endpoint specifying which host and port this connection is
-   * associated with.
-   *
-   * @return an Endpoint instance describing this connection
-   */
-  Endpoint getEndpoint();
 }
