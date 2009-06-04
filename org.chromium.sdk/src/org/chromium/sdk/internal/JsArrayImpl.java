@@ -25,7 +25,7 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
   /**
    * An indexed sparse array of elements. Keys are indices, values are elements.
    */
-  private volatile SortedMap<Integer, JsVariableImpl> indexToElementMap;
+  private SortedMap<Integer, JsVariableImpl> indexToElementMap;
 
   /**
    * This constructor implies lazy resolution of object properties.

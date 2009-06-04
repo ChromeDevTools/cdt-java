@@ -116,46 +116,48 @@ public class BreakpointProcessor extends V8ResponseCallback {
     }
     idToBreakpoint.remove(id);
     getDebugContext().getV8Handler().sendV8Command(
-        DebuggerMessageFactory.clearBreakpoint(breakpointImpl), new BrowserTabImpl.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (JsonUtil.isSuccessful(response)) {
-              if (callback != null) {
-                callback.success(null);
+        DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
+            new BrowserTabImpl.V8HandlerCallback() {
+              public void messageReceived(JSONObject response) {
+                if (JsonUtil.isSuccessful(response)) {
+                  if (callback != null) {
+                    callback.success(null);
+                  }
+                } else {
+                  if (callback != null) {
+                    callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                  }
+                }
               }
-            } else {
-              if (callback != null) {
-                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+              public void failure(String message) {
+                if (callback != null) {
+                  callback.failure(message);
+                }
               }
-            }
-          }
-          public void failure(String message) {
-            if (callback != null) {
-              callback.failure(message);
-            }
-          }
-        });
+            });
     evaluateJavascript();
   }
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback) {
     getDebugContext().getV8Handler().sendV8Command(
-        DebuggerMessageFactory.changeBreakpoint(breakpointImpl), new BrowserTabImpl.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (callback != null) {
-              if (JsonUtil.isSuccessful(response)) {
-                  callback.success(breakpointImpl);
-              } else {
-                  callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+        DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
+            new BrowserTabImpl.V8HandlerCallback() {
+              public void messageReceived(JSONObject response) {
+                if (callback != null) {
+                  if (JsonUtil.isSuccessful(response)) {
+                      callback.success(breakpointImpl);
+                  } else {
+                      callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                  }
+                }
               }
-            }
-          }
-          public void failure(String message) {
-            if (callback != null) {
-              callback.failure(message);
-            }
-          }
-        });
+              public void failure(String message) {
+                if (callback != null) {
+                  callback.failure(message);
+                }
+              }
+            });
     evaluateJavascript();
   }
 
@@ -164,7 +166,9 @@ public class BreakpointProcessor extends V8ResponseCallback {
   }
 
   private static Integer toNullableInteger(int value) {
-    return value == Breakpoint.NO_VALUE ? null : value;
+    return value == Breakpoint.NO_VALUE
+        ? null
+        : value;
   }
 
 }

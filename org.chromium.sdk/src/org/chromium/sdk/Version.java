@@ -12,7 +12,7 @@ public class Version {
 
   private final int minor;
 
-  private volatile String cachedString;
+  private String cachedString;
 
   /**
    * Constructs an immutable Version instance given the {@code major} and

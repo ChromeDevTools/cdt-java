@@ -27,18 +27,18 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   private static final JsVariableImpl[] EMPTY_VARIABLES = new JsVariableImpl[0];
 
-  protected volatile JsVariableImpl[] properties;
+  protected JsVariableImpl[] properties;
 
-  private Map<String, JsVariableImpl> propertyMap;
+  protected boolean failedResponse;
 
   private final JsStackFrameImpl stackFrame;
 
   private final String parentFqn;
 
-  protected volatile boolean failedResponse;
+  private Map<String, JsVariableImpl> propertyMap;
 
   /**
-   * This constructor implies lazy resolution of object properties.
+   * This constructor implies the lazy resolution of object properties.
    * @param stackFrame
    * @param parentFqn
    * @param valueState

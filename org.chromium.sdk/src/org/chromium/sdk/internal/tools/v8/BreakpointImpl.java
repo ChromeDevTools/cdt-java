@@ -21,24 +21,24 @@ public class BreakpointImpl implements Breakpoint {
   /**
    * The breakpoint id as reported by the Javascript VM.
    */
-  private volatile int id;
+  private int id;
 
   /**
    * Whether the breakpoint is enabled.
    */
-  private volatile boolean isEnabled;
+  private boolean isEnabled;
 
   /**
    * The number of times the breakpoint should be ignored
    * by the Javascript VM until it fires.
    */
-  private volatile int ignoreCount;
+  private int ignoreCount;
 
   /**
    * The breakpoint condition (plain Javascript) that should be {@code true}
    * for the breakpoint to fire.
    */
-  private volatile String condition;
+  private String condition;
 
   /**
    * The breakpoint processor that performs Javascript VM communications.
