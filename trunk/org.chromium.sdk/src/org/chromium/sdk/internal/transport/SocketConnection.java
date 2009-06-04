@@ -170,17 +170,25 @@ public class SocketConnection implements Connection {
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
 
+  private static final NetListener NULL_LISTENER = new NetListener() {
+    public void connectionClosed() {
+    }
+
+    public void messageReceived(Message message) {
+    }
+  };
+
   /** Whether the agent is currently attached to a remote browser. */
   protected volatile boolean isAttached = false;
 
   /** The communication socket. */
-  protected volatile Socket socket;
+  protected Socket socket;
 
   /** The socket reader. */
-  protected volatile BufferedReader reader;
+  protected BufferedReader reader;
 
   /** The socket writer. */
-  protected volatile BufferedWriter writer;
+  protected BufferedWriter writer;
 
   /** The listener to report network events to. */
   protected volatile NetListener listener;
@@ -195,13 +203,13 @@ public class SocketConnection implements Connection {
   private final SocketAddress socketEndpoint;
 
   /** The thread that processes the outbound queue. */
-  private volatile WriterThread writerThread;
+  private WriterThread writerThread;
 
   /** The thread that processes the inbound queue. */
-  private volatile ReaderThread readerThread;
+  private ReaderThread readerThread;
 
   /** The thread that dispatches the inbound messages (to avoid queue growth.) */
-  private volatile ResponseDispatcherThread dispatcherThread;
+  private ResponseDispatcherThread dispatcherThread;
 
   /** Connection attempt timeout in ms. */
   private final int connectionTimeoutMs;
@@ -219,7 +227,7 @@ public class SocketConnection implements Connection {
     this.connectionTimeoutMs = connectionTimeoutMs;
   }
 
-  void attach() throws IOException {
+  synchronized void attach() throws IOException {
     this.socket = new Socket();
     this.readerThread = new ReaderThread();
     this.writerThread = new WriterThread();
@@ -308,7 +316,9 @@ public class SocketConnection implements Connection {
 
   private void interruptThread(Thread thread) {
     try {
-      thread.interrupt();
+      if (thread != null) {
+        thread.interrupt();
+      }
     } catch (SecurityException e) {
       // ignore
     }
@@ -341,7 +351,9 @@ public class SocketConnection implements Connection {
     if (this.listener != null && netListener != this.listener) {
       throw new IllegalStateException("Cannot change NetListener");
     }
-    this.listener = netListener;
+    this.listener = netListener != null
+        ? netListener
+        : NULL_LISTENER;
   }
 
   @Override

@@ -96,7 +96,7 @@ public class BrowserTabImpl implements BrowserTab {
   }
 
   @Override
-  public synchronized boolean detach() {
+  public boolean detach() {
     final Result result = getDebugContext().getV8Handler().detachFromTab();
     return Result.OK == result;
   }

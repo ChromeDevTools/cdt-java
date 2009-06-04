@@ -109,6 +109,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
   /** The debug context for this handler. */
   private final DebugContextImpl context;
 
+  /** A synchronization object for the field access/modification. */
+  private final Object fieldAccessLock = new Object();
+
   // The fields access is synchronized
   private boolean isAttached;
 
@@ -171,21 +174,23 @@ public class V8DebuggerToolHandler implements ToolHandler {
         processClosed(json);
         break;
       default:
-        throw new IllegalArgumentException("invalid command: " + command);
+        throw new IllegalArgumentException("Invalid command: " + command);
     }
   }
 
   @Override
-  public synchronized void onDebuggerDetached() {
+  public void onDebuggerDetached() {
     removeAllCallbacks();
-    isAttached = false;
     getDebugEventListener().disconnected();
     context.getTab().sessionTerminated();
+    synchronized (fieldAccessLock) {
+      isAttached = false;
+    }
   }
 
-  public synchronized int getAttachedTab() {
-    if (!isAttached) {
-      throw new IllegalStateException("Debugger not attached to any tab");
+  public int getAttachedTab() {
+    if (!isAttached()) {
+      throw new IllegalStateException("Debugger is not attached to any tab");
     }
     return context.getTabId();
   }
@@ -193,8 +198,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
   /**
    * @return whether the handler is attached to a tab
    */
-  public synchronized boolean isAttached() {
-    return isAttached;
+  public boolean isAttached() {
+    synchronized (fieldAccessLock) {
+      return isAttached;
+    }
   }
 
   public void sendEvaluateJavascript(String javascript) {
@@ -242,12 +249,14 @@ public class V8DebuggerToolHandler implements ToolHandler {
     }
     final Semaphore sem = new Semaphore(0);
     final Result[] output = new Result[1];
-    this.attachCallback = new ResultAwareCallback() {
-      public void resultReceived(Result result) {
-        output[0] = result;
-        sem.release();
-      }
-    };
+    synchronized (fieldAccessLock) {
+      this.attachCallback = new ResultAwareCallback() {
+        public void resultReceived(Result result) {
+          output[0] = result;
+          sem.release();
+        }
+      };
+    }
     // No guarding against invocation while an "attach" command is in flight.
     getConnection().send(MessageFactory.attach(String.valueOf(context.getTabId())));
 
@@ -269,19 +278,21 @@ public class V8DebuggerToolHandler implements ToolHandler {
    *
    * @return the detachment result
    */
-  public synchronized Result detachFromTab() {
+  public Result detachFromTab() {
     if (!isAttached()) {
       onDebuggerDetached();
       return Result.ILLEGAL_TAB_STATE;
     }
     final Semaphore sem = new Semaphore(0);
     final Result[] output = new Result[1];
-    detachCallback = new ResultAwareCallback() {
-      public void resultReceived(Result result) {
-        output[0] = result;
-        sem.release();
-      }
-    };
+    synchronized (fieldAccessLock) {
+      detachCallback = new ResultAwareCallback() {
+        public void resultReceived(Result result) {
+          output[0] = result;
+          sem.release();
+        }
+      };
+    }
     // No guarding against invocation while a "detach" command is in flight.
     getConnection().send(MessageFactory.detach(String.valueOf(context.getTabId())));
 
@@ -310,26 +321,23 @@ public class V8DebuggerToolHandler implements ToolHandler {
         : V8Protocol.KEY_EVENT);
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command == null) {
-      log(Level.SEVERE, MessageFormat.format("Bad command in V8 debugger reply JSON: {0}",
-          commandString));
+      log(Level.WARNING,
+          MessageFormat.format("Unknown command in V8 debugger reply JSON: {0}", commandString));
       return;
     }
     final V8ResponseCallback handler = commandToHandlerMap.get(command);
     if (handler == null) {
       return;
     }
-    Thread t = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        handler.messageReceived(response);
-      }
-    });
-    t.setDaemon(true);
-    t.start();
+    handler.messageReceived(response);
   }
 
   private static void log(Level level, String message) {
     Logger.getLogger(V8DebuggerToolHandler.class.getName()).log(level, message);
+  }
+
+  private static void log(Level level, String message, Exception e) {
+    Logger.getLogger(V8DebuggerToolHandler.class.getName()).log(level, message, e);
   }
 
   private void checkNull(Object object, String message) {
@@ -348,44 +356,57 @@ public class V8DebuggerToolHandler implements ToolHandler {
     }
   }
 
-  private Connection getConnection() {
-    return browserImpl.getConnection();
-  }
-
-  private synchronized void processClosed(JSONObject json) {
-    if (detachCallback != null) {
-      // A detach request might be in flight. It should succeed in this case.
-      try {
-        detachCallback.resultReceived(Result.OK);
-      } finally {
-        detachCallback = null;
+  private void processClosed(JSONObject json) {
+    synchronized (fieldAccessLock) {
+      if (detachCallback != null) {
+        // A detach request might be in flight. It should succeed in this case.
+        notifyDetachCallback(Result.OK);
       }
     }
     context.getTab().getDebugEventListener().closed();
     onDebuggerDetached();
   }
 
-  private synchronized void processAttach(JSONObject json) {
+  /**
+   * This method is invoked from synchronized code sections.
+   *
+   * @param result to notify the callback with
+   */
+  private void notifyDetachCallback(Result result) {
+    try {
+      detachCallback.resultReceived(result);
+    } catch (Exception e) {
+      log(Level.WARNING, "Exception in the detach callback", e);
+    } finally {
+      detachCallback = null;
+    }
+  }
+
+  private void processAttach(JSONObject json) {
     Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
     Result result = Result.forCode(resultValue.intValue());
     // Message destination equals context.getTabId()
-    if (result != null && result == Result.OK) {
-      isAttached = true;
-    } else {
-      if (result == null) {
-        result = Result.DEBUGGER_ERROR;
+    synchronized (fieldAccessLock) {
+      if (result != null && result == Result.OK) {
+        isAttached = true;
+      } else {
+        if (result == null) {
+          result = Result.DEBUGGER_ERROR;
+        }
       }
-    }
-    if (attachCallback != null) {
-      try {
-        attachCallback.resultReceived(result);
-      } finally {
-        attachCallback = null;
+      if (attachCallback != null) {
+        try {
+          attachCallback.resultReceived(result);
+        } catch (Exception e) {
+          log(Level.WARNING, "Exception in the attach callback", e);
+        } finally {
+          attachCallback = null;
+        }
       }
     }
   }
 
-  private synchronized void processDetach(JSONObject json) {
+  private void processDetach(JSONObject json) {
     Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
     Result result = Result.forCode(resultValue.intValue());
     if (result != null && result == Result.OK) {
@@ -395,11 +416,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
         result = Result.DEBUGGER_ERROR;
       }
     }
-    if (detachCallback != null) {
-      try {
-        detachCallback.resultReceived(result);
-      } finally {
-        detachCallback = null;
+    synchronized (fieldAccessLock) {
+      if (detachCallback != null) {
+        notifyDetachCallback(result);
       }
     }
   }
@@ -410,16 +429,19 @@ public class V8DebuggerToolHandler implements ToolHandler {
     V8MessageType type = V8MessageType.forString(JsonUtil.getAsString(v8Json, V8Protocol.KEY_TYPE));
     handleResponse(type, v8Json);
     if (V8MessageType.RESPONSE == type) {
-      int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
+      final int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
       final CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
       if (callbackEntry != null) {
-        log(Level.INFO, MessageFormat.format("Request-response roundtrip: {0}ms",
-            getCurrentMillis() - callbackEntry.commitMillis));
+        log(Level.INFO,
+            MessageFormat.format(
+                "Request-response roundtrip: {0}ms",
+                getCurrentMillis() - callbackEntry.commitMillis));
         Thread t = new Thread(new Runnable() {
           public void run() {
             try {
               if (callbackEntry.v8HandlerCallback != null) {
+                log(Level.INFO, "Notified debugger command callback, request_seq=" + requestSeq);
                 callbackEntry.v8HandlerCallback.messageReceived(v8Json);
               }
             } finally {
@@ -439,5 +461,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
   private void processNavigated(JSONObject json) {
     String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
     context.getTab().getDebugEventListener().navigated(newUrl);
+  }
+
+  private Connection getConnection() {
+    return browserImpl.getConnection();
   }
 }

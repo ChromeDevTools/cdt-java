@@ -32,7 +32,7 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
  */
 public class BrowserImpl implements Browser, NetListener {
 
-  public static final int OPERATION_TIMEOUT_MS = 1000;
+  public static final int OPERATION_TIMEOUT_MS = 3000;
 
   public static final Version INVALID_VERSION = new Version(0, 0);
 

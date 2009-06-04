@@ -10,6 +10,9 @@ import org.chromium.sdk.internal.BrowserTabImpl;
 /**
  * An abstract base implementation of V8DebuggerToolHandler-aware
  * reply handlers for certain V8 commands.
+ * <p>
+ * NB! The {@link #messageReceived(org.json.simple.JSONObject)} implementation
+ * MUST NOT perform debugger commands in a blocking way the current thread.
  */
 public abstract class V8ResponseCallback implements BrowserTabImpl.V8HandlerCallback {
 

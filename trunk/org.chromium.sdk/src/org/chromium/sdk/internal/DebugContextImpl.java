@@ -80,6 +80,8 @@ public class DebugContextImpl implements DebugContext {
 
   /**
    * Sets current frames for this break event.
+   * <p>
+   * WARNING. Performs debugger commands in a blocking way.
    *
    * @param response the "backtrace" V8 reply
    */

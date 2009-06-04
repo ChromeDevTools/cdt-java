@@ -32,20 +32,26 @@ public class BacktraceProcessor extends V8ResponseCallback {
   }
 
   @Override
-  public void messageReceived(JSONObject response) {
+  public void messageReceived(final JSONObject response) {
     String commandString = JsonUtil.getAsString(response, V8Protocol.KEY_COMMAND);
     DebuggerCommand command = DebuggerCommand.forString(commandString);
-    DebugContextImpl debugContext = getDebugContext();
 
     switch (command) {
       case BACKTRACE:
-        debugContext.setFrames(response);
-        loadFrameSources();
+        Thread t = new Thread(new Runnable() {
+          @Override
+          public void run() {
+            getDebugContext().setFrames(response);
+            loadFrameSources();
+          }
+        });
+        t.setDaemon(true);
+        t.start();
         break;
     }
   }
 
-  private void loadFrameSources() {
+  protected void loadFrameSources() {
     final DebugContextImpl debugContext = getDebugContext();
     V8DebuggerToolHandler handler = debugContext.getV8Handler();
     int framesCnt = debugContext.getFrameCount();
@@ -95,7 +101,7 @@ public class BacktraceProcessor extends V8ResponseCallback {
     }
   }
 
-  private void suspend() {
+  protected void suspend() {
     getDebugContext().getV8Handler().getDebugEventListener().suspended(getDebugContext());
   }
 

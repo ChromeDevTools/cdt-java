@@ -43,7 +43,7 @@ public class JsVariableImpl implements JsVariable {
   private final String variableFqn;
 
   /** The lazily constructed value of this variable. */
-  private volatile JsValueImpl value;
+  private JsValueImpl value;
 
   // The access is synchronized
   private boolean pendingReq = false;
