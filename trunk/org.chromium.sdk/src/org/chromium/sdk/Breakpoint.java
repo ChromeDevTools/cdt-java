@@ -29,7 +29,7 @@ public interface Breakpoint {
    * A breakpoint has this ID if it does not reflect an actual breakpoint in a
    * Javascript VM debugger.
    */
-  int INVALID_ID = -1;
+  long INVALID_ID = -1;
 
   /**
    * @return the breakpoint type
@@ -39,7 +39,7 @@ public interface Breakpoint {
   /**
    * @return the breakpoint ID as reported by the Javascript VM debugger
    */
-  int getId();
+  long getId();
 
   /**
    * @return whether this breakpoint is enabled

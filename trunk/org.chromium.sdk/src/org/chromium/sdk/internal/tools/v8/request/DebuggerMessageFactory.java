@@ -46,12 +46,12 @@ public class DebuggerMessageFactory {
   }
 
   public static DebuggerMessage changeBreakpoint(Breakpoint breakpoint) {
-    return new ChangeBreakpointMessage(Long.valueOf(breakpoint.getId()), breakpoint.isEnabled(),
+    return new ChangeBreakpointMessage(breakpoint.getId(), breakpoint.isEnabled(),
         breakpoint.getCondition(), getV8IgnoreCount(breakpoint.getIgnoreCount()));
   }
 
   public static DebuggerMessage clearBreakpoint(Breakpoint breakpoint) {
-    return new ClearBreakpointMessage(Long.valueOf(breakpoint.getId()));
+    return new ClearBreakpointMessage(breakpoint.getId());
   }
 
   public static DebuggerMessage lookup(List<Long> refs) {

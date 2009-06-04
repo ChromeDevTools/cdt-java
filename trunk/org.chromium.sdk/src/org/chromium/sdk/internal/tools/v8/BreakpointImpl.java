@@ -21,7 +21,7 @@ public class BreakpointImpl implements Breakpoint {
   /**
    * The breakpoint id as reported by the Javascript VM.
    */
-  private int id;
+  private long id;
 
   /**
    * Whether the breakpoint is enabled.
@@ -51,7 +51,7 @@ public class BreakpointImpl implements Breakpoint {
    */
   private volatile boolean isDirty = false;
 
-  public BreakpointImpl(Type type, int id, boolean enabled, int ignoreCount, String condition,
+  public BreakpointImpl(Type type, long id, boolean enabled, int ignoreCount, String condition,
       BreakpointProcessor breakpointProcessor) {
     this.type = type;
     this.id = id;
@@ -72,7 +72,7 @@ public class BreakpointImpl implements Breakpoint {
   }
 
   @Override
-  public int getId() {
+  public long getId() {
     return id;
   }
 

@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.tools.v8.processor;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
   /**
    * This map shall contain only breakpoints with valid IDs.
    */
-  private final Map<Integer, Breakpoint> idToBreakpoint = new HashMap<Integer, Breakpoint>();
+  private final Map<Long, Breakpoint> idToBreakpoint = new HashMap<Long, Breakpoint>();
 
   public BreakpointProcessor(DebugContextImpl context) {
     super(context);
@@ -62,11 +63,12 @@ public class BreakpointProcessor extends V8ResponseCallback {
     JSONArray breakpointIdsArray = JsonUtil.getAsJSONArray(body, V8Protocol.BREAK_BREAKPOINTS);
     if (breakpointIdsArray == null) {
       // Suspended on step end.
+      getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
       return;
     }
     Collection<Breakpoint> breakpointsHit = new ArrayList<Breakpoint>(breakpointIdsArray.size());
     for (int i = 0, size = breakpointIdsArray.size(); i < size; ++i) {
-      Breakpoint existingBp = idToBreakpoint.get((breakpointIdsArray.get(i)));
+      Breakpoint existingBp = idToBreakpoint.get(breakpointIdsArray.get(i));
       if (existingBp != null) {
         breakpointsHit.add(existingBp);
       }
@@ -87,7 +89,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
                 if (JsonUtil.isSuccessful(response)) {
                   JSONObject body = JsonUtil.getBody(response);
                   Breakpoint.Type type = Breakpoint.Type.SCRIPT; // TODO(apavlov): implement others
-                  int id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT).intValue();
+                  long id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT);
 
                   final BreakpointImpl breakpoint =
                       new BreakpointImpl(type, id, enabled, ignoreCount,
@@ -110,7 +112,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
 
   public void clearBreakpoint(
       final BreakpointImpl breakpointImpl, final BreakpointCallback callback) {
-    int id = breakpointImpl.getId();
+    long id = breakpointImpl.getId();
     if (id == Breakpoint.INVALID_ID) {
       return;
     }
