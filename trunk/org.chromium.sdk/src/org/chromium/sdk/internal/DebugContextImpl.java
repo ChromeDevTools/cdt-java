@@ -171,12 +171,11 @@ public class DebugContextImpl implements DebugContext {
       }
       Long propType = JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_TYPE);
 
-      // Chrome can return ".arguments" - ignore
-      if (name.startsWith(".")) {
+      if (isInternalProperty(name)) {
         continue;
       }
 
-      // propType is null if it is e.g. an array element
+      // propType is NORMAL by default
       int propTypeValue = propType != null
           ? propType.intValue()
           : PropertyType.NORMAL.value;
@@ -235,27 +234,22 @@ public class DebugContextImpl implements DebugContext {
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
     DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
+    // Use non-null commandCallback only if callback is not null
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null
         : new BrowserTabImpl.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (!JsonUtil.isSuccessful(response)) {
-              if (callback != null) {
+            public void messageReceived(JSONObject response) {
+              if (JsonUtil.isSuccessful(response)) {
                 callback.success();
-              }
-            } else {
-              if (callback != null) {
+              } else {
                 callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
               }
             }
-          }
 
-          public void failure(String message) {
-            if (callback != null) {
+            public void failure(String message) {
               callback.failure(message);
             }
-          }
-        };
+          };
     sendMessage(false, message, commandCallback);
   }
 
@@ -353,8 +347,7 @@ public class DebugContextImpl implements DebugContext {
       String name = JsonUtil.getAsString(arg, V8Protocol.ARGUMENT_NAME);
       if (name == null) {
         // an unnamed actual argument (there is no formal counterpart in the
-        // method signature)
-        // that will be available in the "arguments" object
+        // method signature) that will be available in the "arguments" object
         continue;
       }
       Long ref = V8ProtocolUtil.getValueRef(arg);
@@ -371,8 +364,7 @@ public class DebugContextImpl implements DebugContext {
       JSONObject local = (JSONObject) locals.get(i);
       String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
 
-      // Chrome can return ".arguments" - ignore
-      if (!localName.startsWith(".")) {
+      if (!isInternalProperty(localName)) {
         Long ref = V8ProtocolUtil.getValueRef(local);
         JSONObject handle = handleManager.getHandle(ref);
         if (handle == null) {
@@ -414,7 +406,7 @@ public class DebugContextImpl implements DebugContext {
       if (object != null) {
         handleManager.put(ref, object);
         String name = entry.getValue();
-        // name is null for objects that should only be put into handleManager
+        // name is null for objects that should not be put into handleManager
         if (name != null) {
           values.add(createValueMirror(object, name));
         } else {
@@ -437,11 +429,17 @@ public class DebugContextImpl implements DebugContext {
     }
   }
 
-  private static String getNameOrInferred(JSONObject obj, V8Protocol property) {
-    String name = JsonUtil.getAsString(obj, property);
+  private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
+    String name = JsonUtil.getAsString(obj, nameProperty);
     if (name == null || name.isEmpty()) {
       name = JsonUtil.getAsString(obj, V8Protocol.INFERRED_NAME);
     }
     return name;
   }
+
+  private static boolean isInternalProperty(String propertyName) {
+    // Chrome can return properties like ".arguments". They should be ignored.
+    return propertyName.startsWith(".");
+  }
+
 }
