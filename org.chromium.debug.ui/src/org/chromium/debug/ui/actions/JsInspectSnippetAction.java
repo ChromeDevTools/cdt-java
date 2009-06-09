@@ -7,14 +7,13 @@ package org.chromium.debug.ui.actions;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
 import org.chromium.debug.ui.JsEvalContextManager;
-import org.chromium.debug.ui.actions.ExpressionEvaluator.Callback;
-import org.chromium.debug.ui.actions.ExpressionEvaluator.EvaluationResult;
 import org.chromium.debug.ui.editors.JavascriptUtil;
+import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.eclipse.debug.core.model.IExpression;
 import org.eclipse.debug.ui.DebugPopup;
 import org.eclipse.debug.ui.InspectPopupDialog;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.viewers.ISelection;
@@ -39,10 +38,9 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * Action for inspecting a Javascript snippet.
  */
 public class JsInspectSnippetAction implements IEditorActionDelegate,
-    IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate, Callback {
+    IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate, EvaluateCallback {
 
-  private static final String ACTION_DEFINITION_ID =
-      "org.chromium.debug.ui.commands.Inspect"; //$NON-NLS-1$
+  private static final String ACTION_DEFINITION_ID = "org.chromium.debug.ui.commands.Inspect"; //$NON-NLS-1$
 
   private IWorkbenchWindow window;
 
@@ -158,16 +156,14 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
   }
 
   private StackFrame getStackFrameForPart(IWorkbenchPart part) {
-    StackFrame frame =
-        part == null ? JsEvalContextManager.getEvaluationContext(getWindow())
-            : JsEvalContextManager.getEvaluationContext(part);
+    StackFrame frame = part == null
+        ? JsEvalContextManager.getStackFrameFor(getWindow())
+        : JsEvalContextManager.getStackFrameFor(part);
     return frame;
   }
 
   private void run() {
-    final StackFrame frame = getStackFrameContext();
-    ExpressionEvaluator evaluator = new ExpressionEvaluator();
-    evaluator.evaluate(getSelectedText(), frame, this, getShell());
+    getStackFrameContext().getJsStackFrame().evaluate(getSelectedText(), false, this);
   }
 
   protected String getSelectedText() {
@@ -197,38 +193,40 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     }
   }
 
-  private String extractSurroundingWord(ITextSelection targetSelection,
-      ITextEditor editor) {
-    IDocument doc =
-        editor.getDocumentProvider().getDocument(editor.getEditorInput());
-    return JavascriptUtil.extractSurroundingJsIdentifier(doc, targetSelection.getOffset());
+  private String extractSurroundingWord(ITextSelection targetSelection, ITextEditor editor) {
+    return JavascriptUtil.extractSurroundingJsIdentifier(
+        editor.getDocumentProvider().getDocument(editor.getEditorInput()),
+        targetSelection.getOffset());
   }
 
   private boolean textHasContent(String text) {
-    return text != null
-        && JavascriptUtil.INSPECTED_PATTERN.matcher(text).find();
+    return text != null && JavascriptUtil.INSPECTED_PATTERN.matcher(text).find();
   }
 
   @Override
-  public void evaluationComplete(EvaluationResult result) {
+  public void success(JsVariable var) {
     if (ChromiumDebugUIPlugin.getDefault() == null) {
       return;
     }
-    if (result.hasErrors() || result.getValue() != null) {
+    if (var != null) {
       if (ChromiumDebugUIPlugin.getDisplay().isDisposed()) {
         return;
       }
-      displayResult(result);
+      displayResult(var, null);
     }
   }
 
-  protected void displayResult(final EvaluationResult result) {
+  public void failure(String errorMessage) {
+    displayResult(null, errorMessage);
+  }
+
+  protected void displayResult(final JsVariable var, String errorMessage) {
     IWorkbenchPart part = getTargetPart();
     final StyledText styledText = getStyledText(part);
     if (styledText == null) {
       return; // TODO(apavlov): fix this when adding inspected variables
     } else {
-      expression = new JsInspectExpression(result);
+      expression = new JsInspectExpression(getStackFrameContext(), selectedText, var, errorMessage);
       ChromiumDebugUIPlugin.getDisplay().asyncExec(new Runnable() {
         public void run() {
           showPopup(styledText);
@@ -244,8 +242,8 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
       originalSelection = getTargetSelection();
     }
     DebugPopup displayPopup =
-        new InspectPopupDialog(getShell(), getPopupAnchor(textWidget),
-            ACTION_DEFINITION_ID, expression) {
+        new InspectPopupDialog(getShell(), getPopupAnchor(textWidget), ACTION_DEFINITION_ID,
+            expression) {
           @Override
           public boolean close() {
             boolean returnValue = super.close();
@@ -280,15 +278,18 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
       int midOffset = docRange.x + (docRange.y / 2);
       Point point = textWidget.getLocationAtOffset(midOffset);
       point = textWidget.toDisplay(point);
-
-      GC gc = new GC(textWidget);
-      gc.setFont(textWidget.getFont());
-      int height = gc.getFontMetrics().getHeight();
-      gc.dispose();
-      point.y += height;
+      point.y += getFontHeight(textWidget);
       return point;
     }
     return null;
+  }
+
+  private static int getFontHeight(StyledText textWidget) {
+    GC gc = new GC(textWidget);
+    gc.setFont(textWidget.getFont());
+    int height = gc.getFontMetrics().getHeight();
+    gc.dispose();
+    return height;
   }
 
 }

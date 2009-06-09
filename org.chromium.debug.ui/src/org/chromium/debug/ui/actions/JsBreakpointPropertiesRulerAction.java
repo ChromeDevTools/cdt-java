@@ -4,7 +4,7 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.model.JsLineBreakpoint;
+import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.ui.actions.RulerBreakpointAction;
 import org.eclipse.jface.text.source.IVerticalRulerInfo;
@@ -19,32 +19,29 @@ import org.eclipse.ui.texteditor.IUpdate;
 /**
  * Action to bring up the breakpoint properties dialog.
  */
-public class JsBreakpointPropertiesRulerAction extends RulerBreakpointAction
-    implements IUpdate {
+public class JsBreakpointPropertiesRulerAction extends RulerBreakpointAction implements IUpdate {
 
   private IBreakpoint breakpoint;
 
-  public JsBreakpointPropertiesRulerAction(ITextEditor editor,
-      IVerticalRulerInfo rulerInfo) {
+  public JsBreakpointPropertiesRulerAction(ITextEditor editor, IVerticalRulerInfo rulerInfo) {
     super(editor, rulerInfo);
     setText(Messages.JsBreakpointPropertiesRulerAction_ItemLabel);
   }
 
+  @Override
   public void run() {
     if (getBreakpoint() != null) {
       PropertyDialogAction action =
           new PropertyDialogAction(getEditor().getEditorSite(),
               new ISelectionProvider() {
-                public void addSelectionChangedListener(
-                    ISelectionChangedListener listener) {
+                public void addSelectionChangedListener(ISelectionChangedListener listener) {
                 }
 
                 public ISelection getSelection() {
                   return new StructuredSelection(getBreakpoint());
                 }
 
-                public void removeSelectionChangedListener(
-                    ISelectionChangedListener listener) {
+                public void removeSelectionChangedListener(ISelectionChangedListener listener) {
                 }
 
                 public void setSelection(ISelection selection) {
@@ -58,8 +55,8 @@ public class JsBreakpointPropertiesRulerAction extends RulerBreakpointAction
   public void update() {
     breakpoint = null;
     IBreakpoint activeBreakpoint = getBreakpoint();
-    if (activeBreakpoint != null
-        && activeBreakpoint instanceof JsLineBreakpoint) {
+    if (activeBreakpoint != null &&
+        activeBreakpoint instanceof ChromiumLineBreakpoint) {
       breakpoint = activeBreakpoint;
     }
     setEnabled(breakpoint != null);

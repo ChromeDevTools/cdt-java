@@ -4,9 +4,10 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler;
-import org.chromium.debug.core.tools.v8.model.mirror.FrameMirror;
-import org.chromium.debug.core.tools.v8.model.mirror.Script;
+import org.chromium.sdk.JsStackFrame;
+import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.Script;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
@@ -15,50 +16,32 @@ import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Represents Chromium V8 VM stack frame.
+ * An IStackFrame implementation over a JsStackFrame instance.
  */
 public class StackFrame extends DebugElementImpl implements IStackFrame {
-  private final int fId;
 
-  private FrameMirror frameM;
+  private final JavascriptThread thread;
 
-  private IVariable[] fVariables;
+  private final JsStackFrame stackFrame;
 
-  private final JsThread thread;
+  private IVariable[] variables;
 
   /**
    * Constructs a stack frame for the given handler using the FrameMirror data
    * from the remote V8 VM.
    *
-   * @param thread
-   * @param data frame data
-   * @param id stack frame id (0 is the stack top)
+   * @param debugTarget the global parent
+   * @param thread for which the stack frame is created
+   * @param stackFrame an underlying SDK stack frame
    */
-  public StackFrame(V8DebuggerToolHandler handler, FrameMirror mirror, int id) {
-    super(handler);
-    fId = id;
-    thread = handler.getThread();
-    frameM = mirror;
-    init();
+  public StackFrame(DebugTargetImpl debugTarget, JavascriptThread thread, JsStackFrame stackFrame) {
+    super(debugTarget);
+    this.thread = thread;
+    this.stackFrame = stackFrame;
   }
 
-  /**
-   * Initializes this frame based on its data
-   *
-   * @param data
-   */
-  private void init() {
-    int numVars = frameM.getLocalsCount();
-    fVariables = new IVariable[numVars];
-    int idx = 0;
-    for (int i = 0; i < numVars; i++) {
-      fVariables[idx++] = new Variable(this, frameM.getLocal(i));
-    }
-  }
-
-  public void setFrameMirror(FrameMirror fm) {
-    frameM = fm;
-    init();
+  public JsStackFrame getJsStackFrame() {
+    return stackFrame;
   }
 
   public IThread getThread() {
@@ -66,20 +49,31 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public IVariable[] getVariables() throws DebugException {
-    return fVariables;
+    if (variables == null) {
+      variables = wrapVariables(getDebugTarget(), stackFrame.getVariables());
+    }
+    return variables;
+  }
+
+  static IVariable[] wrapVariables(DebugTargetImpl debugTarget, JsVariable[] jsVars) {
+    Variable[] vars = new Variable[jsVars.length];
+    for (int i = 0, size = jsVars.length; i < size; ++i) {
+      vars[i] = new Variable(debugTarget, jsVars[i]);
+    }
+    return vars;
   }
 
   public boolean hasVariables() throws DebugException {
-    return fVariables.length > 0;
+    return stackFrame.getVariables().length > 0;
   }
 
   public int getLineNumber() throws DebugException {
-    Script script = frameM.getScript();
-    return script != null ? frameM.getLine() - script.getLineOffset() + 1 : -1;
+    // convert 0-based to 1-based
+    return stackFrame.getLineNumber() + 1;
   }
 
   public int getCharStart() throws DebugException {
-    return -1;
+    return stackFrame.getCharStart();
   }
 
   public int getCharEnd() throws DebugException {
@@ -87,10 +81,11 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public String getName() throws DebugException {
-    String name = frameM.getFunctionName();
-    int line = getLineNumber();
+    String name = stackFrame.getFunctionName();
+    Script script = stackFrame.getScript();
+    int line = script.getLineOffset() + getLineNumber();
     if (line != -1) {
-      name = NLS.bind(Messages.StackFrame_NameFormat, name, line);
+      name = NLS.bind(Messages.StackFrame_NameFormat, new Object[] {name, script.getName(), line});
     }
     return name;
   }
@@ -169,13 +164,18 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
    * @return the name of the source file this stack frame is associated with
    */
   String getSourceName() {
-    return frameM.getScriptName();
+    return stackFrame.getScript().getName();
   }
 
   // Returns the external file name of script on local machine.
   public String getExternalFileName() {
-    if (frameM != null && frameM.getScript() != null) {
-      return frameM.getScript().getResourceName();
+    Script script = stackFrame.getScript();
+    if (script != null) {
+      IResource resource =
+          getDebugTarget().getResourceManager().getResource(script);
+      if (resource != null) {
+        return resource.getName();
+      }
     }
 
     return null;
@@ -184,27 +184,15 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof StackFrame) {
-      StackFrame sf = (StackFrame) obj;
-      try {
-        return sf.getSourceName().equals(getSourceName())
-            && sf.getLineNumber() == getLineNumber() && sf.fId == fId;
-      } catch (DebugException e) {
-      }
+      StackFrame other = (StackFrame) obj;
+      return other.stackFrame.equals(this.stackFrame);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return getSourceName().hashCode() + fId;
+    return stackFrame.hashCode();
   }
 
-  /**
-   * Returns this stack frame's unique identifier within its thread
-   *
-   * @return this stack frame's unique identifier within its thread
-   */
-  public int getIdentifier() {
-    return fId;
-  }
 }

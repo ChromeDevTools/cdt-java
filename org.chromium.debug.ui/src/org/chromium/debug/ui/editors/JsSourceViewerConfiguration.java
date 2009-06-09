@@ -14,8 +14,7 @@ import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 public class JsSourceViewerConfiguration extends TextSourceViewerConfiguration {
 
   @Override
-  public ITextHover getTextHover(
-      ISourceViewer sourceViewer, String contentType) {
+  public ITextHover getTextHover(ISourceViewer sourceViewer, String contentType) {
     return new JsDebugTextHover();
   }
 

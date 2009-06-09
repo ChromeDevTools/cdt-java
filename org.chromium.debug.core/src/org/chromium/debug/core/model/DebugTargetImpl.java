@@ -5,127 +5,155 @@
 package org.chromium.debug.core.model;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Collection;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.tools.ToolName;
-import org.chromium.debug.core.tools.devtools.DevToolsServiceHandler;
-import org.chromium.debug.core.tools.devtools.DevToolsServiceHandler.TabIdAndUrl;
-import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler;
-import org.chromium.debug.core.tools.v8.model.mirror.Execution;
-import org.chromium.debug.core.transport.SocketConnection;
-import org.chromium.debug.core.util.WorkspaceUtil;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.Browser;
+import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.Script;
+import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.BrowserTab.ScriptsCallback;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IThread;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 
 /**
- * An IDebugTarget implementation for remote Chromium Javascript debugging.
+ * An IDebugTarget implementation for remote Javascript debugging.
+ * Can debug any target that supports the ChromeDevTools protocol.
  */
-public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
+public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, DebugEventListener {
 
   private static final IThread[] EMPTY_THREADS = new IThread[0];
 
+  private static final long OPERATION_TIMEOUT_MS = 15000L;
+
   private final ILaunch launch;
 
-  private final SocketConnection socketConnection;
+  private final JavascriptThread[] threads;
 
-  private final V8DebuggerToolHandler v8DebuggerHandler;
+  private final BrowserTab targetTab;
 
-  private final DevToolsServiceHandler devToolsServiceHandler;
-
-  private final Execution execution;
-
-  private volatile boolean isSuspended = false;
-
-  private volatile boolean isDisconnected = false;
-
-  private final IThread[] threads;
+  private final ResourceManager resourceManager;
 
   private IProject debugProject;
 
-  public DebugTargetImpl(ILaunch launch, IProcess process, String host,
-      int port, boolean breakOnStartup, String projectName)
-      throws CoreException {
+  private DebugContext debugContext;
+
+  private boolean isOutOfSync = false;
+
+  private boolean isSuspended = false;
+
+  private boolean isDisconnected = false;
+
+  public DebugTargetImpl(ILaunch launch, Browser browser, TabSelector selector,
+      String projectName, Runnable attachCallback, IProgressMonitor monitor) throws CoreException {
     super(null);
-    this.execution = new Execution(this);
-    this.socketConnection = ChromiumDebugPlugin.getDefault().getSocketConnection(host, port);
-    if (socketConnection.isConnected()) {
-      throw newCoreException(Messages.DebugTargetImpl_CannotStartMultipleDebuggers, null);
-    }
-    this.launch = launch;
-    this.v8DebuggerHandler = new V8DebuggerToolHandler(execution);
-    this.devToolsServiceHandler = new DevToolsServiceHandler(this);
-    this.getSocketConnection().setToolHandler(ToolName.V8_DEBUGGER, this.v8DebuggerHandler);
-    this.getSocketConnection().setToolHandler(
-        ToolName.DEVTOOLS_SERVICE, this.devToolsServiceHandler);
-    this.threads = new IThread[] { v8DebuggerHandler.getThread() };
+    monitor.beginTask("", 2); //$NON-NLS-1$
     try {
-      getSocketConnection().startup();
-    } catch (IOException e) {
-      throw newCoreException(
-          Messages.DebugTargetImpl_FailedToStartSocketConnection, e);
-    }
-    int targetTab = selectTargetTab();
-    if (targetTab != -1) {
-      this.debugProject = WorkspaceUtil.createEmptyProject(projectName);
-      v8DebuggerHandler.attachToTab(targetTab);
-      WorkspaceUtil.openProjectExplorerView();
-    } else {
-      ChromiumDebugPlugin.shutdownConnection(false);
+      BrowserTab[] tabs;
+      try {
+        tabs = browser.getTabs();
+      } catch (IOException e) {
+        throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
+      } catch (IllegalStateException e) {
+        throw newCoreException("Another ChromeDevTools Debug Launch is in progress", e); //$NON-NLS-1$
+      }
+      this.launch = launch;
+      this.threads = new JavascriptThread[] { new JavascriptThread(this) };
+      this.targetTab = selector.selectTab(tabs);
+      this.resourceManager = new ResourceManager();
+      if (targetTab != null) {
+        monitor.worked(1);
+        if (targetTab.attach(this)) {
+          onAttach(projectName, attachCallback);
+          return;
+        }
+        // Could not attach. Log warning...
+        ChromiumDebugPlugin.logWarning("Could not attach to a browser instance"); //$NON-NLS-1$
+        // ... and fall through.
+      }
+      // Attachment cancelled
+      setDisconnected(true);
+      fireTerminateEvent();
+    } finally {
+      monitor.done();
     }
   }
 
-  private CoreException newCoreException(String message, Exception e) {
-    return new CoreException(
-        new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID, message, e));
-  }
-
-  private int selectTargetTab() {
-    final int[] result = new int[1];
-    Display.getDefault().syncExec(new Runnable() {
-      @Override
+  private void onAttach(String projectName, final Runnable attachCallback) {
+    this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
+    DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
+    reloadScripts(true, new Runnable() {
       public void run() {
-        final Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-        final List<String[]> urlAndIdPairs =
-            Collections.synchronizedList(new ArrayList<String[]>());
-        final ChromiumTabSelectionDialog dialog =
-            new ChromiumTabSelectionDialog(shell, urlAndIdPairs);
-        dialog.setBlockOnOpen(true);
-        devToolsServiceHandler.listTabs(
-            new DevToolsServiceHandler.ListTabsHandler() {
-              @Override
-              public void tabsReceived(List<TabIdAndUrl> tabs) {
-                for (TabIdAndUrl pair : tabs) {
-                  urlAndIdPairs.add(new String[] { pair.url, String.valueOf(pair.id) });
-                }
-                dialog.setDataReady();
-              }
-            });
-        int dialogResult = dialog.open();
-        if (dialogResult == ChromiumTabSelectionDialog.OK) {
-          result[0] = dialog.getSelectedId();
-        } else {
-          result[0] = -1;
+        fireCreationEvent();
+        resumed();
+        if (attachCallback != null) {
+          attachCallback.run();
         }
       }
     });
-    return result[0];
+  }
+
+  private void reloadScripts(boolean isSync, final Runnable runnable) {
+    Runnable command = new Runnable() {
+      public void run() {
+        targetTab.getScripts(new ScriptsCallback() {
+          @Override
+          public void failure(String errorMessage) {
+            ChromiumDebugPlugin.logError(errorMessage);
+          }
+
+          @Override
+          public void success(Collection<Script> scripts) {
+            for (Script script : scripts) {
+              if (script != null && !getResourceManager().scriptHasResource(script)) {
+                IFile resource = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
+                getResourceManager().putScript(script, resource);
+                if (script.hasSource()) {
+                  try {
+                    ChromiumDebugPluginUtil.writeFile(resource, script.getSource());
+                  } catch (CoreException e) {
+                    ChromiumDebugPlugin.log(e);
+                  }
+                }
+              }
+            }
+            if (runnable != null) {
+              runnable.run();
+            }
+          }
+        });
+      }
+    };
+    if (isSync) {
+      command.run();
+      return;
+    }
+    Thread t = new Thread(command);
+    t.setDaemon(true);
+    t.start();
+    try {
+      t.join(OPERATION_TIMEOUT_MS);
+    } catch (InterruptedException e) {
+      ChromiumDebugPlugin.log(e);
+    }
   }
 
   @Override
@@ -138,9 +166,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return null;
   }
 
+  public BrowserTab getTargetTab() {
+    return targetTab;
+  }
+
+  public boolean isOutOfSync() {
+    return isOutOfSync && !isDisconnected();
+  }
+
   @Override
   public IThread[] getThreads() throws DebugException {
-    return isDisconnected() ? EMPTY_THREADS : threads;
+    return isDisconnected()
+        ? EMPTY_THREADS
+        : threads;
   }
 
   @Override
@@ -190,7 +228,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   @Override
   public boolean canSuspend() {
-    // Immediate thread suspend is not supported by V8 (does not make sense)
+    // Immediate thread suspension is not supported by V8
+    // (as it does not make sense.)
     return false;
   }
 
@@ -200,19 +239,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public void suspended(int detail) {
     isSuspended = true;
+    getThread().reset();
     fireSuspendEvent(detail);
   }
 
   @Override
   public void resume() throws DebugException {
-    try {
-      v8DebuggerHandler.resumeRequested();
-      // Let's pretend Chromium does respond
-      // to the "continue" request immediately
-      resumed(DebugEvent.CLIENT_REQUEST);
-    } catch (IOException e) {
-      ChromiumDebugPlugin.log(e);
-    }
+    debugContext.continueVm(null, 1, null);
+    // Let's pretend Chromium does respond to the "continue" request immediately
+    resumed(DebugEvent.CLIENT_REQUEST);
   }
 
   public void resumed(int detail) {
@@ -221,7 +256,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   @Override
   public void suspend() throws DebugException {
-    // Immediate thread suspend is not supported by V8 (does not make sense)
+    // Immediate thread suspension is not supported by V8
+    // (as it does not make sense.)
   }
 
   @Override
@@ -231,11 +267,18 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   @Override
   public void disconnect() throws DebugException {
-    if (v8DebuggerHandler.isAttached()) {
-      v8DebuggerHandler.detachFromTab();
+    if (!canDisconnect()) {
+      return;
     }
-    ChromiumDebugPlugin.shutdownConnection(true);
-    fireTerminateEvent();
+    removeAllBrekpoints();
+    if (!targetTab.detach()) {
+      ChromiumDebugPlugin.logWarning(Messages.DebugTargetImpl_BadResultWhileDisconnecting);
+    }
+    // This is a duplicated call to disconnected().
+    // The primary one comes from V8DebuggerToolHandler#onDebuggerDetached
+    // but we want to make sure the target becomes disconnected even if
+    // there is a browser failure and it does not respond.
+    disconnected();
   }
 
   @Override
@@ -244,18 +287,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   @Override
-  public IMemoryBlock getMemoryBlock(long startAddress, long length)
-      throws DebugException {
+  public IMemoryBlock getMemoryBlock(long startAddress, long length) throws DebugException {
     return null;
   }
 
   @Override
   public boolean supportsStorageRetrieval() {
     return false;
-  }
-
-  public SocketConnection getSocketConnection() {
-    return socketConnection;
   }
 
   public IProject getDebugProject() {
@@ -265,8 +303,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   /**
    * Fires a debug event
    *
-   * @param event
-   *          the event to be fired
+   * @param event to be fired
    */
   public void fireEvent(DebugEvent event) {
     DebugPlugin debugPlugin = DebugPlugin.getDefault();
@@ -291,8 +328,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public void fireCreationEvent() {
-    isDisconnected = false;
+    setDisconnected(false);
     fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
+  }
+
+  private void setDisconnected(boolean value) {
+    isDisconnected = value;
   }
 
   public void fireResumeEvent(int detail) {
@@ -309,26 +350,64 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public void fireTerminateEvent() {
     fireEventForThread(DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED);
-    fireEvent(new DebugEvent(
-        this, DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
-    fireEvent(new DebugEvent(getLaunch(), DebugEvent.TERMINATE,
-        DebugEvent.UNSPECIFIED));
-    isDisconnected = true;
+    fireEvent(new DebugEvent(this, DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
+    fireEvent(new DebugEvent(getLaunch(), DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
   }
 
   @Override
   public void breakpointAdded(IBreakpoint breakpoint) {
-    // handled by BreakpointProcessor
+    if (!supportsBreakpoint(breakpoint)) {
+      return;
+    }
+    try {
+      if (breakpoint.isEnabled()) {
+        // Class cast is ensured by the supportsBreakpoint implementation
+        final ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
+        Script script = getResourceManager().getScript(breakpoint.getMarker().getResource());
+        getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT,
+            script.getName(),
+            // ILineBreakpoint lines are 1-based while V8 lines are 0-based
+            (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset(), Breakpoint.NO_VALUE,
+            breakpoint.isEnabled(), lineBreakpoint.getCondition(), lineBreakpoint.getIgnoreCount(),
+            new BreakpointCallback() {
+              @Override
+              public void success(Breakpoint breakpoint) {
+                lineBreakpoint.setBreakpoint(breakpoint);
+              }
+
+              @Override
+              public void failure(String errorMessage) {
+                ChromiumDebugPlugin.logError(errorMessage);
+              }
+            });
+      }
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
+    }
   }
 
   @Override
   public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-    // handled by BreakpointProcessor
+    if (!supportsBreakpoint(breakpoint)) {
+      return;
+    }
+    // Class cast is ensured by the supportsBreakpoint implementation
+    ((ChromiumLineBreakpoint) breakpoint).changed();
   }
 
   @Override
   public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-    // handled by BreakpointProcessor
+    if (!supportsBreakpoint(breakpoint)) {
+      return;
+    }
+    try {
+      if (breakpoint.isEnabled()) {
+        // Class cast is ensured by the supportsBreakpoint implementation
+        ((ChromiumLineBreakpoint) breakpoint).clear();
+      }
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -340,13 +419,94 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return super.getAdapter(adapter);
   }
 
+  public ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
+  public JavascriptThread getThread() {
+    return isDisconnected()
+        ? null
+        : threads[0];
+  }
+
+  private static void breakpointsHit(Collection<Breakpoint> breakpointsHit) {
+    if (breakpointsHit.isEmpty()) {
+      return;
+    }
+    IBreakpoint[] breakpoints =
+        DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(
+            ChromiumDebugPlugin.DEBUG_MODEL_ID);
+    for (IBreakpoint breakpoint : breakpoints) {
+      ChromiumLineBreakpoint jsBreakpoint = (ChromiumLineBreakpoint) breakpoint;
+      if (breakpointsHit.contains(jsBreakpoint.getBrowserBreakpoint())) {
+        jsBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
+      }
+    }
+  }
+
   @Override
-  public V8DebuggerToolHandler getHandler() {
-    return v8DebuggerHandler;
+  public void resumed() {
+    resumed(DebugEvent.CLIENT_REQUEST);
   }
 
-  public Execution getExecution() {
-    return execution;
+  @Override
+  public void suspended(DebugContext context) {
+    this.debugContext = context;
+    final boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
+    breakpointsHit(context.getBreakpointsHit());
+    reloadScripts(false, new Runnable() {
+      public void run() {
+        suspended(hasBreakpointsHit
+            ? DebugEvent.BREAKPOINT
+            : DebugEvent.STEP_END);
+      }
+    });
   }
 
+  @Override
+  public void disconnected() {
+    if (!isDisconnected()) {
+      setDisconnected(true);
+      DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(this);
+      fireTerminateEvent();
+    }
+  }
+
+  public DebugContext getDebugContext() {
+    return debugContext;
+  }
+
+  @Override
+  public void navigated(String newUrl) {
+    isOutOfSync = true;
+    fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+  }
+
+  @Override
+  public void closed() {
+    navigated(null);
+  }
+
+  private static CoreException newCoreException(String message, Throwable cause) {
+    return new CoreException(
+        new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID, message, cause));
+  }
+
+  private void removeAllBrekpoints() {
+    IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
+    IBreakpoint[] breakpoints =
+        breakpointManager.getBreakpoints(ChromiumDebugPlugin.DEBUG_MODEL_ID);
+    for (IBreakpoint bp : breakpoints) {
+      ChromiumLineBreakpoint clb = (ChromiumLineBreakpoint) bp;
+      if (clb.getBrowserBreakpoint() != null &&
+          clb.getBrowserBreakpoint().getId() != Breakpoint.INVALID_ID) {
+        clb.getBrowserBreakpoint().clear(null);
+      }
+    }
+    try {
+      breakpointManager.removeBreakpoints(breakpoints, true);
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
+    }
+  }
 }

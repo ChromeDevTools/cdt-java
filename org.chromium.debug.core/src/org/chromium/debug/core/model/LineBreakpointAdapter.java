@@ -5,7 +5,7 @@
 package org.chromium.debug.core.model;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.util.WorkspaceUtil;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -42,14 +42,13 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
         }
       }
 
-      // Line numbers start at 0 with V8, unlike Eclipse
-      JsLineBreakpoint lineBreakpoint = new JsLineBreakpoint(resource, lineNumber + 1);
+      // Line numbers start with 0 in V8, with 1 in Eclipse.
+      ChromiumLineBreakpoint lineBreakpoint = new ChromiumLineBreakpoint(resource, lineNumber + 1);
       DebugPlugin.getDefault().getBreakpointManager().addBreakpoint(lineBreakpoint);
     }
   }
 
-  public boolean canToggleLineBreakpoints(IWorkbenchPart part,
-      ISelection selection) {
+  public boolean canToggleLineBreakpoints(IWorkbenchPart part, ISelection selection) {
     return getEditor(part) != null;
   }
 
@@ -64,11 +63,9 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
     if (part instanceof ITextEditor) {
       ITextEditor editorPart = (ITextEditor) part;
       IResource resource = (IResource) editorPart.getEditorInput().getAdapter(IResource.class);
-      if (resource != null) {
-        String extension = resource.getFileExtension();
-        if (extension != null && extension.equals(WorkspaceUtil.JS_EXTENSION)) {
-          return editorPart;
-        }
+      if (resource != null &&
+          ChromiumDebugPluginUtil.JS_EXTENSION.equals(resource.getFileExtension())) {
+        return editorPart;
       }
     }
     return null;
@@ -76,21 +73,21 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
 
   public void toggleMethodBreakpoints(IWorkbenchPart part, ISelection selection)
       throws CoreException {
-    // TODO(apavlov): Implement method breakpoints.
+    // TODO(apavlov): Implement method breakpoints if feasible.
   }
 
   public boolean canToggleMethodBreakpoints(IWorkbenchPart part, ISelection selection) {
-    // TODO(apavlov): Implement method breakpoints.
+    // TODO(apavlov): Implement method breakpoints if feasible.
     return true;
   }
 
   public void toggleWatchpoints(IWorkbenchPart part, ISelection selection)
       throws CoreException {
-    // TODO(apavlov): Implement watchpoints.
+    // TODO(apavlov): Implement watchpoints if feasible.
   }
 
   public boolean canToggleWatchpoints(IWorkbenchPart part, ISelection selection) {
-    // TODO(apavlov): Implement watchpoints.
+    // TODO(apavlov): Implement watchpoints if feasible.
     return false;
   }
 }

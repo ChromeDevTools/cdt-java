@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.debug.core.model;
+package org.chromium.debug.ui;
 
 import java.util.List;
 
+import org.chromium.debug.core.model.Messages;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -24,17 +25,18 @@ import org.eclipse.swt.widgets.TableItem;
  */
 class ChromiumTabSelectionDialog extends Dialog {
 
-  private final List<String[]> urlAndIdPairs;
+  private final List<String> urls;
 
   private Table table;
 
-  private int selectedId = -1;
+  private int selectedLine = -1;
 
-  ChromiumTabSelectionDialog(Shell shell, List<String[]> urlAndIdPairs) {
+  ChromiumTabSelectionDialog(Shell shell, List<String> urls) {
     super(shell);
-    this.urlAndIdPairs = urlAndIdPairs;
+    this.urls = urls;
   }
 
+  @Override
   protected void configureShell(Shell shell) {
     super.configureShell(shell);
     shell.setText(Messages.ChromiumTabSelectionDialog_DialogTitle);
@@ -59,9 +61,6 @@ class ChromiumTabSelectionDialog extends Dialog {
     final TableColumn urlColumn = new TableColumn(table, SWT.NONE);
     urlColumn.setText(Messages.ChromiumTabSelectionDialog_UrlColumnName);
     urlColumn.setWidth(400);
-    final TableColumn idColumn = new TableColumn(table, SWT.NONE);
-    idColumn.setText(Messages.ChromiumTabSelectionDialog_IdColumnName);
-    idColumn.setWidth(50);
 
     synchronized (this) {
       table.addListener(SWT.SetData, new Listener() {
@@ -75,9 +74,8 @@ class ChromiumTabSelectionDialog extends Dialog {
         private void processData(Event event) {
           TableItem item = (TableItem) event.item;
           int index = table.indexOf(item);
-          if (index < urlAndIdPairs.size()) {
-            String[] urlAndId = urlAndIdPairs.get(index);
-            item.setText(urlAndId);
+          if (index < urls.size()) {
+            item.setText(urls.get(index));
             GridData data = new GridData();
             data.grabExcessHorizontalSpace = true;
             item.setData(data);
@@ -87,6 +85,7 @@ class ChromiumTabSelectionDialog extends Dialog {
           }
         }
       });
+      table.setItemCount(urls.size());
       table.clearAll();
     }
     return composite;
@@ -94,31 +93,11 @@ class ChromiumTabSelectionDialog extends Dialog {
 
   @Override
   protected void okPressed() {
-    int index = table.getSelectionIndex();
-    if (index == -1) {
-      selectedId = -1;
-    }
-    TableItem item = table.getItem(index);
-    selectedId = Integer.valueOf(item.getText(1));
+    selectedLine = table.getSelectionIndex();
     super.okPressed();
   }
 
-  int getSelectedId() {
-    return selectedId;
-  }
-
-  /**
-   * This can get called from a non-UI thread.
-   */
-  synchronized void setDataReady() {
-    if (table != null && !table.isDisposed()) {
-      table.getDisplay().asyncExec(new Runnable() {
-        @Override
-        public void run() {
-          table.setItemCount(urlAndIdPairs.size());
-          table.clearAll();
-        }
-      });
-    }
+  int getSelectedLine() {
+    return selectedLine;
   }
 }

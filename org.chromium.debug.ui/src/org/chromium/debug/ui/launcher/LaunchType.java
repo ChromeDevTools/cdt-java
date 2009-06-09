@@ -4,9 +4,18 @@
 
 package org.chromium.debug.ui.launcher;
 
+import java.io.IOException;
+
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.ui.ChromiumDebugUIPlugin;
+import org.chromium.debug.ui.DialogBasedTabSelector;
+import org.chromium.debug.ui.PluginUtil;
+import org.chromium.sdk.Browser;
+import org.chromium.sdk.BrowserFactory;
+import org.chromium.sdk.UnsupportedVersionException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
@@ -25,27 +34,44 @@ public class LaunchType implements ILaunchConfigurationDelegate {
 
   public static final String CHROMIUM_DEBUG_PROJECT_NAME = "debug_project_name"; //$NON-NLS-1$
 
-  private static final String LOCALHOST = "127.0.0.1"; //$NON-NLS-1$
-
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
     // Chromium launch is only supported for debugging.
     if (mode.equals(ILaunchManager.DEBUG_MODE)) {
       int port =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
-              PluginVariables.getValueAsInt(PluginVariables.DEFAULT_PORT));
-      boolean bpOnStart =
-          config.getAttribute(LaunchType.CHROMIUM_DEBUG_STARTUP_BREAK,
-              Boolean.valueOf(PluginVariables.getValue(
-                  PluginVariables.DEFAULT_BREAK_ON_STARTUP)));
+              PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
       String projectName =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-              PluginVariables.getValue(PluginVariables.DEFAULT_PROJECT_NAME));
+              PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME));
 
-      IDebugTarget target =
-            new DebugTargetImpl(launch, null, LOCALHOST, port, bpOnStart, projectName);
+      Browser browser = BrowserFactory.getInstance().create(port);
+      try {
+        browser.connect();
+      } catch (UnsupportedVersionException e) {
+        throw newCoreException(e);
+      } catch (IOException e) {
+        throw newCoreException(e);
+      }
+      IDebugTarget target = new DebugTargetImpl(
+          launch,
+          browser,
+          new DialogBasedTabSelector(),
+          projectName,
+          new Runnable() {
+            public void run() {
+              PluginUtil.openProjectExplorerView();
+            }
+          },
+          monitor);
       launch.addDebugTarget(target);
     }
+  }
+
+  private static CoreException newCoreException(Exception e) {
+    return new CoreException(
+        new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID,
+            "Failed to connect to the remote browser", e)); //$NON-NLS-1$
   }
 
 }

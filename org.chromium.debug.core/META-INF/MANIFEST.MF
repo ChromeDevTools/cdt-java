@@ -2,50 +2,23 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Chromium Javascript Remote Debugger Core
 Bundle-SymbolicName: org.chromium.debug.core;singleton:=true
-Bundle-Version: 0.1.0
+Bundle-Version: 0.1.0.0
 Bundle-Activator: org.chromium.debug.core.ChromiumDebugPlugin
 Bundle-Vendor: The Chromium Authors
 Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.core.filesystem;bundle-version="1.2.0",
  org.eclipse.debug.ui;bundle-version="3.4.1",
  org.eclipse.ui;bundle-version="3.4.1",
  org.eclipse.jface.text;bundle-version="3.4.1",
- org.eclipse.ui.workbench.texteditor;bundle-version="3.4.1"
+ org.eclipse.ui.workbench.texteditor;bundle-version="3.4.1",
+ org.chromium.sdk;bundle-version="0.1.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: bin/,
- lib/json_simple/json_simple-1.1.jar,
- .
-Export-Package: org.chromium.debug.core;
-  uses:="org.eclipse.debug.core,
-   org.eclipse.osgi.util,
-   org.eclipse.core.runtime,
-   org.eclipse.ui,
-   org.osgi.framework,
-   org.chromium.debug.core.transport",
- org.chromium.debug.core.model;
-  uses:="org.eclipse.debug.core,
-   org.eclipse.core.runtime,
-   org.eclipse.ui,
-   org.chromium.debug.core.tools.v8.model.mirror,
-   org.chromium.debug.core.tools.v8,
-   org.eclipse.debug.core.model,
-   org.eclipse.debug.ui.actions,
-   org.eclipse.osgi.util,
-   org.eclipse.core.resources,
-   org.eclipse.jface.viewers,
-   org.chromium.debug.core.transport,
-   org.eclipse.swt.widgets,
-   org.eclipse.jface.dialogs",
- org.chromium.debug.core.tools;uses:="org.json.simple,org.chromium.debug.core.transport,org.chromium.debug.core.model",
- org.chromium.debug.core.tools.v8;
-  uses:="org.chromium.debug.core.tools.v8.model.mirror,
-   org.chromium.debug.core.tools.v8.request,
-   org.chromium.debug.core.transport,
-   org.chromium.debug.core.model,
-   org.json.simple,
-   org.chromium.debug.core.tools",
- org.chromium.debug.core.tools.v8.model.mirror;uses:="org.chromium.debug.core.model,org.json.simple",
- org.chromium.debug.core.tools.v8.request;uses:="org.json.simple,org.chromium.debug.core.model,org.chromium.debug.core.tools.v8",
- org.chromium.debug.core.util;uses:="org.eclipse.core.resources,org.json.simple",
+ .,
+ lib/json_simple/json_simple-1.1.jar
+Export-Package: org.chromium.debug.core,
+ org.chromium.debug.core.model,
+ org.chromium.debug.core.util,
  org.json.simple
 Eclipse-LazyStart: true

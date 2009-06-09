@@ -1,5 +1,10 @@
-<plugin>
+<!--
+  Copyright (c) 2009 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
 
+<plugin>
   <extension point="org.eclipse.debug.ui.debugModelPresentations">
     <debugModelPresentation
         class="org.chromium.debug.ui.JsDebugModelPresentation"
@@ -11,12 +16,7 @@
     <variable
        initialValue="9222"
        name="org.chromium.debug.ui.chromium_debug_port"
-       description="Chrome Developer Tools Protocol connection port">
-    </variable>
-    <variable
-       initialValue="false"
-       name="org.chromium.debug.ui.chromium_break_on_startup"
-       description="Whether to break JS execution on startup">
+       description="ChromeDevTools Protocol connection port">
     </variable>
     <variable
        initialValue="Debug Javascript"
@@ -98,6 +98,7 @@
         id="org.chromium.debug.ui.SnippetInspect"
         definitionId="org.chromium.debug.ui.commands.Inspect"
         class="org.chromium.debug.ui.actions.JsInspectSnippetAction"
+        enablesFor="+"
         label="Inspect"
         tooltip="Inspect Result of Evaluating Selected Text">
         <enablement>
@@ -120,6 +121,15 @@
       description="Debug Chromium Javascript"
       id="org.chromium.debug.ui.editors.JsEditor.context">
     </context>
+  </extension>
+
+  <extension
+      point="org.eclipse.ui.navigator.viewer">
+    <viewerContentBinding viewerId="org.eclipse.ui.navigator.ProjectExplorer">
+      <includes>
+        <contentExtension pattern="org.eclipse.ui.navigator.resources.filters.*" />
+      </includes>
+    </viewerContentBinding>
   </extension>
 
   <extension point="org.eclipse.ui.commands">
@@ -178,14 +188,13 @@
          <enabledWhen>
             <or>
                <instanceof
-                     value="org.chromium.debug.core.model.JsLineBreakpoint">
+                     value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
                </instanceof>
                <adapt
-                     type="org.chromium.debug.core.model.JsLineBreakpoint">
+                     type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
                </adapt>
             </or>
          </enabledWhen>
       </page>
   </extension>
-
 </plugin>

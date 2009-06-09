@@ -5,7 +5,6 @@
 package org.chromium.debug.core.model;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IDebugElement;
@@ -15,19 +14,15 @@ import org.eclipse.debug.core.model.IDebugElement;
  */
 public class DebugElementImpl extends PlatformObject implements IDebugElement {
 
-  private V8DebuggerToolHandler handler;
+  private final DebugTargetImpl debugTarget;
 
-  public DebugElementImpl(V8DebuggerToolHandler handler) {
-    this.handler = handler;
-  }
-
-  public V8DebuggerToolHandler getHandler() {
-    return handler;
+  public DebugElementImpl(DebugTargetImpl debugTarget) {
+    this.debugTarget = debugTarget;
   }
 
   @Override
   public DebugTargetImpl getDebugTarget() {
-    return handler.getDebugTarget();
+    return debugTarget;
   }
 
   @Override

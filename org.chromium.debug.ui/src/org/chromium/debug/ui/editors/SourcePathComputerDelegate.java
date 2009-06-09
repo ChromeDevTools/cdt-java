@@ -4,9 +4,9 @@
 
 package org.chromium.debug.ui.editors;
 
-import org.chromium.debug.core.util.WorkspaceUtil;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.ui.launcher.LaunchType;
-import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -28,11 +28,9 @@ public class SourcePathComputerDelegate implements ISourcePathComputerDelegate {
   public ISourceContainer[] computeSourceContainers(
       ILaunchConfiguration config, IProgressMonitor monitor)
       throws CoreException {
-    String projName = getProjectName(config);
-    IProject proj =
-        ResourcesPlugin.getWorkspace().getRoot().getProject(projName);
-    IFolder folder = proj.getFolder(WorkspaceUtil.SOURCE_FOLDER);
-    ISourceContainer sourceContainer = new FolderSourceContainer(folder, false);
+    IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(getProjectName(config));
+    IContainer srcContainer = ChromiumDebugPluginUtil.getSourceContainer(project);
+    ISourceContainer sourceContainer = new FolderSourceContainer(srcContainer, false);
 
     if (sourceContainer == null) {
       sourceContainer = new WorkspaceSourceContainer();
@@ -40,9 +38,7 @@ public class SourcePathComputerDelegate implements ISourcePathComputerDelegate {
     return new ISourceContainer[] { sourceContainer };
   }
 
-  private String getProjectName(ILaunchConfiguration config)
-      throws CoreException {
-    return config.getAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-        (String) null);
+  private String getProjectName(ILaunchConfiguration config) throws CoreException {
+    return config.getAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, (String) null);
   }
 }

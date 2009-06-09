@@ -8,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.JsLineBreakpoint;
-import org.chromium.debug.core.util.JsonUtil;
+import org.chromium.debug.core.model.ChromiumLineBreakpoint;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -33,6 +34,8 @@ import org.eclipse.ui.dialogs.PropertyPage;
  */
 public class JsLineBreakpointPage extends PropertyPage {
 
+  private final List<String> errorMessages = new ArrayList<String>(2);
+
   private Button enabledCheckbox;
 
   private Button ignoreCountCheckbox;
@@ -43,13 +46,12 @@ public class JsLineBreakpointPage extends PropertyPage {
 
   private Text conditionText;
 
-  private final List<String> errorMessages = new ArrayList<String>(2);
-
   @Override
   protected Control createContents(Composite parent) {
     noDefaultAndApplyButton();
     Composite mainComposite = createComposite(parent, 2, 1);
     try {
+      createBreakpointDataControls(mainComposite);
       createInfoControls(mainComposite);
       createEnabledControls(mainComposite);
       createIgnoreCountControls(mainComposite);
@@ -61,7 +63,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     return mainComposite;
   }
 
- @Override
+  @Override
   public boolean performOk() {
     IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
       public void run(IProgressMonitor monitor) throws CoreException {
@@ -77,11 +79,11 @@ public class JsLineBreakpointPage extends PropertyPage {
   }
 
   private void storePrefs() throws CoreException {
-    JsLineBreakpoint breakpoint = getBreakpoint();
+    ChromiumLineBreakpoint breakpoint = getBreakpoint();
     breakpoint.setEnabled(enabledCheckbox.getSelection());
     breakpoint.setIgnoreCount(ignoreCountCheckbox.getSelection()
         ? Integer.valueOf(ignoreCountText.getText())
-        : null);
+        : -1);
     String condition = null;
     if (conditionCheckbox.getSelection()) {
       String text = conditionText.getText().trim();
@@ -92,26 +94,30 @@ public class JsLineBreakpointPage extends PropertyPage {
     breakpoint.setCondition(condition);
   }
 
-   private void createInfoControls(Composite parent) {
-     Composite infoComposite = createComposite(parent, 2, 2);
-     Label resourceLabel = new Label(infoComposite, SWT.NONE);
-     resourceLabel.setText(Messages.JsLineBreakpointPage_ResourceLabel);
-     Label resourceNameLabel = new Label(infoComposite, SWT.NONE);
-     resourceNameLabel.setText(getBreakpoint().getMarker().getResource().getName());
+  private void createBreakpointDataControls(Composite mainComposite) {
+    // new Label
+  }
 
-     Label lineNumberLabel = new Label(infoComposite, SWT.NONE);
-     lineNumberLabel.setText(Messages.JsLineBreakpointPage_LineNumberLabel);
-     Label lineNumberValueLabel = new Label(infoComposite, SWT.NONE);
-     String lineNumber = Messages.JsLineBreakpointPage_UnknownLineNumber;
-     try {
-       lineNumber = String.valueOf(getBreakpoint().getLineNumber());
+  private void createInfoControls(Composite parent) {
+    Composite infoComposite = createComposite(parent, 2, 2);
+    Label resourceLabel = new Label(infoComposite, SWT.NONE);
+    resourceLabel.setText(Messages.JsLineBreakpointPage_ResourceLabel);
+    Label resourceNameLabel = new Label(infoComposite, SWT.NONE);
+    resourceNameLabel.setText(getBreakpoint().getMarker().getResource().getName());
+
+    Label lineNumberLabel = new Label(infoComposite, SWT.NONE);
+    lineNumberLabel.setText(Messages.JsLineBreakpointPage_LineNumberLabel);
+    Label lineNumberValueLabel = new Label(infoComposite, SWT.NONE);
+    String lineNumber = Messages.JsLineBreakpointPage_UnknownLineNumber;
+    try {
+      lineNumber = String.valueOf(getBreakpoint().getLineNumber());
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
     }
     lineNumberValueLabel.setText(lineNumber);
-}
+  }
 
-   private void createEnabledControls(Composite parent) throws CoreException {
+  private void createEnabledControls(Composite parent) throws CoreException {
     enabledCheckbox = new Button(parent, SWT.CHECK);
     GridData gd = new GridData();
     gd.horizontalSpan = 2;
@@ -120,8 +126,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     enabledCheckbox.setText(Messages.JavascriptLineBreakpointPage_Enabled);
   }
 
-  private void createIgnoreCountControls(Composite parent)
-      throws CoreException {
+  private void createIgnoreCountControls(Composite parent) throws CoreException {
     ignoreCountCheckbox = new Button(parent, SWT.CHECK);
     Integer ignoreCount = getBreakpoint().getIgnoreCount();
     ignoreCountCheckbox.setSelection(ignoreCount != null);
@@ -155,10 +160,11 @@ public class JsLineBreakpointPage extends PropertyPage {
     }
     String value = ignoreCountText.getText();
     int ignoreCount = -1;
-    if (!JsonUtil.isInteger(value)) {
+    if (!ChromiumDebugPluginUtil.isInteger(value)) {
       addErrorMessage(Messages.JavascriptLineBreakpointPage_IgnoreCountErrorMessage);
       return;
     }
+    ignoreCount = Integer.valueOf(value);
     if (ignoreCount < 1) {
       addErrorMessage(Messages.JavascriptLineBreakpointPage_IgnoreCountErrorMessage);
     } else {
@@ -205,6 +211,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     gd = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
     conditionText.setLayoutData(gd);
     conditionText.setTextLimit(300);
+    conditionText.setFont(JFaceResources.getTextFont());
     conditionText.setEnabled(conditionCheckbox.getSelection());
     conditionText.addModifyListener(new ModifyListener() {
       public void modifyText(ModifyEvent e) {
@@ -215,7 +222,8 @@ public class JsLineBreakpointPage extends PropertyPage {
   }
 
   private static String maskNull(String value) {
-    return value == null ? "" : value; //$NON-NLS-1$
+    return value == null
+        ? "" : value; //$NON-NLS-1$
   }
 
   private void conditionChanged() {
@@ -245,7 +253,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     return composite;
   }
 
-  protected JsLineBreakpoint getBreakpoint() {
-    return (JsLineBreakpoint) getElement();
+  protected ChromiumLineBreakpoint getBreakpoint() {
+    return (ChromiumLineBreakpoint) getElement();
   }
 }
