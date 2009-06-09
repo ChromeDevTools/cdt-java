@@ -18,41 +18,44 @@ import org.osgi.framework.BundleContext;
  */
 public class ChromiumDebugUIPlugin extends AbstractUIPlugin {
 
-  // The plug-in ID
+  /** The plug-in ID. */
   public static final String PLUGIN_ID = "org.chromium.debug.ui"; //$NON-NLS-1$
 
-  // Editor ID for JS files
+  /** Editor ID for JS files. */
   public static final String EDITOR_ID = PLUGIN_ID + ".editor"; //$NON-NLS-1$
 
-  // The shared instance
+  /** The shared instance. */
   private static ChromiumDebugUIPlugin plugin;
 
-  /**
-   * The constructor
-   */
   public ChromiumDebugUIPlugin() {
   }
 
+  @Override
   public void start(BundleContext context) throws Exception {
     super.start(context);
     plugin = this;
     JsEvalContextManager.startup();
   }
 
+  @Override
   public void stop(BundleContext context) throws Exception {
     plugin = null;
     super.stop(context);
   }
 
   /**
-   * Returns the shared instance
-   * 
+   * Returns the shared instance.
+   *
    * @return the shared instance
    */
   public static ChromiumDebugUIPlugin getDefault() {
     return plugin;
   }
 
+  /**
+   * @return a current display, or the default one if the current one is not
+   *         available
+   */
   public static Display getDisplay() {
     Display display = Display.getCurrent();
     if (display == null) {
@@ -61,6 +64,9 @@ public class ChromiumDebugUIPlugin extends AbstractUIPlugin {
     return display;
   }
 
+  /**
+   * @return the active workbench shell, or {@code null} if one is not available
+   */
   public static Shell getActiveWorkbenchShell() {
     IWorkbenchWindow window = getActiveWorkbenchWindow();
     if (window != null) {
@@ -69,10 +75,18 @@ public class ChromiumDebugUIPlugin extends AbstractUIPlugin {
     return null;
   }
 
+  /**
+   * @return the active workbench window
+   */
   public static IWorkbenchWindow getActiveWorkbenchWindow() {
     return getDefault().getWorkbench().getActiveWorkbenchWindow();
   }
 
+  /**
+   * Creates a status dialog using the given {@code status}.
+   *
+   * @param status to derive the severity
+   */
   public static void statusDialog(IStatus status) {
     switch (status.getSeverity()) {
       case IStatus.ERROR:
@@ -87,6 +101,12 @@ public class ChromiumDebugUIPlugin extends AbstractUIPlugin {
     }
   }
 
+  /**
+   * Creates a status dialog using the given {@code status} and {@code title}.
+   *
+   * @param title of the dialog
+   * @param status to derive the severity
+   */
   public static void statusDialog(String title, IStatus status) {
     Shell shell = getActiveWorkbenchWindow().getShell();
     if (shell != null) {

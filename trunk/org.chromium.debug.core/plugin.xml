@@ -1,3 +1,9 @@
+<!--
+  Copyright (c) 2009 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
 <plugin>
 
   <!-- Breakpoint-related extensions -->
@@ -11,13 +17,13 @@
   
   <extension point="org.eclipse.debug.core.breakpoints">
       <breakpoint
-        class="org.chromium.debug.core.model.JsLineBreakpoint"
+        class="org.chromium.debug.core.model.ChromiumLineBreakpoint"
         name="JS Line Breakpoints"
         markerType="org.chromium.debug.core.LineBP"
         id="org.chromium.debug.core.lineBreakpoint"/>
   </extension>
   
-  <!-- id is relative to PLUGIN_ID -->
+  <!-- "id" value is relative to PLUGIN_ID -->
   <extension
       id="LineBP"
       name="JS Line Breakpoint Marker"
@@ -26,8 +32,11 @@
     <persistent value="true"/>
   </extension>
 
-  <extension point="org.eclipse.ui.startup">
-    <startup class="org.chromium.debug.core.ChromiumDebugPlugin"/>
+
+  <!-- An in-memory filesystem for the remote scripts -->
+  <extension point="org.eclipse.core.filesystem.filesystems">
+     <filesystem scheme="chromiumdebug">
+        <run class="org.chromium.debug.core.efs.ChromiumScriptFileSystem"/>
+     </filesystem>
   </extension>
-  
 </plugin>

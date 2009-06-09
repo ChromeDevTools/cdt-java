@@ -5,7 +5,9 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.ui.actions.ExpressionEvaluator.EvaluationResult;
+import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.Value;
+import org.chromium.sdk.JsVariable;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugPlugin;
@@ -22,20 +24,32 @@ import org.eclipse.debug.core.model.IValue;
 public class JsInspectExpression extends PlatformObject
     implements IErrorReportingExpression, IDebugEventSetListener {
 
-  private final EvaluationResult result;
+  private final StackFrame stackFrame;
 
-  public JsInspectExpression(EvaluationResult result) {
-    this.result = result;
+  private final JsVariable variable;
+
+  private final String errorMessage;
+
+  private final String expression;
+
+  public JsInspectExpression(StackFrame stackFrame, String expression, JsVariable variable,
+      String errorMessage) {
+    this.stackFrame = stackFrame;
+    this.expression = expression;
+    this.variable = variable;
+    this.errorMessage = errorMessage;
   }
 
   @Override
   public String[] getErrorMessages() {
-    return result.getErrorMessages();
+    return errorMessage == null
+        ? new String[0]
+        : new String[] { errorMessage };
   }
 
   @Override
   public boolean hasErrors() {
-    return result.hasErrors();
+    return errorMessage != null;
   }
 
   @Override
@@ -53,12 +67,14 @@ public class JsInspectExpression extends PlatformObject
 
   @Override
   public String getExpressionText() {
-    return result.getEvaluatedExpression();
+    return expression;
   }
 
   @Override
   public IValue getValue() {
-    return result.getValue();
+    return variable != null
+        ? Value.create(stackFrame.getDebugTarget(), variable.getValue())
+        : null;
   }
 
   @Override
@@ -81,14 +97,12 @@ public class JsInspectExpression extends PlatformObject
           }
           break;
         case DebugEvent.SUSPEND:
-          if (event.getDetail() != DebugEvent.EVALUATION_IMPLICIT) {
-            if (event.getSource() instanceof IDebugElement) {
-              IDebugElement source = (IDebugElement) event.getSource();
-              if (source.getDebugTarget().equals(getDebugTarget())) {
-                DebugPlugin.getDefault().fireDebugEventSet(
-                    new DebugEvent[] {
-                        new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.CONTENT) });
-              }
+          if (event.getDetail() != DebugEvent.EVALUATION_IMPLICIT &&
+              event.getSource() instanceof IDebugElement) {
+            IDebugElement source = (IDebugElement) event.getSource();
+            if (source.getDebugTarget().equals(getDebugTarget())) {
+              DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[] {
+                  new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.CONTENT) });
             }
           }
           break;

@@ -4,14 +4,14 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.util.WorkspaceUtil;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.debug.ui.actions.IToggleBreakpointsTarget;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
- * Factory for breakpoint adapters.
+ * Factory of LineBreakpointAdapters for browser scripts.
  */
 public class BreakpointAdapterFactory implements IAdapterFactory {
 
@@ -23,7 +23,7 @@ public class BreakpointAdapterFactory implements IAdapterFactory {
           (IResource) editorPart.getEditorInput().getAdapter(IResource.class);
       if (resource != null) {
         String extension = resource.getFileExtension();
-        if (extension != null && WorkspaceUtil.JS_EXTENSION.equals(extension)) {
+        if (extension != null && ChromiumDebugPluginUtil.JS_EXTENSION.equals(extension)) {
           return new LineBreakpointAdapter();
         }
       }

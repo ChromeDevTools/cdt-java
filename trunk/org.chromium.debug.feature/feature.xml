@@ -54,20 +54,22 @@ OF SUCH DAMAGE.
       <import plugin="org.eclipse.ui.editors" version="3.4.0" match="greaterOrEqual"/>
       <import plugin="org.eclipse.core.variables" version="3.2.100" match="greaterOrEqual"/>
       <import plugin="org.eclipse.ui.ide" version="3.4.1" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.core.filesystem" version="1.2.0" match="greaterOrEqual"/>
+      <import plugin="org.chromium.sdk" version="0.1.0" match="compatible"/>
    </requires>
 
    <plugin
          id="org.chromium.debug.core"
          download-size="0"
          install-size="0"
-         version="0.1.0"
+         version="0.1.0.0"
          unpack="false"/>
 
    <plugin
          id="org.chromium.debug.ui"
          download-size="0"
          install-size="0"
-         version="0.1.0"
+         version="0.1.0.0"
          unpack="false"/>
 
 </feature>

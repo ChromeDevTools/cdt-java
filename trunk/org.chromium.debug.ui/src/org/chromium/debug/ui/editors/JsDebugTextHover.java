@@ -4,13 +4,11 @@
 
 package org.chromium.debug.ui.editors;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.StackFrame;
-import org.chromium.debug.ui.actions.ExpressionEvaluator;
-import org.chromium.debug.ui.actions.ExpressionEvaluator.EvaluationResult;
+import org.chromium.debug.ui.JsValueStringifier;
+import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.debug.core.DebugException;
-import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -22,39 +20,40 @@ import org.eclipse.jface.text.ITextViewer;
  */
 public class JsDebugTextHover implements ITextHover {
 
+  private static final JsValueStringifier STRINGIFIER = new JsValueStringifier();
+
   @Override
   public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
     IDocument doc = textViewer.getDocument();
     int offset = hoverRegion.getOffset();
-    String expression =
-        JavascriptUtil.extractSurroundingJsIdentifier(doc, offset);
+    String expression = JavascriptUtil.extractSurroundingJsIdentifier(doc, offset);
     if (expression == null) {
       return null;
     }
-    ExpressionEvaluator evaluator = new ExpressionEvaluator();
+
     IAdaptable context = DebugUITools.getDebugContext();
     if (context == null) { // debugger not active
       return null;
     }
+
     StackFrame frame = (StackFrame) context.getAdapter(StackFrame.class);
     if (frame == null) { // not a stackframe-related context
       return null;
     }
-    EvaluationResult result;
-    try {
-      result = evaluator.evaluateSync(expression, frame, null);
-    } catch (DebugException e) {
-      ChromiumDebugPlugin.log(e);
+
+    final JsVariable[] result = new JsVariable[1];
+    frame.getJsStackFrame().evaluate(expression, true, new EvaluateCallback() {
+      public void success(JsVariable var) {
+        result[0] = var;
+      }
+      public void failure(String errorMessage) {
+      }
+    });
+    if (result[0] == null) {
       return null;
     }
-    if (result == null) {
-      return null;
-    }
-    IValue value = result.getValue();
-    if (value == null) {
-      return null;
-    }
-    return JavascriptUtil.stringify(value);
+
+    return STRINGIFIER.render(result[0].getValue());
   }
 
   @Override

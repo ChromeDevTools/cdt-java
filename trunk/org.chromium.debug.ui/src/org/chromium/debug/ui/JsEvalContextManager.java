@@ -25,37 +25,32 @@ import org.eclipse.ui.PlatformUI;
 
 /**
  * Keeps track of the evaluation context (selected StackFrame) in all the
- * workbench parts.
- *
- * Based on the EvaluationContextManager of JDT.
+ * workbench parts. A singleton.
  */
-public class JsEvalContextManager implements IWindowListener,
-    IDebugContextListener {
+public class JsEvalContextManager implements IWindowListener, IDebugContextListener {
 
-  /** Gets set when the debugging context is available */
-  private static final String DEBUGGER_ACTIVE =
-      ChromiumDebugUIPlugin.PLUGIN_ID + ".debuggerActive"; //$NON-NLS-1$
+  private static final String DEBUGGER_ACTIVE = ChromiumDebugUIPlugin.PLUGIN_ID + ".debuggerActive"; //$NON-NLS-1$
 
   private static JsEvalContextManager instance;
 
   private IWorkbenchWindow activeWindow;
 
-  private Map<IWorkbenchPage, StackFrame> pageToFrame;
+  private final Map<IWorkbenchPage, StackFrame> pageToFrame =
+      new HashMap<IWorkbenchPage, StackFrame>();
 
-  public JsEvalContextManager() {
+  protected JsEvalContextManager() {
     DebugUITools.getDebugContextManager().addDebugContextListener(this);
   }
 
+  /**
+   * This method will get called only once.
+   */
   public static void startup() {
     Runnable r = new Runnable() {
       public void run() {
         if (instance == null) {
           instance = new JsEvalContextManager();
           IWorkbench workbench = PlatformUI.getWorkbench();
-          IWorkbenchWindow[] windows = workbench.getWorkbenchWindows();
-          for (int i = 0; i < windows.length; i++) {
-            instance.windowOpened(windows[i]);
-          }
           workbench.addWindowListener(instance);
           instance.activeWindow = workbench.getActiveWorkbenchWindow();
         }
@@ -71,7 +66,6 @@ public class JsEvalContextManager implements IWindowListener,
 
   @Override
   public void windowClosed(IWorkbenchWindow window) {
-
   }
 
   @Override
@@ -86,135 +80,113 @@ public class JsEvalContextManager implements IWindowListener,
   public void debugContextChanged(DebugContextEvent event) {
     if ((event.getFlags() & DebugContextEvent.ACTIVATED) > 0) {
       IWorkbenchPart part = event.getDebugContextProvider().getPart();
-      if (part != null) {
-        IWorkbenchPage page = part.getSite().getPage();
-        ISelection selection = event.getContext();
-        if (selection instanceof IStructuredSelection) {
-          IStructuredSelection ss = (IStructuredSelection) selection;
-          if (ss.size() == 1) {
-            Object element = ss.getFirstElement();
-            if (element instanceof IAdaptable) {
-              StackFrame frame = (StackFrame)
-                  ((IAdaptable) element).getAdapter(StackFrame.class);
-              if (frame != null) {
-                setContext(page, frame);
-                return;
-              }
-            }
+      if (part == null) {
+        return;
+      }
+      IWorkbenchPage page = part.getSite().getPage();
+      ISelection selection = event.getContext();
+      if (selection instanceof IStructuredSelection) {
+        Object firstElement = ((IStructuredSelection) selection).getFirstElement();
+        if (firstElement instanceof IAdaptable) {
+          StackFrame frame = (StackFrame) ((IAdaptable) firstElement).getAdapter(StackFrame.class);
+          if (frame != null) {
+            putStackFrame(page, frame);
+            return;
           }
         }
-        // debug context lost
-        removeContext(page);
       }
+      // debug context for the |page| has been lost
+      removeStackFrame(page);
     }
   }
 
   /**
-   * Returns the evaluation context for the given part, or <code>null</code> if
-   * none. The evaluation context corresponds to the selected stack frame in the
-   * following priority order:
-   * <ol>
-   * <li>stack frame in the same page</li>
-   * <li>stack frame in the same window</li>
-   * <li>stack frame in active page of other window</li>
-   * <li>stack frame in page of other windows</li>
-   * </ol>
+   * Returns the stackframe corresponding to the given {@code part}, or {@code
+   * null} if none.
    *
-   * @param part
-   *          the part that the evaluation action was invoked from
-   * @return the stack frame that supplies an evaluation context, or
-   *         <code>null</code> if none
+   * @param part the active part
+   * @return the stack frame in whose context the evaluation is performed, or
+   *         {@code null} if none
    */
-  public static StackFrame getEvaluationContext(IWorkbenchPart part) {
+  public static StackFrame getStackFrameFor(IWorkbenchPart part) {
     IWorkbenchPage page = part.getSite().getPage();
-    StackFrame frame = getContext(page);
+    StackFrame frame = getStackFrameFor(page);
     if (frame == null) {
-      return getEvaluationContext(page.getWorkbenchWindow());
+      return getStackFrameFor(page.getWorkbenchWindow());
     }
     return frame;
   }
 
   /**
-   * Returns the evaluation context for the given window, or <code>null</code>
-   * if none. The evaluation context corresponds to the selected stack frame in
-   * the following priority order:
-   * <ol>
-   * <li>stack frame in active page of the window</li>
-   * <li>stack frame in another page of the window</li>
-   * <li>stack frame in active page of another window</li>
-   * <li>stack frame in a page of another window</li>
-   * </ol>
+   * Returns the stackframe corresponding to the given {@code window}, or
+   * {@code null} if none.
    *
-   * @param window
-   *          the window that the evaluation action was invoked from, or
-   *          <code>null</code> if the current window should be consulted
-   * @return the stack frame that supplies an evaluation context, or
-   *         <code>null</code> if none
-   * @return IJavaStackFrame
+   * @param window to find the StackFrame for. If {@code null}, the {@code
+   *        activeWindow} will be used instead
+   * @return the stack frame in whose the evaluation is performed, or {@code
+   *         null} if none
    */
-  public static StackFrame getEvaluationContext(IWorkbenchWindow window) {
-    Set<IWorkbenchWindow> alreadyVisited = new HashSet<IWorkbenchWindow>();
+  public static StackFrame getStackFrameFor(IWorkbenchWindow window) {
+    Set<IWorkbenchWindow> visitedWindows = new HashSet<IWorkbenchWindow>();
     if (window == null) {
       window = instance.activeWindow;
     }
-    return getEvaluationContext(window, alreadyVisited);
+    return getStackFrameFor(window, visitedWindows);
   }
 
-  private static StackFrame getEvaluationContext(IWorkbenchWindow window,
-      Set<IWorkbenchWindow> alreadyVisited) {
+  private static StackFrame getStackFrameFor(
+      IWorkbenchWindow window, Set<IWorkbenchWindow> visitedWindows) {
     IWorkbenchPage activePage = window.getActivePage();
     StackFrame frame = null;
+    // Check the active page in the window
     if (activePage != null) {
-      frame = getContext(activePage);
+      frame = getStackFrameFor(activePage);
+      if (frame != null) {
+        return frame;
+      }
     }
-    if (frame == null) {
-      IWorkbenchPage[] pages = window.getPages();
-      for (int i = 0; i < pages.length; i++) {
-        if (activePage != pages[i]) {
-          frame = getContext(pages[i]);
-          if (frame != null) {
-            return frame;
-          }
+    // Check all the current Eclipse window pages
+    for (IWorkbenchPage windowPage : window.getPages()) {
+      if (activePage != windowPage) {
+        frame = getStackFrameFor(windowPage);
+        if (frame != null) {
+          return frame;
         }
       }
+    }
 
-      alreadyVisited.add(window);
+    // Last resort - check all other Eclipse windows
+    visitedWindows.add(window);
 
-      IWorkbenchWindow[] windows =
-          PlatformUI.getWorkbench().getWorkbenchWindows();
-      for (int i = 0; i < windows.length; i++) {
-        if (!alreadyVisited.contains(windows[i])) {
-          frame = getEvaluationContext(windows[i], alreadyVisited);
-          if (frame != null) {
-            return frame;
-          }
+    for (IWorkbenchWindow workbenchWindow : PlatformUI.getWorkbench().getWorkbenchWindows()) {
+      if (!visitedWindows.contains(workbenchWindow)) {
+        frame = getStackFrameFor(workbenchWindow, visitedWindows);
+        if (frame != null) {
+          return frame;
         }
       }
-      return null;
     }
-    return frame;
+
+    // Nothing found
+    return null;
   }
 
-  private void removeContext(IWorkbenchPage page) {
-    if (pageToFrame != null) {
-      pageToFrame.remove(page);
-      if (pageToFrame.isEmpty()) {
-        System.setProperty(DEBUGGER_ACTIVE, Boolean.FALSE.toString());
-      }
-    }
-  }
-
-  private static StackFrame getContext(IWorkbenchPage page) {
-    if (instance != null && instance.pageToFrame != null) {
+  private static StackFrame getStackFrameFor(IWorkbenchPage page) {
+    if (instance != null) {
       return instance.pageToFrame.get(page);
     }
     return null;
   }
 
-  private void setContext(IWorkbenchPage page, StackFrame frame) {
-    if (pageToFrame == null) {
-      pageToFrame = new HashMap<IWorkbenchPage, StackFrame>();
+  private void removeStackFrame(IWorkbenchPage page) {
+    pageToFrame.remove(page);
+    if (pageToFrame.isEmpty()) {
+      // No more available frames
+      System.setProperty(DEBUGGER_ACTIVE, Boolean.FALSE.toString());
     }
+  }
+
+  private void putStackFrame(IWorkbenchPage page, StackFrame frame) {
     pageToFrame.put(page, frame);
     System.setProperty(DEBUGGER_ACTIVE, Boolean.TRUE.toString());
   }

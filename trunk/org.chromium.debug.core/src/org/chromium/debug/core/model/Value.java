@@ -4,52 +4,70 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler;
-import org.chromium.debug.core.tools.v8.model.mirror.ValueMirror;
+import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsDataType;
+import org.chromium.sdk.JsValue;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
+import org.eclipse.debug.core.model.IVariable;
 
 /**
- * Represents a Chromium V8 VM variable value.
+ * A generic (non-array) implementation of IValue using a JsValue instance.
  */
 public class Value extends DebugElementImpl implements IValue {
 
-  private static final Variable[] EMPTY_VARIABLES = new Variable[0];
+  private static final IVariable[] EMPTY_VARIABLES = new IVariable[0];
 
-  private ValueMirror valueState;
+  private final JsValue value;
 
-  private Variable[] variables;
+  private IVariable[] variables;
 
-  public Value(V8DebuggerToolHandler handler, ValueMirror valueState) {
-    super(handler);
-    this.valueState = valueState;
+  public static Value create(DebugTargetImpl debugTarget, JsValue value) {
+    if (JsDataType.TYPE_ARRAY == value.getReferenceType()) {
+      return new ArrayValue(debugTarget, (JsArray) value);
+    }
+    return new Value(debugTarget, value);
   }
 
-  public Value(V8DebuggerToolHandler handler, ValueMirror valueState,
-      Variable[] vars) {
-    super(handler);
-    this.valueState = valueState;
-    this.variables = vars;
+  Value(DebugTargetImpl debugTarget, JsValue value) {
+    super(debugTarget);
+    this.value = value;
   }
 
+  @Override
   public String getReferenceTypeName() throws DebugException {
-    return valueState.getType().jsonType;
+    return value.getReferenceType().toString();
   }
 
+  @Override
   public String getValueString() throws DebugException {
-    return valueState.toString();
+    return value.getValueString();
   }
 
-  public boolean isAllocated() throws DebugException {
-    return true;
+  @Override
+  public IVariable[] getVariables() throws DebugException {
+    if (variables == null) {
+      if (value.asObject() != null) {
+        variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties());
+      } else {
+        variables = EMPTY_VARIABLES;
+      }
+    }
+    return variables;
   }
 
-  public Variable[] getVariables() throws DebugException {
-    return hasVariables() ? variables : EMPTY_VARIABLES;
-  }
-
+  @Override
   public boolean hasVariables() throws DebugException {
-    return variables != null && variables.length > 0;
+    return value.asObject() != null;
+  }
+
+  @Override
+  public boolean isAllocated() throws DebugException {
+    return false;
+  }
+
+  public JsValue getJsValue() {
+    return value;
   }
 
 }

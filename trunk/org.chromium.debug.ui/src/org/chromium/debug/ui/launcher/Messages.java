@@ -13,8 +13,6 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.ui.launcher.messages"; //$NON-NLS-1$
 
-  public static String ChromiumRemoteTab_BreakOnStartLabel;
-
   public static String ChromiumRemoteTab_PortLabel;
 
   public static String ChromiumRemoteTab_ProjectNameLabel;

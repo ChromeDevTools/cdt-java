@@ -21,6 +21,8 @@ public class Messages extends NLS {
 
   public static String ChromiumTabSelectionDialog_UrlColumnName;
 
+  public static String DebugTargetImpl_BadResultWhileDisconnecting;
+
   public static String DebugTargetImpl_CannotStartMultipleDebuggers;
 
   public static String DebugTargetImpl_FailedToStartSocketConnection;

@@ -5,38 +5,42 @@
 package org.chromium.debug.ui.launcher;
 
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
-import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
 
 /**
  * Provides convenient access to the variables declared in the
  * org.eclipse.core.variables.valueVariables extension point.
  */
-public class PluginVariables {
+class PluginVariablesUtil {
+
+  /** The default server port variable id. */
   public static final String DEFAULT_PORT =
       ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_debug_port"; //$NON-NLS-1$
 
-  public static final String DEFAULT_BREAK_ON_STARTUP =
-      ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_break_on_startup"; //$NON-NLS-1$
-
+  /** The default project name variable id. */
   public static final String DEFAULT_PROJECT_NAME =
       ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_project_name"; //$NON-NLS-1$
 
   /**
-   * @return the variable value parsed as an integer.
+   * @param variableName to get the value for
+   * @return the variable value parsed as an integer
    * @throws NumberFormatException
-   *           if the value cannot be parsed as an integer.
+   *           if the value cannot be parsed as an integer
    */
-  public static final int getValueAsInt(String variableName) {
+  public static int getValueAsInt(String variableName) {
     return Integer.parseInt(getValue(variableName));
   }
 
   /**
-   * @return the value of the specified variable.
+   * @param variableName to get the value for
+   * @return the value of the specified variable
    */
-  public static final String getValue(String varName) {
-    IStringVariableManager varMgr =
-        VariablesPlugin.getDefault().getStringVariableManager();
-    return varMgr.getValueVariable(varName).getValue();
+  public static String getValue(String variableName) {
+    return VariablesPlugin.getDefault().getStringVariableManager()
+        .getValueVariable(variableName).getValue();
+  }
+
+  private PluginVariablesUtil() {
+    // not instantiable
   }
 }

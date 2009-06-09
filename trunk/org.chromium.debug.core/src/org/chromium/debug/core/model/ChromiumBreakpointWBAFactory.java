@@ -12,22 +12,23 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 
 /**
- * An IWorkbenchAdapter factory for JavascriptLineBreakpoints.
+ * An IWorkbenchAdapter factory for ChromiumLineBreakpoints.
  */
-public class JsBreakpointWorkbenchAdapterFactory
-    implements IAdapterFactory {
+public class ChromiumBreakpointWBAFactory implements IAdapterFactory {
+
+  protected static final Object[] EMPTY_CHILDREN = new Object[0];
 
   @SuppressWarnings("unchecked")
   @Override
   public Object getAdapter(Object adaptableObject, Class adapterType) {
     if (adapterType != IWorkbenchAdapter.class ||
-        !(adaptableObject instanceof JsLineBreakpoint)) {
+        !(adaptableObject instanceof ChromiumLineBreakpoint)) {
       return null;
     }
     return new IWorkbenchAdapter() {
 
       public Object[] getChildren(Object o) {
-        return null;
+        return EMPTY_CHILDREN;
       }
 
       public ImageDescriptor getImageDescriptor(Object object) {
@@ -35,7 +36,7 @@ public class JsBreakpointWorkbenchAdapterFactory
       }
 
       public String getLabel(Object o) {
-        JsLineBreakpoint bp = (JsLineBreakpoint) o;
+        ChromiumLineBreakpoint bp = (ChromiumLineBreakpoint) o;
         try {
           return bp.getMarker().getAttribute(IMarker.MESSAGE).toString();
         } catch (CoreException e) {

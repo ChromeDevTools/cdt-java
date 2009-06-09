@@ -13,8 +13,7 @@ import org.eclipse.debug.core.sourcelookup.ISourceLookupParticipant;
 public class SourceLookupDirector extends AbstractSourceLookupDirector {
 
   public void initializeParticipants() {
-    addParticipants(
-        new ISourceLookupParticipant[] { new SourceLookupParticipant() });
+    addParticipants(new ISourceLookupParticipant[] { new SourceLookupParticipant() });
   }
 
 }

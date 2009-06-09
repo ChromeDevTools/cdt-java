@@ -4,13 +4,10 @@
 
 package org.chromium.debug.core.model;
 
-import java.io.IOException;
-
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.tools.v8.StepAction;
-import org.chromium.debug.core.tools.v8.V8DebuggerToolHandler;
+import org.chromium.sdk.JsStackFrame;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -21,10 +18,9 @@ import org.eclipse.osgi.util.NLS;
 /**
  * Represents the only Chromium V8 VM thread.
  */
-public class JsThread extends DebugElementImpl
-    implements IThread, IAdaptable {
+public class JavascriptThread extends DebugElementImpl implements IThread, IAdaptable {
 
-  private static final IStackFrame[] EMPTY_FRAMES = new IStackFrame[0];
+  private static final StackFrame[] EMPTY_FRAMES = new StackFrame[0];
 
   /**
    * Breakpoints this thread is suspended at or <code>null</code> if none.
@@ -33,26 +29,48 @@ public class JsThread extends DebugElementImpl
 
   /**
    * Whether this thread is stepping. V8 does not provide information if the
-   * thread is actually stepping or it is running past the last statement.
+   * thread is actually stepping or it is running past the last "steppable"
+   * statement.
    */
   private boolean isStepping = false;
 
   /**
+   * Cached stack
+   */
+  private StackFrame[] stackFrames;
+
+  /**
    * Constructs a new thread for the given target
    *
-   * @param target
-   *          VM
+   * @param debugTarget this thread is created for
    */
-  public JsThread(V8DebuggerToolHandler handler) {
-    super(handler);
+  public JavascriptThread(DebugTargetImpl debugTarget) {
+    super(debugTarget);
   }
 
-  public IStackFrame[] getStackFrames() throws DebugException {
+  public StackFrame[] getStackFrames() throws DebugException {
     if (isSuspended()) {
-      return getHandler().getStackFrames();
+      ensureStackFrames();
+      return stackFrames;
     } else {
       return EMPTY_FRAMES;
     }
+  }
+
+  public void reset() {
+    this.stackFrames = null;
+  }
+
+  private void ensureStackFrames() {
+    this.stackFrames = wrapStackFrames(getDebugTarget().getDebugContext().getStackFrames());
+  }
+
+  private StackFrame[] wrapStackFrames(JsStackFrame[] jsFrames) {
+    StackFrame[] frames = new StackFrame[jsFrames.length];
+    for (int i = 0, size = frames.length; i < size; ++i) {
+      frames[i] = new StackFrame(getDebugTarget(), this, jsFrames[i]);
+    }
+    return frames;
   }
 
   public boolean hasStackFrames() throws DebugException {
@@ -72,11 +90,11 @@ public class JsThread extends DebugElementImpl
   }
 
   public String getName() throws DebugException {
-    String url = getHandler().getExecution().getUrlName();
-    return NLS.bind(Messages.JsThread_ThreadLabelFormat,
-        (isSuspended() ? Messages.JsThread_ThreadLabelSuspended
-            : Messages.JsThread_ThreadLabelRunning),
-        (url.length() > 0 ? (" : " + url) : "")); //$NON-NLS-1$ //$NON-NLS-2$
+    String url = getDebugTarget().getTargetTab().getUrl();
+    return NLS.bind(Messages.JsThread_ThreadLabelFormat, (isSuspended()
+        ? Messages.JsThread_ThreadLabelSuspended
+        : Messages.JsThread_ThreadLabelRunning), (url.length() > 0
+        ? (" : " + url) : "")); //$NON-NLS-1$ //$NON-NLS-2$
   }
 
   public IBreakpoint[] getBreakpoints() {
@@ -95,7 +113,7 @@ public class JsThread extends DebugElementImpl
   }
 
   public boolean canSuspend() {
-    return !isTerminated() && !isSuspended();
+    return false;
   }
 
   public boolean isSuspended() {
@@ -128,16 +146,11 @@ public class JsThread extends DebugElementImpl
   }
 
   private void step(StepAction stepAction, int detail) throws DebugException {
-    try {
-      setStepping(true);
-      getDebugTarget().fireResumeEvent(detail);
-      // The suspend event should be fired once the frames are ready
-      // (in BacktraceFrameProcessor).
-      getHandler().step(stepAction, null);
-    } catch (IOException e) {
-      throw newDebugException(
-          "Failed to perform Step: " + stepAction, e); //$NON-NLS-1$
-    }
+    setStepping(true);
+    getDebugTarget().fireResumeEvent(detail);
+    // The suspend event should be fired once the backtrace is ready
+    // (in BacktraceProcessor).
+    getDebugTarget().getDebugContext().continueVm(stepAction, 1, null);
   }
 
   public void stepInto() throws DebugException {
@@ -169,11 +182,6 @@ public class JsThread extends DebugElementImpl
    */
   protected void setStepping(boolean stepping) {
     isStepping = stepping;
-  }
-
-  private DebugException newDebugException(String message, Throwable t) {
-    return new DebugException(new Status(Status.ERROR,
-        ChromiumDebugPlugin.PLUGIN_ID, message, t));
   }
 
   @Override
