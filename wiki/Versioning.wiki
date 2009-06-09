@@ -1,0 +1,46 @@
+#summary Versioning.
+#labels Phase-Design
+
+= Introduction =
+
+As the !ChromeDevTools project evolves, there is a need to consistently keep track of each component version. Currently the components are:
+  * ChromeDevToolsProtocol
+  * ChromeDevToolsSdk (depends on the protocol)
+  * Eclipse Debugger Plugins (depends on the SDK)
+  * Eclipse Debugger Feature (includes the Plugins)
+
+As the physical components (all but the protocol) are OSGi bundles developed using the Eclipse IDE, they will use the [http://wiki.eclipse.org/index.php/Version_Numbering following] versioning scheme endorsed by the Eclipse developers.
+
+= !ChromeDevTools Protocol =
+
+The protocol version consists of only two segments:
+{{{
+major.minor
+}}}
+
+  * The "major" segment will change when the protocol is broken (e.g. the message format or existing command specifications are changed).
+  * The "minor" segment will change in all other cases (e.g. new commands are added or unimplemented features are implemented).
+
+= OSGi bundles =
+
+According to the referenced scheme, an OSGi bundle version identifier format is this:
+{{{
+major.minor.service.qualifier
+}}}
+
+An incrementing counter starting with "0" will be used as the "qualifier" segment.
+
+== !ChromeDevTools SDK ==
+  * The "major" segment will change when the SDK API is broken.
+  * The "minor" segment will change when there are major improvements (not bugfixes) to the underlying implementation.
+  * The "service" segment will change when there are bugfixes.
+  * The "qualifier" segment will change when there are changes that do not directly count towards a new release but are worth to be exposed in the development stream.
+
+== Eclipse Debugger Plugins ==
+  * The "major" segment will always be the same as that of the SDK version used.
+  * The "minor" segment will change when there are major user-facing improvements
+  * The "service" segment will change when there are bugfixes.
+  * The "qualifier" segment will change when there are changes that do not directly count towards a new release but are worth to be exposed in the development stream.
+
+== Eclipse Debugger Feature ==
+The feature versioning is consistent with these [http://wiki.eclipse.org/index.php/Version_Numbering#Versioning_features Feature Versioning Guidelines].
