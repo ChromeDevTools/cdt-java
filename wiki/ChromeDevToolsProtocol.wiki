@@ -1,0 +1,106 @@
+#summary Chrome Developer Tools Protocol
+
+= Introduction =
+
+In order to provide Chrome (or any other browser that supports this protocol) with the capability of remote debugging via TCP/IP sockets, the existing [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 Debugger Protocol] is not sufficient. It covers only Javascript debugging operations, and only within a single V8 VM. In reality, there can be 1+ separate V8 VMs inside a Chrome instance, residing in different renderer processes. We might want to also inspect/modify the DOM tree, which is not covered by Javascript operations. All this necessitates the exchange of additional information between a remote debugger and the Chrome instance being debugged. 
+
+The proposed protocol can be used as a transport for other debugging-related protocols, including the existing V8 Debugger Protocol.
+
+
+= Proposal =
+
+As long as there is only a single socket connection listening for remote debugger connections in Chrome, it should be possible to debug all browser tabs "simultaneously" over the same connection. Hence we need to pass a tab unique identifier (TUID) in every message transferred between a Chrome instance and a remote debugger. According to the existing Chrome process architecture, all UIDs of tabs running in a single renderer will map onto the same V8 VM which leads to some interesting consequences. Anyway, we shall use UIDs of tabs or other "Least Granular Independent Units of Debugging" (LGIUDs, UDs for short) in other !ChromeDevTools protocol-enabled applications) rather than V8 VMs (a single VM can be shared among several UDs) to enable access to the tabs context for possible visual feedback and such.
+
+Let us call UDs just "tabs" and UD IDs just "TUIDs" for simplicity. Let "0" (zero) be an invalid TUID, reserved for some protocol purposes.
+
+== Protocol Message Structure ==
+
+For the simplicity of parsing and higher human readability, the generic protocol message structure follows that of an HTTP request/response message:
+
+{{{
+Header1
+...
+HeaderN
+<empty line>
+Content
+}}}
+where _<empty line>_ represents a single pair of the \r\n (CR LF) characters.
+
+A single header format is:
+{{{
+<HeaderName>:<HeaderValue>CRLF
+}}}
+
+*Request/Response message headers*
+  * Content-Length
+  * Tool
+  * Destination
+(tools may add other headers that they will extract while processing messages.)
+
+_Content-Length_ (required) - the total length of the Сontent field in bytes.
+
+_Tool_ (required) - a string specifying the "subsystem" that should handle the message. It could be a V8 debugger, a DOM debugger, a Developer Tools Service (DTS), or something else.
+
+_Destination_ (optional) - a string that specifies the concrete browser object in whose context the message should be handled. For a V8 debugger it can be an identifier of a Chrome tab running Javascript code, and for DTS it can be absent because the content pertains to the global Chrome context rather than some specific object contained in the browser (e.g. the content can contain a request for the supported version of the Developer Tools protocol.)
+
+_Content_ (optional) - the value of this field is unique to each command as well as the request/response message. For example, it can contain the V8 Debugger Protocol request/response JSON messages or some plain-text command for a simpler tool. The content must be UTF8-encoded. If this field is absent, the _Content-Length_ value must be 0.
+
+== Establishing the Debugger Connection ==
+
+Remote debugger opens a socket whose destination is the server socket opened by Chrome.
+Remote debugger sends a handshake message consisting of 23 ASCII characters, {{{ ChromeDevToolsHandshake }}} followed by a CRLF pair.
+Chrome replies with the same 23-byte message, {{{ ChromeDevToolsHandshake }}} followed by a CRLF pair.
+
+Once the connection is established, the remote debugger might want to query the list of TUIDs. The *list_tabs* command can be used to this end.
+
+= Supported Tools =
+
+Currently, all the tools use JSON as the Content format.
+
+== !DevToolsService ==
+
+This tool is intended to provide a remote debugger with the information about the inspectable environment.
+
+*Common !DevToolsService JSON fields:*
+  * command (required) - the command to perform.
+  * result (required) - the operation result (in the response message).
+  * data (optional) - auxiliary information associated with the command (both in the request and response messages).
+
+*Available commands:*
+  * ping - keeps the connection alive under certain circumstances, or determines if the application is currently capable of handling request messages.
+  * version - determines the Chrome developer tools protocol version supported by the debugged application.
+  * list_tabs - lists all the debuggable tabs together with their respective URLs opened.
+
+*The request/response examples:*
+|| *Command* || *Request content* || *Response "data" field* ||
+|| ping || {"command":"ping"} || {{{ {"command":"ping", "result":0, "data":"ok"} }}} ||
+|| version || {"command":"version"} || {{{ {"command":"version", "result":0, "data":version_id} }}} ||
+|| list_tabs || {"command":"list_tabs"} || {{{ {"command":"version", "result":0, "data":[[tab1_id,"tab1_url"], [tab2_id,"tab2_url"]]} }}} ||
+
+
+== !V8Debugger ==
+
+This tool is intended for communication of a remote debugger with V8 debuggers running in the Chrome instance.
+
+*Common !V8Debugger JSON fields:*
+  * command (required) - the command to perform or an event type
+  * result (required in a response) - the operation result
+  * data (required or not, depends on the message type) - auxiliary information associated with the command (both in the request and response messages)
+
+*Available commands:*
+  * attach - requests attachment to a V8 debugger running in the tab specified in the Destination header.
+  * detach - requests detachment to a V8 debugger running in the tab specified in the Destination header.
+  * debugger_command - sends a V8 debugger protocol command to a V8 debugger running in the tab specified in the Destination header.
+  * evaluate_javascript - evaluates javascript in the context of a V8 VM associated with the tab specified in the Destination header (an auxiliary service command). No result is returned to the client (use debugger_command "evaluate" instead).
+  * navigated - an event that notifies the remote debugger of the fact that the tab URL has changed. The "result" value is always 0 (OK).
+  * closed - an event that notifies the remote debugger of the fact that the tab has been closed. The "result" value is always 0 (OK).
+
+*The request/response examples:*
+
+|| *Command* || *Request Data* || *Response Data* ||
+|| attach || <ul><li>Destination: tab_id</li><li>Content: {"command":"attach"}</li></ul> || <ul><li>Destination: tab_id</li><li>Content: {"command":"attach", "result":result_code}</li></ul> ||
+|| detach || <ul><li>Destination: tab_id</li><li>Content: {"command":"detach"}</li></ul> || <ul><li>Destination: tab_id</li><li>Content: {"command":"detach", "result":result_code}</li></ul> ||
+|| debugger_command || <ul><li>Destination: tab_id</li><li>Content: {"command":"debugger_command", "data":debugger_json}</li></ul> || <ul><li>Destination: tab_id</li><li>Content: {"command":"debugger_command", "result":result_code, "data":debugger_response_json}</li></ul> ||
+|| evaluate_javascript || <ul><li>Destination: tab_id</li><li>Content: {"command":"evaluate_javascript", "data":"some_javascript"}</li></ul> || none ||
+|| navigated || none (event) || <ul><li>Destination: tab_id</li><li>Content: {"command":"navigated", "result":0, "data":"new_url"}</li></ul> ||
+|| closed || none (event) || <ul><li>Destination: tab_id</li><li>Content: {"command":"closed", "result":0}</li></ul> ||
