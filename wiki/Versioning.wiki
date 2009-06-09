@@ -1,4 +1,4 @@
-#summary Versioning.
+#summary Versioning of the !ChromeDevTools components
 #labels Phase-Design
 
 = Introduction =
