@@ -19,9 +19,6 @@ import org.chromium.sdk.internal.ValueMirror.PropertyReference;
  */
 public class JsArrayImpl extends JsObjectImpl implements JsArray {
 
-  private static final SortedMap<Integer, JsVariableImpl> EMPTY_SORTED_MAP =
-      Collections.unmodifiableSortedMap(new TreeMap<Integer, JsVariableImpl>());
-
   /**
    * An indexed sparse array of elements. Keys are indices, values are elements.
    */
@@ -68,12 +65,13 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
 
   @Override
   public JsVariable get(int index) {
+    ensureElementsMap();
     return indexToElementMap.get(index);
   }
 
   @Override
   public SortedMap<Integer, ? extends JsVariable> toSparseArray() {
-    ensureProperties();
+    ensureElementsMap();
     return indexToElementMap;
   }
 
@@ -113,23 +111,6 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
   @Override
   public JsArrayImpl asArray() {
     return this;
-  }
-
-  @Override
-  protected void ensureProperties() {
-    try {
-      if (properties != null) {
-        return; // stop recursion
-      }
-      super.ensureProperties();
-      if (!failedResponse) {
-        ensureElementsMap();
-      }
-    } finally {
-      if (indexToElementMap == null) {
-        indexToElementMap = EMPTY_SORTED_MAP;
-      }
-    }
   }
 
   private static boolean isArrayElementProperty(String name) {
