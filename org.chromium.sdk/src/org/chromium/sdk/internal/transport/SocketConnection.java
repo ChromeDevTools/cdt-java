@@ -330,7 +330,7 @@ public class SocketConnection implements Connection {
 
   @Override
   public void close() {
-    if (!isAttached()) {
+    if (isAttached()) {
       detach(true);
     }
   }

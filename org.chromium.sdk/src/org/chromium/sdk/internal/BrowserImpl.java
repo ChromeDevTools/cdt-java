@@ -138,6 +138,9 @@ public class BrowserImpl implements Browser, NetListener {
 
   public void sessionTerminated(int tabId) {
     tabUidToTabImpl.remove(tabId);
+    if (tabUidToTabImpl.isEmpty() && getConnection().isConnected()) {
+      disconnect();
+    }
   }
 
   @Override
