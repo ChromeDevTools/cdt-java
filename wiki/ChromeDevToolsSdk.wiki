@@ -1,0 +1,4 @@
+#summary ChromeDevTools SDK
+#labels Phase-Design
+
+ChromeDevTools SDK is a library that enables developers to create ChromeDevToolsProtocol-aware applications (EclipseDebugger is a simplistic example of such an application.) The library exposes an API and its default implementation for interaction with the Chromium browser.
