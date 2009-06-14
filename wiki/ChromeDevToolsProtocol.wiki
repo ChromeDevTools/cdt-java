@@ -41,9 +41,9 @@ _Content-Length_ (required) - the total length of the Сontent field in bytes.
 
 _Tool_ (required) - a string specifying the "subsystem" that should handle the message. It could be a V8 debugger, a DOM debugger, a Developer Tools Service (DTS), or something else.
 
-_Destination_ (optional) - a string that specifies the concrete browser object in whose context the message should be handled. For a V8 debugger it can be an identifier of a Chrome tab running Javascript code, and for DTS it can be absent because the content pertains to the global Chrome context rather than some specific object contained in the browser (e.g. the content can contain a request for the supported version of the Developer Tools protocol.)
+_Destination_ (optional) - a string that specifies the concrete application-specific host object in whose context the message should be handled. For a V8 debugger it can be an identifier of a Chrome tab running Javascript code, and for DTS it can be absent because the content pertains to the global Chrome context rather than some specific object contained in the browser (e.g. the content can contain a request for the supported version of the Developer Tools protocol.)
 
-_Content_ (optional) - the value of this field is unique to each command as well as the request/response message. For example, it can contain the V8 Debugger Protocol request/response JSON messages or some plain-text command for a simpler tool. The content must be UTF8-encoded. If this field is absent, the _Content-Length_ value must be 0.
+_Content_ (optional) - the value of this field is unique to each command as well as the request/response message. For example, it can contain the V8 Debugger Protocol request/response JSON messages or some plain-text command for a simpler tool. The content must use the UTF8 charset. If this field is absent, the _Content-Length_ value must be 0.
 
 == Establishing the Debugger Connection ==
 
@@ -62,14 +62,18 @@ Currently, all the tools use JSON as the Content format.
 This tool is intended to provide a remote debugger with the information about the inspectable environment.
 
 *Common !DevToolsService JSON fields:*
-  * command (required) - the command to perform.
-  * result (required) - the operation result (in the response message).
-  * data (optional) - auxiliary information associated with the command (both in the request and response messages).
+  * command (required) - the command to perform {string}.
+  * result (required) - the operation result (in the response message) {integer}.
+  * data (optional) - auxiliary information associated with the command (both in the request and response messages) {string}.
 
 *Available commands:*
   * ping - keeps the connection alive under certain circumstances, or determines if the application is currently capable of handling request messages.
   * version - determines the Chrome developer tools protocol version supported by the debugged application.
   * list_tabs - lists all the debuggable tabs together with their respective URLs opened.
+
+The following *result* codes are possible:
+  * OK (0) - the operation completed successfully.
+  * UNKNOWN_COMMAND (1) - the specified command is not found in the *Available commands* list.
 
 *The request/response examples:*
 || *Command* || *Request content* || *Response "data" field* ||
@@ -80,12 +84,12 @@ This tool is intended to provide a remote debugger with the information about th
 
 == !V8Debugger ==
 
-This tool is intended for communication of a remote debugger with V8 debuggers running in the Chrome instance.
+This tool is intended for communication of a remote debugger with V8 debuggers running inside a Chrome instance.
 
 *Common !V8Debugger JSON fields:*
-  * command (required) - the command to perform or an event type
-  * result (required in a response) - the operation result
-  * data (required or not, depends on the message type) - auxiliary information associated with the command (both in the request and response messages)
+  * command (required) - the command to perform or an event type {string}.
+  * result (required in a response) - the operation result {integer}.
+  * data (required or not, depends on the message type) - auxiliary information associated with the command (both in the request and response messages) {string}.
 
 *Available commands:*
   * attach - requests attachment to a V8 debugger running in the tab specified in the Destination header.
@@ -94,6 +98,13 @@ This tool is intended for communication of a remote debugger with V8 debuggers r
   * evaluate_javascript - evaluates javascript in the context of a V8 VM associated with the tab specified in the Destination header (an auxiliary service command). No result is returned to the client (use debugger_command "evaluate" instead).
   * navigated - an event that notifies the remote debugger of the fact that the tab URL has changed. The "result" value is always 0 (OK).
   * closed - an event that notifies the remote debugger of the fact that the tab has been closed. The "result" value is always 0 (OK).
+
+The following *result* codes are possible:
+  * OK (0) - the operation completed successfully (it is a tool-level result code, not a command-level one. For example, the result may be 0 even though the underlying debugger_command request failed. In this case OK means that a valid response has been received from the V8 debugger.)
+  * ILLEGAL_TAB_STATE (1) - the tab specified in the "Destination" header is in an inappropriate state (i.e. it is attached for an "attach" command or not attached for a "detach" command.)
+  * UNKNOWN_TAB (2) - the tab specified in the "Destination" header does not exist (it may have been reported in the "list_tabs" response but closed since then.)
+  * DEBUGGER_ERROR (3) - a generic error occurred while performing the specified operation.
+  * UNKNOWN_COMMAND (4) - the specified command is not found in the *Available commands* list.
 
 *The request/response examples:*
 
