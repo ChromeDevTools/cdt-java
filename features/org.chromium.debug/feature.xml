@@ -7,8 +7,7 @@
       plugin="org.chromium.debug">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/EclipseDebugger">
-      A remote Eclipse debugger for Javasacript developers using the
-Chromium browser
+      %description
    </description>
 
    <copyright>
@@ -18,10 +17,6 @@ Chromium browser
    <license url="%licenseUrl">
       %licenseAgreement
    </license>
-
-   <includes
-         id="org.chromium.debug.source"
-         version="0.0.0"/>
 
    <requires>
       <import feature="org.chromium.sdk" version="0.1.0" match="compatible"/>

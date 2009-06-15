@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="org.chromium.sdk"
+      id="org.chromium.source"
       label="%featureName"
       version="0.1.0.qualifier"
       provider-name="%providerName">
 
-   <description url="http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk">
-      %description
+   <description>
+     %description
    </description>
 
    <copyright>
@@ -17,11 +17,12 @@
       %licenseAgreement
    </license>
 
-   <plugin
-         id="org.chromium.sdk"
-         download-size="0"
-         install-size="0"
-         version="0.1.0.qualifier"
-         unpack="false"/>
+   <includes
+      id="org.chromium.sdk.source"
+      version="0.0.0"/>
+
+   <includes
+      id="org.chromium.debug.source"
+      version="0.0.0"/>
 
 </feature>
