@@ -11,7 +11,7 @@ Since the physical components are OSGi bundles developed using the Eclipse IDE, 
 
 == ChromeDevToolsProtocol ==
 
-The protocol version consists of only two segments:
+The protocol version consists of two segments:
 {{{
 major.minor
 }}}
@@ -21,7 +21,7 @@ major.minor
 
 == OSGi bundles ==
 
-According to the referenced scheme, an OSGi bundle version identifier format is this:
+According to the referenced scheme, an OSGi bundle version identifier format is as following:
 {{{
 major.minor.service.qualifier
 }}}
