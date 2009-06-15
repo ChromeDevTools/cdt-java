@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="org.chromium.sdk"
+      label="%featureName"
+      version="0.1.0.qualifier"
+      provider-name="%providerName">
+
+   <description url="http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk">
+      ChromeDevTools SDK
+   </description>
+
+   <copyright>
+      Copyright (c) 2009 The Chromium Authors. All rights reserved.
+   </copyright>
+
+   <license url="%licenseUrl">
+      %licenseAgreement
+   </license>
+
+   <includes
+         id="org.chromium.sdk.source"
+         version="0.0.0"/>
+
+   <plugin
+         id="org.chromium.sdk"
+         download-size="0"
+         install-size="0"
+         version="0.1.0.qualifier"
+         unpack="false"/>
+
+</feature>
