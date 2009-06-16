@@ -25,8 +25,7 @@ public class JsDebugTextHover implements ITextHover {
   @Override
   public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
     IDocument doc = textViewer.getDocument();
-    int offset = hoverRegion.getOffset();
-    String expression = JavascriptUtil.extractSurroundingJsIdentifier(doc, offset);
+    String expression = JavascriptUtil.extractSurroundingJsIdentifier(doc, hoverRegion.getOffset());
     if (expression == null) {
       return null;
     }
@@ -59,7 +58,7 @@ public class JsDebugTextHover implements ITextHover {
   @Override
   public IRegion getHoverRegion(ITextViewer textViewer, int offset) {
     IDocument doc = textViewer.getDocument();
-    return JavascriptUtil.getSurroundingIdentifierRegion(doc, offset);
+    return JavascriptUtil.getSurroundingIdentifierRegion(doc, offset, false);
   }
 
 }

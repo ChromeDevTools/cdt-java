@@ -18,39 +18,47 @@ import org.eclipse.jface.text.Region;
 public class JavascriptUtil {
 
   private static final String OPEN_BRACKET = "["; //$NON-NLS-1$
+
   private static final String CLOSE_BRACKET = "]"; //$NON-NLS-1$
 
-  public static final String IDENTIFIER_START_CHARS_REGEX = "\\p{L}_$"; //$NON-NLS-1$
+  private static final String ID_CHARS_REGEX = "\\p{L}_$\\d"; //$NON-NLS-1$
 
-  public static final String INSPECTED_CHARS_REGEX =
-      IDENTIFIER_START_CHARS_REGEX + "\\d"; //$NON-NLS-1$
+  private static final String QUALIFIED_ID_CHARS_REGEX = ID_CHARS_REGEX + "\\.\\[\\]"; //$NON-NLS-1$
 
-  /** Contains chars acceptable as start of Javascript identifier to inspect. */
-  public static final Pattern IDENTIFIER_START_PATTERN =
-      Pattern.compile(OPEN_BRACKET + IDENTIFIER_START_CHARS_REGEX + CLOSE_BRACKET);
+  /**
+   * Contains chars acceptable as part of expression to inspect to the right of
+   * the cursor.
+   */
+  public static final Pattern ID_PATTERN =
+      Pattern.compile(OPEN_BRACKET + ID_CHARS_REGEX + CLOSE_BRACKET);
 
-  /** Contains chars acceptable as part of expression to inspect. */
-  public static final Pattern INSPECTED_PATTERN =
-      Pattern.compile(OPEN_BRACKET + INSPECTED_CHARS_REGEX + CLOSE_BRACKET);
+  /**
+   * Contains chars acceptable as part of expression to inspect to the left of
+   * the cursor.
+   */
+  public static final Pattern QUALIFIED_ID_PATTERN =
+      Pattern.compile(OPEN_BRACKET + QUALIFIED_ID_CHARS_REGEX + CLOSE_BRACKET);
 
-  public static boolean isJsIdentifierCharacter(char ch) {
-    return INSPECTED_PATTERN.matcher(String.valueOf(ch)).find();
+  public static boolean isJsIdentifierCharacter(char ch, boolean qualified) {
+    return qualified
+        ? QUALIFIED_ID_PATTERN.matcher(String.valueOf(ch)).find()
+        : ID_PATTERN.matcher(String.valueOf(ch)).find();
   }
 
   /**
-   * Returns a Javascript identifier surrounding the "offset" character in the
-   * given document.
+   * Returns a Javascript qualified identifier surrounding the character at
+   * {@code offset} position in the given {@code document}.
    *
-   * @param doc the document to extract an identifier from
+   * @param document to extract an identifier from
    * @param offset of the pivot character (before, in, or after the identifier)
    * @return Javascript identifier, or null if none found
    */
-  public static String extractSurroundingJsIdentifier(IDocument doc, int offset) {
-    IRegion region = getSurroundingIdentifierRegion(doc, offset);
+  public static String extractSurroundingJsIdentifier(IDocument document, int offset) {
+    IRegion region = getSurroundingIdentifierRegion(document, offset, true);
     try {
       return region == null
           ? null
-          : doc.get(region.getOffset(), region.getLength());
+          : document.get(region.getOffset(), region.getLength());
     } catch (BadLocationException e) {
       ChromiumDebugPlugin.log(e);
       return null;
@@ -58,18 +66,27 @@ public class JavascriptUtil {
   }
 
   /**
+   * Returns a region enclosing a Javascript identifier found in {@code doc} at
+   * the {@code offset} position. If {@code qualified == true}, all leading
+   * qualifying names will be included into the region, otherwise the member
+   * operator (".") will be considered as an identifier terminator.
+   *
    * @param doc the document to extract an identifier region from
    * @param offset of the pivot character (before, in, or after the identifier)
+   * @param qualified whether to read qualified identifiers rather than simple
+   *        ones
    * @return an IRegion corresponding to the Javascript identifier overlapping
    *         offset, or null if none
    */
-  public static IRegion getSurroundingIdentifierRegion(IDocument doc, int offset) {
+  public static IRegion getSurroundingIdentifierRegion(
+      IDocument doc, int offset, boolean qualified) {
     if (doc == null) {
       return null;
     }
     try {
+      int squareBrackets = 0;
       char ch = doc.getChar(offset);
-      if (!isJsIdentifierCharacter(ch) && offset > 0) {
+      if (!isJsIdentifierCharacter(ch, qualified) && offset > 0) {
         --offset; // cursor is AFTER the identifier
       }
       int start = offset;
@@ -77,7 +94,15 @@ public class JavascriptUtil {
       int goodStart = offset;
       while (start >= 0) {
         ch = doc.getChar(start);
-        if (!isJsIdentifierCharacter(ch)) {
+        if (!isJsIdentifierCharacter(ch, qualified)) {
+          break;
+        }
+        if (ch == '[') {
+          squareBrackets--;
+        } else if (ch == ']') {
+          squareBrackets++;
+        }
+        if (squareBrackets < 0) {
           break;
         }
         goodStart = start;
@@ -88,7 +113,10 @@ public class JavascriptUtil {
       int length = doc.getLength();
       while (end < length) {
         try {
-          if (!isJsIdentifierCharacter(doc.getChar(end))) {
+          ch = doc.getChar(end);
+          if (!isJsIdentifierCharacter(ch, false)) {
+            // stop at the current name qualifier
+            // rather than scan through the entire qualified id
             break;
           }
           ++end;
