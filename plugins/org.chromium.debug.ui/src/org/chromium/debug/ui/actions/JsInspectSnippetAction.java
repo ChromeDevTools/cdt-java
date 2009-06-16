@@ -200,7 +200,7 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
   }
 
   private boolean textHasContent(String text) {
-    return text != null && JavascriptUtil.INSPECTED_PATTERN.matcher(text).find();
+    return text != null && JavascriptUtil.ID_PATTERN.matcher(text).find();
   }
 
   @Override

@@ -408,7 +408,13 @@ public class DebugContextImpl implements DebugContext {
         String name = entry.getValue();
         // name is null for objects that should not be put into handleManager
         if (name != null) {
-          values.add(createValueMirror(object, name));
+          ValueMirror mirror = createValueMirror(object, name);
+          if (THIS_NAME.equals(name)) {
+            // "this" should go first
+            values.add(0, mirror);
+          } else {
+            values.add(mirror);
+          }
         } else {
           scriptManager.addScript(object); // might be a script object
         }
