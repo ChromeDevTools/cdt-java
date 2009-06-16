@@ -3,7 +3,7 @@
 
 = Background =
 
-As the ChromeDevTools project evolves, it is necessary to consistently keep track of each component version.
+As the !ChromeDevTools project evolves, it is necessary to consistently keep track of each component version.
 
 Since the physical components are OSGi bundles developed using the Eclipse IDE, they will use the [http://wiki.eclipse.org/index.php/Version_Numbering following] versioning scheme endorsed by the Eclipse developers.
 
