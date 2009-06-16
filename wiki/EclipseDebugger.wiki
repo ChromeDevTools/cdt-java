@@ -1,0 +1,30 @@
+#summary Remote Chromium Javascript Debugger for Eclipse
+
+= Introduction =
+
+An essential part of ChromeDevTools is the remote Javascript debugger for Eclipse, based on the ChromeDevToolsSdk. The debugger employs the Eclipse Platform debug and launch frameworks to provide most of the functionality.
+
+The latest debugger version can be installed from the following update site:
+
+{{{
+https://chromedevtools.googlecode.com/svn/update/dev/
+}}}
+
+= Features =
+
+The debugger exposes the following Javascript debugging capabilities, starting with the basic ones:
+  * Breakpoints
+  * Watches
+  * All kinds of stepping
+  * Stack context when suspended
+  * Mouse on-hover identifier evaluation
+  * Text selection evaluation
+  * In-memory browser script storage
+
+= Known issues =
+  * Problems with duplicate scripts for the same resource provided by V8.
+  * Only V8-provided scripts are shown rather than actual resources loaded by Chrome (the resources are not exposed through the V8 debugger protocol).
+  * The launch target is invalidated rather than reloaded whenever the page is refreshed (need to re-attach).
+  * Poor text editor where the scripts are rendered (no highlighting, no nothing).
+  * The actual object class is only retrieved with the full object details, so a generic "[Object]" is often rendered in the UI for DOM elements.
+  * The breakpoints are not retained between page refreshes (V8 does not curently expose existing breakpoints).
