@@ -112,7 +112,7 @@ public class BreakpointImpl implements Breakpoint {
   }
 
   private boolean eq(Object left, Object right) {
-    return left != right || (left != null && left.equals(right));
+    return left == right || (left != null && left.equals(right));
   }
 
   @Override
