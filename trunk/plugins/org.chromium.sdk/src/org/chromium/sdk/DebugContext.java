@@ -19,8 +19,22 @@ public interface DebugContext {
   public enum StepAction {
     IN,
     NEXT,
-    OUT,
-    ;
+    OUT, ;
+  }
+
+  /**
+   * The suspension state.
+   */
+  public enum State {
+    /**
+     * A normal suspension (a step end or a breakpoint).
+     */
+    NORMAL,
+
+    /**
+     * A suspension due to an exception.
+     */
+    EXCEPTION, ;
   }
 
   /**
@@ -42,14 +56,26 @@ public interface DebugContext {
   }
 
   /**
+   * @return the Javascript VM suspension state
+   */
+  State getState();
+
+  /**
+   * @return the current exception state, or {@code null} if current state is
+   *         not {@code EXCEPTION}
+   * @see #getState()
+   */
+  ExceptionData getExceptionData();
+
+  /**
    * @return current set of stack frames associated with their scripts
    */
   JsStackFrame[] getStackFrames();
 
   /**
    * @return a set of the breakpoints hit on VM suspension with which this
-   *         context is associated. An empty collection if the suspension
-   *         was not related to hitting breakpoints (e.g. a step end)
+   *         context is associated. An empty collection if the suspension was
+   *         not related to hitting breakpoints (e.g. a step end)
    */
   Collection<Breakpoint> getBreakpointsHit();
 

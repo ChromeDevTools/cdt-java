@@ -13,14 +13,13 @@ import java.util.Map;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.DebugContext.State;
+import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -46,15 +45,18 @@ public class BreakpointProcessor extends V8ResponseCallback {
     if (V8MessageType.EVENT == type) {
       String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
+        getDebugContext().setState(State.NORMAL);
         onBreakpointsHit(response);
-        V8DebuggerToolHandler handler = getDebugContext().getV8Handler();
-        handler.sendV8Command(DebuggerMessageFactory.backtrace(null, null, true), null);
-        // Clear the scripts cache
-        getDebugContext().getScriptManager().reset();
-        handler.sendV8Command(
-            DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
-            null);
+      } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
+        getDebugContext().setState(State.NORMAL);
+        getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
+        getDebugContext().setException(response);
       }
+      getDebugContext().getV8Handler().sendV8Command(
+          DebuggerMessageFactory.backtrace(null, null, true),
+          null);
+      // Clear the scripts cache
+      getDebugContext().reloadAllScripts(null);
     }
   }
 
@@ -107,7 +109,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
                 }
               }
             });
-    evaluateJavascript();
+    getDebugContext().evaluateJavascript();
   }
 
   public void clearBreakpoint(
@@ -137,7 +139,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
                 }
               }
             });
-    evaluateJavascript();
+    getDebugContext().evaluateJavascript();
   }
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
@@ -160,11 +162,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
                 }
               }
             });
-    evaluateJavascript();
-  }
-
-  private void evaluateJavascript() {
-    getDebugContext().getV8Handler().sendEvaluateJavascript("javascript:void(0);");
+    getDebugContext().evaluateJavascript();
   }
 
   private static Integer toNullableInteger(int value) {

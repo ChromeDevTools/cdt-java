@@ -16,13 +16,16 @@ import java.util.regex.Pattern;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsDataType;
+import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -30,6 +33,11 @@ import org.json.simple.JSONObject;
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
 public class DebugContextImpl implements DebugContext {
+
+  /**
+   * A no-op javascript to evaluate.
+   */
+  private static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
@@ -39,8 +47,11 @@ public class DebugContextImpl implements DebugContext {
 
   private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
 
-  /** The name of the "this" object to report in variables. */
+  /** The name of the "this" object to report as a variable name. */
   private static final String THIS_NAME = "this";
+
+  /** The name of the "exception" object to report as a variable name. */
+  private static final String EXCEPTION_NAME = "exception";
 
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
@@ -48,7 +59,10 @@ public class DebugContextImpl implements DebugContext {
   /** The handle manager for the associated tab. */
   private final HandleManager handleManager;
 
-  /** The V8 debugger tool handler for the associated tab (used for sending messages). */
+  /**
+   * The V8 debugger tool handler for the associated tab (used for sending
+   * messages).
+   */
   private final V8DebuggerToolHandler handler;
 
   /** The parent BrowserImpl instance. */
@@ -62,6 +76,12 @@ public class DebugContextImpl implements DebugContext {
 
   /** The breakpoints hit before suspending. */
   private volatile Collection<Breakpoint> breakpointsHit;
+
+  /** The suspension state. */
+  private State state;
+
+  /** The Javascript exception state. */
+  private ExceptionData exceptionData;
 
   public DebugContextImpl(BrowserTabImpl browserTabImpl) {
     this.scriptManager = new ScriptManager();
@@ -86,7 +106,6 @@ public class DebugContextImpl implements DebugContext {
    * @param response the "backtrace" V8 reply
    */
   public void setFrames(JSONObject response) {
-    this.handleManager.reset();
     JSONObject body = JsonUtil.getBody(response);
     JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
     int frameCnt = jsonFrames.size();
@@ -119,12 +138,45 @@ public class DebugContextImpl implements DebugContext {
       }
       Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
 
-
       ValueMirror[] locals = computeLocals(frameObject);
       JSONObject func = handleManager.getHandle(funcRef);
-      frameMirrors[index] = new FrameMirror(
-          url, currentLine, scriptRef, getFunctionName(func), locals);
+      Long scriptId = -1L;
+      if (scriptRef != null) {
+        scriptId = JsonUtil.getAsLong(handleManager.getHandle(scriptRef), V8Protocol.ID);
+      }
+      frameMirrors[index] =
+          new FrameMirror(url, currentLine, scriptId, getFunctionName(func), locals);
     }
+  }
+
+  /**
+   * Remembers the current exception state and requests a backtrace in a
+   * non-blocking way.
+   *
+   * @param response the "exception" event V8 JSON message
+   */
+  public void setException(JSONObject response) {
+    setState(State.EXCEPTION);
+    JSONObject body = JsonUtil.getBody(response);
+    this.frameMirrors = new FrameMirror[1];
+    this.stackFramesCached = null;
+
+    JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
+    JSONObject exception = JsonUtil.getAsJSON(body, V8Protocol.EXCEPTION);
+    Map<Long, JSONObject> refHandleMap = V8ProtocolUtil.getRefHandleMap(refs);
+    V8ProtocolUtil.putHandle(refHandleMap, exception);
+    handleManager.putAll(refHandleMap);
+
+    // source column is not exposed ("sourceColumn" in "body")
+    String sourceText = JsonUtil.getAsString(body, V8Protocol.BODY_FRAME_SRCLINE);
+
+    this.exceptionData =
+        new ExceptionDataImpl(this,
+            createValueMirror(exception, EXCEPTION_NAME),
+            JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
+            sourceText,
+            JsonUtil.getAsString(exception,
+            V8Protocol.REF_TEXT));
   }
 
   /**
@@ -212,14 +264,19 @@ public class DebugContextImpl implements DebugContext {
   public void hookupScriptToFrame(int frameIndex) {
     FrameMirror frame = getFrame(frameIndex);
     if (frame != null && frame.getScript() == null) {
-      Script script = getScriptManager().findById(
-          ScriptImpl.getScriptId(handleManager, frame.getScriptRef()));
+      Script script = getScriptManager().findById(frame.getScriptId());
       if (script != null) {
         frame.setScript(script);
       }
     }
   }
 
+  @Override
+  public State getState() {
+    return state;
+  }
+
+  @Override
   public JsStackFrameImpl[] getStackFrames() {
     if (stackFramesCached == null) {
       int frameCount = getFrameCount();
@@ -232,24 +289,25 @@ public class DebugContextImpl implements DebugContext {
     return stackFramesCached;
   }
 
+  @Override
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
     DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
     // Use non-null commandCallback only if callback is not null
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null
         : new BrowserTabImpl.V8HandlerCallback() {
-            public void messageReceived(JSONObject response) {
-              if (JsonUtil.isSuccessful(response)) {
-                callback.success();
-              } else {
-                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-              }
+          public void messageReceived(JSONObject response) {
+            if (JsonUtil.isSuccessful(response)) {
+              callback.success();
+            } else {
+              callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
             }
+          }
 
-            public void failure(String message) {
-              callback.failure(message);
-            }
-          };
+          public void failure(String message) {
+            callback.failure(message);
+          }
+        };
     sendMessage(false, message, commandCallback);
   }
 
@@ -258,6 +316,11 @@ public class DebugContextImpl implements DebugContext {
     return breakpointsHit != null
         ? breakpointsHit
         : Collections.<Breakpoint> emptySet();
+  }
+
+  @Override
+  public ExceptionData getExceptionData() {
+    return exceptionData;
   }
 
   private Exception sendMessage(boolean isSync, DebuggerMessage message,
@@ -295,8 +358,40 @@ public class DebugContextImpl implements DebugContext {
   }
 
   /**
-   * Gets all resolved locals for the stack frame, caches scripts and objects in the
-   * scriptManager and handleManager.
+   * Clears the scripts cache and reloads all scripts from the remote.
+   *
+   * @param callback to invoke when the scripts are ready
+   */
+  public void reloadAllScripts(V8HandlerCallback callback) {
+    getScriptManager().reset();
+    getV8Handler().sendV8Command(
+        DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true), callback);
+    evaluateJavascript();
+  }
+
+  /**
+   * Evaluates a javascript snippet to pump the debugger command queue.
+   */
+  public void evaluateJavascript() {
+    getV8Handler().sendEvaluateJavascript(JAVASCRIPT_VOID);
+  }
+
+  /**
+   * Sets the current suspension state and performs suspension cleanup.
+   *
+   * @param state for the current suspension
+   */
+  public void setState(State state) {
+    this.state = state;
+    if (state != State.EXCEPTION) {
+      exceptionData = null;
+    }
+    this.handleManager.reset();
+  }
+
+  /**
+   * Gets all resolved locals for the stack frame, caches scripts and objects in
+   * the scriptManager and handleManager.
    *
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
@@ -376,8 +471,9 @@ public class DebugContextImpl implements DebugContext {
     }
 
     if (!refToName.isEmpty()) {
-      handler.sendV8CommandBlocking(
-          DebuggerMessageFactory.lookup(new ArrayList<Long>(refToName.keySet())), true,
+      handler.sendV8CommandBlocking(DebuggerMessageFactory.lookup(
+          new ArrayList<Long>(refToName.keySet())),
+          true,
           new BrowserTabImpl.V8HandlerCallback() {
 
             @Override
@@ -447,5 +543,4 @@ public class DebugContextImpl implements DebugContext {
     // Chrome can return properties like ".arguments". They should be ignored.
     return propertyName.startsWith(".");
   }
-
 }

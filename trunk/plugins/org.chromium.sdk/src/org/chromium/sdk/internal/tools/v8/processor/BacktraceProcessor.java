@@ -4,22 +4,25 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.DebugContext.State;
 import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.ScriptImpl;
 import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
 
 /**
@@ -33,11 +36,15 @@ public class BacktraceProcessor extends V8ResponseCallback {
 
   @Override
   public void messageReceived(final JSONObject response) {
-    String commandString = JsonUtil.getAsString(response, V8Protocol.KEY_COMMAND);
+    V8MessageType type = V8MessageType.forString(
+        JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
+    String commandString = JsonUtil.getAsString(response, V8MessageType.RESPONSE == type
+        ? V8Protocol.KEY_COMMAND
+        : V8Protocol.KEY_EVENT);
     DebuggerCommand command = DebuggerCommand.forString(commandString);
 
     switch (command) {
-      case BACKTRACE:
+      case BACKTRACE: {
         Thread t = new Thread(new Runnable() {
           @Override
           public void run() {
@@ -48,6 +55,20 @@ public class BacktraceProcessor extends V8ResponseCallback {
         t.setDaemon(true);
         t.start();
         break;
+      }
+      case EXCEPTION: {
+        Thread t = new Thread(new Runnable() {
+          @Override
+          public void run() {
+            getDebugContext().setState(State.NORMAL);
+            getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
+            getDebugContext().setException(response);
+          }
+        });
+        t.setDaemon(true);
+        t.start();
+        break;
+      }
     }
   }
 
@@ -59,8 +80,7 @@ public class BacktraceProcessor extends V8ResponseCallback {
 
     for (int i = 0; i < framesCnt; i++) {
       FrameMirror f = debugContext.getFrame(i);
-      Script script = debugContext.getScriptManager().findById(
-          ScriptImpl.getScriptId(getDebugContext().getHandleManager(), f.getScriptRef()));
+      Script script = debugContext.getScriptManager().findById(f.getScriptId());
 
       if (script != null && !script.hasSource()) {
         frameToScriptWithoutSources.put(i, script);

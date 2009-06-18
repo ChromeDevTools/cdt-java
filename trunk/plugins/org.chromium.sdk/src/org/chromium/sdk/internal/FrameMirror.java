@@ -32,20 +32,20 @@ public class FrameMirror {
   private final ValueMirror[] locals;
 
   /**
-   * The associated script ref value.
+   * The associated script id value.
    */
-  private final long scriptRef;
+  private final long scriptId;
 
   /**
    * A script associated with the frame.
    */
   private Script script;
 
-  public FrameMirror(String scriptName, int line, long scriptRef,
+  public FrameMirror(String scriptName, int line, long scriptId,
       String frameFunction, ValueMirror[] locals) {
     this.scriptName = scriptName;
     this.lineNumber = line;
-    this.scriptRef = scriptRef;
+    this.scriptId = scriptId;
     this.locals = locals;
     this.frameFunction = frameFunction;
   }
@@ -54,8 +54,8 @@ public class FrameMirror {
     return scriptName;
   }
 
-  public long getScriptRef() {
-    return scriptRef;
+  public long getScriptId() {
+    return scriptId;
   }
 
   /**

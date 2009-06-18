@@ -9,8 +9,6 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler.AttachmentFailureException;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONObject;
 
 /**
@@ -108,8 +106,7 @@ public class BrowserTabImpl implements BrowserTab {
 
   @Override
   public void getScripts(final ScriptsCallback callback) {
-    context.getV8Handler().sendV8Command(
-        DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
+    context.reloadAllScripts(
         new V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (callback != null) {
@@ -127,7 +124,6 @@ public class BrowserTabImpl implements BrowserTab {
             }
           }
         });
-    context.getV8Handler().sendEvaluateJavascript("javascript:void(0);");
   }
 
   @Override

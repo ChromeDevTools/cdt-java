@@ -130,10 +130,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
     commandToHandlerMap.put(DebuggerCommand.SETBREAKPOINT, bpp);
     commandToHandlerMap.put(DebuggerCommand.CLEARBREAKPOINT, bpp);
     commandToHandlerMap.put(DebuggerCommand.BREAK /* event */, bpp);
+    commandToHandlerMap.put(DebuggerCommand.EXCEPTION /* event */, bpp);
 
     BacktraceProcessor bfp = new BacktraceProcessor(context);
     commandToHandlerMap.put(DebuggerCommand.BACKTRACE, bfp);
-    commandToHandlerMap.put(DebuggerCommand.FRAME, bfp);
 
     commandToHandlerMap.put(DebuggerCommand.CONTINUE, new ContinueProcessor(context));
   }

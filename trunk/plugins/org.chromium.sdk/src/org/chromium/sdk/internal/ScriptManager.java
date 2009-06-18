@@ -115,23 +115,6 @@ public class ScriptManager {
   }
 
   /**
-   * Finds a script given the original document URL and the line number in the
-   * document.
-   * @param name of the script (URL)
-   * @param line in the original script
-   *
-   * @return the script, or null if no such script found
-   */
-//  public Script find(String name, int line) {
-//    for (Script script : getScripts(name, false)) {
-//      if (line >= script.getLineOffset() && line < script.getEndLine()) {
-//        return script;
-//      }
-//    }
-//    return null;
-//  }
-
-  /**
    * Determines whether all scripts added into this manager have associated
    * sources.
    *

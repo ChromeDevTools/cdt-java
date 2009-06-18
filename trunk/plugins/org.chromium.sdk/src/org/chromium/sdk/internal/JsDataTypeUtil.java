@@ -37,8 +37,10 @@ public class JsDataTypeUtil {
     put("boolean", JsDataType.TYPE_BOOLEAN);
     put("undefined", JsDataType.TYPE_UNDEFINED);
     put("null", JsDataType.TYPE_NULL);
+    put("error", JsDataType.TYPE_ERROR);
     put("array", JsDataType.TYPE_ARRAY);
     put("date", JsDataType.TYPE_DATE);
+    put("regexp", JsDataType.TYPE_REGEXP);
   }
 
   /**

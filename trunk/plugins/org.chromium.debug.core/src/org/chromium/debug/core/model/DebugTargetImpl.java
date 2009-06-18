@@ -14,9 +14,12 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.JsStackFrame;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.BrowserTab.ScriptsCallback;
+import org.chromium.sdk.DebugContext.State;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -364,6 +367,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         // Class cast is ensured by the supportsBreakpoint implementation
         final ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
         Script script = getResourceManager().getScript(breakpoint.getMarker().getResource());
+        if (script == null) {
+          // Might be a script from a different debug target
+          return;
+        }
         getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT,
             script.getName(),
             // ILineBreakpoint lines are 1-based while V8 lines are 0-based
@@ -452,8 +459,23 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   @Override
   public void suspended(DebugContext context) {
     this.debugContext = context;
-    final boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
     breakpointsHit(context.getBreakpointsHit());
+    if (context.getState() == State.EXCEPTION) {
+      ExceptionData exceptionData = context.getExceptionData();
+      JsStackFrame topFrame = context.getStackFrames()[0];
+      ChromiumDebugPlugin.logError(
+          Messages.DebugTargetImpl_LogExceptionFormat,
+          exceptionData.isUncaught()
+              ? Messages.DebugTargetImpl_Uncaught
+              : Messages.DebugTargetImpl_Caught,
+          exceptionData.getExceptionText(),
+          topFrame.getScript().getName(),
+          topFrame.getLineNumber(),
+          trim(exceptionData.getSourceText(), 80));
+      suspended(DebugEvent.BREAKPOINT);
+      return;
+    }
+    final boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
     reloadScripts(false, new Runnable() {
       public void run() {
         suspended(hasBreakpointsHit
@@ -461,6 +483,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
             : DebugEvent.STEP_END);
       }
     });
+  }
+
+  private static String trim(String text, int maxLength) {
+    if (text == null || text.length() <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength - 3) + "..."; //$NON-NLS-1$
   }
 
   @Override

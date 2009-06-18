@@ -148,6 +148,7 @@ public class ValueMirror {
       case TYPE_STRING:
       case TYPE_NUMBER:
       case TYPE_BOOLEAN:
+      case TYPE_REGEXP:
         return value == null
             ? ""
             : value;

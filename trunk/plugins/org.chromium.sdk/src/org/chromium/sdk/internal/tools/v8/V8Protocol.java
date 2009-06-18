@@ -117,6 +117,10 @@ public enum V8Protocol implements CharSequence {
 
   BODY_FRAME_SRCLINE("sourceLineText"),
 
+  BODY_SOURCELINE("sourceLine"),
+
+  BODY_SOURCECOLUMN("sourceColumn"),
+
   BODY_FRAME_POSITION("position"),
 
   BREAK_BODY("body"),
@@ -126,6 +130,8 @@ public enum V8Protocol implements CharSequence {
   KEY_EVENT("event"),
 
   EVENT_BREAK("break"),
+
+  EVENT_EXCEPTION("exception"),
 
   /**
    * Scripts and Source response.
@@ -156,6 +162,10 @@ public enum V8Protocol implements CharSequence {
   REF("ref"),
 
   ID("id"),
+
+  EXCEPTION("exception"),
+
+  UNCAUGHT("uncaught"),
 
   ;
 
