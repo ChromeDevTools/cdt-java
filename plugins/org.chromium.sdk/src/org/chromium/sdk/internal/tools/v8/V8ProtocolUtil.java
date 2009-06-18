@@ -68,10 +68,21 @@ public class V8ProtocolUtil {
     Map<Long, JSONObject> result = new HashMap<Long, JSONObject>();
     for (int i = 0, size = handles.size(); i < size; ++i) {
       JSONObject handle = (JSONObject) handles.get(i);
-      Long refValue = JsonUtil.getAsLong(handle, V8Protocol.REF_HANDLE);
-      result.put(refValue, handle);
+      putHandle(result, handle);
     }
     return result;
+  }
+
+  /**
+   * Puts a single {@code handle} into the {@code targetMap}, using the "handle"
+   * field as the map key.
+   *
+   * @param targetMap to put the handle into.
+   * @param handle to put
+   */
+  public static void putHandle(Map<Long, JSONObject> targetMap, JSONObject handle) {
+    Long refValue = JsonUtil.getAsLong(handle, V8Protocol.REF_HANDLE);
+    targetMap.put(refValue, handle);
   }
 
   /**

@@ -38,6 +38,16 @@ public enum JsDataType {
   TYPE_BOOLEAN,
 
   /**
+   * Error type (this one describes a Javascript exception).
+   */
+  TYPE_ERROR,
+
+  /**
+   * A regular expression.
+   */
+  TYPE_REGEXP,
+
+  /**
    * An object which is actually a Date. This type is not present in the
    * protocol but is rather induced from the "object" type and "Date" class of
    * an object.
@@ -66,7 +76,7 @@ public enum JsDataType {
    * @return whether {@code type} corresponds to a JsObject
    */
   public static boolean isObjectType(JsDataType type) {
-    return type == TYPE_OBJECT || type == TYPE_ARRAY;
+    return type == TYPE_OBJECT || type == TYPE_ARRAY || type == TYPE_ERROR;
   }
 
 

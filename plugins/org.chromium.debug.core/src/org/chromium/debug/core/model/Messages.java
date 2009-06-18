@@ -25,9 +25,15 @@ public class Messages extends NLS {
 
   public static String DebugTargetImpl_CannotStartMultipleDebuggers;
 
+  public static String DebugTargetImpl_Caught;
+
   public static String DebugTargetImpl_FailedToStartSocketConnection;
 
+  public static String DebugTargetImpl_LogExceptionFormat;
+
   public static String DebugTargetImpl_TargetName;
+
+  public static String DebugTargetImpl_Uncaught;
 
   public static String JsLineBreakpoint_MessageMarkerFormat;
 
