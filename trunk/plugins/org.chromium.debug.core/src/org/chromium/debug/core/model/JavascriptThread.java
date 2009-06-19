@@ -16,7 +16,7 @@ import org.eclipse.debug.core.model.IThread;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Represents the only Chromium V8 VM thread.
+ * This class represents the only Google Chrome V8 VM thread.
  */
 public class JavascriptThread extends DebugElementImpl implements IThread, IAdaptable {
 

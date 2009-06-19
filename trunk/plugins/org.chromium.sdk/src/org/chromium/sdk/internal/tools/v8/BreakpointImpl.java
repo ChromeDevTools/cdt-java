@@ -120,7 +120,7 @@ public class BreakpointImpl implements Breakpoint {
     breakpointProcessor.clearBreakpoint(this, callback);
     // The order must be preserved, otherwise the breakpointProcessor will not be able
     // to identify the original breakpoint ID.
-    this.id  = INVALID_ID;
+    this.id = INVALID_ID;
   }
 
   @Override

@@ -21,7 +21,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
 /**
- * A dialog where users select which Chromium tab to attach to.
+ * A dialog where users select which Google Chrome tab to attach to.
  */
 class ChromiumTabSelectionDialog extends Dialog {
 
