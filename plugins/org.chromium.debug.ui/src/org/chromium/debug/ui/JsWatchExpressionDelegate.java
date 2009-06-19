@@ -20,7 +20,8 @@ import org.eclipse.debug.core.model.IWatchExpressionListener;
 import org.eclipse.debug.core.model.IWatchExpressionResult;
 
 /**
- * Performs the Watch expression evaluation while debugging Chromium Javascript.
+ * Performs the Watch expression evaluation while debugging Google Chrome
+ * Javascript.
  */
 public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
 
@@ -84,8 +85,7 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
 
     private final String expressionText;
 
-    private BadWatchExpressionResult(DebugException exception,
-        String expressionText) {
+    private BadWatchExpressionResult(DebugException exception, String expressionText) {
       this.exception = exception;
       this.expressionText = expressionText;
     }
@@ -117,8 +117,8 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
   }
 
   @Override
-  public void evaluateExpression(final String expression,
-      final IDebugElement context, final IWatchExpressionListener listener) {
+  public void evaluateExpression(final String expression, final IDebugElement context,
+      final IWatchExpressionListener listener) {
     final DebugElementImpl contextImpl = (DebugElementImpl) context;
     if (!contextImpl.getDebugTarget().isSuspended()) {
       // can only evaluate while suspended. Notify empty result.
@@ -147,31 +147,28 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       return;
     }
     if (!(contextImpl instanceof StackFrame)) {
-      listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
-          new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID, "Bad debug context")), //$NON-NLS-1$
+      listener.watchEvaluationFinished(new BadWatchExpressionResult(
+          new DebugException(
+              new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID, "Bad debug context")), //$NON-NLS-1$
           expression));
       return;
     }
     StackFrame stackFrame = (StackFrame) contextImpl;
     final JsStackFrame frame = stackFrame.getJsStackFrame();
-    frame.evaluate(expression, false,
-        new EvaluateCallback() {
-          public void success(JsVariable variable) {
-            final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
-            listener.watchEvaluationFinished(
-                new GoodWatchExpressionResult(var, expression));
-          }
+    frame.evaluate(expression, false, new EvaluateCallback() {
+      public void success(JsVariable variable) {
+        final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
+        listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
+      }
 
-          public void failure(String message) {
-            listener.watchEvaluationFinished(new BadWatchExpressionResult(
-                new DebugException(createErrorStatus(
-                    message == null
-                        ? Messages.JsWatchExpressionDelegate_ErrorEvaluatingExpression
-                        : message,
-                    null)), expression));
-            return;
-          }
-        });
+      public void failure(String message) {
+        listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
+            createErrorStatus(message == null
+                ? Messages.JsWatchExpressionDelegate_ErrorEvaluatingExpression
+                : message, null)), expression));
+        return;
+      }
+    });
   }
 
   private static Status createErrorStatus(String message, Exception e) {

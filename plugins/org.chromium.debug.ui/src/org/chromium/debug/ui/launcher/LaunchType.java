@@ -23,20 +23,19 @@ import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 
 /**
- * A launch configuration delegate for the Chromium debugging.
+ * A launch configuration delegate for the Javascript debugging.
  */
 public class LaunchType implements ILaunchConfigurationDelegate {
-  // Launch configuration attributes.
+
+  /** Launch configuration attribute (debug port). */
   public static final String CHROMIUM_DEBUG_PORT = "debug_port"; //$NON-NLS-1$
 
-  public static final String CHROMIUM_DEBUG_STARTUP_BREAK =
-      "debug_startup_break"; //$NON-NLS-1$
-
+  /** Launch configuration attribute (target project name). */
   public static final String CHROMIUM_DEBUG_PROJECT_NAME = "debug_project_name"; //$NON-NLS-1$
 
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
-    // Chromium launch is only supported for debugging.
+    // Google Chrome Javascript launch is only supported for debugging.
     if (mode.equals(ILaunchManager.DEBUG_MODE)) {
       int port =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,

@@ -21,7 +21,6 @@ import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -36,12 +35,6 @@ public class ChromiumDebugPluginUtil {
   public static final String JS_EXTENSION = "js"; //$NON-NLS-1$
 
   private static final String PROJECT_EXPLORER_ID = "org.eclipse.ui.navigator.ProjectExplorer"; //$NON-NLS-1$
-
-  private static final String PROJKEY_QUAL = "Chromium"; //$NON-NLS-1$
-
-  private static final String PROJKEY_LOCAL = "project.type"; //$NON-NLS-1$
-
-  private static final String PROJTYPE_JSDEBUG = "js.debug"; //$NON-NLS-1$
 
   private static final String JS_EXTENSION_SUFFIX = "." + JS_EXTENSION; //$NON-NLS-1$
 
@@ -105,9 +98,6 @@ public class ChromiumDebugPluginUtil {
 
       project.create(description, null);
       project.open(null);
-
-      QualifiedName key = new QualifiedName(PROJKEY_QUAL, PROJKEY_LOCAL);
-      project.setPersistentProperty(key, PROJTYPE_JSDEBUG);
 
       return project;
     } catch (CoreException e) {

@@ -18,7 +18,7 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.part.FileEditorInput;
 
 /**
- * An IDebugModelPresentation for the Chromium Javascript debug model.
+ * An IDebugModelPresentation for the Google Chrome Javascript debug model.
  */
 public class JsDebugModelPresentation extends LabelProvider implements IDebugModelPresentation {
 

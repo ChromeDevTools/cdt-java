@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   Copyright (c) 2009 The Chromium Authors. All rights reserved.
   Use of this source code is governed by a BSD-style license that can be
@@ -14,14 +16,14 @@
 
   <extension point="org.eclipse.core.variables.valueVariables">
     <variable
-       initialValue="9222"
-       name="org.chromium.debug.ui.chromium_debug_port"
-       description="ChromeDevTools Protocol connection port">
+        initialValue="9222"
+        name="org.chromium.debug.ui.chromium_debug_port"
+        description="Chrome DevTools Protocol connection port">
     </variable>
     <variable
-       initialValue="Debug Javascript"
-       name="org.chromium.debug.ui.chromium_project_name"
-       description="Default Javascript source project name">
+        initialValue="Debug Javascript"
+        name="org.chromium.debug.ui.chromium_project_name"
+        description="Default Javascript source project name">
     </variable>
   </extension>
 
@@ -30,11 +32,11 @@
         id="org.chromium.debug.ui.LaunchType"
         delegate="org.chromium.debug.ui.launcher.LaunchType"
         modes="debug"
-        name="Chromium Debugger"
+        name="%launchName"
         sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
         sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
-        delegateName="Debug Chromium Browser Javascript"
-        delegateDescription="Javascript debugger for Chromium browser">
+        delegateName="Debug Google Chrome Javascript"
+        delegateDescription="Javascript debugger for Google Chrome">
     </launchConfigurationType>
   </extension>
 
@@ -42,7 +44,7 @@
     <launchConfigurationTypeImage
         id="org.chromium.debug.ui.LaunchConfigTypeImage"
         configTypeID="org.chromium.debug.ui.LaunchType"
-        icon="res/chrome.gif">
+        icon="res/chromium_16.png">
     </launchConfigurationTypeImage>
   </extension>
 
@@ -77,7 +79,7 @@
         name="JS Editor"
         extensions="js"
         default="true"
-        icon="res/chrome.gif"
+        icon="res/chromium_16.png"
         class="org.chromium.debug.ui.editors.JsEditor"
         id="org.chromium.debug.ui.editors.JsEditor">
     </editor>
@@ -88,38 +90,38 @@
         targetID="org.chromium.debug.ui.editors.JsEditor"
         id="org.chromium.debug.ui.editors.JsEditor.editorActions">
       <action
-        label="Not Used"
-        class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
-        style="push"
-        actionID="RulerDoubleClick"
-        id="org.chromium.debug.ui.editor.ruler.doubleClickBreakpointAction"/>
+          label="Not Used"
+          class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+          style="push"
+          actionID="RulerDoubleClick"
+          id="org.chromium.debug.ui.editor.ruler.doubleClickBreakpointAction"/>
       <action
-        toolbarPath="evaluationGroup"
-        id="org.chromium.debug.ui.SnippetInspect"
-        definitionId="org.chromium.debug.ui.commands.Inspect"
-        class="org.chromium.debug.ui.actions.JsInspectSnippetAction"
-        enablesFor="+"
-        label="Inspect"
-        tooltip="Inspect Result of Evaluating Selected Text">
+          toolbarPath="evaluationGroup"
+          id="org.chromium.debug.ui.SnippetInspect"
+          definitionId="org.chromium.debug.ui.commands.Inspect"
+          class="org.chromium.debug.ui.actions.JsInspectSnippetAction"
+          enablesFor="+"
+          label="Inspect"
+          tooltip="Inspect Result of Evaluating Selected Text">
         <enablement>
-            <and>
-              <systemProperty
-                   name="org.chromium.debug.ui.debuggerActive"
-                   value="true"/>
-              <objectClass
-                   name="org.eclipse.jface.text.ITextSelection"/>
+          <and>
+            <systemProperty
+                name="org.chromium.debug.ui.debuggerActive"
+                value="true"/>
+            <objectClass
+                name="org.eclipse.jface.text.ITextSelection"/>
           </and>
-      </enablement>
-    </action>
+        </enablement>
+      </action>
     </editorContribution>
   </extension>
 
   <extension point="org.eclipse.ui.contexts">
     <context
-      name="Chromium Debug"
-      parentId="org.eclipse.ui.contexts.dialogAndWindow"
-      description="Debug Chromium Javascript"
-      id="org.chromium.debug.ui.editors.JsEditor.context">
+        name="Google Chrome Debug"
+        parentId="org.eclipse.ui.contexts.dialogAndWindow"
+        description="Debug Google Chrome Javascript"
+        id="org.chromium.debug.ui.editors.JsEditor.context">
     </context>
   </extension>
 
@@ -134,10 +136,10 @@
 
   <extension point="org.eclipse.ui.commands">
     <command
-          categoryId="org.eclipse.debug.ui.category.run"
-          description="Modify breakpoint properties"
-          name="Breakpoint Properties..."
-          id="org.chromium.debug.ui.breakpoint.properties">
+        categoryId="org.eclipse.debug.ui.category.run"
+        description="Modify breakpoint properties"
+        name="Breakpoint Properties..."
+        id="org.chromium.debug.ui.breakpoint.properties">
     </command>
     <command
         categoryId="org.eclipse.debug.ui.category.run"
@@ -160,41 +162,41 @@
         targetID="org.chromium.debug.ui.editors.JsEditor.ruler"
         id="org.chromium.debug.ui.editors.JsEditor.popupMenus">
         <action
-             label="Toggle Breakpoint"
-             class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
-             menubarPath="debug"
-             id="org.chromium.debug.ui.actions.EnableDisableBreakpointAction"/>
+            label="Toggle Breakpoint"
+            class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+            menubarPath="debug"
+            id="org.chromium.debug.ui.actions.EnableDisableBreakpointAction"/>
         <action
-             label="Breakpoint Properties..."
-             class="org.chromium.debug.ui.actions.JsBreakpointPropertiesRulerActionDelegate"
-             menubarPath="group.properties"
-             id="org.chromium.debug.ui.actions.JavaBreakpointPropertiesRulerActionDelegate">
+            label="Breakpoint Properties..."
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesRulerActionDelegate"
+            menubarPath="group.properties"
+            id="org.chromium.debug.ui.actions.JavaBreakpointPropertiesRulerActionDelegate">
         </action>
         <action
-             label="Toggle Enablement"
-             class="org.eclipse.debug.ui.actions.RulerEnableDisableBreakpointActionDelegate"
-             menubarPath="debug"
-             id="org.chromium.debug.ui.actions.EnableDisableBreakpointRulerActionDelegate">
+            label="Toggle Enablement"
+            class="org.eclipse.debug.ui.actions.RulerEnableDisableBreakpointActionDelegate"
+            menubarPath="debug"
+            id="org.chromium.debug.ui.actions.EnableDisableBreakpointRulerActionDelegate">
         </action>
     </viewerContribution>
   </extension>
 
   <extension
          point="org.eclipse.ui.propertyPages">
-      <page
-            name="Breakpoint Properties"
-            class="org.chromium.debug.ui.propertypages.JsLineBreakpointPage"
-            id="org.chromium.debug.ui.propertypages.LineBreakpoints">
-         <enabledWhen>
-            <or>
-               <instanceof
-                     value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
-               </instanceof>
-               <adapt
-                     type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
-               </adapt>
-            </or>
-         </enabledWhen>
-      </page>
+    <page
+        name="Breakpoint Properties"
+        class="org.chromium.debug.ui.propertypages.JsLineBreakpointPage"
+        id="org.chromium.debug.ui.propertypages.LineBreakpoints">
+      <enabledWhen>
+        <or>
+          <instanceof
+              value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </instanceof>
+          <adapt
+              type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </adapt>
+        </or>
+      </enabledWhen>
+    </page>
   </extension>
 </plugin>

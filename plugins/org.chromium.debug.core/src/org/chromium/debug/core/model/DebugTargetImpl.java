@@ -39,7 +39,7 @@ import org.eclipse.debug.core.model.IThread;
 
 /**
  * An IDebugTarget implementation for remote Javascript debugging.
- * Can debug any target that supports the ChromeDevTools protocol.
+ * Can debug any target that supports the Chrome DevTools protocol.
  */
 public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, DebugEventListener {
 
@@ -76,7 +76,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       } catch (IOException e) {
         throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
       } catch (IllegalStateException e) {
-        throw newCoreException("Another ChromeDevTools Debug Launch is in progress", e); //$NON-NLS-1$
+        throw newCoreException("Another Google Chrome Javascript Debug Launch is in progress", e); //$NON-NLS-1$
       }
       this.launch = launch;
       this.threads = new JavascriptThread[] { new JavascriptThread(this) };
@@ -249,7 +249,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   @Override
   public void resume() throws DebugException {
     debugContext.continueVm(null, 1, null);
-    // Let's pretend Chromium does respond to the "continue" request immediately
+    // Let's pretend Google Chrome does respond to the "continue" request immediately
     resumed(DebugEvent.CLIENT_REQUEST);
   }
 
