@@ -1,6 +1,6 @@
-#summary Chrome Developer Tools License.
+#summary Google Chrome Developer Tools License
 
-The Chrome Developer Tools are distributed under the following license.
+The Google Chrome Developer Tools are distributed under the following license.
 
 {{{
 // Copyright (c) 2009 The Chromium Authors. All rights reserved.
