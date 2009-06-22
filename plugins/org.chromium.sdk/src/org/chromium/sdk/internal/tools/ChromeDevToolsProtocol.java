@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.tools;
 
 /**
- * Fields of a Chrome DevTools protocol message.
+ * Fields of a ChromeDevTools protocol message.
  */
 public enum ChromeDevToolsProtocol {
   COMMAND("command"),

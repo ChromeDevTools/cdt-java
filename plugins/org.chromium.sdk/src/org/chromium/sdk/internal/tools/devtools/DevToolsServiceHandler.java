@@ -55,7 +55,7 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   /**
-   * A callback that will be invoked when the Chrome DevTools protocol version
+   * A callback that will be invoked when the ChromeDevTools protocol version
    * is available.
    */
   private interface VersionCallback {

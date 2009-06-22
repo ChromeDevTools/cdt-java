@@ -18,7 +18,7 @@
     <variable
         initialValue="9222"
         name="org.chromium.debug.ui.chromium_debug_port"
-        description="Chrome DevTools Protocol connection port">
+        description="ChromeDevTools Protocol connection port">
     </variable>
     <variable
         initialValue="Debug Javascript"
