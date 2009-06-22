@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Known Chrome DevTools protocol tool names.
+ * Known ChromeDevTools protocol tool names.
  */
 public enum ToolName {
 

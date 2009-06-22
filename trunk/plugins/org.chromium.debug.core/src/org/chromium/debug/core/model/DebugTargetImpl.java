@@ -39,7 +39,7 @@ import org.eclipse.debug.core.model.IThread;
 
 /**
  * An IDebugTarget implementation for remote Javascript debugging.
- * Can debug any target that supports the Chrome DevTools protocol.
+ * Can debug any target that supports the ChromeDevTools protocol.
  */
 public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, DebugEventListener {
 

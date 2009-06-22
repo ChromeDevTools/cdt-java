@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * An object that describes a Chrome DevTools protocol version.
+ * An object that describes a ChromeDevTools protocol version.
  */
 public class Version {
   private final int major;
