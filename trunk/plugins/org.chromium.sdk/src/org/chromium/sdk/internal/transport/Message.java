@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * A transport message encapsulating the data sent/received over the wire
  * (protocol headers and content). This class can serialize and deserialize
- * itself into a BufferedWriter according to the Chrome Developer Tools Protocol
+ * itself into a BufferedWriter according to the ChromeDevTools Protocol
  * specification.
  */
 public class Message {
@@ -46,7 +46,7 @@ public class Message {
   }
 
   /**
-   * Known Chrome Developer Tools Protocol headers (ToolHandler implementations
+   * Known ChromeDevTools Protocol headers (ToolHandler implementations
    * can add their own headers.)
    */
   public enum Header {

@@ -35,8 +35,8 @@
         name="%launchName"
         sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
         sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
-        delegateName="Debug Google Chrome Javascript"
-        delegateDescription="Javascript debugger for Google Chrome">
+        delegateName="Debug Chromium Javascript"
+        delegateDescription="Javascript debugger for Chromium">
     </launchConfigurationType>
   </extension>
 
@@ -118,9 +118,9 @@
 
   <extension point="org.eclipse.ui.contexts">
     <context
-        name="Google Chrome Debug"
+        name="Chromium Debug"
         parentId="org.eclipse.ui.contexts.dialogAndWindow"
-        description="Debug Google Chrome Javascript"
+        description="Debug Chromium Javascript"
         id="org.chromium.debug.ui.editors.JsEditor.context">
     </context>
   </extension>

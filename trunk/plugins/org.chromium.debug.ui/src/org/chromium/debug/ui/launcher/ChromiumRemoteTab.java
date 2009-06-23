@@ -19,7 +19,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 /**
- * The "Remote" tab for the Google Chrome Javascript launch tab group.
+ * The "Remote" tab for the Chromium Javascript launch tab group.
  */
 public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 

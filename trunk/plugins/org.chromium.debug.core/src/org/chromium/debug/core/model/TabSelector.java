@@ -8,14 +8,14 @@ import org.chromium.sdk.BrowserTab;
 
 /**
  * This interface allows clients to provide various strategies
- * for selecting a Google Chrome tab to debug.
+ * for selecting a Chromium tab to debug.
  */
 public interface TabSelector {
 
   /**
    * @param tabs to choose from
    * @return a tab to debug, or null if the launch configuration should not
-   *         proceed attaching to a Google Chrome tab
+   *         proceed attaching to a Chromium tab
    */
   BrowserTab selectTab(BrowserTab[] tabs);
 

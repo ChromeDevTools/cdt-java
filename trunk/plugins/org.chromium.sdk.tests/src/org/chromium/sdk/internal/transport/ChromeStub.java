@@ -9,12 +9,12 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
 
 /**
  * An implementor can provide a way to respond to a certain Message (naturally,
- * instead of Chrome).
+ * instead of Google Chrome).
  */
 public interface ChromeStub {
 
   /**
-   * Constructs responses to client requests in place of Chrome.
+   * Constructs responses to client requests in place of Google Chrome.
    *
    * @param requestMessage to respond to
    * @return a response message

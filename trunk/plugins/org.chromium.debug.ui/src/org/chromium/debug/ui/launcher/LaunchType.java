@@ -35,7 +35,7 @@ public class LaunchType implements ILaunchConfigurationDelegate {
 
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
-    // Google Chrome Javascript launch is only supported for debugging.
+    // Chromium Javascript launch is only supported for debugging.
     if (mode.equals(ILaunchManager.DEBUG_MODE)) {
       int port =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
