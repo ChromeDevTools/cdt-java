@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,13 @@ import org.json.simple.JSONObject;
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
 public class DebugContextImpl implements DebugContext {
+
+  private static final EnumSet<PropertyType> VISIBLE_PROPERTY_TYPES =
+      EnumSet.of(
+          PropertyType.NORMAL,
+          PropertyType.FIELD,
+          PropertyType.CALLBACKS,
+          PropertyType.INTERCEPTOR);
 
   /**
    * A no-op javascript to evaluate.
@@ -234,9 +242,9 @@ public class DebugContextImpl implements DebugContext {
       int propTypeValue = propType != null
           ? propType.intValue()
           : PropertyType.NORMAL.value;
-      if (propTypeValue == PropertyType.FIELD.value ||
-          propTypeValue == PropertyType.CALLBACKS.value ||
-          propTypeValue == PropertyType.NORMAL.value) {
+
+      PropertyType type = PropertyType.forValue(propTypeValue);
+      if (VISIBLE_PROPERTY_TYPES.contains(type)) {
         objProps.add(new PropertyReference(ref, name));
       }
     }
