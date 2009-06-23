@@ -170,6 +170,11 @@ public class BrowserImpl implements Browser, NetListener {
     return wasConnected;
   }
 
+  // exposed for testing
+  /* package private */ DevToolsServiceHandler getDevToolsServiceHandler() {
+    return devToolsHandler;
+  }
+
   private void checkConnection() {
     if (connection == null || !connection.isConnected()) {
       throw new IllegalStateException("connection is not started");

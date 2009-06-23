@@ -43,6 +43,9 @@ public class FakeConnection implements Connection {
   @Override
   public void close() {
     isRunning = false;
+    if (netListener != null) {
+      netListener.connectionClosed();
+    }
   }
 
   @Override

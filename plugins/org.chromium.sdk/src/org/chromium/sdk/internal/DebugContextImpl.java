@@ -142,7 +142,10 @@ public class DebugContextImpl implements DebugContext {
       JSONObject func = handleManager.getHandle(funcRef);
       Long scriptId = -1L;
       if (scriptRef != null) {
-        scriptId = JsonUtil.getAsLong(handleManager.getHandle(scriptRef), V8Protocol.ID);
+        JSONObject handle = handleManager.getHandle(scriptRef);
+        if (handle != null) {
+          scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
+        }
       }
       frameMirrors[index] =
           new FrameMirror(url, currentLine, scriptId, getFunctionName(func), locals);

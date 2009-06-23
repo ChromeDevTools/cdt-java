@@ -4,10 +4,11 @@
 
 package org.chromium.sdk.internal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import junit.framework.TestCase;
 
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
@@ -16,24 +17,21 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * A test for the JsVariable implementor.
  */
-public class JsVariableTest extends TestCase implements DebugEventListener {
+public class JsVariableTest implements DebugEventListener {
 
   private ChromeStub messageResponder;
   private JsStackFrameImpl stackFrame;
 
   private ValueMirror eventMirror;
 
-  public JsVariableTest() {
-    super(JsVariableTest.class.getName());
-  }
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
+  @Before
+  public void setUpBefore() throws Exception {
     this.messageResponder = new FixtureChromeStub();
     Browser browser = ((BrowserFactoryImpl) BrowserFactory.getInstance())
         .create(new FakeConnection(messageResponder));
@@ -52,6 +50,7 @@ public class JsVariableTest extends TestCase implements DebugEventListener {
         frameMirror, 0, ((BrowserTabImpl) browserTab).getDebugContext());
   }
 
+  @Test
   public void testEnsureProperties() throws Exception {
     JsVariableImpl var = new JsVariableImpl(stackFrame, eventMirror);
     var.ensureProperties(eventMirror.getProperties());

@@ -126,6 +126,9 @@ public class BreakpointImpl implements Breakpoint {
   @Override
   public void flush(final BrowserTab.BreakpointCallback callback) {
     if (!isDirty()) {
+      if (callback != null) {
+        callback.success(this);
+      }
       return;
     }
     breakpointProcessor.changeBreakpoint(this, callback);

@@ -157,25 +157,28 @@ public class V8DebuggerToolHandler implements ToolHandler {
     }
     String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
     DebuggerToolCommand command = DebuggerToolCommand.forName(commandString);
-    switch (command) {
-      case ATTACH:
-        processAttach(json);
-        break;
-      case DETACH:
-        processDetach(json);
-        break;
-      case DEBUGGER_COMMAND:
-        processDebuggerCommand(json);
-        break;
-      case NAVIGATED:
-        processNavigated(json);
-        break;
-      case CLOSED:
-        processClosed(json);
-        break;
-      default:
-        throw new IllegalArgumentException("Invalid command: " + command);
+    if (command != null) {
+      switch (command) {
+        case ATTACH:
+          processAttach(json);
+          break;
+        case DETACH:
+          processDetach(json);
+          break;
+        case DEBUGGER_COMMAND:
+          processDebuggerCommand(json);
+          break;
+        case NAVIGATED:
+          processNavigated(json);
+          break;
+        case CLOSED:
+          processClosed(json);
+          break;
+
+      }
+      return;
     }
+    throw new IllegalArgumentException("Invalid command: " + command);
   }
 
   @Override
