@@ -25,6 +25,5 @@ The debugger exposes the following Javascript debugging capabilities, starting w
   * Problems with duplicate scripts for the same resource provided by V8.
   * Only V8-provided scripts are shown rather than actual resources loaded by Chrome (the resources are not exposed through the V8 debugger protocol).
   * The launch target is invalidated rather than reloaded whenever the page is refreshed (need to re-attach).
-  * Poor text editor where the scripts are rendered (no highlighting, no nothing).
-  * The actual object class is only retrieved with the full object details, so a generic {{{"[Object]"}}} is often rendered in the UI for DOM elements.
+  * Poor text editor for rendering scripts (no highlighting, no nothing).
   * The breakpoints are not retained between page refreshes (V8 does not curently expose existing breakpoints).
