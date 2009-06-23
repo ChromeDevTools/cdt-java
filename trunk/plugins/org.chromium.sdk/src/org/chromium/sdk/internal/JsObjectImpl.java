@@ -39,6 +39,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   /**
    * This constructor implies the lazy resolution of object properties.
+   *
    * @param stackFrame
    * @param parentFqn
    * @param valueState
@@ -47,6 +48,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     super(valueState);
     this.stackFrame = stackFrame;
     this.parentFqn = parentFqn;
+    trySetMirrorProperties();
   }
 
   public JsObjectImpl(ValueMirror valueState, JsVariableImpl[] properties) {
@@ -55,6 +57,20 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     createPropertyMap();
     this.stackFrame = null;
     this.parentFqn = "";
+    trySetMirrorProperties();
+  }
+
+  private void trySetMirrorProperties() {
+    ValueMirror mirror = getMirror();
+    if (mirror.getProperties() == null) {
+      // "this" is an object with PropertyReferences. Resolve them.
+      final Long ref = Long.valueOf(mirror.getRef());
+      final JSONObject handle = stackFrame.getDebugContext().getHandleManager().getHandle(ref);
+      if (handle != null) {
+        mirror.setProperties(JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
+            DebugContextImpl.extractObjectProperties(handle));
+      }
+    }
   }
 
   private synchronized void createPropertyMap() {

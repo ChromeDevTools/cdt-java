@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Known V8 VM property types. The default is NORMAL.
  */
@@ -22,6 +25,21 @@ public enum PropertyType {
 
   private PropertyType(int value) {
     this.value = value;
+  }
+
+  private static Map<Integer, PropertyType> valueToTypeMap = new HashMap<Integer, PropertyType>();
+
+  static {
+    for (PropertyType type : values()) {
+      valueToTypeMap.put(type.value, type);
+    }
+  }
+
+  public static PropertyType forValue(Integer value) {
+    if (value == null) {
+      return null;
+    }
+    return valueToTypeMap.get(value);
   }
 
 }
