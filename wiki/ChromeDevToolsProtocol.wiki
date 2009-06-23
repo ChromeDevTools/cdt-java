@@ -1,15 +1,15 @@
-#summary Chrome Developer Tools Protocol
+#summary Google Chrome Developer Tools Protocol
 
 = Introduction =
 
-In order to provide Chrome (or any other browser that supports this protocol) with the capability of remote debugging via TCP/IP sockets, the existing [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 Debugger Protocol] is not sufficient. It covers only Javascript debugging operations, and only within a single V8 VM. In reality, there can be 1+ separate V8 VMs inside a Chrome instance, residing in different renderer processes. We might want to also inspect/modify the DOM tree, which is not covered by Javascript operations. All this necessitates the exchange of additional information between a remote debugger and the Chrome instance being debugged. 
+In order to provide Google Chrome (its open-source version Chromium or any other browser that supports this protocol) with the capability of remote debugging via TCP/IP sockets, the existing [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 Debugger Protocol] is not sufficient. It covers only Javascript debugging operations, and only within a single V8 VM. In reality, there can be 1+ separate V8 VMs inside a Google Chrome instance, residing in different renderer processes. We might want to also inspect/modify the DOM tree, which is not covered by Javascript operations. All this necessitates the exchange of additional information between a remote debugger and the Google Chrome instance being debugged. 
 
 The proposed protocol can be used as a transport for other debugging-related protocols, including the existing V8 Debugger Protocol.
 
 
 = Proposal =
 
-As long as there is only a single socket connection listening for remote debugger connections in Chrome, it should be possible to debug all browser tabs "simultaneously" over the same connection. Hence we need to pass a tab unique identifier (TUID) in every message transferred between a Chrome instance and a remote debugger. According to the existing Chrome process architecture, all UIDs of tabs running in a single renderer will map onto the same V8 VM which leads to some interesting consequences. Anyway, we shall use UIDs of tabs or other "Least Granular Independent Units of Debugging" (LGIUDs, UDs for short) in other !ChromeDevTools protocol-enabled applications) rather than V8 VMs (a single VM can be shared among several UDs) to enable access to the tabs context for possible visual feedback and such.
+As long as there is only a single socket connection listening for remote debugger connections in Google Chrome, it should be possible to debug all browser tabs "simultaneously" over the same connection. Hence we need to pass a tab unique identifier (TUID) in every message transferred between a Google Chrome instance and a remote debugger. According to the existing Google Chrome process architecture, all UIDs of tabs running in a single renderer will map onto the same V8 VM which leads to some interesting consequences. Anyway, we shall use UIDs of tabs or other "Least Granular Independent Units of Debugging" (LGIUDs, UDs for short) in other !ChromeDevTools protocol-enabled applications) rather than V8 VMs (a single VM can be shared among several UDs) to enable access to the tabs context for possible visual feedback and such.
 
 Let us call UDs just "tabs" and UD IDs just "TUIDs" for simplicity. Let "0" (zero) be an invalid TUID, reserved for some protocol purposes.
 
@@ -41,15 +41,15 @@ _Content-Length_ (required) - the total length of the Сontent field in bytes.
 
 _Tool_ (required) - a string specifying the "subsystem" that should handle the message. It could be a V8 debugger, a DOM debugger, a Developer Tools Service (DTS), or something else.
 
-_Destination_ (optional) - a string that specifies the concrete application-specific host object in whose context the message should be handled. For a V8 debugger it can be an identifier of a Chrome tab running Javascript code, and for DTS it can be absent because the content pertains to the global Chrome context rather than some specific object contained in the browser (e.g. the content can contain a request for the supported version of the Developer Tools protocol.)
+_Destination_ (optional) - a string that specifies the concrete application-specific host object in whose context the message should be handled. For a V8 debugger it can be an identifier of a Google Chrome tab running Javascript code, and for DTS it can be absent because the content pertains to the global Google Chrome context rather than some specific object contained in the browser (e.g. the content can contain a request for the supported version of the Developer Tools protocol.)
 
 _Content_ (optional) - the value of this field is unique to each command as well as the request/response message. For example, it can contain the V8 Debugger Protocol request/response JSON messages or some plain-text command for a simpler tool. The content must use the UTF8 charset. If this field is absent, the _Content-Length_ value must be 0.
 
 == Establishing the Debugger Connection ==
 
-Remote debugger opens a socket whose destination is the server socket opened by Chrome.
+Remote debugger opens a socket whose destination is the server socket opened by Google Chrome.
 Remote debugger sends a handshake message consisting of 23 ASCII characters, {{{ ChromeDevToolsHandshake }}} followed by a CRLF pair.
-Chrome replies with the same 23-byte message, {{{ ChromeDevToolsHandshake }}} followed by a CRLF pair.
+Google Chrome replies with the same 23-byte message, {{{ ChromeDevToolsHandshake }}} followed by a CRLF pair.
 
 Once the connection is established, the remote debugger might want to query the list of TUIDs. The *list_tabs* command can be used to this end.
 
@@ -68,7 +68,7 @@ This tool is intended to provide a remote debugger with the information about th
 
 *Available commands:*
   * ping - keeps the connection alive under certain circumstances, or determines if the application is currently capable of handling request messages.
-  * version - determines the Chrome developer tools protocol version supported by the debugged application.
+  * version - determines the ChromeDevTools Protocol version supported by the debugged application.
   * list_tabs - lists all the debuggable tabs together with their respective URLs opened.
 
 The following *result* codes are possible:
@@ -84,7 +84,7 @@ The following *result* codes are possible:
 
 == !V8Debugger ==
 
-This tool is intended for communication of a remote debugger with V8 debuggers running inside a Chrome instance.
+This tool is intended for communication of a remote debugger with V8 debuggers running inside a Google Chrome instance.
 
 *Common !V8Debugger JSON fields:*
   * command (required) - the command to perform or an event type {string}.
