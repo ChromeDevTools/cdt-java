@@ -368,7 +368,11 @@ public class SocketConnection implements Connection {
     }
   }
 
-
+  private void checkAttached() {
+    if (!isAttached()) {
+      throw new IllegalStateException("Connection not attached");
+    }
+  }
 
   @Override
   public boolean equals(Object obj) {
@@ -382,11 +386,5 @@ public class SocketConnection implements Connection {
   @Override
   public int hashCode() {
     return host.hashCode() + port;
-  }
-
-  private void checkAttached() {
-    if (!isAttached()) {
-      throw new IllegalStateException("Connection not attached");
-    }
   }
 }

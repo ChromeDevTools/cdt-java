@@ -33,13 +33,15 @@ public class FixtureChromeStub implements ChromeStub {
   private static final Map<Long, String> refToObjectMap = new HashMap<Long, String>();
   static {
     // MouseEvent
-    refToObjectMap.put(11L, "{\"handle\":11,\"type\":\"object\",\"className\":\"MouseEvent\"," +
+    refToObjectMap.put(Long.valueOf(getMouseEventRef()),
+        "{\"handle\":11,\"type\":\"object\",\"className\":\"MouseEvent\"," +
         "\"constructorFunction\":{\"ref\":19},\"protoObject\":{\"ref\":73}," +
         "\"prototypeObject\":{\"ref\":2},\"properties\":[" +
         "{\"name\":\"x\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}," +
         "{\"name\":\"y\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}]}");
     // Script
-    refToObjectMap.put(5L, "{\"handle\":5,\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
+    refToObjectMap.put(Long.valueOf(getScriptRef()),
+        "{\"handle\":5,\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
         "\"id\":566,\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
         "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
         "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
@@ -53,7 +55,8 @@ public class FixtureChromeStub implements ChromeStub {
         "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
         "\"scriptType\":2,\"context\":{\"ref\":4},\"text\":\"file:///C:/1.js (lines: 32)\"}");
     // Function
-    refToObjectMap.put(0L, "{\"handle\":0,\"type\":\"function\",\"className\":\"Function\"," +
+    refToObjectMap.put(Long.valueOf(getFunctionRef()),
+        "{\"handle\":" + getFunctionRef() + ",\"type\":\"function\",\"className\":\"Function\"," +
         "\"constructorFunction\":{\"ref\":31},\"protoObject\":{\"ref\":32}," +
         "\"prototypeObject\":{\"ref\":33},\"name\":\"clicked\",\"inferredName\":\"\"," +
         "\"resolved\":true,\"source\":\"function clicked() {\\r\\n  var obj = {\\r\\n" +
@@ -62,7 +65,8 @@ public class FixtureChromeStub implements ChromeStub {
         "  arr = [\\\"foo\\\", 3, new Date(), obj, arr];\\r\\n" +
         "  for (var i = 5; i < 240; i += 2) {\\r\\n    arr[i] = \\\"bar\\\";\\r\\n  }\\r\\n" +
         "  arr[100] = 0.99999887;\\r\\n//  var b = a + 1\\r\\n//  console.log('Foo');\\r\\n" +
-        "  anotherScript();\\r\\n}\",\"script\":{\"ref\":5},\"properties\":[{\"name\":\"name\"," +
+        "  anotherScript();\\r\\n}\",\"script\":{\"ref\":" + getScriptRef() +
+        "},\"properties\":[{\"name\":\"name\"," +
         "\"attributes\":7,\"propertyType\":3,\"ref\":34},{\"name\":\"caller\",\"attributes\":7," +
         "\"propertyType\":3,\"ref\":11},{\"name\":\"length\",\"attributes\":7,\"propertyType\":3," +
         "\"ref\":35},{\"name\":\"arguments\",\"attributes\":7,\"propertyType\":3,\"ref\":327}," +
@@ -80,6 +84,18 @@ public class FixtureChromeStub implements ChromeStub {
 
   public static int getNumber3Ref() {
     return 65;
+  }
+
+  public static int getFunctionRef() {
+    return 0;
+  }
+
+  public static int getScriptRef() {
+    return 5;
+  }
+
+  public static int getMouseEventRef() {
+    return 1;
   }
 
   private final Map<Long, BreakpointImpl> breakpoints = new HashMap<Long, BreakpointImpl>();
@@ -224,7 +240,7 @@ public class FixtureChromeStub implements ChromeStub {
 
   private Object constructScripts() {
     JSONArray scripts = new JSONArray();
-    scripts.add(getJsonObjectByRef(5L));
+    scripts.add(getJsonObjectByRef(getScriptRef()));
     return scripts;
   }
 
@@ -259,14 +275,14 @@ public class FixtureChromeStub implements ChromeStub {
 
   private JSONArray getRefs() {
     JSONArray refs = new JSONArray();
-    refs.add(getJsonObjectByRef(5L));
-    refs.add(getJsonObjectByRef(0L));
+    refs.add(getJsonObjectByRef(getScriptRef()));
+    refs.add(getJsonObjectByRef(getFunctionRef()));
     return refs;
   }
 
-  private JSONObject getJsonObjectByRef(long ref) {
+  private JSONObject getJsonObjectByRef(int ref) {
     try {
-      return JsonUtil.jsonObjectFromJson(refToObjectMap.get(ref));
+      return JsonUtil.jsonObjectFromJson(refToObjectMap.get(Long.valueOf(ref)));
     } catch (ParseException e) {
       return null;
     }
@@ -277,7 +293,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject local = new JSONObject();
     JSONObject value = new JSONObject();
     local.put("name", "a");
-    value.put("ref", 65);
+    value.put("ref", getNumber3Ref());
     value.put("type", "number");
     value.put("value", 1);
     local.put("value", local);
@@ -286,13 +302,13 @@ public class FixtureChromeStub implements ChromeStub {
 
   private JSONObject getScript() {
     JSONObject script = new JSONObject();
-    script.put("ref", 1);
+    script.put("ref", getScriptRef());
     return script;
   }
 
   private JSONObject getFunc() {
     JSONObject func = new JSONObject();
-    func.put("ref", 0);
+    func.put("ref", getFunctionRef());
     func.put("type", "function");
     func.put("name", "clicked");
     func.put("scriptId", 566);
@@ -301,7 +317,7 @@ public class FixtureChromeStub implements ChromeStub {
 
   private JSONObject getReceiver() {
     JSONObject receiver = new JSONObject();
-    receiver.put("ref", 1);
+    receiver.put("ref", getMouseEventRef());
     receiver.put("type", "object");
     receiver.put("className", "global");
     return receiver;

@@ -4,65 +4,32 @@
 
 package org.chromium.sdk.internal;
 
+import static org.junit.Assert.*;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.internal.transport.FakeConnection;
+import org.junit.Test;
 
 /**
- * A test for the IVariable implementor.
+ * A test for the DebugEventListener implementor.
  */
-public class DebugEventListenerTest extends TestCase implements DebugEventListener {
+public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection> {
 
-  private FixtureChromeStub messageResponder;
-
-  private BrowserTab browserTab;
-  private DebugContext suspendContext;
-  private Runnable suspendCallback;
-  private String newTabUrl;
-  private boolean isDisconnected = false;
-
-  public DebugEventListenerTest() {
-    super(DebugEventListenerTest.class.getName());
-  }
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    this.messageResponder = new FixtureChromeStub();
-    this.newTabUrl = "";
-    Browser browser =
-      ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(
-          new FakeConnection(messageResponder));
-    browser.connect();
-    BrowserTab[] tabs = browser.getTabs();
-    browserTab = tabs[0];
-    browserTab.attach(this);
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    suspendContext = null;
-  }
-
+  @Test
   public void testDetach() throws Exception {
     assertTrue(browserTab.detach());
     assertFalse(browserTab.isAttached());
     assertTrue(this.isDisconnected);
   }
 
+  @Test
   public void testSuspendResume() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final Breakpoint[] bp = new Breakpoint[1];
@@ -92,7 +59,7 @@ public class DebugEventListenerTest extends TestCase implements DebugEventListen
     Collection<Breakpoint> breakpointsHit = suspendContext.getBreakpointsHit();
     assertEquals(1, breakpointsHit.size());
     Breakpoint bpHit = breakpointsHit.iterator().next();
-    assertBreakpointsEqual(bp[0], bpHit);
+    TestUtil.assertBreakpointsEqual(bp[0], bpHit);
 
     resume();
 
@@ -124,6 +91,7 @@ public class DebugEventListenerTest extends TestCase implements DebugEventListen
     assertNull(suspendContext);
   }
 
+  @Test
   public void testClosed() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     suspendCallback = new Runnable() {
@@ -136,6 +104,7 @@ public class DebugEventListenerTest extends TestCase implements DebugEventListen
     assertNull(this.newTabUrl);
   }
 
+  @Test
   public void testNavigated() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     suspendCallback = new Runnable() {
@@ -148,50 +117,21 @@ public class DebugEventListenerTest extends TestCase implements DebugEventListen
     assertEquals("newUrl", this.newTabUrl);
   }
 
-  private static void assertBreakpointsEqual(final Breakpoint bpExpected, Breakpoint bpHit) {
-    assertEquals(bpExpected.getId(), bpHit.getId());
-    assertEquals(bpExpected.getCondition(), bpHit.getCondition());
-    assertEquals(bpExpected.getIgnoreCount(), bpHit.getIgnoreCount());
-    assertEquals(bpExpected.getType(), bpHit.getType());
-  }
-
   private void waitForSuspend() throws InterruptedException {
-    final CountDownLatch latch2 = new CountDownLatch(1);
+    final CountDownLatch latch = new CountDownLatch(1);
     suspendCallback = new Runnable() {
       public void run() {
-        latch2.countDown();
+        latch.countDown();
       }
     };
-    if (!latch2.await(100, TimeUnit.MILLISECONDS)) {
+    if (!latch.await(100, TimeUnit.MILLISECONDS)) {
       fail("No \"suspended\" event received");
     }
   }
 
   @Override
-  public void closed() {
-    this.newTabUrl = null;
+  protected FakeConnection createConnection() {
+    return new FakeConnection(messageResponder);
   }
 
-  @Override
-  public void disconnected() {
-    this.isDisconnected = true;
-  }
-
-  @Override
-  public void navigated(String newUrl) {
-    this.newTabUrl = newUrl;
-  }
-
-  @Override
-  public void resumed() {
-    this.suspendContext = null;
-  }
-
-  @Override
-  public void suspended(DebugContext context) {
-    this.suspendContext = context;
-    if (suspendCallback != null) {
-      suspendCallback.run();
-    }
-  }
 }

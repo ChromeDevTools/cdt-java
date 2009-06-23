@@ -162,7 +162,9 @@ public class DevToolsServiceHandler implements ToolHandler {
     };
     connection.send(MessageFactory.listTabs());
     try {
-      sem.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+      if (!sem.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
+        listTabsCallback = null;
+      }
     } catch (InterruptedException e) {
       // Fall through
     }
@@ -175,7 +177,7 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   public synchronized Version version(int timeout) {
-    if (listTabsCallback != null) {
+    if (versionCallback != null) {
       throw new IllegalStateException("version request is pending");
     }
     final Semaphore sem = new Semaphore(0);

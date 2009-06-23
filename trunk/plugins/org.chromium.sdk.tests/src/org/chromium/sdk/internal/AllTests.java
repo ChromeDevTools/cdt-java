@@ -4,18 +4,29 @@
 
 package org.chromium.sdk.internal;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandlerTest;
+import org.chromium.sdk.internal.tools.v8.V8Tests;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
 /**
- * This class provides
+ * This class provides all tests for the ChromeDevTools SDK.
  */
+@RunWith(Suite.class)
+@SuiteClasses({
+  DebugEventListenerTest.class,
+  JsVariableTest.class,
+  V8Tests.class,
+  DevToolsServiceHandlerTest.class})
 public class AllTests {
 
-  public static Test suite() {
-    TestSuite suite = new TestSuite("ChromeDevTools SDK");
-    suite.addTestSuite(DebugEventListenerTest.class);
-    suite.addTestSuite(JsVariableTest.class);
-    return suite;
-  }
+//  public static Test suite() {
+//    TestSuite suite = new TestSuite("ChromeDevTools SDK");
+//    suite.addTestSuite(DebugEventListenerTest.class);
+//    suite.addTestSuite(JsVariableTest.class);
+//    suite.addTest(V8Tests.suite());
+//    suite.addTestSuite(DevToolsServiceHandlerTest.class);
+//    return suite;
+//  }
 }
