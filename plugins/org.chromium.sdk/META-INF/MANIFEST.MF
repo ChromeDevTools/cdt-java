@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Chrome Developer Tools SDK
+Bundle-Name: Google Chrome Developer Tools SDK
 Bundle-SymbolicName: org.chromium.sdk
 Bundle-Version: 0.1.0.qualifier
 Bundle-Vendor: The Chromium Authors

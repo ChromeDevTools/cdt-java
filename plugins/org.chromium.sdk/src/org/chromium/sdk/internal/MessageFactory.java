@@ -14,8 +14,8 @@ import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Message.Header;
 
 /**
- * A facility that creates transport {@link Message}s for sending requests to Chrome
- * using the available ChromeDevTools Protocol commands.
+ * A facility that creates transport {@link Message}s for sending requests to
+ * Chromium using the available ChromeDevTools Protocol commands.
  */
 public class MessageFactory {
 

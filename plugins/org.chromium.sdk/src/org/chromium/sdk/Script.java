@@ -32,7 +32,7 @@ public interface Script {
   Type getType();
 
   /**
-   * @return the original document URL for this script known by Chrome.
+   * @return the original document URL for this script known by Chromium.
    */
   String getName();
 

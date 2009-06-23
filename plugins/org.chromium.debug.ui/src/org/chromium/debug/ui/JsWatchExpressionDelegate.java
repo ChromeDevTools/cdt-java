@@ -20,8 +20,7 @@ import org.eclipse.debug.core.model.IWatchExpressionListener;
 import org.eclipse.debug.core.model.IWatchExpressionResult;
 
 /**
- * Performs the Watch expression evaluation while debugging Google Chrome
- * Javascript.
+ * Performs the Watch expression evaluation while debugging Chromium Javascript.
  */
 public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
 

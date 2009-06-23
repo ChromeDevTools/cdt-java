@@ -551,7 +551,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   private static boolean isInternalProperty(String propertyName) {
-    // Google Chrome can return properties like ".arguments". They should be ignored.
+    // Chromium can return properties like ".arguments". They should be ignored.
     return propertyName.startsWith(".");
   }
 }
