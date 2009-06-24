@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+
+<!--
+  Copyright (c) 2009 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<project name="chromedevtools" default="main" basedir=".">
+
+  <!-- Where the PDE builder (releng) Eclipse installation resides -->
+  <property name="eclipseLocation" value="C:\eclipse3.5" />
+
+  <!-- The PDE build plugin version in the releng Eclipse installation -->
+  <property name="pdeBuildPlugin.version" value="3.5.0.v20090527-1800" />
+  <property name="pdeBuildPlugin.location" value="${eclipseLocation}/plugins/org.eclipse.pde.build_${pdeBuildPlugin.version}" />
+
+  <!-- The Equinox launcher plugin version in the releng Eclipse installation -->
+  <property name="launcherPlugin.version" value="1.0.200.v20090520" />
+  <property name="launcherPlugin.location" value="${eclipseLocation}/plugins/org.eclipse.equinox.launcher_${launcherPlugin.version}.jar" />
+
+  <!-- The location of rt.jar in the build environment -->
+  <property name="java.rt" value="C:\jdk6\jre\lib\rt.jar" />
+
+  <!-- The source repository location (where the plugins and features folders are) -->
+  <property name="sourceBaseLocation" value="D:\Dev\chromedevtools\trunk" />
+
+  <!-- The location of the PDE build configuration -->
+  <property name="builder" value="${sourceBaseLocation}/builder/releng.builder" />
+
+  <!-- The location of the Eclipse installation against which the project -->
+  <!-- will be compiled.                                                  -->
+  <!-- It is recommended to use a distinct target Eclipse installation    -->
+  <!-- but for the sake of simplicity we are using the releng one.        -->
+  <property name="baseLocation" value="${eclipseLocation}" />
+
+  <property file="${builder}/build.properties" />
+
+  <target name="main">
+    <java classname="org.eclipse.equinox.launcher.Main" fork="true" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.ant.core.antRunner" />
+      <arg value="-buildfile" />
+      <arg value="${pdeBuildPlugin.location}/scripts/build.xml" />
+      <arg value="-DbaseLocation=${baseLocation}" />
+      <arg value="-Dbuilder=${builder}" />
+      <arg value="-Djava.rt=${java.rt}" />
+      <arg value="-DsourceBaseLocation=${sourceBaseLocation}" />
+      <classpath>
+        <pathelement location="${launcherPlugin.location}" />
+      </classpath>
+    </java>
+  </target>
+
+  <target name="clean">
+    <delete dir="${buildDirectory}"/>
+  </target>
+
+</project>
+
+
