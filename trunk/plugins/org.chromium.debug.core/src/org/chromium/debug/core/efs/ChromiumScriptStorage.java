@@ -66,10 +66,6 @@ public class ChromiumScriptStorage {
       return !info.isDirectory();
     }
 
-    IFileInfo fetchInfo() {
-      return info;
-    }
-
   }
 
   private static class RootNode extends FolderNode {
