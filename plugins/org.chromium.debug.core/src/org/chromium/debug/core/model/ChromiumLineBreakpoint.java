@@ -16,7 +16,7 @@ import org.eclipse.debug.core.model.LineBreakpoint;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Javascript line breakpoint.
+ * JavaScript line breakpoint.
  */
 public class ChromiumLineBreakpoint extends LineBreakpoint {
 

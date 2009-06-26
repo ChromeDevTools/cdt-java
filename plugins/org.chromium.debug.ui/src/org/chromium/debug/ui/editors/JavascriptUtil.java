@@ -13,7 +13,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.Region;
 
 /**
- * A utility for handling Javascript-related data.
+ * A utility for handling JavaScript-related data.
  */
 public class JavascriptUtil {
 
@@ -46,12 +46,12 @@ public class JavascriptUtil {
   }
 
   /**
-   * Returns a Javascript qualified identifier surrounding the character at
+   * Returns a JavaScript qualified identifier surrounding the character at
    * {@code offset} position in the given {@code document}.
    *
    * @param document to extract an identifier from
    * @param offset of the pivot character (before, in, or after the identifier)
-   * @return Javascript identifier, or null if none found
+   * @return JavaScript identifier, or {@code null} if none found
    */
   public static String extractSurroundingJsIdentifier(IDocument document, int offset) {
     IRegion region = getSurroundingIdentifierRegion(document, offset, true);
@@ -66,7 +66,7 @@ public class JavascriptUtil {
   }
 
   /**
-   * Returns a region enclosing a Javascript identifier found in {@code doc} at
+   * Returns a region enclosing a JavaScript identifier found in {@code doc} at
    * the {@code offset} position. If {@code qualified == true}, all leading
    * qualifying names will be included into the region, otherwise the member
    * operator (".") will be considered as an identifier terminator.
@@ -75,7 +75,7 @@ public class JavascriptUtil {
    * @param offset of the pivot character (before, in, or after the identifier)
    * @param qualified whether to read qualified identifiers rather than simple
    *        ones
-   * @return an IRegion corresponding to the Javascript identifier overlapping
+   * @return an IRegion corresponding to the JavaScript identifier overlapping
    *         offset, or null if none
    */
   public static IRegion getSurroundingIdentifierRegion(

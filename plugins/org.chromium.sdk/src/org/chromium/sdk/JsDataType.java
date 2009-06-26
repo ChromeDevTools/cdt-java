@@ -6,7 +6,7 @@ package org.chromium.sdk;
 
 
 /**
- * Type of a Javascript object. Two bogus type values (DATE and ARRAY) are
+ * Type of a JavaScript object. Two bogus type values (DATE and ARRAY) are
  * included even though they are not reported by V8. Instead, they are inferred
  * from the object classname.
  */
@@ -38,7 +38,7 @@ public enum JsDataType {
   TYPE_BOOLEAN,
 
   /**
-   * Error type (this one describes a Javascript exception).
+   * Error type (this one describes a JavaScript exception).
    */
   TYPE_ERROR,
 

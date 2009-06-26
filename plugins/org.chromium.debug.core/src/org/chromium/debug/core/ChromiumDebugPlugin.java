@@ -27,7 +27,7 @@ public class ChromiumDebugPlugin extends Plugin {
   /** The debug model ID. */
   public static final String DEBUG_MODEL_ID = "org.chromium.debug"; //$NON-NLS-1$
 
-  /** The Javascript line breakpoint marker. */
+  /** The JavaScript line breakpoint marker. */
   public static final String BP_MARKER = PLUGIN_ID + ".LineBP"; //$NON-NLS-1$
 
   /** The shared instance. */

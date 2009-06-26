@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * An object that represents a browser Javascript VM variable value (compound or
+ * An object that represents a browser JavaScript VM variable value (compound or
  * atomic.)
  */
 public interface JsValue {

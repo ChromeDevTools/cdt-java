@@ -19,7 +19,7 @@ import org.eclipse.debug.core.sourcelookup.containers.WorkspaceSourceContainer;
 
 /**
  * Computes the default source lookup path for the launch configuration. The
- * default source lookup path is the folder or project containing all Javascript
+ * default source lookup path is the folder or project containing all JavaScript
  * source files. If the folder is not specified, the workspace is searched by
  * default.
  */

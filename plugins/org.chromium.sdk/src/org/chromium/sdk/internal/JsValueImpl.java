@@ -8,12 +8,12 @@ import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsValue;
 
 /**
- * A base class that represents a Javascript VM variable value (compound values
+ * A base class that represents a JavaScript VM variable value (compound values
  * are represented by subclasses.)
  */
 public class JsValueImpl implements JsValue {
 
-  /** The value data as reported by the Javascript VM. */
+  /** The value data as reported by the JavaScript VM. */
   private final ValueMirror valueData;
 
   public JsValueImpl(ValueMirror valueData) {

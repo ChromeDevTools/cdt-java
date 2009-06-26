@@ -43,7 +43,7 @@ public class DebugContextImpl implements DebugContext {
           PropertyType.INTERCEPTOR);
 
   /**
-   * A no-op javascript to evaluate.
+   * A no-op JavaScript to evaluate.
    */
   private static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
@@ -88,7 +88,7 @@ public class DebugContextImpl implements DebugContext {
   /** The suspension state. */
   private State state;
 
-  /** The Javascript exception state. */
+  /** The JavaScript exception state. */
   private ExceptionData exceptionData;
 
   public DebugContextImpl(BrowserTabImpl browserTabImpl) {
@@ -381,7 +381,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   /**
-   * Evaluates a javascript snippet to pump the debugger command queue.
+   * Evaluates a JavaScript snippet to pump the debugger command queue.
    */
   public void evaluateJavascript() {
     getV8Handler().sendEvaluateJavascript(JAVASCRIPT_VOID);

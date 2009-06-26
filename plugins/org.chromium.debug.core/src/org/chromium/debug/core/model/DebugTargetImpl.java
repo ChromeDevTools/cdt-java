@@ -38,7 +38,7 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IThread;
 
 /**
- * An IDebugTarget implementation for remote Javascript debugging.
+ * An IDebugTarget implementation for remote JavaScript debugging.
  * Can debug any target that supports the ChromeDevTools protocol.
  */
 public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, DebugEventListener {
@@ -76,7 +76,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       } catch (IOException e) {
         throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
       } catch (IllegalStateException e) {
-        throw newCoreException("Another Chromium Javascript Debug Launch is in progress", e); //$NON-NLS-1$
+        throw newCoreException("Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
       }
       this.launch = launch;
       this.threads = new JavascriptThread[] { new JavascriptThread(this) };

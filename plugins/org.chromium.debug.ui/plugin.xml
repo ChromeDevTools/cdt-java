@@ -21,9 +21,9 @@
         description="ChromeDevTools Protocol connection port">
     </variable>
     <variable
-        initialValue="Debug Javascript"
+        initialValue="Debug JavaScript"
         name="org.chromium.debug.ui.chromium_project_name"
-        description="Default Javascript source project name">
+        description="Default JavaScript source project name">
     </variable>
   </extension>
 
@@ -35,8 +35,8 @@
         name="%launchName"
         sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
         sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
-        delegateName="Debug Chromium Javascript"
-        delegateDescription="Javascript debugger for Chromium">
+        delegateName="Debug Chromium JavaScript"
+        delegateDescription="JavaScript debugger for Chromium">
     </launchConfigurationType>
   </extension>
 
@@ -57,7 +57,7 @@
   </extension>
 
   <extension point="org.eclipse.debug.core.sourceLocators">
-    <sourceLocator name="Javascript Source Lookup Director"
+    <sourceLocator name="JavaScript Source Lookup Director"
         class="org.chromium.debug.ui.editors.SourceLookupDirector"
         id="org.chromium.debug.ui.sourceLookupDirector" /> 
   </extension>
@@ -120,7 +120,7 @@
     <context
         name="Chromium Debug"
         parentId="org.eclipse.ui.contexts.dialogAndWindow"
-        description="Debug Chromium Javascript"
+        description="Debug Chromium JavaScript"
         id="org.chromium.debug.ui.editors.JsEditor.context">
     </context>
   </extension>

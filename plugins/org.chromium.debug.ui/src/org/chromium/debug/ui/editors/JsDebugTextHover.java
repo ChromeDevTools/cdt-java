@@ -16,7 +16,7 @@ import org.eclipse.jface.text.ITextHover;
 import org.eclipse.jface.text.ITextViewer;
 
 /**
- * Supplies a hover for Javascript expressions while on a breakpoint.
+ * Supplies a hover for JavaScript expressions while on a breakpoint.
  */
 public class JsDebugTextHover implements ITextHover {
 

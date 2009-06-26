@@ -16,7 +16,7 @@ public interface Script {
    * Denotes a script type.
    */
   enum Type {
-    /** A native, internal Javascript VM script */
+    /** A native, internal JavaScript VM script */
     NATIVE,
 
     /** A script supplied by an extension */
