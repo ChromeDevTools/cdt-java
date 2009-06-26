@@ -145,6 +145,29 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     assertTrue(isBreakpointCleared);
   }
 
+  @Test
+  public void testNonDirtyChanges() throws Exception {
+    TestBreakpointProcessor breakpointProcessor =
+        new TestBreakpointProcessor((DebugContextImpl) suspendContext);
+    String condition = "true";
+    int ignoreCount = 3;
+    boolean enabled = true;
+    BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT, 1, enabled, ignoreCount, condition,
+        breakpointProcessor);
+
+    bp.setCondition(condition);
+    bp.flush(null);
+    assertFalse(isBreakpointChanged);
+
+    bp.setEnabled(enabled);
+    bp.flush(null);
+    assertFalse(isBreakpointChanged);
+
+    bp.setIgnoreCount(ignoreCount);
+    bp.flush(null);
+    assertFalse(isBreakpointChanged);
+  }
+
   @Override
   protected FakeConnection createConnection() {
     return new FakeConnection(messageResponder);
