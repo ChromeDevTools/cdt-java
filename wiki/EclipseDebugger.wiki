@@ -2,7 +2,7 @@
 
 = Introduction =
 
-An essential part of !Chrome Developer Tools is the remote Javascript debugger for Eclipse, based on the ChromeDevToolsSdk. The debugger employs the Eclipse Platform debug and launch frameworks to provide most of the functionality.
+An essential part of Chrome Developer Tools is the remote Javascript debugger for Eclipse, based on the ChromeDevToolsSdk. The debugger employs the Eclipse Platform debug and launch frameworks to provide most of the functionality.
 
 The latest debugger version can be installed from the following update site:
 
