@@ -7,7 +7,7 @@ package org.chromium.sdk;
 import org.chromium.sdk.DebugContext.EvaluateCallback;
 
 /**
- * An object that represents a browser Javascript VM stack frame.
+ * An object that represents a browser JavaScript VM stack frame.
  */
 public interface JsStackFrame {
 
@@ -45,7 +45,7 @@ public interface JsStackFrame {
   String getFunctionName();
 
   /**
-   * Evaluates an arbitrary Javascript {@code expression} in the context of the
+   * Evaluates an arbitrary JavaScript {@code expression} in the context of the
    * stack frame. The evaluation result is reported to the specified {@code
    * callback}. The method will block until the evaluation result is available
    * if {@code isSync == true}.

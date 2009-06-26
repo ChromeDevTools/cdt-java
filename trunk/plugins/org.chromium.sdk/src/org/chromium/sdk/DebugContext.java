@@ -7,14 +7,14 @@ package org.chromium.sdk;
 import java.util.Collection;
 
 /**
- * An object that matches the execution state of the browser Javascript VM while
+ * An object that matches the execution state of the browser JavaScript VM while
  * suspended. It reconstructs and provides access to the current state of the
- * Javascript VM.
+ * JavaScript VM.
  */
 public interface DebugContext {
 
   /**
-   * Known Javascript debugger step actions.
+   * Known JavaScript debugger step actions.
    */
   public enum StepAction {
     IN,
@@ -56,7 +56,7 @@ public interface DebugContext {
   }
 
   /**
-   * @return the Javascript VM suspension state
+   * @return the JavaScript VM suspension state
    */
   State getState();
 
@@ -80,7 +80,7 @@ public interface DebugContext {
   Collection<Breakpoint> getBreakpointsHit();
 
   /**
-   * Resumes the Javascript VM execution using a "continue" request.
+   * Resumes the JavaScript VM execution using a "continue" request.
    *
    * @param stepAction to perform ({@code null} means "let the VM go")
    * @param stepCount steps to perform (not used if {@code stepAction == null})

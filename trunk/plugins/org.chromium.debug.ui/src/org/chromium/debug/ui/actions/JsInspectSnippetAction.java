@@ -35,7 +35,7 @@ import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
- * Action for inspecting a Javascript snippet.
+ * Action for inspecting a JavaScript snippet.
  */
 public class JsInspectSnippetAction implements IEditorActionDelegate,
     IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate, EvaluateCallback {

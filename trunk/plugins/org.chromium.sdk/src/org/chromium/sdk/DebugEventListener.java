@@ -12,7 +12,7 @@ package org.chromium.sdk;
 public interface DebugEventListener {
 
   /**
-   * Reports the browser Javascript virtual machine has suspended (on hitting
+   * Reports the browser JavaScript virtual machine has suspended (on hitting
    * breakpoints or a step end). The {@code context} can be used to access the
    * current backtrace.
    *
@@ -21,7 +21,7 @@ public interface DebugEventListener {
   void suspended(DebugContext context);
 
   /**
-   * Reports the browser Javascript virtual machine has resumed.
+   * Reports the browser JavaScript virtual machine has resumed.
    */
   void resumed();
 

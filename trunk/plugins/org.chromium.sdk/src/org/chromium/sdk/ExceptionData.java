@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * A Javascript exception data holder for exceptions reported by a Javascript
+ * A JavaScript exception data holder for exceptions reported by a JavaScript
  * virtual machine.
  */
 public interface ExceptionData {

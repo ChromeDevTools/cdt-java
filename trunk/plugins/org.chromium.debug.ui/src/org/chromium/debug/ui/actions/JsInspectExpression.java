@@ -19,7 +19,7 @@ import org.eclipse.debug.core.model.IErrorReportingExpression;
 import org.eclipse.debug.core.model.IValue;
 
 /**
- * An Eclipse object for the Javascript inspected expression.
+ * An Eclipse object for the JavaScript inspected expression.
  */
 public class JsInspectExpression extends PlatformObject
     implements IErrorReportingExpression, IDebugEventSetListener {

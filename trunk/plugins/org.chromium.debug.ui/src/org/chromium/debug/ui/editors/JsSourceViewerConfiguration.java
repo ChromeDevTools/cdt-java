@@ -9,7 +9,7 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 
 /**
- * A Javascript source viewer configuration.
+ * A JavaScript source viewer configuration.
  */
 public class JsSourceViewerConfiguration extends TextSourceViewerConfiguration {
 

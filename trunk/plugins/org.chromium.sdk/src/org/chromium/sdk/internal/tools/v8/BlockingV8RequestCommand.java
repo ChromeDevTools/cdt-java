@@ -42,7 +42,7 @@ class BlockingV8RequestCommand implements Runnable {
   private final BrowserTabImpl.V8HandlerCallback v8HandlerCallback;
 
   /**
-   * Whether to send the "evaluate javascript" command so that the primary
+   * Whether to send the "evaluate_javascript" command so that the primary
    * command can be executed immediately while NOT on a breakpoint.
    */
   private final boolean isImmediate;
@@ -52,7 +52,7 @@ class BlockingV8RequestCommand implements Runnable {
   /**
    * @param handler the V8DebuggerToolHandler instance
    * @param message to send
-   * @param immediate whether to evaluateJavascript so that the request is
+   * @param immediate whether to evaluate JavaScript so that the request is
    *        handled immediately (should always be the case if potentially
    *        calling a command not on a breakpoint)
    * @param v8HandlerCallback to invoke on reply from the browser

@@ -19,7 +19,7 @@ public class BreakpointImpl implements Breakpoint {
   private final Type type;
 
   /**
-   * The breakpoint id as reported by the Javascript VM.
+   * The breakpoint id as reported by the JavaScript VM.
    */
   private long id;
 
@@ -30,24 +30,24 @@ public class BreakpointImpl implements Breakpoint {
 
   /**
    * The number of times the breakpoint should be ignored
-   * by the Javascript VM until it fires.
+   * by the JavaScript VM until it fires.
    */
   private int ignoreCount;
 
   /**
-   * The breakpoint condition (plain Javascript) that should be {@code true}
+   * The breakpoint condition (plain JavaScript) that should be {@code true}
    * for the breakpoint to fire.
    */
   private String condition;
 
   /**
-   * The breakpoint processor that performs Javascript VM communications.
+   * The breakpoint processor that performs JavaScript VM communications.
    */
   private final BreakpointProcessor breakpointProcessor;
 
   /**
    * Whether the breakpoint data have changed with respect
-   * to the Javascript VM data.
+   * to the JavaScript VM data.
    */
   private volatile boolean isDirty = false;
 

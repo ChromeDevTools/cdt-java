@@ -31,7 +31,7 @@ public class JsVariableImpl implements JsVariable {
   private static final String CLOSE_BRACKET = "]";
 
   /**
-   * The variable value data as reported by the Javascript VM (is used to
+   * The variable value data as reported by the JavaScript VM (is used to
    * construct the variable value.)
    */
   private final ValueMirror valueData;

@@ -9,7 +9,7 @@ import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 
 /**
- * The Chromium Javascript debugger launch configuration tab group.
+ * The Chromium JavaScript debugger launch configuration tab group.
  */
 public class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
 

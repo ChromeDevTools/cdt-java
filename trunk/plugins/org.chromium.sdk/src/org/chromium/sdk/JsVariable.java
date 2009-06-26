@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * An object that represents a variable in a browser Javascript VM stack frame.
+ * An object that represents a variable in a browser JavaScript VM stack frame.
  */
 public interface JsVariable {
 

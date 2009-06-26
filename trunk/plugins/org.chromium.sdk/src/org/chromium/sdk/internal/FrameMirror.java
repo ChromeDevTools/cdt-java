@@ -7,7 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.Script;
 
 /**
- * A representation of a remote Javascript VM stack frame.
+ * A representation of a remote JavaScript VM stack frame.
  */
 public class FrameMirror {
 

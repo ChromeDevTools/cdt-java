@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * A breakpoint in the browser Javascript virtual machine. The {@code set*}
+ * A breakpoint in the browser JavaScript virtual machine. The {@code set*}
  * method invocations will not take effect until
  * {@link #flush(org.chromium.sdk.BrowserTab.BreakpointCallback)} is called.
  */
@@ -27,7 +27,7 @@ public interface Breakpoint {
 
   /**
    * A breakpoint has this ID if it does not reflect an actual breakpoint in a
-   * Javascript VM debugger.
+   * JavaScript VM debugger.
    */
   long INVALID_ID = -1;
 
@@ -37,7 +37,7 @@ public interface Breakpoint {
   Type getType();
 
   /**
-   * @return the breakpoint ID as reported by the Javascript VM debugger
+   * @return the breakpoint ID as reported by the JavaScript VM debugger
    */
   long getId();
 
@@ -66,12 +66,12 @@ public interface Breakpoint {
   void setIgnoreCount(int ignoreCount);
 
   /**
-   * @return breakpoint condition as plain Javascript or {@code null} if none
+   * @return breakpoint condition as plain JavaScript or {@code null} if none
    */
   String getCondition();
 
   /**
-   * Sets the breakpoint condition as plain Javascript ({@code null} to clear).
+   * Sets the breakpoint condition as plain JavaScript ({@code null} to clear).
    *
    * @param condition the new breakpoint condition
    */

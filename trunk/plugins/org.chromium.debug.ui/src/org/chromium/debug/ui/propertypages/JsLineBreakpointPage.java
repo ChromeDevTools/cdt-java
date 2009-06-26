@@ -30,7 +30,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
 /**
- * A Javascript line breakpoint property page.
+ * A JavaScript line breakpoint property page.
  */
 public class JsLineBreakpointPage extends PropertyPage {
 

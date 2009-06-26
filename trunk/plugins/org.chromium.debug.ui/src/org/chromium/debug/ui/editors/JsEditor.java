@@ -7,7 +7,7 @@ package org.chromium.debug.ui.editors;
 import org.eclipse.ui.editors.text.TextEditor;
 
 /**
- * A simplistic Javascript editor which supports its own key binding scope.
+ * A simplistic JavaScript editor which supports its own key binding scope.
  */
 public class JsEditor extends TextEditor {
 

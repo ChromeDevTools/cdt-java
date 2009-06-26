@@ -44,7 +44,7 @@ public class JsDataTypeUtil {
   }
 
   /**
-   * Gets a JsDataType using a V8 Javascript type and, optionally, a class name
+   * Gets a JsDataType using a V8 JavaScript type and, optionally, a class name
    * of the object. If {@code className} is {@code null}, only the 1:1 mapping
    * shall be used.
    *

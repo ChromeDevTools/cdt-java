@@ -18,13 +18,13 @@ import org.json.simple.JSONObject;
  */
 public class JsStackFrameImpl implements JsStackFrame {
 
-  /** The frame ID as reported by the Javascript VM. */
+  /** The frame ID as reported by the JavaScript VM. */
   private final int frameId;
 
   /** The debug context this stack frame belongs in. */
   private final DebugContextImpl context;
 
-  /** The underlying frame data from the Javascript VM. */
+  /** The underlying frame data from the JavaScript VM. */
   private final FrameMirror frameMirror;
 
   /** The variables known in this stack frame. */
@@ -32,7 +32,7 @@ public class JsStackFrameImpl implements JsStackFrame {
 
   /**
    * Constructs a stack frame for the given handler using the FrameMirror data
-   * from the remote Javascript VM.
+   * from the remote JavaScript VM.
    *
    * @param mirror frame in the VM
    * @param index stack frame id (0 is the stack top)

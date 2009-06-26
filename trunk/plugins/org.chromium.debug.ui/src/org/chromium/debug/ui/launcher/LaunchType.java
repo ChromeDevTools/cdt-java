@@ -23,7 +23,7 @@ import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 
 /**
- * A launch configuration delegate for the Javascript debugging.
+ * A launch configuration delegate for the JavaScript debugging.
  */
 public class LaunchType implements ILaunchConfigurationDelegate {
 
@@ -35,7 +35,7 @@ public class LaunchType implements ILaunchConfigurationDelegate {
 
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
-    // Chromium Javascript launch is only supported for debugging.
+    // Chromium JavaScript launch is only supported for debugging.
     if (mode.equals(ILaunchManager.DEBUG_MODE)) {
       int port =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,

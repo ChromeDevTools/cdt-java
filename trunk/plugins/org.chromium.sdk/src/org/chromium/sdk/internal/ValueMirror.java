@@ -7,7 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.JsDataType;
 
 /**
- * A representation of a datum (value) in the remote Javascript VM.
+ * A representation of a datum (value) in the remote JavaScript VM.
  */
 public class ValueMirror {
 
