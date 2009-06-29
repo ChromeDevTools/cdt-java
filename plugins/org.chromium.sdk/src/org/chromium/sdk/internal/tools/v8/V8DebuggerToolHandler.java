@@ -25,7 +25,6 @@ import org.chromium.sdk.internal.tools.ToolHandler;
 import org.chromium.sdk.internal.tools.v8.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.ScriptsProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.V8ResponseCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
@@ -123,8 +122,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
     this.browserImpl = browserImpl;
     this.context = context;
     this.bpp = new BreakpointProcessor(context);
-
-    commandToHandlerMap.put(DebuggerCommand.SCRIPTS, new ScriptsProcessor(context));
 
     commandToHandlerMap.put(DebuggerCommand.CHANGEBREAKPOINT, bpp);
     commandToHandlerMap.put(DebuggerCommand.SETBREAKPOINT, bpp);

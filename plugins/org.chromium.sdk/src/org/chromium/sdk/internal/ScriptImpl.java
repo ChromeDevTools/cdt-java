@@ -76,7 +76,7 @@ public class ScriptImpl implements Script {
         }
         int lineOffset = JsonUtil.getAsLong(response, V8Protocol.BODY_LINEOFFSET).intValue();
         int lineCount = JsonUtil.getAsLong(response, V8Protocol.BODY_LINECOUNT).intValue();
-        int id = JsonUtil.getAsLong(response, V8Protocol.ID).intValue();
+        int id = V8ProtocolUtil.getScriptIdFromResponse(response).intValue();
         return new Descriptor(type, id, name, lineOffset, lineCount);
       } catch (Exception e) {
         // not a script object has been passed in

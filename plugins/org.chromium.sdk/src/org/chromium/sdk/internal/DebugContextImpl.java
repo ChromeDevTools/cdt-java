@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
@@ -26,7 +25,6 @@ import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -51,7 +49,7 @@ public class DebugContextImpl implements DebugContext {
 
   /** Regex for the "text" field of the "backtrace" element response. */
   private static final String FRAME_TEXT_REGEX =
-      "^#([\\d]+) (.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
+      "^(?:.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
 
   private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
 
@@ -66,6 +64,9 @@ public class DebugContextImpl implements DebugContext {
 
   /** The handle manager for the associated tab. */
   private final HandleManager handleManager;
+
+  /** A helper for performing complex V8-related actions. */
+  private final V8Helper v8Helper = new V8Helper(this, THIS_NAME);
 
   /**
    * The V8 debugger tool handler for the associated tab (used for sending
@@ -128,10 +129,11 @@ public class DebugContextImpl implements DebugContext {
       JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
       Long funcRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_FUNC);
 
-      String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT);
+      String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT)
+          .replace('\r', ' ').replace('\n', ' ');
       Matcher m = FRAME_TEXT_PATTERN.matcher(text);
       m.matches();
-      String url = m.group(3);
+      String url = m.group(1);
 
       int currentLine = JsonUtil.getAsLong(frame, V8Protocol.BODY_FRAME_LINE).intValue();
 
@@ -156,7 +158,7 @@ public class DebugContextImpl implements DebugContext {
         }
       }
       frameMirrors[index] =
-          new FrameMirror(url, currentLine, scriptId, getFunctionName(func), locals);
+          new FrameMirror(url, currentLine, scriptId, V8ProtocolUtil.getFunctionName(func), locals);
     }
   }
 
@@ -183,35 +185,11 @@ public class DebugContextImpl implements DebugContext {
 
     this.exceptionData =
         new ExceptionDataImpl(this,
-            createValueMirror(exception, EXCEPTION_NAME),
+            V8Helper.createValueMirror(exception, EXCEPTION_NAME),
             JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
             sourceText,
             JsonUtil.getAsString(exception,
             V8Protocol.REF_TEXT));
-  }
-
-  /**
-   * Constructs a ValueMirror given a V8 debugger object specification and the
-   * value name.
-   *
-   * @param handle containing the object specification from the V8 debugger
-   * @param name of the value to construct
-   * @return a ValueMirror instance with the specified name, containing data
-   *         from handle
-   */
-  public static ValueMirror createValueMirror(JSONObject handle, String name) {
-    String value = JsonUtil.getAsString(handle, V8Protocol.REF_TEXT);
-    String typeString = JsonUtil.getAsString(handle, V8Protocol.REF_TYPE);
-    String className = JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME);
-    JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
-    if (JsDataType.isObjectType(type)) {
-      JSONObject protoObj = JsonUtil.getAsJSON(handle, V8Protocol.REF_PROTOOBJECT);
-      int parentRef = JsonUtil.getAsLong(protoObj, V8Protocol.REF).intValue();
-      PropertyReference[] propertyRefs = DebugContextImpl.extractObjectProperties(handle);
-      return new ValueMirror(name, parentRef, propertyRefs, className);
-    } else {
-      return new ValueMirror(name, value, type);
-    }
   }
 
   /**
@@ -234,7 +212,7 @@ public class DebugContextImpl implements DebugContext {
       }
       Long propType = JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_TYPE);
 
-      if (isInternalProperty(name)) {
+      if (V8ProtocolUtil.isInternalProperty(name)) {
         continue;
       }
 
@@ -374,10 +352,7 @@ public class DebugContextImpl implements DebugContext {
    * @param callback to invoke when the scripts are ready
    */
   public void reloadAllScripts(V8HandlerCallback callback) {
-    getScriptManager().reset();
-    getV8Handler().sendV8Command(
-        DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true), callback);
-    evaluateJavascript();
+    v8Helper.reloadAllScripts(callback);
   }
 
   /**
@@ -441,7 +416,7 @@ public class DebugContextImpl implements DebugContext {
     if (receiverRef != null) {
       JSONObject receiver = handleManager.getHandle(receiverRef);
       if (receiver != null) {
-        values.add(createValueMirror(receiver, THIS_NAME));
+        values.add(V8Helper.createValueMirror(receiver, THIS_NAME));
       } else {
         refToName.put(receiverRef, THIS_NAME);
       }
@@ -461,7 +436,7 @@ public class DebugContextImpl implements DebugContext {
       if (handle == null) {
         refToName.put(ref, name);
       } else {
-        values.add(createValueMirror(handle, name));
+        values.add(V8Helper.createValueMirror(handle, name));
       }
     }
 
@@ -470,13 +445,13 @@ public class DebugContextImpl implements DebugContext {
       JSONObject local = (JSONObject) locals.get(i);
       String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
 
-      if (!isInternalProperty(localName)) {
+      if (!V8ProtocolUtil.isInternalProperty(localName)) {
         Long ref = V8ProtocolUtil.getValueRef(local);
         JSONObject handle = handleManager.getHandle(ref);
         if (handle == null) {
           refToName.put(ref, localName);
         } else {
-          values.add(createValueMirror(handle, localName));
+          values.add(V8Helper.createValueMirror(handle, localName));
         }
       }
     }
@@ -515,7 +490,7 @@ public class DebugContextImpl implements DebugContext {
         String name = entry.getValue();
         // name is null for objects that should not be put into handleManager
         if (name != null) {
-          ValueMirror mirror = createValueMirror(object, name);
+          ValueMirror mirror = V8Helper.createValueMirror(object, name);
           if (THIS_NAME.equals(name)) {
             // "this" should go first
             values.add(0, mirror);
@@ -529,29 +504,4 @@ public class DebugContextImpl implements DebugContext {
     }
   }
 
-  private static String getFunctionName(JSONObject func) {
-    if (func == null) {
-      return "<unknown>";
-    } else {
-      String name = getNameOrInferred(func, V8Protocol.LOCAL_NAME);
-      if (name == null || name.isEmpty()) {
-        return "(anonymous function)";
-      } else {
-        return name;
-      }
-    }
-  }
-
-  private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
-    String name = JsonUtil.getAsString(obj, nameProperty);
-    if (name == null || name.isEmpty()) {
-      name = JsonUtil.getAsString(obj, V8Protocol.INFERRED_NAME);
-    }
-    return name;
-  }
-
-  private static boolean isInternalProperty(String propertyName) {
-    // Chromium can return properties like ".arguments". They should be ignored.
-    return propertyName.startsWith(".");
-  }
 }

@@ -102,4 +102,52 @@ public class V8ProtocolUtil {
     return -1L;
   }
 
+  /**
+   * @param propertyName the property name to check
+   * @return whether the given property name corresponds to an internal V8
+   *         property
+   */
+  public static boolean isInternalProperty(String propertyName) {
+    // Chrome can return properties like ".arguments". They should be ignored.
+    return propertyName.startsWith(".");
+  }
+
+  /**
+   * Gets a function name from the given function handle.
+   *
+   * @param func the function handle
+   * @return the actual of inferred function name. Will handle {@code null} or
+   *         unnamed functions
+   */
+  public static String getFunctionName(JSONObject func) {
+    if (func == null) {
+      return "<unknown>";
+    } else {
+      String name = getNameOrInferred(func, V8Protocol.LOCAL_NAME);
+      if (name == null || name.isEmpty()) {
+        return "(anonymous function)";
+      } else {
+        return name;
+      }
+    }
+  }
+
+  /**
+   * Gets a script id from a script response.
+   *
+   * @param response to the the "id" value from
+   * @return the script id
+   */
+  public static Long getScriptIdFromResponse(JSONObject response) {
+    return JsonUtil.getAsLong(response, V8Protocol.ID);
+  }
+
+  private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
+    String name = JsonUtil.getAsString(obj, nameProperty);
+    if (name == null || name.isEmpty()) {
+      name = JsonUtil.getAsString(obj, V8Protocol.INFERRED_NAME);
+    }
+    return name;
+  }
+
 }

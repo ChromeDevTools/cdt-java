@@ -119,7 +119,9 @@ public class SocketConnection implements Connection {
               log(Level.SEVERE, "Malformed protocol message", e);
               continue;
             }
-            inboundQueue.add(message);
+            if (message != null) {
+              inboundQueue.add(message);
+            }
           } else {
             String line = reader.readLine();
             if (CHROME_DEV_TOOLS_HANDSHAKE.equals(line)) {
