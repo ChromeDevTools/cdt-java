@@ -80,6 +80,7 @@
         extensions="js"
         default="true"
         icon="res/chromium_16.png"
+        contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
         class="org.chromium.debug.ui.editors.JsEditor"
         id="org.chromium.debug.ui.editors.JsEditor">
     </editor>
