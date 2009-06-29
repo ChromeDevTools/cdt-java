@@ -1,31 +1,31 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?metadataRepository version='1.1.0'?>
-<repository name='ChromeDevTools Update Site' type='org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository' version='1.0.0'>
+<repository name='file:/D:/Dev/chromedevtools/trunk/builder/releng.builder/../../../staging/buildRepo/ - metadata' type='org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository' version='1.0.0'>
   <properties size='2'>
-    <property name='p2.timestamp' value='1246298751925'/>
+    <property name='p2.timestamp' value='1246300170518'/>
     <property name='p2.compressed' value='false'/>
   </properties>
   <units size='18'>
-    <unit id='org.chromium.debug.source.feature.group' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.debug.source.feature.group' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='9'>
+    <unit id='org.chromium.source.feature.group' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.source.feature.group' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='8'>
         <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
         <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
         <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
         <property name='org.eclipse.equinox.p2.type.group' value='true'/>
-        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
+        <property name='df_LT.featureName' value='ChromeDevTools Project Source Code'/>
         <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser (source code)'/>
+        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools project components'/>
         <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
       </properties>
       <provides size='2'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.group' version='0.1.0.200906292205'/>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.group' version='0.1.0.200906292229'/>
         <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
       </provides>
-      <requires size='2'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.jar' range='[0.1.0.200906292205,0.1.0.200906292205]'>
+      <requires size='3'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.jar' range='[0.1.0.200906292229,0.1.0.200906292229]'>
           <filter>
             (org.eclipse.update.install.features=true)
           </filter>
@@ -41,390 +41,26 @@
         Copyright (c) 2009 The Chromium Authors. All rights reserved.
       </copyright>
     </unit>
-    <unit id='org.chromium.sdk.source.feature.jar' version='0.1.0.200906292205'>
-      <properties size='8'>
+    <unit id='org.chromium.sdk.feature.group' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.sdk.feature.group' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='9'>
         <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
         <property name='org.eclipse.equinox.p2.description' value='%description'/>
         <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk'/>
         <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='df_LT.featureName' value='ChromeDevTools SDK (Source Code)'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools SDK'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='3'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.jar' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
-        <provided namespace='org.eclipse.update.feature' name='org.chromium.sdk.source' version='0.1.0.200906292205'/>
-      </provides>
-      <filter>
-        (org.eclipse.update.install.features=true)
-      </filter>
-      <artifacts size='1'>
-        <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.debug.source' version='0.1.0.200906292205'>
-      <update id='org.chromium.debug.source' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='5'>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
-        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
-      </properties>
-      <provides size='4'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.debug.source' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.debug.source' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='2'>
-          <instruction key='manifest'>
-            Bundle-Vendor: %providerName&#xA;Bundle-SymbolicName: org.chromium.debug.source; singleton=true&#xA;Bundle-Localization: plugin&#xA;Bundle-Name: %pluginName&#xA;Manifest-Version: 1.0&#xA;Bundle-Version: 0.1.0.200906292205
-          </instruction>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-    </unit>
-    <unit id='org.chromium.source.feature.jar' version='0.1.0.200906292205'>
-      <properties size='7'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='df_LT.featureName' value='ChromeDevTools Project Source Code'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools project components'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='3'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.jar' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
-        <provided namespace='org.eclipse.update.feature' name='org.chromium.source' version='0.1.0.200906292205'/>
-      </provides>
-      <filter>
-        (org.eclipse.update.install.features=true)
-      </filter>
-      <artifacts size='1'>
-        <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.sdk.source' version='0.1.0.200906292205'>
-      <update id='org.chromium.sdk.source' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='5'>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.pluginName' value='ChromeDevTools SDK (Source Code)'/>
-        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
-      </properties>
-      <provides size='4'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.sdk.source' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='2'>
-          <instruction key='manifest'>
-            Bundle-Vendor: %providerName&#xA;Bundle-SymbolicName: org.chromium.sdk.source; singleton=true&#xA;Bundle-Localization: plugin&#xA;Bundle-Name: %pluginName&#xA;Manifest-Version: 1.0&#xA;Bundle-Version: 0.1.0.200906292205
-          </instruction>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-    </unit>
-    <unit id='org.chromium.debug.source.feature.jar' version='0.1.0.200906292205'>
-      <properties size='8'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser (source code)'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='3'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.jar' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
-        <provided namespace='org.eclipse.update.feature' name='org.chromium.debug.source' version='0.1.0.200906292205'/>
-      </provides>
-      <filter>
-        (org.eclipse.update.install.features=true)
-      </filter>
-      <artifacts size='1'>
-        <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.debug.ui' version='0.1.0.200906292205'>
-      <update id='org.chromium.debug.ui' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='5'>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger UI'/>
-        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
-      </properties>
-      <provides size='4'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.ui' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.debug.ui' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <requires size='9'>
-        <required namespace='osgi.bundle' name='org.eclipse.ui' range='0.0.0'/>
-        <required namespace='osgi.bundle' name='org.eclipse.core.runtime' range='0.0.0'/>
-        <required namespace='osgi.bundle' name='org.eclipse.debug.ui' range='3.4.1'/>
-        <required namespace='osgi.bundle' name='org.eclipse.ui.editors' range='3.4.0'/>
-        <required namespace='osgi.bundle' name='org.eclipse.jface.text' range='3.4.1'/>
-        <required namespace='osgi.bundle' name='org.eclipse.core.variables' range='3.2.100'/>
-        <required namespace='osgi.bundle' name='org.eclipse.ui.ide' range='3.4.1'/>
-        <required namespace='osgi.bundle' name='org.chromium.debug.core' range='0.1.0'/>
-        <required namespace='osgi.bundle' name='org.chromium.sdk' range='0.1.0'/>
-      </requires>
-      <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='manifest'>
-            Bundle-Vendor: %providerName&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-Activator: org.chromium.debug.ui.ChromiumDebugUIPlugin&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.debug.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui.editors;bundle-version=&quot;3.4.0&quot;,org.eclipse.jface.text;bundle-version=&quot;3.4.1&quot;,org.eclipse.core.variables;bundle-version=&quot;3.2.100&quot;,org.eclipse.ui.ide;bundle-version=&quot;3.4.1&quot;,org.chromium.debug.core;bundle-version=&quot;0.1.0&quot;,org.chromium.sdk;bundle-version=&quot;0.1.0&quot;&#xA;Bundle-Name: %pluginName&#xA;Bundle-Localization: plugin&#xA;Bundle-ActivationPolicy: lazy&#xA;Manifest-Version: 1.0&#xA;Bundle-SymbolicName: org.chromium.debug.ui;singleton:=true&#xA;Bundle-Version: 0.1.0.200906292205
-          </instruction>
-        </instructions>
-      </touchpointData>
-    </unit>
-    <unit id='org.chromium.sdk.feature.jar' version='0.1.0.200906292205'>
-      <properties size='8'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
         <property name='df_LT.featureName' value='ChromeDevTools SDK'/>
         <property name='df_LT.providerName' value='The Chromium Authors'/>
         <property name='df_LT.description' value='Google Chrome Developer Tools SDK'/>
         <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
       </properties>
-      <provides size='3'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.jar' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
-        <provided namespace='org.eclipse.update.feature' name='org.chromium.sdk' version='0.1.0.200906292205'/>
-      </provides>
-      <filter>
-        (org.eclipse.update.install.features=true)
-      </filter>
-      <artifacts size='1'>
-        <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.debug.feature.jar' version='0.1.0.200906292205'>
-      <properties size='9'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.update.feature.plugin' value='org.chromium.debug'/>
-        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='3'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.jar' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
-        <provided namespace='org.eclipse.update.feature' name='org.chromium.debug' version='0.1.0.200906292205'/>
-      </provides>
-      <filter>
-        (org.eclipse.update.install.features=true)
-      </filter>
-      <artifacts size='1'>
-        <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.sdk' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.sdk' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='2'>
-        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools SDK'/>
-        <property name='org.eclipse.equinox.p2.provider' value='The Chromium Authors'/>
-      </properties>
-      <provides size='10'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.sdk' version='0.1.0.200906292205'/>
-        <provided namespace='java.package' name='org.chromium.sdk' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.devtools' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8.processor' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8.request' version='0.0.0'/>
-        <provided namespace='java.package' name='org.chromium.sdk.internal.transport' version='0.0.0'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
-      </provides>
-      <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='1'>
-          <instruction key='manifest'>
-            Bundle-ManifestVersion: 2&#xA;Bundle-Name: Google Chrome Developer Tools SDK&#xA;Bundle-Version: 0.1.0.200906292205&#xA;Export-Package: org.chromium.sdk,org.chromium.sdk.internal;x-internal:=true,org.chromium.sdk.internal.tools.devtools;x-internal:=true,org.chromium.sdk.internal.tools.v8;x-internal:=true,org.chromium.sdk.internal.tools.v8.processor;x-internal:=true,org.chromium.sdk.internal.tools.v8.request;x-internal:=true,org.chromium.sdk.internal.transport;x-internal:=true&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Bundle-ClassPath: lib/json_simple/json_simple-1.1.jar,.&#xA;Bundle-SymbolicName: org.chromium.sdk&#xA;Manifest-Version: 1.0&#xA;Bundle-Vendor: The Chromium Authors
-          </instruction>
-        </instructions>
-      </touchpointData>
-    </unit>
-    <unit id='Google Chrome Developer Tools' version='0.0.0.20090629220550'>
-      <properties size='3'>
-        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools'/>
-        <property name='org.eclipse.equinox.p2.description' value='A set of tools for web developers using the Chromium browser'/>
-        <property name='org.eclipse.equinox.p2.type.category' value='true'/>
-      </properties>
-      <provides size='1'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='Google Chrome Developer Tools' version='0.0.0'/>
-      </provides>
-      <requires size='1'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-      </requires>
-      <touchpoint id='null' version='0.0.0'/>
-    </unit>
-    <unit id='Google Chrome Developer Tools' version='0.0.0.20090629220551'>
-      <properties size='3'>
-        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools'/>
-        <property name='org.eclipse.equinox.p2.description' value='A set of tools for web developers using the Chromium browser'/>
-        <property name='org.eclipse.equinox.p2.type.category' value='true'/>
-      </properties>
-      <provides size='1'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='Google Chrome Developer Tools' version='0.0.0'/>
+      <provides size='2'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
       </provides>
       <requires size='2'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.group' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-      </requires>
-      <touchpoint id='null' version='0.0.0'/>
-    </unit>
-    <unit id='org.chromium.debug.feature.group' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.debug.feature.group' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='9'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
-        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='2'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.group' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <requires size='14'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0,1.0.0)'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.runtime' range='0.0.0'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.filesystem' range='1.2.0'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.debug.ui' range='3.4.1'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui' range='3.4.1'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.jface.text' range='3.4.1'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.workbench.texteditor' range='3.4.1'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.editors' range='3.4.0'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.variables' range='3.2.100'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.ide' range='3.4.1'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.core' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.ui' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.jar' range='[0.1.0.200906292205,0.1.0.200906292205]'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.jar' range='[0.1.0.200906292229,0.1.0.200906292229]'>
           <filter>
             (org.eclipse.update.install.features=true)
           </filter>
@@ -440,73 +76,8 @@
         Copyright (c) 2009 The Chromium Authors. All rights reserved.
       </copyright>
     </unit>
-    <unit id='org.chromium.source.feature.group' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.source.feature.group' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='8'>
-        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
-        <property name='org.eclipse.equinox.p2.description' value='%description'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
-        <property name='df_LT.featureName' value='ChromeDevTools Project Source Code'/>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools project components'/>
-        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
-      </properties>
-      <provides size='2'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.group' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <requires size='3'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.group' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.group' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.jar' range='[0.1.0.200906292205,0.1.0.200906292205]'>
-          <filter>
-            (org.eclipse.update.install.features=true)
-          </filter>
-        </required>
-      </requires>
-      <touchpoint id='null' version='0.0.0'/>
-      <licenses size='1'>
-        <license uri='%25licenseUrl' url='%25licenseUrl'>
-          %licenseAgreement
-        </license>
-      </licenses>
-      <copyright>
-        Copyright (c) 2009 The Chromium Authors. All rights reserved.
-      </copyright>
-    </unit>
-    <unit id='org.chromium.debug' version='0.1.0.200906292205'>
-      <update id='org.chromium.debug' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='5'>
-        <property name='df_LT.providerName' value='The Chromium Authors'/>
-        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger'/>
-        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
-        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
-      </properties>
-      <provides size='4'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.debug' version='0.1.0.200906292205'/>
-        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
-        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
-      </provides>
-      <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.1.0.200906292205'/>
-      </artifacts>
-      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
-      <touchpointData size='1'>
-        <instructions size='2'>
-          <instruction key='manifest'>
-            Bundle-Name: %pluginName&#xA;Bundle-Version: 0.1.0.200906292205&#xA;Bundle-SymbolicName: org.chromium.debug; singleton:=true&#xA;Manifest-Version: 1.0&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-Vendor: %providerName&#xA;Bundle-Localization: plugin
-          </instruction>
-          <instruction key='zipped'>
-            true
-          </instruction>
-        </instructions>
-      </touchpointData>
-    </unit>
-    <unit id='org.chromium.debug.core' version='0.1.0.200906292205'>
-      <update id='org.chromium.debug.core' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
+    <unit id='org.chromium.debug.core' version='0.1.0.200906292229'>
+      <update id='org.chromium.debug.core' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
       <properties size='5'>
         <property name='df_LT.providerName' value='The Chromium Authors'/>
         <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger Core'/>
@@ -515,8 +86,8 @@
         <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
       </properties>
       <provides size='8'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.core' version='0.1.0.200906292205'/>
-        <provided namespace='osgi.bundle' name='org.chromium.debug.core' version='0.1.0.200906292205'/>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.core' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.debug.core' version='0.1.0.200906292229'/>
         <provided namespace='java.package' name='org.chromium.debug.core' version='0.0.0'/>
         <provided namespace='java.package' name='org.chromium.debug.core.model' version='0.0.0'/>
         <provided namespace='java.package' name='org.chromium.debug.core.util' version='0.0.0'/>
@@ -534,19 +105,94 @@
         <required namespace='osgi.bundle' name='org.chromium.sdk' range='0.1.0'/>
       </requires>
       <artifacts size='1'>
-        <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.1.0.200906292205'/>
+        <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.1.0.200906292229'/>
       </artifacts>
       <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
       <touchpointData size='1'>
         <instructions size='1'>
           <instruction key='manifest'>
-            Bundle-Name: %pluginName&#xA;Bundle-ClassPath: bin/,.,lib/json_simple/json_simple-1.1.jar&#xA;Bundle-Version: 0.1.0.200906292205&#xA;Eclipse-LazyStart: true&#xA;Bundle-Activator: org.chromium.debug.core.ChromiumDebugPlugin&#xA;Bundle-Vendor: %providerName&#xA;Require-Bundle: org.eclipse.core.runtime,org.eclipse.core.filesystem;bundle-version=&quot;1.2.0&quot;,org.eclipse.debug.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.jface.text;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui.workbench.texteditor;bundle-version=&quot;3.4.1&quot;,org.chromium.sdk;bundle-version=&quot;0.1.0&quot;&#xA;Export-Package: org.chromium.debug.core,org.chromium.debug.core.model,org.chromium.debug.core.util,org.json.simple&#xA;Bundle-SymbolicName: org.chromium.debug.core;singleton:=true&#xA;Manifest-Version: 1.0&#xA;Bundle-ActivationPolicy: lazy&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Bundle-Localization: plugin
+            Bundle-Name: %pluginName&#xA;Bundle-ClassPath: bin/,.,lib/json_simple/json_simple-1.1.jar&#xA;Bundle-Version: 0.1.0.200906292229&#xA;Eclipse-LazyStart: true&#xA;Bundle-Activator: org.chromium.debug.core.ChromiumDebugPlugin&#xA;Bundle-Vendor: %providerName&#xA;Require-Bundle: org.eclipse.core.runtime,org.eclipse.core.filesystem;bundle-version=&quot;1.2.0&quot;,org.eclipse.debug.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.jface.text;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui.workbench.texteditor;bundle-version=&quot;3.4.1&quot;,org.chromium.sdk;bundle-version=&quot;0.1.0&quot;&#xA;Export-Package: org.chromium.debug.core,org.chromium.debug.core.model,org.chromium.debug.core.util,org.json.simple&#xA;Bundle-SymbolicName: org.chromium.debug.core;singleton:=true&#xA;Manifest-Version: 1.0&#xA;Bundle-ActivationPolicy: lazy&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Bundle-Localization: plugin
           </instruction>
         </instructions>
       </touchpointData>
     </unit>
-    <unit id='org.chromium.sdk.source.feature.group' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.sdk.source.feature.group' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
+    <unit id='Google Chrome Developer Tools' version='0.0.0.20090629222930'>
+      <properties size='2'>
+        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools'/>
+        <property name='org.eclipse.equinox.p2.type.category' value='true'/>
+      </properties>
+      <provides size='1'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='Google Chrome Developer Tools' version='0.0.0'/>
+      </provides>
+      <requires size='3'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+      </requires>
+      <touchpoint id='null' version='0.0.0'/>
+    </unit>
+    <unit id='org.chromium.sdk.source' version='0.1.0.200906292229'>
+      <update id='org.chromium.sdk.source' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='5'>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.pluginName' value='ChromeDevTools SDK (Source Code)'/>
+        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
+      </properties>
+      <provides size='4'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.sdk.source' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
+      </provides>
+      <artifacts size='1'>
+        <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='2'>
+          <instruction key='manifest'>
+            Bundle-Vendor: %providerName&#xA;Bundle-SymbolicName: org.chromium.sdk.source; singleton=true&#xA;Bundle-Localization: plugin&#xA;Bundle-Name: %pluginName&#xA;Manifest-Version: 1.0&#xA;Bundle-Version: 0.1.0.200906292229
+          </instruction>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+    <unit id='org.chromium.debug' version='0.1.0.200906292229'>
+      <update id='org.chromium.debug' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='5'>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger'/>
+        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
+      </properties>
+      <provides size='4'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.debug' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
+      </provides>
+      <artifacts size='1'>
+        <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='2'>
+          <instruction key='manifest'>
+            Bundle-Name: %pluginName&#xA;Bundle-Version: 0.1.0.200906292229&#xA;Bundle-SymbolicName: org.chromium.debug; singleton:=true&#xA;Manifest-Version: 1.0&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-Vendor: %providerName&#xA;Bundle-Localization: plugin
+          </instruction>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+    <unit id='org.chromium.sdk.source.feature.group' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.sdk.source.feature.group' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
       <properties size='9'>
         <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
         <property name='org.eclipse.equinox.p2.description' value='%description'/>
@@ -559,12 +205,12 @@
         <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
       </properties>
       <provides size='2'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.group' version='0.1.0.200906292205'/>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.group' version='0.1.0.200906292229'/>
         <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
       </provides>
       <requires size='2'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.jar' range='[0.1.0.200906292205,0.1.0.200906292205]'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.jar' range='[0.1.0.200906292229,0.1.0.200906292229]'>
           <filter>
             (org.eclipse.update.install.features=true)
           </filter>
@@ -580,26 +226,253 @@
         Copyright (c) 2009 The Chromium Authors. All rights reserved.
       </copyright>
     </unit>
-    <unit id='org.chromium.sdk.feature.group' version='0.1.0.200906292205' singleton='false'>
-      <update id='org.chromium.sdk.feature.group' range='[0.0.0,0.1.0.200906292205)' severity='0'/>
-      <properties size='9'>
+    <unit id='org.chromium.sdk.source.feature.jar' version='0.1.0.200906292229'>
+      <properties size='8'>
         <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
         <property name='org.eclipse.equinox.p2.description' value='%description'/>
         <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk'/>
         <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
-        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
+        <property name='df_LT.featureName' value='ChromeDevTools SDK (Source Code)'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools SDK'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='3'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.source.feature.jar' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
+        <provided namespace='org.eclipse.update.feature' name='org.chromium.sdk.source' version='0.1.0.200906292229'/>
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size='1'>
+        <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='org.chromium.debug.source.feature.jar' version='0.1.0.200906292229'>
+      <properties size='8'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser (source code)'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='3'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.jar' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
+        <provided namespace='org.eclipse.update.feature' name='org.chromium.debug.source' version='0.1.0.200906292229'/>
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size='1'>
+        <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='org.chromium.sdk' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.sdk' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='2'>
+        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools SDK'/>
+        <property name='org.eclipse.equinox.p2.provider' value='The Chromium Authors'/>
+      </properties>
+      <provides size='10'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.sdk' version='0.1.0.200906292229'/>
+        <provided namespace='java.package' name='org.chromium.sdk' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.devtools' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8.processor' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal.tools.v8.request' version='0.0.0'/>
+        <provided namespace='java.package' name='org.chromium.sdk.internal.transport' version='0.0.0'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
+      </provides>
+      <artifacts size='1'>
+        <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='manifest'>
+            Bundle-ManifestVersion: 2&#xA;Bundle-Name: Google Chrome Developer Tools SDK&#xA;Bundle-Version: 0.1.0.200906292229&#xA;Export-Package: org.chromium.sdk,org.chromium.sdk.internal;x-internal:=true,org.chromium.sdk.internal.tools.devtools;x-internal:=true,org.chromium.sdk.internal.tools.v8;x-internal:=true,org.chromium.sdk.internal.tools.v8.processor;x-internal:=true,org.chromium.sdk.internal.tools.v8.request;x-internal:=true,org.chromium.sdk.internal.transport;x-internal:=true&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Bundle-ClassPath: lib/json_simple/json_simple-1.1.jar,.&#xA;Bundle-SymbolicName: org.chromium.sdk&#xA;Manifest-Version: 1.0&#xA;Bundle-Vendor: The Chromium Authors
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+    <unit id='org.chromium.source.feature.jar' version='0.1.0.200906292229'>
+      <properties size='7'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='df_LT.featureName' value='ChromeDevTools Project Source Code'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='Source code for the Google Chrome Developer Tools project components'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='3'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.source.feature.jar' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
+        <provided namespace='org.eclipse.update.feature' name='org.chromium.source' version='0.1.0.200906292229'/>
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size='1'>
+        <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='org.chromium.sdk.feature.jar' version='0.1.0.200906292229'>
+      <properties size='8'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
         <property name='df_LT.featureName' value='ChromeDevTools SDK'/>
         <property name='df_LT.providerName' value='The Chromium Authors'/>
         <property name='df_LT.description' value='Google Chrome Developer Tools SDK'/>
         <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
       </properties>
-      <provides size='2'>
-        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' version='0.1.0.200906292205'/>
+      <provides size='3'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.jar' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
+        <provided namespace='org.eclipse.update.feature' name='org.chromium.sdk' version='0.1.0.200906292229'/>
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size='1'>
+        <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='org.chromium.debug.source' version='0.1.0.200906292229'>
+      <update id='org.chromium.debug.source' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='5'>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
+        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
+      </properties>
+      <provides size='4'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.debug.source' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
         <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
       </provides>
-      <requires size='2'>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk' range='[0.1.0.200906292205,0.1.0.200906292205]'/>
-        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.jar' range='[0.1.0.200906292205,0.1.0.200906292205]'>
+      <artifacts size='1'>
+        <artifact classifier='osgi.bundle' id='org.chromium.debug.source' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='2'>
+          <instruction key='manifest'>
+            Bundle-Vendor: %providerName&#xA;Bundle-SymbolicName: org.chromium.debug.source; singleton=true&#xA;Bundle-Localization: plugin&#xA;Bundle-Name: %pluginName&#xA;Manifest-Version: 1.0&#xA;Bundle-Version: 0.1.0.200906292229
+          </instruction>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+    <unit id='org.chromium.debug.feature.group' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.debug.feature.group' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='9'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
+        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='2'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.group' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
+      </provides>
+      <requires size='14'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0,1.0.0)'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.runtime' range='0.0.0'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.filesystem' range='1.2.0'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.debug.ui' range='3.4.1'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui' range='3.4.1'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.jface.text' range='3.4.1'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.workbench.texteditor' range='3.4.1'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.editors' range='3.4.0'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.core.variables' range='3.2.100'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.eclipse.ui.ide' range='3.4.1'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.core' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.ui' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.jar' range='[0.1.0.200906292229,0.1.0.200906292229]'>
           <filter>
             (org.eclipse.update.install.features=true)
           </filter>
@@ -614,6 +487,132 @@
       <copyright>
         Copyright (c) 2009 The Chromium Authors. All rights reserved.
       </copyright>
+    </unit>
+    <unit id='org.chromium.debug.ui' version='0.1.0.200906292229'>
+      <update id='org.chromium.debug.ui' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='5'>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.pluginName' value='Chromium JavaScript Remote Debugger UI'/>
+        <property name='org.eclipse.equinox.p2.name' value='%pluginName'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.bundle.localization' value='plugin'/>
+      </properties>
+      <provides size='4'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.ui' version='0.1.0.200906292229'/>
+        <provided namespace='osgi.bundle' name='org.chromium.debug.ui' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
+      </provides>
+      <requires size='9'>
+        <required namespace='osgi.bundle' name='org.eclipse.ui' range='0.0.0'/>
+        <required namespace='osgi.bundle' name='org.eclipse.core.runtime' range='0.0.0'/>
+        <required namespace='osgi.bundle' name='org.eclipse.debug.ui' range='3.4.1'/>
+        <required namespace='osgi.bundle' name='org.eclipse.ui.editors' range='3.4.0'/>
+        <required namespace='osgi.bundle' name='org.eclipse.jface.text' range='3.4.1'/>
+        <required namespace='osgi.bundle' name='org.eclipse.core.variables' range='3.2.100'/>
+        <required namespace='osgi.bundle' name='org.eclipse.ui.ide' range='3.4.1'/>
+        <required namespace='osgi.bundle' name='org.chromium.debug.core' range='0.1.0'/>
+        <required namespace='osgi.bundle' name='org.chromium.sdk' range='0.1.0'/>
+      </requires>
+      <artifacts size='1'>
+        <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='manifest'>
+            Bundle-Vendor: %providerName&#xA;Bundle-ManifestVersion: 2&#xA;Bundle-Activator: org.chromium.debug.ui.ChromiumDebugUIPlugin&#xA;Bundle-RequiredExecutionEnvironment: JavaSE-1.6&#xA;Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.debug.ui;bundle-version=&quot;3.4.1&quot;,org.eclipse.ui.editors;bundle-version=&quot;3.4.0&quot;,org.eclipse.jface.text;bundle-version=&quot;3.4.1&quot;,org.eclipse.core.variables;bundle-version=&quot;3.2.100&quot;,org.eclipse.ui.ide;bundle-version=&quot;3.4.1&quot;,org.chromium.debug.core;bundle-version=&quot;0.1.0&quot;,org.chromium.sdk;bundle-version=&quot;0.1.0&quot;&#xA;Bundle-Name: %pluginName&#xA;Bundle-Localization: plugin&#xA;Bundle-ActivationPolicy: lazy&#xA;Manifest-Version: 1.0&#xA;Bundle-SymbolicName: org.chromium.debug.ui;singleton:=true&#xA;Bundle-Version: 0.1.0.200906292229
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+    <unit id='org.chromium.debug.feature.jar' version='0.1.0.200906292229'>
+      <properties size='9'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.update.feature.plugin' value='org.chromium.debug'/>
+        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='3'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.feature.jar' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='feature' version='1.0.0'/>
+        <provided namespace='org.eclipse.update.feature' name='org.chromium.debug' version='0.1.0.200906292229'/>
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size='1'>
+        <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.1.0.200906292229'/>
+      </artifacts>
+      <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+      <touchpointData size='1'>
+        <instructions size='1'>
+          <instruction key='zipped'>
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='org.chromium.debug.source.feature.group' version='0.1.0.200906292229' singleton='false'>
+      <update id='org.chromium.debug.source.feature.group' range='[0.0.0,0.1.0.200906292229)' severity='0'/>
+      <properties size='9'>
+        <property name='org.eclipse.equinox.p2.name' value='%featureName'/>
+        <property name='org.eclipse.equinox.p2.description' value='%description'/>
+        <property name='org.eclipse.equinox.p2.description.url' value='http://code.google.com/p/chromedevtools/wiki/EclipseDebugger'/>
+        <property name='org.eclipse.equinox.p2.provider' value='%providerName'/>
+        <property name='org.eclipse.equinox.p2.type.group' value='true'/>
+        <property name='df_LT.featureName' value='Chromium JavaScript Remote Debugger (Source Code)'/>
+        <property name='df_LT.providerName' value='The Chromium Authors'/>
+        <property name='df_LT.description' value='A remote Eclipse debugger for JavaScript developers using the Chromium browser (source code)'/>
+        <property name='df_LT.licenseAgreement' value='Copyright (c) 2009 The Chromium Authors. All rights reserved.&#xA;&#xA;Redistribution and use in source and binary forms, with or without modification,are permitted provided that the following conditions are met:&#xA;* Redistributions of source code must retain the above copyright notice,this list of conditions and the following disclaimer.&#xA;* Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.&#xA;* Neither the name of Google Inc. nor the names of its contributors may be usedto endorse or promote products derived from this software without specific priorwritten permission.&#xA;&#xA;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUTNOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY ANDFITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENTSHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODSOR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISINGIN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITYOF SUCH DAMAGE.'/>
+      </properties>
+      <provides size='2'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.group' version='0.1.0.200906292229'/>
+        <provided namespace='org.eclipse.equinox.p2.localization' name='df_LT' version='1.0.0'/>
+      </provides>
+      <requires size='2'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.debug.source.feature.jar' range='[0.1.0.200906292229,0.1.0.200906292229]'>
+          <filter>
+            (org.eclipse.update.install.features=true)
+          </filter>
+        </required>
+      </requires>
+      <touchpoint id='null' version='0.0.0'/>
+      <licenses size='1'>
+        <license uri='%25licenseUrl' url='%25licenseUrl'>
+          %licenseAgreement
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      </copyright>
+    </unit>
+    <unit id='Google Chrome Developer Tools' version='0.0.0.20090629222929'>
+      <properties size='2'>
+        <property name='org.eclipse.equinox.p2.name' value='Google Chrome Developer Tools'/>
+        <property name='org.eclipse.equinox.p2.type.category' value='true'/>
+      </properties>
+      <provides size='1'>
+        <provided namespace='org.eclipse.equinox.p2.iu' name='Google Chrome Developer Tools' version='0.0.0'/>
+      </provides>
+      <requires size='1'>
+        <required namespace='org.eclipse.equinox.p2.iu' name='org.chromium.sdk.feature.group' range='[0.1.0.200906292229,0.1.0.200906292229]'/>
+      </requires>
+      <touchpoint id='null' version='0.0.0'/>
     </unit>
   </units>
 </repository>
