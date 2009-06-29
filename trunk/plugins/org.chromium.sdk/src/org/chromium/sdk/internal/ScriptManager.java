@@ -13,6 +13,7 @@ import java.util.Map;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.ScriptImpl.Descriptor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.json.simple.JSONObject;
 
 /**
@@ -45,14 +46,14 @@ public class ScriptManager {
    *         name
    */
   public Script addScript(JSONObject response) {
-    Descriptor desc = Descriptor.forResponse(response);
-    if (desc == null) {
-      return null;
-    }
 
-    ScriptImpl theScript = (ScriptImpl) findScript(desc);
+    ScriptImpl theScript = (ScriptImpl) findById(V8ProtocolUtil.getScriptIdFromResponse(response));
 
     if (theScript == null) {
+      Descriptor desc = Descriptor.forResponse(response);
+      if (desc == null) {
+        return null;
+      }
       theScript = new ScriptImpl(desc);
       idToScript.put(JsonUtil.getAsLong(response, V8Protocol.ID), theScript);
     }
@@ -72,11 +73,7 @@ public class ScriptManager {
    *         {@code false} if the script name is absent in the {@code response}
    */
   public boolean hasScript(JSONObject response) {
-    Descriptor desc = Descriptor.forResponse(response);
-    if (desc == null) {
-      return false;
-    }
-    return findScript(desc) != null;
+    return findById(V8ProtocolUtil.getScriptIdFromResponse(response)) != null;
   }
 
   /**

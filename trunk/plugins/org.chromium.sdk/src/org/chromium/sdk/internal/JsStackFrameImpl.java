@@ -94,7 +94,7 @@ public class JsStackFrameImpl implements JsStackFrame {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
               JsVariable variable =
-                  new JsVariableImpl(JsStackFrameImpl.this, DebugContextImpl.createValueMirror(
+                  new JsVariableImpl(JsStackFrameImpl.this, V8Helper.createValueMirror(
                       JsonUtil.getBody(response), expression));
               if (variable != null) {
                 callback.success(variable);

@@ -21,6 +21,15 @@ public class BrowserTabImpl implements BrowserTab {
    */
   public interface V8HandlerCallback {
 
+    /** A no-op callback implementation. */
+    V8HandlerCallback NULL_CALLBACK = new V8HandlerCallback() {
+      public void failure(String message) {
+      }
+
+      public void messageReceived(JSONObject response) {
+      }
+    };
+
     /**
      * This method is invoked when a debugger command result has become
      * available.
