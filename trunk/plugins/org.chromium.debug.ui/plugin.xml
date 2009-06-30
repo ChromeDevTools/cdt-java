@@ -77,7 +77,7 @@
   <extension point="org.eclipse.ui.editors">
     <editor
         name="JS Editor"
-        extensions="js"
+        extensions="chromium"
         default="true"
         icon="res/chromium_16.png"
         contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
@@ -133,6 +133,22 @@
         <contentExtension pattern="org.eclipse.ui.navigator.resources.filters.*" />
       </includes>
     </viewerContentBinding>
+  </extension>
+
+  <extension
+      point="org.eclipse.ui.decorators">
+    <decorator
+        label="%ChromiumJavascriptDecorator.label"
+        id="org.chromium.debug.ui.decorators.ChromiumJavaScript"
+        state="true"
+        class="org.chromium.debug.ui.ChromiumJavascriptDecorator">
+      <enablement>
+        <and>
+          <objectClass name="org.eclipse.core.resources.IFile"/>
+          <objectState name="name" value="*.chromium"/>
+        </and>
+      </enablement>
+    </decorator>
   </extension>
 
   <extension point="org.eclipse.ui.commands">

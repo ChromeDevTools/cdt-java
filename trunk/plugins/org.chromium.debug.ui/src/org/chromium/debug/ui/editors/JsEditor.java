@@ -4,6 +4,7 @@
 
 package org.chromium.debug.ui.editors;
 
+import org.chromium.debug.ui.PluginUtil;
 import org.eclipse.ui.editors.text.TextEditor;
 
 /**
@@ -35,4 +36,8 @@ public class JsEditor extends TextEditor {
         "org.chromium.debug.ui.editors.JsEditor.context" }); //$NON-NLS-1$
   }
 
+  @Override
+  protected void setPartName(String partName) {
+    super.setPartName(PluginUtil.stripChromiumExtension(partName));
+  }
 }
