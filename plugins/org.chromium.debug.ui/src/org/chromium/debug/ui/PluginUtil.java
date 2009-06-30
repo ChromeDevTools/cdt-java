@@ -4,6 +4,11 @@
 
 package org.chromium.debug.ui;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -41,6 +46,36 @@ public class PluginUtil {
     });
   }
 
+  /**
+   * Determines whether {@code file} is a .chromium file in a
+   * JavaScript debug project.
+   *
+   * @param file to test
+   * @return whether the file extension is ".chromium" and its project has the
+   *         ChromiumDebugPluginUtil#JS_DEBUG_PROJECT_NATURE nature
+   */
+  public static boolean isChromiumDebugFile(IFile file) {
+    IProject project = file.getProject();
+    try {
+      return (project.hasNature(ChromiumDebugPluginUtil.JS_DEBUG_PROJECT_NATURE) &&
+          file.getName().endsWith(ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX));
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
+      return false;
+    }
+  }
+
+
+  /**
+   * Removes the ".chromium" extension from the fileName.
+   *
+   * @param fileName to remove the extension from
+   * @return a file name without the ".chromium" extension
+   */
+  public static String stripChromiumExtension(String fileName) {
+    return fileName.substring(
+        0, fileName.length() - ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX.length());
+  }
 
   private PluginUtil() {
     // not instantiable

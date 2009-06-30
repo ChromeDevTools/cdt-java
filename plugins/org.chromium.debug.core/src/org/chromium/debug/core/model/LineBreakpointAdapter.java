@@ -64,7 +64,7 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
       ITextEditor editorPart = (ITextEditor) part;
       IResource resource = (IResource) editorPart.getEditorInput().getAdapter(IResource.class);
       if (resource != null &&
-          ChromiumDebugPluginUtil.JS_EXTENSION.equals(resource.getFileExtension())) {
+          ChromiumDebugPluginUtil.CHROMIUM_EXTENSION.equals(resource.getFileExtension())) {
         return editorPart;
       }
     }

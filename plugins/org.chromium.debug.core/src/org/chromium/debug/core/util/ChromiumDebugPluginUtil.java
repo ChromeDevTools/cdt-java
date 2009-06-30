@@ -32,14 +32,13 @@ import org.eclipse.ui.PlatformUI;
  */
 public class ChromiumDebugPluginUtil {
 
-  public static final String JS_EXTENSION = "js"; //$NON-NLS-1$
+  public static final String CHROMIUM_EXTENSION = "chromium"; //$NON-NLS-1$
+
+  public static final String JS_DEBUG_PROJECT_NATURE = "org.chromium.debug.core.jsnature"; //$NON-NLS-1$
+
+  public static final String CHROMIUM_EXTENSION_SUFFIX = "." + CHROMIUM_EXTENSION; //$NON-NLS-1$
 
   private static final String PROJECT_EXPLORER_ID = "org.eclipse.ui.navigator.ProjectExplorer"; //$NON-NLS-1$
-
-  private static final String JS_EXTENSION_SUFFIX = "." + JS_EXTENSION; //$NON-NLS-1$
-
-  private static final String JS_DEBUG_PROJECT_NATURE = "org.chromium.debug.core.jsnature"; //$NON-NLS-1$
-
 
   /**
    * Brings up the "Project Explorer" view in the active workbench window.
@@ -120,26 +119,27 @@ public class ChromiumDebugPluginUtil {
   /**
    * Creates an empty file with the given filename in the given project.
    *
-   * @param project to create a file in
-   * @param filename the base file name to create (shall be suffixed in the
-   *        event of name clash)
-   * @return the result of IFile.getName(), or null if the creation failed.
+   * @param project to create the file in
+   * @param filename the base file name to create (will be sanitized for
+   *        illegal chars and, in the case of a name clash, suffixed with "(N)")
+   * @return the result of IFile.getName(), or {@code null} if the creation
+   *         has failed
    */
   public static IFile createFile(IProject project, String filename) {
-    filename = new File(filename).getName(); // simple name
-    filename = filename.replace('?', '_');
-    filename = filename.endsWith(JS_EXTENSION_SUFFIX)
-        ? filename.substring(0, filename.length() - JS_EXTENSION_SUFFIX.length())
-        : filename;
-    String uniqueName = filename;
+    String patchedName = new File(filename).getName().replace('?', '_'); // simple name
+    String uniqueName = patchedName;
 
     // TODO(apavlov): refactor this?
     for (int i = 1; i < 1000; ++i) {
-      String filePathname = uniqueName + JS_EXTENSION_SUFFIX;
+      String filePathname = uniqueName + CHROMIUM_EXTENSION_SUFFIX;
       IFile file = project.getFile(filePathname);
 
       if (file.exists()) {
-        uniqueName = filename + "_" + i; //$NON-NLS-1$
+        uniqueName = new StringBuilder(patchedName)
+            .append(" (") //$NON-NLS-1$
+            .append(i)
+            .append(')')
+            .toString();
       } else {
         try {
           file.create(new ByteArrayInputStream("".getBytes()), false, null); //$NON-NLS-1$
