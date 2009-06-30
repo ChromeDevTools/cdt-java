@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.chromium.sdk_0.1.0.qualifier" id="org.chromium.sdk" version="0.1.0.qualifier">
+   <feature url="features/org.chromium.debug_0.1.0.qualifier.jar" id="org.chromium.debug" version="0.1.0.qualifier">
       <category name="Google Chrome Developer Tools"/>
    </feature>
-   <feature url="features/org.chromium.debug_0.1.0.qualifier" id="org.chromium.debug" version="0.1.0.qualifier">
+   <feature url="features/org.chromium.sdk_0.1.0.qualifier.jar" id="org.chromium.sdk" version="0.1.0.qualifier">
       <category name="Google Chrome Developer Tools"/>
    </feature>
-   <feature url="features/org.chromium.source_0.1.0.qualifier" id="org.chromium.source" version="0.1.0.qualifier">
+   <feature url="features/org.chromium.source_0.1.0.qualifier.jar" id="org.chromium.source" version="0.1.0.qualifier">
       <category name="Google Chrome Developer Tools"/>
    </feature>
-   <category-def name="Google Chrome Developer Tools" label="Google Chrome Developer Tools">
-      <description>
-         A set of tools for web developers using the Chromium browser
-      </description>
-   </category-def>
+   <category-def name="Google Chrome Developer Tools" label="Google Chrome Developer Tools"/>
 </site>
