@@ -74,8 +74,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       try {
         tabs = browser.getTabs();
       } catch (IOException e) {
+        monitor.done();
         throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
       } catch (IllegalStateException e) {
+        monitor.done();
         throw newCoreException("Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
       }
       this.launch = launch;
@@ -85,9 +87,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       if (targetTab != null) {
         monitor.worked(1);
         if (targetTab.attach(this)) {
-          onAttach(projectName, attachCallback);
+          onAttach(projectName, monitor, attachCallback);
           return;
         }
+        monitor.done();
         // Could not attach. Log warning...
         ChromiumDebugPlugin.logWarning("Could not attach to a browser instance"); //$NON-NLS-1$
         // ... and fall through.
@@ -95,20 +98,29 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       // Attachment cancelled
       setDisconnected(true);
       fireTerminateEvent();
-    } finally {
+    } catch (CoreException e) {
       monitor.done();
+      throw e;
+    } catch (RuntimeException e) {
+      monitor.done();
+      throw e;
     }
   }
 
-  private void onAttach(String projectName, final Runnable attachCallback) {
+  private void onAttach(String projectName, final IProgressMonitor monitor,
+      final Runnable attachCallback) {
     this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
     reloadScripts(true, new Runnable() {
       public void run() {
-        fireCreationEvent();
-        resumed();
-        if (attachCallback != null) {
-          attachCallback.run();
+        try {
+          if (attachCallback != null) {
+            attachCallback.run();
+          }
+        } finally {
+          fireCreationEvent();
+          resumed();
+          monitor.done();
         }
       }
     });

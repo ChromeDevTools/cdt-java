@@ -15,6 +15,7 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
@@ -192,13 +193,13 @@ public class JsVariableImpl implements JsVariable {
   }
 
   /**
-   * Resolves property references and sets the class name of an Object variable
+   * Resolves property references and sets the class name of an Object variable.
+   *
    * @param className of this object
    * @param properties of the Object variable
    */
   public synchronized void setProperties(String className, PropertyReference[] properties) {
     if (properties != null) {
-      // ensureProperties(properties);
       valueData.setProperties(className, properties);
     }
   }
@@ -282,7 +283,7 @@ public class JsVariableImpl implements JsVariable {
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(new ArrayList<Long>(handlesToRequest));
     Exception ex =
-        getV8Handler().sendV8CommandBlocking(message, false, new BrowserTabImpl.V8HandlerCallback() {
+        getV8Handler().sendV8CommandBlocking(message, new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!fillVariablesFromLookupReply(handleManager, vars, variableToRef, response)) {
               JsVariableImpl.this.failedResponse = false;
@@ -356,7 +357,7 @@ public class JsVariableImpl implements JsVariable {
     if (JsDataType.isObjectType(type)) {
       if (!variable.isPendingReq()) {
         if (!variable.isWaitDrilling()) {
-          PropertyReference[] propertyRefs = DebugContextImpl.extractObjectProperties(handleObject);
+          PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handleObject);
           variable.setProperties(JsonUtil.getAsString(handleObject, V8Protocol.REF_CLASSNAME),
               propertyRefs);
         }

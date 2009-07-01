@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * A transport message encapsulating the data sent/received over the wire
@@ -62,6 +63,11 @@ public class Message {
   }
 
   /**
+   * The class logger.
+   */
+  private static final Logger LOGGER = Logger.getLogger(Message.class.getName());
+
+  /**
    * The end of protocol header line.
    */
   private static final String HEADER_TERMINATOR = "\r\n";
@@ -73,8 +79,9 @@ public class Message {
   public Message(Map<String, String> headers, String content) {
     this.headers = new HashMap<String, String>(headers);
     this.content = content;
-    this.headers.put(Header.CONTENT_LENGTH.name,
-        String.valueOf(content == null ? 0 : content.length()));
+    this.headers.put(Header.CONTENT_LENGTH.name, String.valueOf(content == null
+        ? 0
+        : content.length()));
   }
 
   /**
@@ -99,8 +106,8 @@ public class Message {
    * Reads a message from the specified reader.
    *
    * @param reader to read message from
-   * @return a new message, or {@code null} if input invalid (end-of-stream or
-   *         bad message format)
+   * @return a new message, or {@code null} if input is invalid (end-of-stream
+   *         or bad message format)
    * @throws IOException
    * @throws MalformedMessageException if the input does not represent a valid
    *         message
@@ -112,6 +119,7 @@ public class Message {
       while (true) { // read headers
         String line = reader.readLine();
         if (line == null) {
+          LOGGER.fine("End of stream");
           return null;
         }
         if (line.length() == 0) {
@@ -119,6 +127,7 @@ public class Message {
         }
         String[] nameValue = line.split(":", 2);
         if (nameValue.length != 2) {
+          LOGGER.severe("Bad header line: " + line);
           return null;
         } else {
           headers.put(nameValue[0], nameValue[1]);
@@ -129,10 +138,12 @@ public class Message {
       int contentLength = Integer.valueOf(getHeader(headers, Header.CONTENT_LENGTH.name, "0"));
       char[] content = new char[contentLength];
       int totalRead = 0;
+      LOGGER.finer("Reading payload: " + contentLength + " bytes");
       while (totalRead < contentLength) {
         int readBytes = reader.read(content, totalRead, contentLength - totalRead);
         if (readBytes == -1) {
           // End-of-stream (browser closed?)
+          LOGGER.fine("End of stream while reading content");
           return null;
         }
         totalRead += readBytes;

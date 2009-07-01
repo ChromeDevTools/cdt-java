@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.chromium.sdk.internal.JsonUtil;
 import org.json.simple.JSONStreamAware;
 import org.json.simple.JSONValue;
 
@@ -45,10 +44,6 @@ public class DebuggerMessage implements JSONStreamAware {
 
   public Map<String, Object> getArguments() {
     return arguments;
-  }
-
-  public String toJsonString() throws IOException {
-    return JsonUtil.streamAwareToJson(this);
   }
 
   protected final void putArgument(String key, Object object) {

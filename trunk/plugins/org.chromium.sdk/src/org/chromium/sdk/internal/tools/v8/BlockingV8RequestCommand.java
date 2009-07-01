@@ -14,7 +14,7 @@ import org.json.simple.JSONObject;
 /**
  * An implementation of
  * {@link V8DebuggerToolHandler#sendV8CommandBlocking(
- * DebuggerMessage, boolean, org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback)}
+ * DebuggerMessage, org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback)}
  * which blocks until the response has been received and callback (if any) has
  * been invoked.
  */

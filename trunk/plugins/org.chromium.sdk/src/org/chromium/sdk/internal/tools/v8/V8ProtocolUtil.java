@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,11 @@ import java.util.Map;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.PropertyType;
+import org.chromium.sdk.internal.ValueMirror;
+import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -103,6 +108,44 @@ public class V8ProtocolUtil {
   }
 
   /**
+   * Constructs {@code PropertyReference}s from the specified object.
+   *
+   * @param handle containing the object specification from the V8 debugger
+   * @return {@code PropertyReference}s based on the {@code handle} data
+   */
+  public static PropertyReference[] extractObjectProperties(JSONObject handle) {
+    JSONArray props = JsonUtil.getAsJSONArray(handle, V8Protocol.REF_PROPERTIES);
+    int propsLen = props.size();
+    List<PropertyReference> objProps = new ArrayList<PropertyReference>(propsLen);
+
+    for (int i = 0; i < propsLen; i++) {
+      JSONObject prop = (JSONObject) props.get(i);
+      int ref = JsonUtil.getAsLong(prop, V8Protocol.REF).intValue();
+      String name = JsonUtil.getAsString(prop, V8Protocol.REF_PROP_NAME);
+      if (name == null) {
+        name = String.valueOf(JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_NAME));
+      }
+      Long propType = JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_TYPE);
+
+      if (isInternalProperty(name)) {
+        continue;
+      }
+
+      // propType is NORMAL by default
+      int propTypeValue = propType != null
+          ? propType.intValue()
+          : PropertyType.NORMAL.value;
+      if (propTypeValue == PropertyType.FIELD.value ||
+          propTypeValue == PropertyType.CALLBACKS.value ||
+          propTypeValue == PropertyType.NORMAL.value) {
+        objProps.add(ValueMirror.newPropertyReference(ref, name));
+      }
+    }
+
+    return objProps.toArray(new PropertyReference[objProps.size()]);
+  }
+
+  /**
    * @param propertyName the property name to check
    * @return whether the given property name corresponds to an internal V8
    *         property
@@ -115,15 +158,15 @@ public class V8ProtocolUtil {
   /**
    * Gets a function name from the given function handle.
    *
-   * @param func the function handle
+   * @param functionObject the function handle
    * @return the actual of inferred function name. Will handle {@code null} or
    *         unnamed functions
    */
-  public static String getFunctionName(JSONObject func) {
-    if (func == null) {
+  public static String getFunctionName(JSONObject functionObject) {
+    if (functionObject == null) {
       return "<unknown>";
     } else {
-      String name = getNameOrInferred(func, V8Protocol.LOCAL_NAME);
+      String name = getNameOrInferred(functionObject, V8Protocol.LOCAL_NAME);
       if (name == null || name.isEmpty()) {
         return "(anonymous function)";
       } else {
@@ -135,11 +178,11 @@ public class V8ProtocolUtil {
   /**
    * Gets a script id from a script response.
    *
-   * @param response to the the "id" value from
+   * @param scriptObject to get the "id" value from
    * @return the script id
    */
-  public static Long getScriptIdFromResponse(JSONObject response) {
-    return JsonUtil.getAsLong(response, V8Protocol.ID);
+  public static Long getScriptIdFromResponse(JSONObject scriptObject) {
+    return JsonUtil.getAsLong(scriptObject, V8Protocol.ID);
   }
 
   private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
