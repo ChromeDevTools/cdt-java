@@ -26,5 +26,4 @@ The debugger exposes the following Javascript debugging capabilities, starting w
   * Duplicate scripts can be loaded from V8 for the same resource.
   * Only V8-provided scripts are shown rather than actual resources loaded by the browser (the resources are not exposed through the V8 debugger protocol).
   * The launch target is invalidated rather than reloaded whenever the page is refreshed (need to re-attach).
-  * Poor text editor for rendering scripts (no highlighting, no nothing).
   * The breakpoints are not retained between page refreshes (V8 does not curently expose existing breakpoints).
