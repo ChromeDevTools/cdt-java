@@ -129,8 +129,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
     commandToHandlerMap.put(DebuggerCommand.BREAK /* event */, bpp);
     commandToHandlerMap.put(DebuggerCommand.EXCEPTION /* event */, bpp);
 
-    BacktraceProcessor bfp = new BacktraceProcessor(context);
-    commandToHandlerMap.put(DebuggerCommand.BACKTRACE, bfp);
+    commandToHandlerMap.put(DebuggerCommand.BACKTRACE, new BacktraceProcessor(context));
 
     commandToHandlerMap.put(DebuggerCommand.CONTINUE, new ContinueProcessor(context));
   }
@@ -181,7 +180,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
   @Override
   public void onDebuggerDetached() {
     removeAllCallbacks();
-    getDebugEventListener().disconnected();
+    DebugEventListener debugEventListener = getDebugEventListener();
+    if (debugEventListener != null) {
+      debugEventListener.disconnected();
+    }
     context.getTab().sessionTerminated();
     synchronized (fieldAccessLock) {
       isAttached = false;
@@ -209,10 +211,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
         MessageFactory.evaluateJavascript(String.valueOf(getAttachedTab()), javascript));
   }
 
-  public Exception sendV8CommandBlocking(DebuggerMessage message, boolean immediate,
-      BrowserTabImpl.V8HandlerCallback v8HandlerCallback) {
+  public Exception sendV8CommandBlocking(
+      DebuggerMessage message, BrowserTabImpl.V8HandlerCallback v8HandlerCallback) {
     BlockingV8RequestCommand command =
-        new BlockingV8RequestCommand(this, message, immediate, v8HandlerCallback);
+        new BlockingV8RequestCommand(this, message, true, v8HandlerCallback);
     command.run();
     return command.getException();
   }
@@ -225,8 +227,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
     }
     try {
       getConnection().send(
-          MessageFactory.debuggerCommand(String.valueOf(getAttachedTab()), JsonUtil
-              .streamAwareToJson(message)));
+          MessageFactory.debuggerCommand(
+              String.valueOf(getAttachedTab()),
+              JsonUtil.streamAwareToJson(message)));
     } catch (RuntimeException e) {
       if (v8HandlerCallback != null) {
         v8HandlerCallback.failure(e.getMessage());

@@ -42,7 +42,7 @@ public class FixtureChromeStub implements ChromeStub {
     // Script
     refToObjectMap.put(Long.valueOf(getScriptRef()),
         "{\"handle\":5,\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
-        "\"id\":566,\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
+        "\"id\":" + getScriptId() + ",\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
         "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
         "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
         "\\r\\n}\\r\\n\\r\\n\\r\\nfunction clicked() {\\r\\n  var obj = {\\r\\n" +
@@ -92,6 +92,10 @@ public class FixtureChromeStub implements ChromeStub {
 
   public static int getScriptRef() {
     return 5;
+  }
+
+  public static int getScriptId() {
+    return 566;
   }
 
   public static int getMouseEventRef() {
@@ -311,7 +315,7 @@ public class FixtureChromeStub implements ChromeStub {
     func.put("ref", getFunctionRef());
     func.put("type", "function");
     func.put("name", "clicked");
-    func.put("scriptId", 566);
+    func.put("scriptId", getScriptId());
     return func;
   }
 

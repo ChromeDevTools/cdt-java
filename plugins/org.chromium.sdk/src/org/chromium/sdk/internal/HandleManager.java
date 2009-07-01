@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.json.simple.JSONObject;
 
 /**
@@ -28,6 +29,10 @@ class HandleManager {
 
   void put(Long ref, JSONObject object) {
     refToHandle.put(ref, object);
+  }
+
+  void put(JSONObject object) {
+    refToHandle.put(JsonUtil.getAsLong(object, V8Protocol.REF), object);
   }
 
   JSONObject getHandle(Long ref) {

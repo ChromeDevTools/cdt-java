@@ -19,14 +19,14 @@ public class ValueMirror {
   /**
    * A named property reference.
    */
-  static class PropertyReference {
+  public static class PropertyReference {
     private final int ref;
 
     private final String name;
 
-    PropertyReference(int refId, String propName) {
+    private PropertyReference(int refId, String propertyName) {
       this.ref = refId;
-      this.name = propName;
+      this.name = propertyName;
     }
 
     public int getRef() {
@@ -49,6 +49,17 @@ public class ValueMirror {
   private PropertyReference[] properties = null;
 
   private String className;
+
+  /**
+   * Constructs a new PropertyReference instance given its "ref" value and name.
+   *
+   * @param refId the "ref" value of this property
+   * @param propertyName the name of the property
+   * @return a new PropertyReference instance
+   */
+  public static PropertyReference newPropertyReference(int refId, String propertyName) {
+    return new PropertyReference(refId, propertyName);
+  }
 
   public ValueMirror(String varName, String value) {
     this(varName, value, JsDataType.TYPE_STRING);

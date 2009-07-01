@@ -16,6 +16,7 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
@@ -68,7 +69,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final JSONObject handle = stackFrame.getDebugContext().getHandleManager().getHandle(ref);
       if (handle != null) {
         mirror.setProperties(JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
-            DebugContextImpl.extractObjectProperties(handle));
+            V8ProtocolUtil.extractObjectProperties(handle));
       }
     }
   }
@@ -113,29 +114,29 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         ex = debugContext.getV8Handler().sendV8CommandBlocking(
             DebuggerMessageFactory.lookup(
                 Collections.singletonList(ref)),
-                false, new BrowserTabImpl.V8HandlerCallback() {
-                    public void messageReceived(JSONObject response) {
-                      if (!JsonUtil.isSuccessful(response)) {
-                        JsObjectImpl.this.failedResponse = true;
-                        return;
-                      }
-                      JSONObject body = JsonUtil.getBody(response);
-                      handle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-                      if (handle != null) {
-                        handleManager.put(ref, handle[0]);
-                      }
-                    }
-
-                    public void failure(String message) {
+                new BrowserTabImpl.V8HandlerCallback() {
+                  public void messageReceived(JSONObject response) {
+                    if (!JsonUtil.isSuccessful(response)) {
                       JsObjectImpl.this.failedResponse = true;
+                      return;
                     }
+                    JSONObject body = JsonUtil.getBody(response);
+                    handle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
+                    if (handle != null) {
+                      handleManager.put(ref, handle[0]);
+                    }
+                  }
+
+                  public void failure(String message) {
+                    JsObjectImpl.this.failedResponse = true;
+                  }
             });
       }
       if (ex != null || this.failedResponse) {
         return;
       } else {
         mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
-            DebugContextImpl.extractObjectProperties(handle[0]));
+            V8ProtocolUtil.extractObjectProperties(handle[0]));
         mirrorProperties = mirror.getProperties();
       }
     }
@@ -190,7 +191,6 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         new ArrayList<Long>(handlesToRequest));
     Exception ex = stackFrame.getDebugContext().getV8Handler().sendV8CommandBlocking(
         message,
-        false,
         new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!JsVariableImpl.fillVariablesFromLookupReply(

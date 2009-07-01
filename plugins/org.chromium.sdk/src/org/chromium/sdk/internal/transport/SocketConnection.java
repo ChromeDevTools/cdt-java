@@ -172,6 +172,9 @@ public class SocketConnection implements Connection {
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
 
+  /** The input stream buffer size. */
+  private static final int INPUT_BUFFER_SIZE_BYTES = 65536;
+
   private static final NetListener NULL_LISTENER = new NetListener() {
     public void connectionClosed() {
     }
@@ -238,8 +241,9 @@ public class SocketConnection implements Connection {
     socket.connect(socketEndpoint, connectionTimeoutMs);
     this.writer =
         new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET));
-    this.reader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET));
+    this.reader = new BufferedReader(
+        new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET),
+        INPUT_BUFFER_SIZE_BYTES);
 
     isAttached = true;
 

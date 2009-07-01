@@ -4,12 +4,17 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
@@ -124,6 +129,134 @@ class V8Helper {
   }
 
   /**
+   * Gets all resolved locals for the stack frame, caches scripts and objects in
+   * the scriptManager and handleManager.
+   *
+   * @param frame to get the data for
+   * @return the mirrors corresponding to the frame locals
+   */
+  ValueMirror[] computeLocals(JSONObject frame) {
+    JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
+    JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
+
+    int maxLookups = args.size() + locals.size() + 3 /* "this", script, function */;
+
+    final List<ValueMirror> values = new ArrayList<ValueMirror>(maxLookups);
+    final Map<Long, String> refToName = new HashMap<Long, String>();
+    HandleManager handleManager = context.getHandleManager();
+
+    // Frame script
+    Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
+    if (scriptRef != null) {
+      JSONObject scriptObject = handleManager.getHandle(scriptRef);
+      if (scriptObject == null) {
+        refToName.put(scriptRef, null);
+      } else {
+        context.getScriptManager().addScript(scriptObject);
+      }
+    }
+
+    // Frame function
+    Long funcRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_FUNC);
+    if (funcRef != null) {
+      JSONObject funcObject = handleManager.getHandle(funcRef);
+      if (funcObject == null) {
+        refToName.put(funcRef, null);
+      }
+    }
+
+    // Receiver ("this")
+    Long receiverRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_RECEIVER);
+    if (receiverRef != null) {
+      JSONObject receiver = handleManager.getHandle(receiverRef);
+      enqueueOrPutMirror(values, refToName, thisName, receiverRef, receiver);
+    }
+
+    // Arguments
+    for (int i = 0; i < args.size(); i++) {
+      JSONObject arg = (JSONObject) args.get(i);
+      String name = JsonUtil.getAsString(arg, V8Protocol.ARGUMENT_NAME);
+      if (name == null) {
+        // an unnamed actual argument (there is no formal counterpart in the
+        // method signature) that will be available in the "arguments" object
+        continue;
+      }
+      Long ref = V8ProtocolUtil.getValueRef(arg);
+      JSONObject handle = handleManager.getHandle(ref);
+      enqueueOrPutMirror(values, refToName, name, ref, handle);
+    }
+
+    // Locals
+    for (int i = 0; i < locals.size(); i++) {
+      JSONObject local = (JSONObject) locals.get(i);
+      String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
+
+      if (!V8ProtocolUtil.isInternalProperty(localName)) {
+        Long ref = V8ProtocolUtil.getValueRef(local);
+        JSONObject handle = handleManager.getHandle(ref);
+        enqueueOrPutMirror(values, refToName, localName, ref, handle);
+      }
+    }
+
+    if (!refToName.isEmpty()) {
+      context.getV8Handler().sendV8CommandBlocking(
+          DebuggerMessageFactory.lookup(new ArrayList<Long>(refToName.keySet())),
+          new BrowserTabImpl.V8HandlerCallback() {
+
+            @Override
+            public void messageReceived(JSONObject response) {
+              if (!JsonUtil.isSuccessful(response)) {
+                return;
+              }
+              processLookupResponse(values, refToName, JsonUtil.getBody(response));
+            }
+
+            @Override
+            public void failure(String message) {
+              // Do nothing, failures will ensue
+            }
+          });
+    }
+
+    return values.toArray(new ValueMirror[values.size()]);
+  }
+
+  private void enqueueOrPutMirror(final List<ValueMirror> values,
+      final Map<Long, String> refToName, String name, Long ref, JSONObject handle) {
+    if (handle == null) {
+      refToName.put(ref, name);
+    } else {
+      values.add(createValueMirror(handle, name));
+    }
+  }
+
+  protected void processLookupResponse(final List<ValueMirror> values,
+      final Map<Long, String> refToName, JSONObject body) {
+    ScriptManager scriptManager = context.getScriptManager();
+    for (Map.Entry<Long, String> entry : refToName.entrySet()) {
+      Long ref = entry.getKey();
+      JSONObject object = JsonUtil.getAsJSON(body, String.valueOf(ref));
+      if (object != null) {
+        context.getHandleManager().put(ref, object);
+        String name = entry.getValue();
+        // name is null for objects that should not be put into handleManager
+        if (name != null) {
+          ValueMirror mirror = createValueMirror(object, name);
+          if (thisName.equals(name)) {
+            // "this" should go first
+            values.add(0, mirror);
+          } else {
+            values.add(mirror);
+          }
+        } else {
+          // An unnamed object might be a script
+          scriptManager.addScript(object);
+        }
+      }
+    }
+  }
+
+  /**
    * Constructs a ValueMirror given a V8 debugger object specification and the
    * value name.
    *
@@ -140,7 +273,7 @@ class V8Helper {
     if (JsDataType.isObjectType(type)) {
       JSONObject protoObj = JsonUtil.getAsJSON(handle, V8Protocol.REF_PROTOOBJECT);
       int parentRef = JsonUtil.getAsLong(protoObj, V8Protocol.REF).intValue();
-      PropertyReference[] propertyRefs = DebugContextImpl.extractObjectProperties(handle);
+      PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handle);
       return new ValueMirror(name, parentRef, propertyRefs, className);
     } else {
       return new ValueMirror(name, value, type);

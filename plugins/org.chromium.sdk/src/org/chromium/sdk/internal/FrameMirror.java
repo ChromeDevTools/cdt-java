@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.Script;
+import org.json.simple.JSONObject;
 
 /**
  * A representation of a remote JavaScript VM stack frame.
@@ -27,26 +28,38 @@ public class FrameMirror {
   private final String frameFunction;
 
   /**
-   * The frame locals.
-   */
-  private final ValueMirror[] locals;
-
-  /**
    * The associated script id value.
    */
   private final long scriptId;
+
+  /**
+   * The debug context in which this mirror was created.
+   */
+  private final DebugContextImpl context;
 
   /**
    * A script associated with the frame.
    */
   private Script script;
 
-  public FrameMirror(String scriptName, int line, long scriptId,
-      String frameFunction, ValueMirror[] locals) {
+  /**
+   * The frame locals.
+   */
+  private ValueMirror[] locals;
+
+  /**
+   * The JSON descriptor of the frame.
+   * Should be reset when the locals are resolved.
+   */
+  private JSONObject frameObject;
+
+  public FrameMirror(DebugContextImpl context, JSONObject frameObject,
+      String scriptName, int line, long scriptId, String frameFunction) {
+    this.context = context;
+    this.frameObject = frameObject;
     this.scriptName = scriptName;
     this.lineNumber = line;
     this.scriptId = scriptId;
-    this.locals = locals;
     this.frameFunction = frameFunction;
   }
 
@@ -70,20 +83,33 @@ public class FrameMirror {
   }
 
   public int getLocalsCount() {
+    ensureLocals();
     return locals == null
         ? 0
         : locals.length;
   }
 
-  public void setScript(Script script) {
+  private void ensureLocals() {
+    if (locals == null) {
+      locals = context.computeLocals(frameObject);
+      frameObject = null;
+    }
+  }
+
+  public synchronized void setScript(Script script) {
     this.script = script;
   }
 
-  public Script getScript() {
+  public synchronized Script getScript() {
     return script;
   }
 
   public ValueMirror getLocal(int idx) {
+    ensureLocals();
     return locals[idx];
+  }
+
+  JSONObject getFrameObject() {
+    return frameObject;
   }
 }

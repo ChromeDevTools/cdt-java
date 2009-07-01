@@ -28,7 +28,7 @@ public class JsStackFrameImpl implements JsStackFrame {
   private final FrameMirror frameMirror;
 
   /** The variables known in this stack frame. */
-  private final JsVariableImpl[] variables;
+  private JsVariableImpl[] variables;
 
   /**
    * Constructs a stack frame for the given handler using the FrameMirror data
@@ -42,7 +42,6 @@ public class JsStackFrameImpl implements JsStackFrame {
     this.context = context;
     this.frameId = index;
     this.frameMirror = mirror;
-    this.variables = createVariables();
   }
 
   public DebugContextImpl getDebugContext() {
@@ -50,11 +49,18 @@ public class JsStackFrameImpl implements JsStackFrame {
   }
 
   public JsVariableImpl[] getVariables() {
+    ensureVariables();
     return variables;
   }
 
+  private void ensureVariables() {
+    if (variables == null) {
+      this.variables = createVariables();
+    }
+  }
+
   public boolean hasVariables() {
-    return variables != null && variables.length > 0;
+    return getVariables().length > 0;
   }
 
   public int getLineNumber() {
@@ -150,7 +156,7 @@ public class JsStackFrameImpl implements JsStackFrame {
       BrowserTabImpl.V8HandlerCallback commandCallback) {
     if (isSync) {
       return getDebugContext().getV8Handler().sendV8CommandBlocking(
-          message, false, commandCallback);
+          message, commandCallback);
     } else {
       getDebugContext().getV8Handler().sendV8Command(message, commandCallback);
       return null;

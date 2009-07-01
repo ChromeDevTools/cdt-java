@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +18,6 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
-import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -123,11 +121,14 @@ public class DebugContextImpl implements DebugContext {
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
+    Map<Integer, Long> frameIndexToFuncRef = new HashMap<Integer, Long>();
+    FrameMirror[] tempFrames = new FrameMirror[frameCnt];
     for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
       JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
       int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
       JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
       Long funcRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_FUNC);
+      frameIndexToFuncRef.put(index, funcRef);
 
       String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT)
           .replace('\r', ' ').replace('\n', ' ');
@@ -148,8 +149,6 @@ public class DebugContextImpl implements DebugContext {
       }
       Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
 
-      ValueMirror[] locals = computeLocals(frameObject);
-      JSONObject func = handleManager.getHandle(funcRef);
       Long scriptId = -1L;
       if (scriptRef != null) {
         JSONObject handle = handleManager.getHandle(scriptRef);
@@ -157,9 +156,47 @@ public class DebugContextImpl implements DebugContext {
           scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
         }
       }
-      frameMirrors[index] =
-          new FrameMirror(url, currentLine, scriptId, V8ProtocolUtil.getFunctionName(func), locals);
+      tempFrames[index] = new FrameMirror(
+          this, frameObject, url, currentLine, scriptId, null);
     }
+    fillFrameMirrors(frameIndexToFuncRef, tempFrames);
+  }
+
+  private void fillFrameMirrors(
+      final Map<Integer, Long> frameIndexToFuncRef,
+      final FrameMirror[] tempFrames) {
+    handler.sendV8CommandBlocking(DebuggerMessageFactory.lookup(
+        new ArrayList<Long>(frameIndexToFuncRef.values())),
+        new BrowserTabImpl.V8HandlerCallback() {
+
+          @Override
+          public void messageReceived(JSONObject response) {
+            if (!JsonUtil.isSuccessful(response)) {
+              return;
+            }
+            JSONObject body = JsonUtil.getBody(response);
+            for (Map.Entry<Integer, Long> entry : frameIndexToFuncRef.entrySet()) {
+              Long ref = entry.getValue();
+              JSONObject funcObject = JsonUtil.getAsJSON(body, String.valueOf(ref));
+              if (funcObject != null) {
+                handleManager.put(funcObject);
+                FrameMirror tempFrame = tempFrames[entry.getKey()];
+                frameMirrors[entry.getKey()] =
+                    new FrameMirror(
+                        DebugContextImpl.this, tempFrame.getFrameObject(),
+                        tempFrame.getScriptName(), tempFrame.getLine(),
+                        tempFrame.getScriptId(),
+                        V8ProtocolUtil.getFunctionName(funcObject));
+
+              }
+            }
+          }
+
+          @Override
+          public void failure(String message) {
+            // Do nothing, failures will ensue
+          }
+        });
   }
 
   /**
@@ -190,74 +227,6 @@ public class DebugContextImpl implements DebugContext {
             sourceText,
             JsonUtil.getAsString(exception,
             V8Protocol.REF_TEXT));
-  }
-
-  /**
-   * Constructs {@code PropertyReference}s from the specified object.
-   *
-   * @param handle containing the object specification from the V8 debugger
-   * @return {@code PropertyReference}s based on the {@code handle} data
-   */
-  public static PropertyReference[] extractObjectProperties(JSONObject handle) {
-    JSONArray props = JsonUtil.getAsJSONArray(handle, V8Protocol.REF_PROPERTIES);
-    int propsLen = props.size();
-    List<PropertyReference> objProps = new ArrayList<PropertyReference>(propsLen);
-
-    for (int i = 0; i < propsLen; i++) {
-      JSONObject prop = (JSONObject) props.get(i);
-      int ref = JsonUtil.getAsLong(prop, V8Protocol.REF).intValue();
-      String name = JsonUtil.getAsString(prop, V8Protocol.REF_PROP_NAME);
-      if (name == null) {
-        name = String.valueOf(JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_NAME));
-      }
-      Long propType = JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_TYPE);
-
-      if (V8ProtocolUtil.isInternalProperty(name)) {
-        continue;
-      }
-
-      // propType is NORMAL by default
-      int propTypeValue = propType != null
-          ? propType.intValue()
-          : PropertyType.NORMAL.value;
-
-      PropertyType type = PropertyType.forValue(propTypeValue);
-      if (VISIBLE_PROPERTY_TYPES.contains(type)) {
-        objProps.add(new PropertyReference(ref, name));
-      }
-    }
-
-    return objProps.toArray(new PropertyReference[objProps.size()]);
-  }
-
-  /**
-   * @return count of frames in the current stack
-   */
-  public int getFrameCount() {
-    return frameMirrors.length;
-  }
-
-  /**
-   * @param index of the frame
-   * @return a FrameMirror instance for the specified frame index
-   */
-  public FrameMirror getFrame(int index) {
-    return frameMirrors[index];
-  }
-
-  /**
-   * Associates a script found in the ScriptManager with the given frame.
-   *
-   * @param frameIndex to associate a script with
-   */
-  public void hookupScriptToFrame(int frameIndex) {
-    FrameMirror frame = getFrame(frameIndex);
-    if (frame != null && frame.getScript() == null) {
-      Script script = getScriptManager().findById(frame.getScriptId());
-      if (script != null) {
-        frame.setScript(script);
-      }
-    }
   }
 
   @Override
@@ -312,16 +281,6 @@ public class DebugContextImpl implements DebugContext {
     return exceptionData;
   }
 
-  private Exception sendMessage(boolean isSync, DebuggerMessage message,
-      BrowserTabImpl.V8HandlerCallback commandCallback) {
-    if (isSync) {
-      return handler.sendV8CommandBlocking(message, false, commandCallback);
-    } else {
-      handler.sendV8Command(message, commandCallback);
-      return null;
-    }
-  }
-
   public ScriptManager getScriptManager() {
     return scriptManager;
   }
@@ -335,11 +294,42 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public void onDebuggerDetached() {
-    handler.onDebuggerDetached();
-    scriptManager.reset();
-    handleManager.reset();
-    stackFramesCached = null;
-    frameMirrors = null;
+    getV8Handler().onDebuggerDetached();
+    getScriptManager().reset();
+    getHandleManager().reset();
+    this.stackFramesCached = null;
+    this.frameMirrors = null;
+  }
+
+
+  /**
+   * @return count of frames in the current stack
+   */
+  public int getFrameCount() {
+    return frameMirrors.length;
+  }
+
+  /**
+   * @param index of the frame
+   * @return a FrameMirror instance for the specified frame index
+   */
+  public FrameMirror getFrame(int index) {
+    return frameMirrors[index];
+  }
+
+  /**
+   * Associates a script found in the ScriptManager with the given frame.
+   *
+   * @param frameIndex to associate a script with
+   */
+  public void hookupScriptToFrame(int frameIndex) {
+    FrameMirror frame = getFrame(frameIndex);
+    if (frame != null && frame.getScript() == null) {
+      Script script = getScriptManager().findById(frame.getScriptId());
+      if (script != null) {
+        frame.setScript(script);
+      }
+    }
   }
 
   public void onBreakpointsHit(Collection<Breakpoint> breakpointsHit) {
@@ -382,125 +372,17 @@ public class DebugContextImpl implements DebugContext {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  private ValueMirror[] computeLocals(JSONObject frame) {
-    JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
-    JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
-
-    int maxLookups = args.size() + locals.size() + 3 /* "this", script, function */;
-
-    final List<ValueMirror> values = new ArrayList<ValueMirror>(maxLookups);
-    final Map<Long, String> refToName = new HashMap<Long, String>();
-
-    // Frame script
-    Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
-    if (scriptRef != null) {
-      JSONObject scriptObject = handleManager.getHandle(scriptRef);
-      if (scriptObject == null) {
-        refToName.put(scriptRef, null);
-      } else {
-        scriptManager.addScript(scriptObject);
-      }
-    }
-
-    // Frame function
-    Long funcRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_FUNC);
-    if (funcRef != null) {
-      JSONObject funcObject = handleManager.getHandle(funcRef);
-      if (funcObject == null) {
-        refToName.put(funcRef, null);
-      }
-    }
-
-    // Receiver ("this")
-    Long receiverRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_RECEIVER);
-    if (receiverRef != null) {
-      JSONObject receiver = handleManager.getHandle(receiverRef);
-      if (receiver != null) {
-        values.add(V8Helper.createValueMirror(receiver, THIS_NAME));
-      } else {
-        refToName.put(receiverRef, THIS_NAME);
-      }
-    }
-
-    // Arguments
-    for (int i = 0; i < args.size(); i++) {
-      JSONObject arg = (JSONObject) args.get(i);
-      String name = JsonUtil.getAsString(arg, V8Protocol.ARGUMENT_NAME);
-      if (name == null) {
-        // an unnamed actual argument (there is no formal counterpart in the
-        // method signature) that will be available in the "arguments" object
-        continue;
-      }
-      Long ref = V8ProtocolUtil.getValueRef(arg);
-      JSONObject handle = handleManager.getHandle(ref);
-      if (handle == null) {
-        refToName.put(ref, name);
-      } else {
-        values.add(V8Helper.createValueMirror(handle, name));
-      }
-    }
-
-    // Locals
-    for (int i = 0; i < locals.size(); i++) {
-      JSONObject local = (JSONObject) locals.get(i);
-      String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
-
-      if (!V8ProtocolUtil.isInternalProperty(localName)) {
-        Long ref = V8ProtocolUtil.getValueRef(local);
-        JSONObject handle = handleManager.getHandle(ref);
-        if (handle == null) {
-          refToName.put(ref, localName);
-        } else {
-          values.add(V8Helper.createValueMirror(handle, localName));
-        }
-      }
-    }
-
-    if (!refToName.isEmpty()) {
-      handler.sendV8CommandBlocking(DebuggerMessageFactory.lookup(
-          new ArrayList<Long>(refToName.keySet())),
-          true,
-          new BrowserTabImpl.V8HandlerCallback() {
-
-            @Override
-            public void messageReceived(JSONObject response) {
-              if (!JsonUtil.isSuccessful(response)) {
-                return;
-              }
-              processLookupResponse(values, refToName, JsonUtil.getBody(response));
-            }
-
-            @Override
-            public void failure(String message) {
-              // do nothing, failures will occur later
-            }
-          });
-    }
-
-    return values.toArray(new ValueMirror[values.size()]);
+  public ValueMirror[] computeLocals(JSONObject frame) {
+    return v8Helper.computeLocals(frame);
   }
 
-  protected void processLookupResponse(final List<ValueMirror> values,
-      final Map<Long, String> refToName, JSONObject body) {
-    for (Map.Entry<Long, String> entry : refToName.entrySet()) {
-      Long ref = entry.getKey();
-      JSONObject object = JsonUtil.getAsJSON(body, String.valueOf(ref));
-      if (object != null) {
-        handleManager.put(ref, object);
-        String name = entry.getValue();
-        // name is null for objects that should not be put into handleManager
-        if (name != null) {
-          ValueMirror mirror = V8Helper.createValueMirror(object, name);
-          if (THIS_NAME.equals(name)) {
-            // "this" should go first
-            values.add(0, mirror);
-          } else {
-            values.add(mirror);
-          }
-        } else {
-          scriptManager.addScript(object); // might be a script object
-        }
-      }
+  private Exception sendMessage(boolean isSync, DebuggerMessage message,
+      BrowserTabImpl.V8HandlerCallback commandCallback) {
+    if (isSync) {
+      return getV8Handler().sendV8CommandBlocking(message, commandCallback);
+    } else {
+      getV8Handler().sendV8Command(message, commandCallback);
+      return null;
     }
   }
 
