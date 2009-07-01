@@ -27,10 +27,10 @@ public class JsEditor extends TextEditor {
     super.initializeEditor();
     setEditorContextMenuId(EDITOR_CONTEXT);
     setRulerContextMenuId(RULER_CONTEXT);
+    setDocumentProvider(new JsDocumentProvider());
   }
 
   public JsEditor() {
-    super();
     setSourceViewerConfiguration(new JsSourceViewerConfiguration());
     setKeyBindingScopes(new String[] { "org.eclipse.ui.textEditorScope", //$NON-NLS-1$
         "org.chromium.debug.ui.editors.JsEditor.context" }); //$NON-NLS-1$
