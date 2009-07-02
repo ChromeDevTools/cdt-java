@@ -137,12 +137,10 @@ public class JsCodeScanner extends BufferedRuleBasedScanner {
 
   private static class WordDetector implements IWordDetector {
 
-    @Override
     public boolean isWordPart(char c) {
       return Character.isJavaIdentifierPart(c);
     }
 
-    @Override
     public boolean isWordStart(char c) {
       return Character.isJavaIdentifierStart(c);
     }

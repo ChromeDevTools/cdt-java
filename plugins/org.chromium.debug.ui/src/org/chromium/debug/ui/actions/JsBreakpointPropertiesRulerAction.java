@@ -51,7 +51,6 @@ public class JsBreakpointPropertiesRulerAction extends RulerBreakpointAction imp
     }
   }
 
-  @Override
   public void update() {
     breakpoint = null;
     IBreakpoint activeBreakpoint = getBreakpoint();

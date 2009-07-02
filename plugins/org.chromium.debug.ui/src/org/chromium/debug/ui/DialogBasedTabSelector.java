@@ -21,7 +21,6 @@ import org.eclipse.ui.PlatformUI;
  */
 public class DialogBasedTabSelector implements TabSelector {
 
-  @Override
   public BrowserTab selectTab(final BrowserTab[] tabs) {
     final Map<Integer, BrowserTab> map = new HashMap<Integer, BrowserTab>();
     final List<String> urls = new ArrayList<String>(tabs.length);
@@ -32,7 +31,6 @@ public class DialogBasedTabSelector implements TabSelector {
     }
     final BrowserTab[] result = new BrowserTab[1];
     Display.getDefault().syncExec(new Runnable() {
-      @Override
       public void run() {
         final Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
         final ChromiumTabSelectionDialog dialog = new ChromiumTabSelectionDialog(shell, urls);

@@ -66,13 +66,11 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       // The "create" part
       browserTab.setBreakpoint(Type.SCRIPT, "1", 4, 1, true, "false", 3, new BreakpointCallback() {
 
-        @Override
         public void failure(String errorMessage) {
           resultMessage[0] = errorMessage;
           latch.countDown();
         }
 
-        @Override
         public void success(Breakpoint breakpoint) {
           resultBreakpoint[0] = breakpoint;
           latch.countDown();
@@ -98,13 +96,11 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     final CountDownLatch latch2 = new CountDownLatch(1);
     breakpoint.flush(new BreakpointCallback() {
 
-      @Override
       public void failure(String errorMessage) {
         resultMessage[0] = errorMessage;
         latch2.countDown();
       }
 
-      @Override
       public void success(Breakpoint breakpoint) {
         resultBreakpoint[0] = breakpoint;
         latch2.countDown();
@@ -127,13 +123,11 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
 
     bp.clear(new BreakpointCallback() {
 
-      @Override
       public void failure(String errorMessage) {
         resultMessage[0] = errorMessage;
         latch.countDown();
       }
 
-      @Override
       public void success(Breakpoint breakpoint) {
         resultBreakpoint[0] = breakpoint;
         latch.countDown();

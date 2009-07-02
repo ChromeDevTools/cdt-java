@@ -25,17 +25,14 @@ public class Variable extends DebugElementImpl implements IVariable {
     this.variable = variable;
   }
 
-  @Override
   public String getName() throws DebugException {
     return variable.getName();
   }
 
-  @Override
   public String getReferenceTypeName() throws DebugException {
     return variable.getType().toString();
   }
 
-  @Override
   public IValue getValue() throws DebugException {
     JsValue value = variable.getValue();
     if (value == null) {
@@ -44,7 +41,6 @@ public class Variable extends DebugElementImpl implements IVariable {
     return wrapValue(value);
   }
 
-  @Override
   public boolean hasValueChanged() throws DebugException {
     return false;
   }
@@ -66,12 +62,10 @@ public class Variable extends DebugElementImpl implements IVariable {
     return super.getAdapter(adapter);
   }
 
-  @Override
   public void setValue(String expression) throws DebugException {
     variable.setValue(expression, null);
   }
 
-  @Override
   public void setValue(IValue value) throws DebugException {
     variable.setValue(((Value) value).getJsValue().getValueString(), null);
   }

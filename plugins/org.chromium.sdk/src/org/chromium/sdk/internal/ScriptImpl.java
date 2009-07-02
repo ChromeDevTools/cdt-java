@@ -97,43 +97,34 @@ public class ScriptImpl implements Script {
     this.source = null;
   }
 
-  @Override
   public Type getType() {
     return this.descriptor.type;
   }
 
-
-  @Override
   public String getName() {
     return descriptor.name;
   }
 
-  @Override
   public int getEndLine() {
     return descriptor.lineOffset + descriptor.lineCount;
   }
 
-  @Override
   public int getLineOffset() {
     return descriptor.lineOffset;
   }
 
-  @Override
   public int getLineCount() {
     return descriptor.lineCount;
   }
 
-  @Override
   public void setSource(String source) {
     this.source = source;
   }
 
-  @Override
   public String getSource() {
     return source;
   }
 
-  @Override
   public boolean hasSource() {
     return source != null;
   }

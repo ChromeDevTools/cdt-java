@@ -36,22 +36,18 @@ public class ArrayValue extends Value implements IIndexedValue {
     return variables.toArray(new IVariable[variables.size()]);
   }
 
-  @Override
   public int getInitialOffset() {
     return 0;
   }
 
-  @Override
   public int getSize() throws DebugException {
     return elements.length;
   }
 
-  @Override
   public IVariable getVariable(int offset) throws DebugException {
     return elements[offset];
   }
 
-  @Override
   public IVariable[] getVariables(int offset, int length) throws DebugException {
     IVariable[] result = new IVariable[length];
     System.arraycopy(elements, offset, result, 0, length);

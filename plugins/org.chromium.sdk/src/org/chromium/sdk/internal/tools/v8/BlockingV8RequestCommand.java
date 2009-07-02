@@ -65,7 +65,6 @@ class BlockingV8RequestCommand implements Runnable {
     this.isImmediate = immediate;
   }
 
-  @Override
   public void run() {
     Exception[] result = new Exception[1];
     try {
@@ -81,7 +80,6 @@ class BlockingV8RequestCommand implements Runnable {
           }
         }
 
-        @Override
         public void failure(String message) {
           try {
             if (v8HandlerCallback != null) {

@@ -35,17 +35,14 @@ public class ExceptionDataImpl implements ExceptionData {
     return cachedException;
   }
 
-  @Override
   public String getSourceText() {
     return sourceText;
   }
 
-  @Override
   public boolean isUncaught() {
     return isUncaught;
   }
 
-  @Override
   public String getExceptionText() {
     return exceptionText;
   }

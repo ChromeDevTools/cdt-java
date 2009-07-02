@@ -80,17 +80,14 @@ public class JsStackFrameImpl implements JsStackFrame {
     return -1;
   }
 
-  @Override
   public String getFunctionName() {
     return frameMirror.getFunctionName();
   }
 
-  @Override
   public Script getScript() {
     return frameMirror.getScript();
   }
 
-  @Override
   public void evaluate(final String expression, boolean isSync, final EvaluateCallback callback) {
     DebuggerMessage message =
         DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null);
@@ -112,7 +109,6 @@ public class JsStackFrameImpl implements JsStackFrame {
             }
           }
 
-          @Override
           public void failure(String message) {
             callback.failure(message);
           }

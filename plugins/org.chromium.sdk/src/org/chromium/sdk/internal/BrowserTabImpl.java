@@ -68,7 +68,6 @@ public class BrowserTabImpl implements BrowserTab {
     this.context = new DebugContextImpl(this);
   }
 
-  @Override
   public String getUrl() {
     return url;
   }
@@ -85,12 +84,10 @@ public class BrowserTabImpl implements BrowserTab {
     return debugEventListener;
   }
 
-  @Override
   public BrowserImpl getBrowser() {
     return browserImpl;
   }
 
-  @Override
   public synchronized boolean attach(DebugEventListener listener) {
     Result result = null;
     try {
@@ -102,18 +99,15 @@ public class BrowserTabImpl implements BrowserTab {
     return Result.OK == result;
   }
 
-  @Override
   public boolean detach() {
     final Result result = getDebugContext().getV8Handler().detachFromTab();
     return Result.OK == result;
   }
 
-  @Override
   public boolean isAttached() {
     return context.getV8Handler().isAttached();
   }
 
-  @Override
   public void getScripts(final ScriptsCallback callback) {
     context.reloadAllScripts(
         new V8HandlerCallback() {
@@ -135,7 +129,6 @@ public class BrowserTabImpl implements BrowserTab {
         });
   }
 
-  @Override
   public void setBreakpoint(Breakpoint.Type type, String target, int line,
       int position, boolean enabled, String condition, int ignoreCount,
       final BreakpointCallback callback) {

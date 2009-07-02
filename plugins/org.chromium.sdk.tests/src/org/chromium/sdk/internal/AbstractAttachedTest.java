@@ -63,27 +63,22 @@ public abstract class AbstractAttachedTest<T extends Connection>
     suspendContext = null;
   }
 
-  @Override
   public void closed() {
     this.newTabUrl = null;
   }
 
-  @Override
   public void disconnected() {
     this.isDisconnected = true;
   }
 
-  @Override
   public void navigated(String newUrl) {
     this.newTabUrl = newUrl;
   }
 
-  @Override
   public void resumed() {
     this.suspendContext = null;
   }
 
-  @Override
   public void suspended(DebugContext context) {
     this.suspendContext = context;
     if (suspendCallback != null) {

@@ -15,12 +15,10 @@ import org.eclipse.swt.graphics.Image;
  */
 public class ChromiumJavascriptDecorator implements ILabelDecorator {
 
-  @Override
   public Image decorateImage(Image image, Object element) {
     return image;
   }
 
-  @Override
   public String decorateText(String text, Object element) {
     // (element instanceof IFile) is guaranteed by the enablement in plugin.xml
     return getDecoratedText(text, element);
@@ -40,20 +38,16 @@ public class ChromiumJavascriptDecorator implements ILabelDecorator {
     return text;
   }
 
-  @Override
   public void addListener(ILabelProviderListener listener) {
   }
 
-  @Override
   public void dispose() {
   }
 
-  @Override
   public boolean isLabelProperty(Object element, String property) {
     return false;
   }
 
-  @Override
   public void removeListener(ILabelProviderListener listener) {
   }
 }

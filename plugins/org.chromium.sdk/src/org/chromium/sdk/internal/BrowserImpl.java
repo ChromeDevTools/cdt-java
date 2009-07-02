@@ -59,7 +59,6 @@ public class BrowserImpl implements Browser, NetListener {
     this.connection = connection;
   }
 
-  @Override
   public BrowserTab[] getTabs() throws IOException {
     checkConnection();
     tabUidToTabImpl.clear();
@@ -93,12 +92,10 @@ public class BrowserImpl implements Browser, NetListener {
     return connection;
   }
 
-  @Override
   public void disconnect() {
     getConnection().close();
   }
 
-  @Override
   public void connectionClosed() {
     devToolsHandler.onDebuggerDetached();
     // Use a copy to avoid the underlying map modification in #sessionTerminated
@@ -109,7 +106,6 @@ public class BrowserImpl implements Browser, NetListener {
     }
   }
 
-  @Override
   public void messageReceived(Message message) {
     ToolName toolName = ToolName.forString(message.getTool());
     if (toolName == null) {
@@ -143,7 +139,6 @@ public class BrowserImpl implements Browser, NetListener {
     }
   }
 
-  @Override
   public void connect() throws UnsupportedVersionException, IOException {
     if (ensureService()) {
       // No need to check the version for an already established connection.

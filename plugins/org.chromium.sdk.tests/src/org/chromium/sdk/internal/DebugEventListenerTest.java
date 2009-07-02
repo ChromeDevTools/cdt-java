@@ -37,13 +37,11 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     browserTab.setBreakpoint(Breakpoint.Type.SCRIPT, "file:///C:/1.js", 18, 3, true, null, 0,
         new BreakpointCallback() {
 
-          @Override
           public void failure(String errorMessage) {
             failure[0] = errorMessage == null ? "" : errorMessage;
             latch.countDown();
           }
 
-          @Override
           public void success(Breakpoint breakpoint) {
             bp[0] = breakpoint;
             latch.countDown();
@@ -81,7 +79,6 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
         latch.countDown();
       }
 
-      @Override
       public void success() {
         latch.countDown();
       }

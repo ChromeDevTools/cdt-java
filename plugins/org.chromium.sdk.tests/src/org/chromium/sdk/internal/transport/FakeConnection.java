@@ -25,7 +25,6 @@ public class FakeConnection implements Connection {
     this.responder = responder;
   }
 
-  @Override
   public void send(Message message) {
     assertTrue(isRunning);
     assertNotNull(responder);
@@ -35,12 +34,10 @@ public class FakeConnection implements Connection {
     }
   }
 
-  @Override
   public boolean isConnected() {
     return isRunning;
   }
 
-  @Override
   public void close() {
     isRunning = false;
     if (netListener != null) {
@@ -48,13 +45,11 @@ public class FakeConnection implements Connection {
     }
   }
 
-  @Override
   public void setNetListener(NetListener netListener) {
     this.netListener = netListener;
     responder.setNetListener(netListener);
   }
 
-  @Override
   public void start() throws IOException {
     isRunning = true;
   }

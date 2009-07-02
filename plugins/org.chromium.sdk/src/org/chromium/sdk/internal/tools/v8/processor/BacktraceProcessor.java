@@ -34,7 +34,6 @@ public class BacktraceProcessor extends V8ResponseCallback {
     super(context);
   }
 
-  @Override
   public void messageReceived(final JSONObject response) {
     V8MessageType type = V8MessageType.forString(
         JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
@@ -46,7 +45,6 @@ public class BacktraceProcessor extends V8ResponseCallback {
     switch (command) {
       case BACKTRACE: {
         Thread t = new Thread(new Runnable() {
-          @Override
           public void run() {
             getDebugContext().setFrames(response);
             loadFrameSources();
@@ -58,7 +56,6 @@ public class BacktraceProcessor extends V8ResponseCallback {
       }
       case EXCEPTION: {
         Thread t = new Thread(new Runnable() {
-          @Override
           public void run() {
             getDebugContext().setState(State.NORMAL);
             getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
@@ -98,7 +95,6 @@ public class BacktraceProcessor extends V8ResponseCallback {
       handler.sendV8Command(
           DebuggerMessageFactory.source(entry.getKey(), null, null),
           new BrowserTabImpl.V8HandlerCallback() {
-            @Override
             public void messageReceived(JSONObject response) {
               JSONObject body = JsonUtil.getBody(response);
               ScriptManager scriptManager = debugContext.getScriptManager();
@@ -113,7 +109,6 @@ public class BacktraceProcessor extends V8ResponseCallback {
               }
             }
 
-            @Override
             public void failure(String message) {
               getDebugContext().onDebuggerDetached();
             }

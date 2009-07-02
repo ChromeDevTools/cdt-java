@@ -61,32 +61,26 @@ public class BreakpointImpl implements Breakpoint {
     this.breakpointProcessor = breakpointProcessor;
   }
 
-  @Override
   public boolean isEnabled() {
     return isEnabled;
   }
 
-  @Override
   public Type getType() {
     return type;
   }
 
-  @Override
   public long getId() {
     return id;
   }
 
-  @Override
   public int getIgnoreCount() {
     return ignoreCount;
   }
 
-  @Override
   public String getCondition() {
     return condition;
   }
 
-  @Override
   public void setEnabled(boolean enabled) {
     if (this.isEnabled != enabled) {
       setDirty(true);
@@ -94,7 +88,6 @@ public class BreakpointImpl implements Breakpoint {
     this.isEnabled = enabled;
   }
 
-  @Override
   public void setIgnoreCount(int ignoreCount) {
     if (this.ignoreCount != ignoreCount) {
       setDirty(true);
@@ -103,7 +96,6 @@ public class BreakpointImpl implements Breakpoint {
   }
 
 
-  @Override
   public void setCondition(String condition) {
     if (!eq(this.condition, condition)) {
       setDirty(true);
@@ -115,7 +107,6 @@ public class BreakpointImpl implements Breakpoint {
     return left == right || (left != null && left.equals(right));
   }
 
-  @Override
   public void clear(final BrowserTab.BreakpointCallback callback) {
     breakpointProcessor.clearBreakpoint(this, callback);
     // The order must be preserved, otherwise the breakpointProcessor will not be able
@@ -123,7 +114,6 @@ public class BreakpointImpl implements Breakpoint {
     this.id = INVALID_ID;
   }
 
-  @Override
   public void flush(final BrowserTab.BreakpointCallback callback) {
     if (!isDirty()) {
       if (callback != null) {

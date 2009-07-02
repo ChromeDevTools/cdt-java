@@ -7,7 +7,6 @@ package org.chromium.sdk.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,13 +29,6 @@ import org.json.simple.JSONObject;
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
 public class DebugContextImpl implements DebugContext {
-
-  private static final EnumSet<PropertyType> VISIBLE_PROPERTY_TYPES =
-      EnumSet.of(
-          PropertyType.NORMAL,
-          PropertyType.FIELD,
-          PropertyType.CALLBACKS,
-          PropertyType.INTERCEPTOR);
 
   /**
    * A no-op JavaScript to evaluate.
@@ -169,7 +161,6 @@ public class DebugContextImpl implements DebugContext {
         new ArrayList<Long>(frameIndexToFuncRef.values())),
         new BrowserTabImpl.V8HandlerCallback() {
 
-          @Override
           public void messageReceived(JSONObject response) {
             if (!JsonUtil.isSuccessful(response)) {
               return;
@@ -192,7 +183,6 @@ public class DebugContextImpl implements DebugContext {
             }
           }
 
-          @Override
           public void failure(String message) {
             // Do nothing, failures will ensue
           }
@@ -229,12 +219,10 @@ public class DebugContextImpl implements DebugContext {
             V8Protocol.REF_TEXT));
   }
 
-  @Override
   public State getState() {
     return state;
   }
 
-  @Override
   public JsStackFrameImpl[] getStackFrames() {
     if (stackFramesCached == null) {
       int frameCount = getFrameCount();
@@ -247,7 +235,6 @@ public class DebugContextImpl implements DebugContext {
     return stackFramesCached;
   }
 
-  @Override
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
     DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
     // Use non-null commandCallback only if callback is not null
@@ -269,14 +256,12 @@ public class DebugContextImpl implements DebugContext {
     sendMessage(false, message, commandCallback);
   }
 
-  @Override
   public Collection<Breakpoint> getBreakpointsHit() {
     return breakpointsHit != null
         ? breakpointsHit
         : Collections.<Breakpoint> emptySet();
   }
 
-  @Override
   public ExceptionData getExceptionData() {
     return exceptionData;
   }

@@ -20,17 +20,14 @@ public class DebugElementImpl extends PlatformObject implements IDebugElement {
     this.debugTarget = debugTarget;
   }
 
-  @Override
   public DebugTargetImpl getDebugTarget() {
     return debugTarget;
   }
 
-  @Override
   public ILaunch getLaunch() {
     return getDebugTarget().getLaunch();
   }
 
-  @Override
   public String getModelIdentifier() {
     return ChromiumDebugPlugin.DEBUG_MODEL_ID;
   }

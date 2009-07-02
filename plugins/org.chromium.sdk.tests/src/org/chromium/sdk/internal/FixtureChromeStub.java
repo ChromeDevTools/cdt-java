@@ -137,7 +137,6 @@ public class FixtureChromeStub implements ChromeStub {
     return seqCounter++;
   }
 
-  @Override
   public Message respondTo(Message requestMessage) {
     // needs request_seq and command at the end
     JSONObject content;
@@ -356,7 +355,6 @@ public class FixtureChromeStub implements ChromeStub {
     }
   }
 
-  @Override
   public void setNetListener(NetListener listener) {
     this.listener = listener;
   }

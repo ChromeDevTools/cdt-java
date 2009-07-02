@@ -22,7 +22,6 @@ import org.eclipse.ui.part.FileEditorInput;
  */
 public class JsDebugModelPresentation extends LabelProvider implements IDebugModelPresentation {
 
-  @Override
   public void setAttribute(String attribute, Object value) {
   }
 
@@ -44,7 +43,6 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
     return null;
   }
 
-  @Override
   public void computeDetail(IValue value, IValueDetailListener listener) {
     String detail = ""; //$NON-NLS-1$
     try {
@@ -55,7 +53,6 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
     listener.detailComputed(value, detail);
   }
 
-  @Override
   public IEditorInput getEditorInput(Object element) {
     if (element instanceof IFile) {
       return new FileEditorInput((IFile) element);
@@ -69,7 +66,6 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
     return null;
   }
 
-  @Override
   public String getEditorId(IEditorInput input, Object element) {
     if (element instanceof IFile || element instanceof ILineBreakpoint) {
       return JsEditor.EDITOR_ID;

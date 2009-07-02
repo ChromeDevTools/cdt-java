@@ -71,13 +71,11 @@ class V8Helper {
     context.getV8Handler().sendV8Command(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, false),
         new V8HandlerCallback() {
-          @Override
           public void failure(String message) {
             scriptsReloadSemaphore.release();
             finalCallback.failure(message);
           }
 
-          @Override
           public void messageReceived(JSONObject response) {
             JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
             ScriptManager scriptManager = context.getScriptManager();
@@ -107,13 +105,11 @@ class V8Helper {
     context.getV8Handler().sendV8Command(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         new V8HandlerCallback() {
-          @Override
           public void failure(String message) {
             scriptsReloadSemaphore.release();
             finalCallback.failure(message);
           }
 
-          @Override
           public void messageReceived(JSONObject response) {
             JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
             ScriptManager scriptManager = context.getScriptManager();
@@ -203,7 +199,6 @@ class V8Helper {
           DebuggerMessageFactory.lookup(new ArrayList<Long>(refToName.keySet())),
           new BrowserTabImpl.V8HandlerCallback() {
 
-            @Override
             public void messageReceived(JSONObject response) {
               if (!JsonUtil.isSuccessful(response)) {
                 return;
@@ -211,7 +206,6 @@ class V8Helper {
               processLookupResponse(values, refToName, JsonUtil.getBody(response));
             }
 
-            @Override
             public void failure(String message) {
               // Do nothing, failures will ensue
             }
