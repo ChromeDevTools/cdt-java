@@ -130,12 +130,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     Runnable command = new Runnable() {
       public void run() {
         targetTab.getScripts(new ScriptsCallback() {
-          @Override
           public void failure(String errorMessage) {
             ChromiumDebugPlugin.logError(errorMessage);
           }
 
-          @Override
           public void success(Collection<Script> scripts) {
             for (Script script : scripts) {
               if (script != null && !getResourceManager().scriptHasResource(script)) {
@@ -171,12 +169,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     }
   }
 
-  @Override
   public String getName() throws DebugException {
     return Messages.DebugTargetImpl_TargetName;
   }
 
-  @Override
   public IProcess getProcess() {
     return null;
   }
@@ -189,19 +185,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return isOutOfSync && !isDisconnected();
   }
 
-  @Override
   public IThread[] getThreads() throws DebugException {
     return isDisconnected()
         ? EMPTY_THREADS
         : threads;
   }
 
-  @Override
   public boolean hasThreads() throws DebugException {
     return getThreads().length > 0;
   }
 
-  @Override
   public boolean supportsBreakpoint(IBreakpoint breakpoint) {
     return ChromiumDebugPlugin.DEBUG_MODEL_ID.equals(breakpoint.getModelIdentifier()) &&
         !isDisconnected();
@@ -222,26 +215,21 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return ChromiumDebugPlugin.DEBUG_MODEL_ID;
   }
 
-  @Override
   public boolean canTerminate() {
     return false;
   }
 
-  @Override
   public boolean isTerminated() {
     return false;
   }
 
-  @Override
   public void terminate() throws DebugException {
   }
 
-  @Override
   public boolean canResume() {
     return !isDisconnected() && isSuspended();
   }
 
-  @Override
   public boolean canSuspend() {
     // Immediate thread suspension is not supported by V8
     // (as it does not make sense.)
@@ -258,7 +246,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireSuspendEvent(detail);
   }
 
-  @Override
   public void resume() throws DebugException {
     debugContext.continueVm(null, 1, null);
     // Let's pretend Chromium does respond to the "continue" request immediately
@@ -269,18 +256,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireResumeEvent(detail);
   }
 
-  @Override
   public void suspend() throws DebugException {
     // Immediate thread suspension is not supported by V8
     // (as it does not make sense.)
   }
 
-  @Override
   public boolean canDisconnect() {
     return !isDisconnected();
   }
 
-  @Override
   public void disconnect() throws DebugException {
     if (!canDisconnect()) {
       return;
@@ -296,17 +280,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     disconnected();
   }
 
-  @Override
   public boolean isDisconnected() {
     return isDisconnected;
   }
 
-  @Override
   public IMemoryBlock getMemoryBlock(long startAddress, long length) throws DebugException {
     return null;
   }
 
-  @Override
   public boolean supportsStorageRetrieval() {
     return false;
   }
@@ -369,7 +350,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireEvent(new DebugEvent(getLaunch(), DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
   }
 
-  @Override
   public void breakpointAdded(IBreakpoint breakpoint) {
     if (!supportsBreakpoint(breakpoint)) {
       return;
@@ -389,12 +369,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
             (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset(), Breakpoint.NO_VALUE,
             breakpoint.isEnabled(), lineBreakpoint.getCondition(), lineBreakpoint.getIgnoreCount(),
             new BreakpointCallback() {
-              @Override
               public void success(Breakpoint breakpoint) {
                 lineBreakpoint.setBreakpoint(breakpoint);
               }
 
-              @Override
               public void failure(String errorMessage) {
                 ChromiumDebugPlugin.logError(errorMessage);
               }
@@ -405,7 +383,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     }
   }
 
-  @Override
   public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
     if (!supportsBreakpoint(breakpoint)) {
       return;
@@ -414,7 +391,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     ((ChromiumLineBreakpoint) breakpoint).changed();
   }
 
-  @Override
   public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
     if (!supportsBreakpoint(breakpoint)) {
       return;
@@ -463,12 +439,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     }
   }
 
-  @Override
   public void resumed() {
     resumed(DebugEvent.CLIENT_REQUEST);
   }
 
-  @Override
   public void suspended(DebugContext context) {
     this.debugContext = context;
     breakpointsHit(context.getBreakpointsHit());
@@ -504,7 +478,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return text.substring(0, maxLength - 3) + "..."; //$NON-NLS-1$
   }
 
-  @Override
   public void disconnected() {
     if (!isDisconnected()) {
       setDisconnected(true);
@@ -517,13 +490,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return debugContext;
   }
 
-  @Override
   public void navigated(String newUrl) {
     isOutOfSync = true;
     fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
   }
 
-  @Override
   public void closed() {
     navigated(null);
   }

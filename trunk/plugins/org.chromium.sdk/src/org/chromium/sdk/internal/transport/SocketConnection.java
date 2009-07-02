@@ -334,25 +334,21 @@ public class SocketConnection implements Connection {
     Logger.getLogger(SocketConnection.class.getName()).log(level, message, exception);
   }
 
-  @Override
   public void close() {
     if (isAttached()) {
       detach(true);
     }
   }
 
-  @Override
   public boolean isConnected() {
     return isAttached();
   }
 
-  @Override
   public void send(Message message) {
     checkAttached();
     sendMessage(message);
   }
 
-  @Override
   public void setNetListener(NetListener netListener) {
     if (this.listener != null && netListener != this.listener) {
       throw new IllegalStateException("Cannot change NetListener");
@@ -362,7 +358,6 @@ public class SocketConnection implements Connection {
         : NULL_LISTENER;
   }
 
-  @Override
   public void start() throws IOException {
     try {
       if (!isAttached()) {

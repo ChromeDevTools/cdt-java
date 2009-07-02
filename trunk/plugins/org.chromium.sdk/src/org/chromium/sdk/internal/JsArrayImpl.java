@@ -63,19 +63,16 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     indexToElementMap = Collections.unmodifiableSortedMap(map);
   }
 
-  @Override
   public JsVariable get(int index) {
     ensureElementsMap();
     return indexToElementMap.get(index);
   }
 
-  @Override
   public SortedMap<Integer, ? extends JsVariable> toSparseArray() {
     ensureElementsMap();
     return indexToElementMap;
   }
 
-  @Override
   public int length() {
     int length = 0;
     PropertyReference[] propRefs = getMirror().getProperties();

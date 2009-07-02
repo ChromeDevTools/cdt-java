@@ -56,24 +56,20 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
 
   private ISelection originalSelection;
 
-  @Override
   public void setActiveEditor(IAction action, IEditorPart targetEditor) {
     this.action = action;
     setTargetPart(targetEditor);
   }
 
-  @Override
   public void run(IAction action) {
     updateAction();
     run();
   }
 
-  @Override
   public void selectionChanged(IAction action, ISelection selection) {
     this.action = action;
   }
 
-  @Override
   public void dispose() {
     IWorkbenchWindow win = getWindow();
     if (win != null) {
@@ -85,7 +81,6 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     return window;
   }
 
-  @Override
   public void init(IWorkbenchWindow window) {
     this.window = window;
     IWorkbenchPage page = window.getActivePage();
@@ -95,17 +90,14 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     window.getPartService().addPartListener(this);
   }
 
-  @Override
   public void partActivated(IWorkbenchPart part) {
     setTargetPart(part);
   }
 
-  @Override
   public void partBroughtToTop(IWorkbenchPart part) {
 
   }
 
-  @Override
   public void partClosed(IWorkbenchPart part) {
     if (part == getTargetPart()) {
       setTargetPart(null);
@@ -116,11 +108,9 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     return targetPart;
   }
 
-  @Override
   public void partDeactivated(IWorkbenchPart part) {
   }
 
-  @Override
   public void partOpened(IWorkbenchPart part) {
   }
 
@@ -128,7 +118,6 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     this.targetPart = part;
   }
 
-  @Override
   public void init(IViewPart view) {
     setTargetPart(view);
   }
@@ -203,7 +192,6 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     return text != null && JavascriptUtil.ID_PATTERN.matcher(text).find();
   }
 
-  @Override
   public void success(JsVariable var) {
     if (ChromiumDebugUIPlugin.getDefault() == null) {
       return;

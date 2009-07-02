@@ -131,13 +131,11 @@ public class JsVariableImpl implements JsVariable {
     return false; // TODO(apavlov): fix once V8 supports it
   }
 
-  @Override
   public boolean isReadable() {
-    return true; // TODO(apavlov): implement once the readability metadata are
-                 // available
+    // TODO(apavlov): implement once the readability metadata are available
+    return true;
   }
 
-  @Override
   public synchronized void setValue(String newValue, SetValueCallback callback) {
     // TODO(apavlov): currently V8 does not support it
     if (!isMutable()) {
@@ -145,7 +143,6 @@ public class JsVariableImpl implements JsVariable {
     }
   }
 
-  @Override
   public JsDataType getType() {
     return valueData.getType();
   }

@@ -142,7 +142,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
     return bpp;
   }
 
-  @Override
   public void handleMessage(final Message message) {
     JSONObject json;
     try {
@@ -177,7 +176,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
     throw new IllegalArgumentException("Invalid command: " + command);
   }
 
-  @Override
   public void onDebuggerDetached() {
     removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();

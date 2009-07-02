@@ -76,11 +76,9 @@ public class DevToolsServiceHandler implements ToolHandler {
     this.connection = connection;
   }
 
-  @Override
   public void onDebuggerDetached() {
   }
 
-  @Override
   public void handleMessage(Message message) {
     JSONObject json;
     try {

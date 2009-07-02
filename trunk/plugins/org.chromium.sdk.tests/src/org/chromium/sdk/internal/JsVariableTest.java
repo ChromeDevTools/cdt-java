@@ -77,28 +77,18 @@ public class JsVariableTest implements DebugEventListener {
     assertEquals("3", secondVal.getValueString()); //$NON-NLS-1$
   }
 
-  @Override
   public void closed() {
-
   }
 
-  @Override
   public void disconnected() {
-
   }
 
-  @Override
   public void navigated(String newUrl) {
-
   }
 
-  @Override
   public void resumed() {
-
   }
 
-  @Override
   public void suspended(DebugContext context) {
-
   }
 }

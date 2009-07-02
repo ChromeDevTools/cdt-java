@@ -41,25 +41,21 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       this.expression = expression;
     }
 
-    @Override
     public String[] getErrorMessages() {
       return exception == null
           ? EMPTY_STRINGS
           : new String[] { exception.getStatus().getMessage() };
     }
 
-    @Override
     public DebugException getException() {
       getValue();
       return exception;
     }
 
-    @Override
     public String getExpressionText() {
       return expression;
     }
 
-    @Override
     public synchronized IValue getValue() {
       if (value == null && exception == null) {
         try {
@@ -71,7 +67,6 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       return value;
     }
 
-    @Override
     public boolean hasErrors() {
       getValue();
       return exception != null;
@@ -89,33 +84,27 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       this.expressionText = expressionText;
     }
 
-    @Override
     public String[] getErrorMessages() {
       return new String[] { exception.getStatus().getMessage() };
     }
 
-    @Override
     public DebugException getException() {
       return exception;
     }
 
-    @Override
     public String getExpressionText() {
       return expressionText;
     }
 
-    @Override
     public IValue getValue() {
       return null;
     }
 
-    @Override
     public boolean hasErrors() {
       return true;
     }
   }
 
-  @Override
   public void evaluateExpression(final String expression, final IDebugElement context,
       final IWatchExpressionListener listener) {
     final DebugElementImpl contextImpl = (DebugElementImpl) context;

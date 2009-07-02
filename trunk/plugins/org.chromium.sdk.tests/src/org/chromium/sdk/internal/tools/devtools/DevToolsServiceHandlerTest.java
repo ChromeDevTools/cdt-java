@@ -59,7 +59,6 @@ public class DevToolsServiceHandlerTest extends AbstractAttachedTest<ControlledF
 
   private void getTabs(final CountDownLatch latch, final Exception[] ex, final int timeout) {
     new MicroThread(new Runnable() {
-      @Override
       public void run() {
         try {
           handler.listTabs(timeout);
@@ -78,7 +77,6 @@ public class DevToolsServiceHandlerTest extends AbstractAttachedTest<ControlledF
 
   private void getVersion(final CountDownLatch latch, final Exception[] ex, final int timeout) {
     new MicroThread(new Runnable() {
-      @Override
       public void run() {
         try {
           handler.version(timeout);

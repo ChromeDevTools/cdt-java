@@ -22,7 +22,6 @@ public abstract class V8ResponseCallback implements BrowserTabImpl.V8HandlerCall
     this.context = context;
   }
 
-  @Override
   public void failure(String message) {
     // not used
   }

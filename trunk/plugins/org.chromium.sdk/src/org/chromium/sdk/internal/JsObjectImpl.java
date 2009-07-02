@@ -87,7 +87,6 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     propertyMap = Collections.unmodifiableMap(map);
   }
 
-  @Override
   public JsVariableImpl[] getProperties() {
     ensureProperties();
     return (properties != null && !failedResponse) ? properties : EMPTY_VARIABLES;
@@ -166,17 +165,14 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return this;
   }
 
-  @Override
   public JsArrayImpl asArray() {
     return null;
   }
 
-  @Override
   public JsVariable getProperty(String name) {
     return propertyMap.get(name);
   }
 
-  @Override
   public String getClassName() {
     return getMirror().getClassName();
   }

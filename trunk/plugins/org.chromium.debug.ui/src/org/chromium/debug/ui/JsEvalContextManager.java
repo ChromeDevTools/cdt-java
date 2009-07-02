@@ -59,24 +59,19 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
     ChromiumDebugUIPlugin.getDisplay().asyncExec(r);
   }
 
-  @Override
   public void windowActivated(IWorkbenchWindow window) {
     activeWindow = window;
   }
 
-  @Override
   public void windowClosed(IWorkbenchWindow window) {
   }
 
-  @Override
   public void windowDeactivated(IWorkbenchWindow window) {
   }
 
-  @Override
   public void windowOpened(IWorkbenchWindow window) {
   }
 
-  @Override
   public void debugContextChanged(DebugContextEvent event) {
     if ((event.getFlags() & DebugContextEvent.ACTIVATED) > 0) {
       IWorkbenchPart part = event.getDebugContextProvider().getPart();

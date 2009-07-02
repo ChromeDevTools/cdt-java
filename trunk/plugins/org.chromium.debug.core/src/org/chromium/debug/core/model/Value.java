@@ -34,17 +34,14 @@ public class Value extends DebugElementImpl implements IValue {
     this.value = value;
   }
 
-  @Override
   public String getReferenceTypeName() throws DebugException {
     return value.getReferenceType().toString();
   }
 
-  @Override
   public String getValueString() throws DebugException {
     return value.getValueString();
   }
 
-  @Override
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
       if (value.asObject() != null) {
@@ -56,12 +53,10 @@ public class Value extends DebugElementImpl implements IValue {
     return variables;
   }
 
-  @Override
   public boolean hasVariables() throws DebugException {
     return value.asObject() != null;
   }
 
-  @Override
   public boolean isAllocated() throws DebugException {
     return false;
   }

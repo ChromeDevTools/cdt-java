@@ -27,7 +27,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private Text v8ProjectName;
 
-  @Override
   public void createControl(Composite parent) {
     Composite composite = createDefaultComposite(parent);
     ModifyListener modifyListener = new ModifyListener() {
@@ -53,12 +52,10 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     v8ProjectName.addModifyListener(modifyListener);
   }
 
-  @Override
   public String getName() {
     return Messages.ChromiumRemoteTab_RemoteTabName;
   }
 
-  @Override
   public void initializeFrom(ILaunchConfiguration config) {
     int debugPort = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
     String projectName = PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME);
@@ -76,7 +73,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     v8ProjectName.setTextLimit(50);
   }
 
-  @Override
   public void performApply(ILaunchConfigurationWorkingCopy config) {
     try {
       config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, Integer.parseInt(v8DebugPort.getText()
@@ -87,7 +83,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, v8ProjectName.getText().trim());
   }
 
-  @Override
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
     int port = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, port);

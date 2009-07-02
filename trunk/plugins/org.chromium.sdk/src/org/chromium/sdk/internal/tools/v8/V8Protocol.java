@@ -175,17 +175,14 @@ public enum V8Protocol implements CharSequence {
     this.key = key;
   }
 
-  @Override
   public char charAt(int index) {
     return key.charAt(index);
   }
 
-  @Override
   public int length() {
     return key.length();
   }
 
-  @Override
   public CharSequence subSequence(int start, int end) {
     return key.subSequence(start, end);
   }

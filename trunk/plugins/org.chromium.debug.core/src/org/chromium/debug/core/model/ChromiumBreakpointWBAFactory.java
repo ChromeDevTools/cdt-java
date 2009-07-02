@@ -19,7 +19,6 @@ public class ChromiumBreakpointWBAFactory implements IAdapterFactory {
   protected static final Object[] EMPTY_CHILDREN = new Object[0];
 
   @SuppressWarnings("unchecked")
-  @Override
   public Object getAdapter(Object adaptableObject, Class adapterType) {
     if (adapterType != IWorkbenchAdapter.class ||
         !(adaptableObject instanceof ChromiumLineBreakpoint)) {
@@ -52,7 +51,6 @@ public class ChromiumBreakpointWBAFactory implements IAdapterFactory {
   }
 
   @SuppressWarnings("unchecked")
-  @Override
   public Class[] getAdapterList() {
     return new Class[] { IWorkbenchAdapter.class };
   }

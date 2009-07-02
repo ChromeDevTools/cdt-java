@@ -40,23 +40,19 @@ public class JsInspectExpression extends PlatformObject
     this.errorMessage = errorMessage;
   }
 
-  @Override
   public String[] getErrorMessages() {
     return errorMessage == null
         ? new String[0]
         : new String[] { errorMessage };
   }
 
-  @Override
   public boolean hasErrors() {
     return errorMessage != null;
   }
 
-  @Override
   public void dispose() {
   }
 
-  @Override
   public IDebugTarget getDebugTarget() {
     IValue value = getValue();
     if (value != null) {
@@ -65,29 +61,24 @@ public class JsInspectExpression extends PlatformObject
     return null;
   }
 
-  @Override
   public String getExpressionText() {
     return expression;
   }
 
-  @Override
   public IValue getValue() {
     return variable != null
         ? Value.create(stackFrame.getDebugTarget(), variable.getValue())
         : null;
   }
 
-  @Override
   public ILaunch getLaunch() {
     return getValue().getLaunch();
   }
 
-  @Override
   public String getModelIdentifier() {
     return ChromiumDebugPlugin.DEBUG_MODEL_ID;
   }
 
-  @Override
   public void handleDebugEvents(DebugEvent[] events) {
     for (DebugEvent event : events) {
       switch (event.getKind()) {

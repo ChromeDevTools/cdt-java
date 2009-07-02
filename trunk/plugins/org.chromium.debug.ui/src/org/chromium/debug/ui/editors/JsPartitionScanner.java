@@ -51,12 +51,10 @@ public class JsPartitionScanner extends RuleBasedPartitionScanner {
       addWord("/**/", successToken); //$NON-NLS-1$
     }
 
-    @Override
     public IToken evaluate(ICharacterScanner scanner, boolean resume) {
       return super.evaluate(scanner);
     }
 
-    @Override
     public IToken getSuccessToken() {
       return successToken;
     }

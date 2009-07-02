@@ -62,7 +62,6 @@ public class DebuggerMessage implements JSONStreamAware {
     }
   }
 
-  @Override
   public void writeJSONString(Writer out) throws IOException {
     LinkedHashMap<String, Object> obj = new LinkedHashMap<String, Object>();
     obj.put("seq", sequence);
