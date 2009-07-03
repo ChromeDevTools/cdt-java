@@ -209,7 +209,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final Collection<Long> handlesToRequest) {
     for (PropertyReference prop : mirrorProperties) {
       String propName = prop.getName();
-      if (propName.isEmpty()) {
+      if (propName.length() == 0) {
         // Do not provide a synthetic "hidden properties" property.
         continue;
       }
