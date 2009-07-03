@@ -241,7 +241,7 @@ public class JsVariableImpl implements JsVariable {
 
     for (PropertyReference prop : properties) {
       String propName = prop.getName();
-      if (propName.isEmpty()) {
+      if (propName.length() == 0) {
         // Do not provide a synthetic "hidden properties" property.
         continue;
       }

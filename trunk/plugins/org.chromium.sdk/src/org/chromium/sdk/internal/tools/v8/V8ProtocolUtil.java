@@ -167,7 +167,7 @@ public class V8ProtocolUtil {
       return "<unknown>";
     } else {
       String name = getNameOrInferred(functionObject, V8Protocol.LOCAL_NAME);
-      if (name == null || name.isEmpty()) {
+      if (isNullOrEmpty(name)) {
         return "(anonymous function)";
       } else {
         return name;
@@ -187,10 +187,14 @@ public class V8ProtocolUtil {
 
   private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
     String name = JsonUtil.getAsString(obj, nameProperty);
-    if (name == null || name.isEmpty()) {
+    if (isNullOrEmpty(name)) {
       name = JsonUtil.getAsString(obj, V8Protocol.INFERRED_NAME);
     }
     return name;
+  }
+
+  private static boolean isNullOrEmpty(String value) {
+    return value == null || value.length() == 0;
   }
 
 }
