@@ -22,7 +22,6 @@ The debugger exposes the following Javascript debugging capabilities, starting w
   * In-memory browser script storage
 
 = Known issues =
-  * Currently only the Windows version of Google Chrome can communicate using the debugging protocol.
   * Duplicate scripts can be loaded from V8 for the same resource.
   * Only V8-provided scripts are shown rather than actual resources loaded by the browser (the resources are not exposed through the V8 debugger protocol).
   * The launch target is invalidated rather than reloaded whenever the page is refreshed (need to re-attach).
