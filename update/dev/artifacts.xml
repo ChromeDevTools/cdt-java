@@ -2,7 +2,7 @@
 <?artifactRepository version='1.1.0'?>
 <repository name='file:/D:/Dev/chromedevtools/trunk/builder/releng.builder/../../../staging/buildRepo/ - artifacts' type='org.eclipse.equinox.p2.artifact.repository.simpleRepository' version='1.0.0'>
   <properties size='2'>
-    <property name='p2.timestamp' value='1246629468336'/>
+    <property name='p2.timestamp' value='1246888865500'/>
     <property name='p2.compressed' value='false'/>
   </properties>
   <mappings size='3'>
@@ -11,70 +11,70 @@
     <rule filter='(&amp; (classifier=org.eclipse.update.feature))' output='${repoUrl}/features/${id}_${version}.jar'/>
   </mappings>
   <artifacts size='11'>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.0.200907031757'>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.1.0.200907061800'>
       <properties size='2'>
         <property name='artifact.size' value='0'/>
-        <property name='download.size' value='76616'/>
+        <property name='download.size' value='78250'/>
       </properties>
     </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.1.0.200907031757'>
-      <properties size='2'>
-        <property name='download.contentType' value='application/zip'/>
-        <property name='download.size' value='2480'/>
-      </properties>
-    </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.1.0.200907031757'>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.1.0.200907061800'>
       <properties size='2'>
         <property name='artifact.size' value='0'/>
-        <property name='download.size' value='78618'/>
+        <property name='download.size' value='68442'/>
       </properties>
     </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.1.0.200907031757'>
-      <properties size='2'>
-        <property name='download.contentType' value='application/zip'/>
-        <property name='download.size' value='2450'/>
-      </properties>
-    </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.1.0.200907031757'>
-      <properties size='2'>
-        <property name='artifact.size' value='0'/>
-        <property name='download.size' value='5167'/>
-      </properties>
-    </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.1.0.200907031757'>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.1.0.200907061800'>
       <properties size='2'>
         <property name='download.contentType' value='application/zip'/>
         <property name='download.size' value='3651'/>
       </properties>
     </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug.source' version='0.1.0.200907031757'>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.1.0.200907061800'>
       <properties size='2'>
-        <property name='artifact.size' value='0'/>
-        <property name='download.size' value='60171'/>
+        <property name='download.contentType' value='application/zip'/>
+        <property name='download.size' value='3865'/>
       </properties>
     </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.1.0.200907031757'>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.1.0.200907061800'>
       <properties size='2'>
-        <property name='artifact.size' value='0'/>
-        <property name='download.size' value='178198'/>
+        <property name='download.contentType' value='application/zip'/>
+        <property name='download.size' value='2479'/>
       </properties>
     </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.1.0.200907031757'>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.1.0.200907061800'>
       <properties size='2'>
-        <property name='artifact.size' value='0'/>
-        <property name='download.size' value='67810'/>
+        <property name='download.contentType' value='application/zip'/>
+        <property name='download.size' value='2449'/>
       </properties>
     </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.1.0.200907031757'>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.source' version='0.1.0.200907061800'>
+      <properties size='2'>
+        <property name='artifact.size' value='0'/>
+        <property name='download.size' value='60047'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.1.0.200907061800'>
+      <properties size='2'>
+        <property name='artifact.size' value='0'/>
+        <property name='download.size' value='5166'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.1.0.200907061800'>
       <properties size='2'>
         <property name='download.contentType' value='application/zip'/>
         <property name='download.size' value='3607'/>
       </properties>
     </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.1.0.200907031757'>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.1.0.200907061800'>
       <properties size='2'>
-        <property name='download.contentType' value='application/zip'/>
-        <property name='download.size' value='3866'/>
+        <property name='artifact.size' value='0'/>
+        <property name='download.size' value='177188'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.0.200907061800'>
+      <properties size='2'>
+        <property name='artifact.size' value='0'/>
+        <property name='download.size' value='76375'/>
       </properties>
     </artifact>
   </artifacts>
