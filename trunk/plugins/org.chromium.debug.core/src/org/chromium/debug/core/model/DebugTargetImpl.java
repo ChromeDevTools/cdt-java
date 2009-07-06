@@ -59,8 +59,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private DebugContext debugContext;
 
-  private boolean isOutOfSync = false;
-
   private boolean isSuspended = false;
 
   private boolean isDisconnected = false;
@@ -111,6 +109,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       final Runnable attachCallback) {
     this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
+    try {
+      reloadScriptsAndResume(attachCallback);
+    } finally {
+      monitor.done();
+    }
+  }
+
+  private void reloadScriptsAndResume(final Runnable attachCallback) {
     reloadScripts(true, new Runnable() {
       public void run() {
         try {
@@ -120,7 +126,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         } finally {
           fireCreationEvent();
           resumed();
-          monitor.done();
         }
       }
     });
@@ -179,10 +184,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   public BrowserTab getTargetTab() {
     return targetTab;
-  }
-
-  public boolean isOutOfSync() {
-    return isOutOfSync && !isDisconnected();
   }
 
   public IThread[] getThreads() throws DebugException {
@@ -491,8 +492,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   }
 
   public void navigated(String newUrl) {
-    isOutOfSync = true;
-    fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+    if (newUrl == null) {
+      fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+    } else {
+      reloadScriptsAndResume(new Runnable(){
+        public void run() {
+          fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE, DebugEvent.STATE));
+        }
+      });
+    }
   }
 
   public void closed() {

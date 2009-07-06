@@ -19,8 +19,6 @@ public class Messages extends NLS {
 
   public static String ChromiumDebugUIPlugin_Warning;
 
-  public static String JsDebugModelPresentation_OutOfSyncLabel;
-
   public static String JsWatchExpressionDelegate_BadStackStructureWhileEvaluating;
 
   public static String JsWatchExpressionDelegate_ErrorEvaluatingExpression;
