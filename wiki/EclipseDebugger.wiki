@@ -12,7 +12,7 @@ http://chromedevtools.googlecode.com/svn/update/dev/
 
 = Features =
 
-The debugger exposes the following Javascript debugging capabilities, starting with the basic ones:
+The debugger exposes the following !JavaScript debugging capabilities:
   * Breakpoints
   * Watches
   * All kinds of stepping
@@ -20,6 +20,7 @@ The debugger exposes the following Javascript debugging capabilities, starting w
   * Mouse on-hover identifier evaluation
   * Text selection evaluation
   * In-memory browser script storage
+  * Exception events reported into the Error Log
 
 = Known issues =
   * Duplicate scripts can be loaded from V8 for the same resource.
