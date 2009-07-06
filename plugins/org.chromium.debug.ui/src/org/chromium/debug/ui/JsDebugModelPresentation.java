@@ -4,7 +4,6 @@
 
 package org.chromium.debug.ui;
 
-import org.chromium.debug.core.model.DebugElementImpl;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.DebugException;
@@ -33,12 +32,6 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
 
   @Override
   public String getText(Object element) {
-    if (element instanceof DebugElementImpl &&
-        ((DebugElementImpl) element).getDebugTarget().isOutOfSync() &&
-        !((DebugElementImpl) element).getDebugTarget().isTerminated()) {
-      // render "out of sync" if necessary
-      return Messages.JsDebugModelPresentation_OutOfSyncLabel;
-    }
     // use default label text
     return null;
   }
