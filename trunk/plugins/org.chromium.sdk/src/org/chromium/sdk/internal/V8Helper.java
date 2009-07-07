@@ -5,12 +5,11 @@
 package org.chromium.sdk.internal;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.JsDataType;
+import org.chromium.sdk.BrowserTab.ScriptsCallback;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -100,14 +99,13 @@ class V8Helper {
     context.evaluateJavascript();
   }
 
-  protected void doReloadAllScripts(final V8HandlerCallback finalCallback) {
-    context.getScriptManager().reset();
+  void doReloadAllScripts(final V8HandlerCallback callback) {
     context.getV8Handler().sendV8Command(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         new V8HandlerCallback() {
           public void failure(String message) {
             scriptsReloadSemaphore.release();
-            finalCallback.failure(message);
+            callback.failure(message);
           }
 
           public void messageReceived(JSONObject response) {
@@ -115,13 +113,61 @@ class V8Helper {
             ScriptManager scriptManager = context.getScriptManager();
             for (int i = 0; i < body.size(); ++i) {
               JSONObject scriptJson = (JSONObject) body.get(i);
-              scriptManager.addScript(scriptJson);
+              Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);
+              if (scriptManager.findById(id) == null) {
+                scriptManager.addScript(scriptJson);
+              }
             }
             scriptsReloadSemaphore.release();
-            finalCallback.messageReceived(response);
+            callback.messageReceived(response);
           }
         });
     context.evaluateJavascript();
+  }
+
+  /**
+   * Traverses scripts from the "refs" array of a "backtrace" response and
+   * reloads scripts if new ones are found. Does NOT remove GC'ed scripts
+   * that are now absent in the "refs" array.
+   *
+   * @param refs array from the "backtrace" response
+   * @param callback to invoke when the scripts are reloaded
+   */
+  void updateScriptsIfNeeded(JSONArray refs, final ScriptsCallback callback) {
+    try {
+      scriptsReloadSemaphore.acquire();
+    } catch (InterruptedException e) {
+      if (callback != null) {
+        callback.failure("Interrupted");
+      }
+      return;
+    }
+    int size = refs.size();
+    final ScriptManager scriptManager = context.getScriptManager();
+    boolean scriptsChanged = false;
+    for (int i = 0; i < size; i++) {
+      JSONObject ref = (JSONObject) refs.get(i);
+      if (!V8Protocol.FRAME_SCRIPT.key.equals(JsonUtil.getAsString(ref, V8Protocol.KEY_TYPE))) {
+        continue;
+      }
+      if (scriptManager.findById(V8ProtocolUtil.getScriptIdFromResponse(ref)) == null) {
+        scriptsChanged = true;
+        break;
+      }
+    }
+    if (!scriptsChanged) {
+      scriptsReloadSemaphore.release();
+      callback.success(scriptManager.allScripts());
+      return;
+    }
+    doReloadAllScripts(new V8HandlerCallback(){
+      public void messageReceived(JSONObject response) {
+        callback.success(scriptManager.allScripts());
+      }
+      public void failure(String message) {
+        callback.failure(message);
+      }
+    });
   }
 
   /**
@@ -135,38 +181,13 @@ class V8Helper {
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
 
-    int maxLookups = args.size() + locals.size() + 3 /* "this", script, function */;
+    int maxLookups = args.size() + locals.size() + 1 /* "this" */;
 
     final List<ValueMirror> values = new ArrayList<ValueMirror>(maxLookups);
-    final Map<Long, String> refToName = new HashMap<Long, String>();
-    HandleManager handleManager = context.getHandleManager();
-
-    // Frame script
-    Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
-    if (scriptRef != null) {
-      JSONObject scriptObject = handleManager.getHandle(scriptRef);
-      if (scriptObject == null) {
-        refToName.put(scriptRef, null);
-      } else {
-        context.getScriptManager().addScript(scriptObject);
-      }
-    }
-
-    // Frame function
-    Long funcRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_FUNC);
-    if (funcRef != null) {
-      JSONObject funcObject = handleManager.getHandle(funcRef);
-      if (funcObject == null) {
-        refToName.put(funcRef, null);
-      }
-    }
 
     // Receiver ("this")
-    Long receiverRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_RECEIVER);
-    if (receiverRef != null) {
-      JSONObject receiver = handleManager.getHandle(receiverRef);
-      enqueueOrPutMirror(values, refToName, thisName, receiverRef, receiver);
-    }
+    JSONObject receiver = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
+    putMirror(values, thisName, receiver);
 
     // Arguments
     for (int i = 0; i < args.size(); i++) {
@@ -177,9 +198,7 @@ class V8Helper {
         // method signature) that will be available in the "arguments" object
         continue;
       }
-      Long ref = V8ProtocolUtil.getValueRef(arg);
-      JSONObject handle = handleManager.getHandle(ref);
-      enqueueOrPutMirror(values, refToName, name, ref, handle);
+      putMirror(values, name, JsonUtil.getAsJSON(arg, V8Protocol.ARGUMENT_VALUE));
     }
 
     // Locals
@@ -188,65 +207,21 @@ class V8Helper {
       String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
 
       if (!V8ProtocolUtil.isInternalProperty(localName)) {
-        Long ref = V8ProtocolUtil.getValueRef(local);
-        JSONObject handle = handleManager.getHandle(ref);
-        enqueueOrPutMirror(values, refToName, localName, ref, handle);
+        putMirror(values, localName, JsonUtil.getAsJSON(local, V8Protocol.LOCAL_VALUE));
       }
-    }
-
-    if (!refToName.isEmpty()) {
-      context.getV8Handler().sendV8CommandBlocking(
-          DebuggerMessageFactory.lookup(new ArrayList<Long>(refToName.keySet())),
-          new BrowserTabImpl.V8HandlerCallback() {
-
-            public void messageReceived(JSONObject response) {
-              if (!JsonUtil.isSuccessful(response)) {
-                return;
-              }
-              processLookupResponse(values, refToName, JsonUtil.getBody(response));
-            }
-
-            public void failure(String message) {
-              // Do nothing, failures will ensue
-            }
-          });
     }
 
     return values.toArray(new ValueMirror[values.size()]);
   }
 
-  private void enqueueOrPutMirror(final List<ValueMirror> values,
-      final Map<Long, String> refToName, String name, Long ref, JSONObject handle) {
-    if (handle == null) {
-      refToName.put(ref, name);
+  private void putMirror(final List<ValueMirror> values,
+      String name, JSONObject valueObject) {
+    Long objectRef = JsonUtil.getAsLong(valueObject, V8Protocol.REF);
+    JSONObject object = context.getHandleManager().getHandle(objectRef);
+    if (object != null) {
+      values.add(createValueMirror(object, name));
     } else {
-      values.add(createValueMirror(handle, name));
-    }
-  }
-
-  protected void processLookupResponse(final List<ValueMirror> values,
-      final Map<Long, String> refToName, JSONObject body) {
-    ScriptManager scriptManager = context.getScriptManager();
-    for (Map.Entry<Long, String> entry : refToName.entrySet()) {
-      Long ref = entry.getKey();
-      JSONObject object = JsonUtil.getAsJSON(body, String.valueOf(ref));
-      if (object != null) {
-        context.getHandleManager().put(ref, object);
-        String name = entry.getValue();
-        // name is null for objects that should not be put into handleManager
-        if (name != null) {
-          ValueMirror mirror = createValueMirror(object, name);
-          if (thisName.equals(name)) {
-            // "this" should go first
-            values.add(0, mirror);
-          } else {
-            values.add(mirror);
-          }
-        } else {
-          // An unnamed object might be a script
-          scriptManager.addScript(object);
-        }
-      }
+      values.add(createValueMirrorFromValue(valueObject, name));
     }
   }
 
@@ -270,6 +245,24 @@ class V8Helper {
       PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handle);
       return new ValueMirror(name, parentRef, propertyRefs, className);
     } else {
+      return new ValueMirror(name, value, type);
+    }
+  }
+
+  static ValueMirror createValueMirrorFromValue(JSONObject valueObject, String name) {
+    String typeString = JsonUtil.getAsString(valueObject, V8Protocol.REF_TYPE);
+    String className = JsonUtil.getAsString(valueObject, V8Protocol.REF_CLASSNAME);
+    JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
+    if (type == null) {
+      return null; // bad value object
+    }
+    if (JsDataType.isObjectType(type)) {
+      return new ValueMirror(name, JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue());
+    } else {
+      String value = JsonUtil.getAsString(valueObject, V8Protocol.REF_VALUE);
+      if (value == null) {
+        value = typeString; // e.g. "undefined"
+      }
       return new ValueMirror(name, value, type);
     }
   }
