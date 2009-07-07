@@ -17,6 +17,8 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,10 +41,13 @@ public class JsVariableTest implements DebugEventListener {
     BrowserTab[] tabs = browser.getTabs();
     BrowserTab browserTab = tabs[0];
     browserTab.attach(this);
+    JSONObject valueObject = (JSONObject) JSONValue.parse(
+        "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
+        ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     eventMirror = new ValueMirror(
         "event", 11, new ValueMirror.PropertyReference[] {
-            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "x"),
-            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y"),
+            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
+            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
         }, null);
     FrameMirror frameMirror = new FrameMirror(
         ((BrowserTabImpl) browserTab).getDebugContext(),

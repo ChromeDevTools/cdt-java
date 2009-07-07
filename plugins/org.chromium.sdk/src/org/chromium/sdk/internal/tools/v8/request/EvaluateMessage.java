@@ -24,5 +24,6 @@ public class EvaluateMessage extends DebuggerMessage {
     putArgument("frame", frame);
     putArgument("global", global);
     putArgument("disable_break", disableBreak);
+    putArgument("inlineRefs", Boolean.TRUE);
   }
 }

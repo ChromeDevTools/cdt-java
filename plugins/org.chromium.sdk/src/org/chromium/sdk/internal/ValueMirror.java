@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JsDataType;
+import org.json.simple.JSONObject;
 
 /**
  * A representation of a datum (value) in the remote JavaScript VM.
@@ -24,9 +25,12 @@ public class ValueMirror {
 
     private final String name;
 
-    private PropertyReference(int refId, String propertyName) {
+    private final JSONObject valueObject;
+
+    private PropertyReference(int refId, String propertyName, JSONObject valueObject) {
       this.ref = refId;
       this.name = propertyName;
+      this.valueObject = valueObject;
     }
 
     public int getRef() {
@@ -35,6 +39,10 @@ public class ValueMirror {
 
     public String getName() {
       return name;
+    }
+
+    public JSONObject getValueObject() {
+      return valueObject;
     }
   }
 
@@ -55,22 +63,24 @@ public class ValueMirror {
    *
    * @param refId the "ref" value of this property
    * @param propertyName the name of the property
+   * @param valueObject a JSON descriptor of the property
    * @return a new PropertyReference instance
    */
-  public static PropertyReference newPropertyReference(int refId, String propertyName) {
-    return new PropertyReference(refId, propertyName);
+  public static PropertyReference newPropertyReference(int refId, String propertyName,
+      JSONObject valueObject) {
+    return new PropertyReference(refId, propertyName, valueObject);
   }
 
   public ValueMirror(String varName, String value) {
-    this(varName, value, JsDataType.TYPE_STRING);
+    this(varName, value, JsDataType.TYPE_STRING, null);
   }
 
-  public ValueMirror(String varName, String value, JsDataType type) {
+  public ValueMirror(String varName, String value, JsDataType type, String className) {
     this.type = type;
     this.name = varName;
     this.value = value;
     this.ref = -1;
-    this.className = null;
+    this.className = className;
   }
 
   public ValueMirror(String varName, int refID) {

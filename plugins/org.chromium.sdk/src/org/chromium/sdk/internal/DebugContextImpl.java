@@ -181,8 +181,7 @@ public class DebugContextImpl implements DebugContext {
             V8Helper.createValueMirror(exception, EXCEPTION_NAME),
             JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
             sourceText,
-            JsonUtil.getAsString(exception,
-            V8Protocol.REF_TEXT));
+            JsonUtil.getAsString(exception, V8Protocol.REF_TEXT));
   }
 
   private void updateScriptsFromRefs(JSONArray refs) {

@@ -279,7 +279,7 @@ public class JsVariableImpl implements JsVariable {
           : new JsArrayImpl(this.valueData, vars);
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), false);
+        new ArrayList<Long>(handlesToRequest), true);
     Exception ex =
         getV8Handler().sendV8CommandBlocking(message, new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {

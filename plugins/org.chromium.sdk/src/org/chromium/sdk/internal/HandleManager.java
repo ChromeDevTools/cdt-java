@@ -14,7 +14,7 @@ import org.json.simple.JSONObject;
 /**
  * A facility for storage and retrieval of handle objects using their "ref" IDs.
  */
-class HandleManager {
+public class HandleManager {
 
   private final Map<Long, JSONObject> refToHandle =
       Collections.synchronizedMap(new HashMap<Long, JSONObject>());

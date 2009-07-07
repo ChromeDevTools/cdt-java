@@ -98,9 +98,6 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
     DebugContextImpl debugContext = stackFrame.getDebugContext();
     final HandleManager handleManager = debugContext.getHandleManager();
-    // Use linked map to preserve the original (somewhat alphabetical)
-    // properties order
-    final Map<JsVariableImpl, Long> variableToRef = new LinkedHashMap<JsVariableImpl, Long>();
     ValueMirror mirror = getMirror();
     PropertyReference[] mirrorProperties = mirror.getProperties();
     if (mirrorProperties == null) {
@@ -110,43 +107,95 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final JSONObject[] handle = new JSONObject[1];
       handle[0] = handleManager.getHandle(ref);
       if (handle[0] == null) {
-        ex = debugContext.getV8Handler().sendV8CommandBlocking(
-            DebuggerMessageFactory.lookup(
-                Collections.singletonList(ref), false),
-                new BrowserTabImpl.V8HandlerCallback() {
-                  public void messageReceived(JSONObject response) {
-                    if (!JsonUtil.isSuccessful(response)) {
-                      JsObjectImpl.this.failedResponse = true;
-                      return;
-                    }
-                    JSONObject body = JsonUtil.getBody(response);
-                    handle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-                    if (handle != null) {
-                      handleManager.put(ref, handle[0]);
-                    }
-                  }
-
-                  public void failure(String message) {
-                    JsObjectImpl.this.failedResponse = true;
-                  }
-            });
+        ex = resolveThisHandle(debugContext, handleManager, ref, handle);
       }
       if (ex != null || this.failedResponse) {
         return;
       } else {
+        mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
         mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
-            V8ProtocolUtil.extractObjectProperties(handle[0]));
-        mirrorProperties = mirror.getProperties();
+            mirrorProperties);
       }
     }
-    final Collection<Long> handlesToRequest = new HashSet<Long>(mirrorProperties.length);
-    prepareLookupData(handleManager, mirrorProperties, variableToRef, handlesToRequest);
 
-    properties =
-        variableToRef.keySet().toArray(new JsVariableImpl[variableToRef.values().size()]);
-
-    fillPropertiesFromLookup(handleManager, variableToRef, handlesToRequest);
+    fillPropertiesFromMirror(handleManager, mirrorProperties);
     createPropertyMap();
+  }
+
+  private void fillPropertiesFromMirror(
+      final HandleManager handleManager, PropertyReference[] mirrorProperties) {
+    properties = new JsVariableImpl[mirrorProperties.length];
+    for (int i = 0, size = properties.length; i < size; i++) {
+      PropertyReference ref = mirrorProperties[i];
+      String propName = ref.getName();
+      String fqn = getFullyQualifiedName(propName);
+      if (fqn == null) {
+        continue;
+      }
+      JSONObject handleObject = handleManager.getHandle(Long.valueOf(ref.getRef()));
+      if (handleObject == null) {
+        handleObject = ref.getValueObject();
+      }
+      if (handleObject == null) {
+        processOriginalFormatPropertyRefs(handleManager, mirrorProperties);
+        return;
+      }
+      properties[i] = new JsVariableImpl(
+          stackFrame, V8Helper.createValueMirror(handleObject, ref.getName()),
+          fqn, true);
+    }
+  }
+
+  private Exception resolveThisHandle(DebugContextImpl debugContext,
+      final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle) {
+    Exception ex = debugContext.getV8Handler().sendV8CommandBlocking(
+        DebuggerMessageFactory.lookup(
+            Collections.singletonList(ref), true),
+            new BrowserTabImpl.V8HandlerCallback() {
+              public void messageReceived(JSONObject response) {
+                if (!JsonUtil.isSuccessful(response)) {
+                  JsObjectImpl.this.failedResponse = true;
+                  return;
+                }
+                JSONObject body = JsonUtil.getBody(response);
+                targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
+                if (targetHandle != null) {
+                  handleManager.put(ref, targetHandle[0]);
+                }
+                handleManager.putAll(V8ProtocolUtil.getRefHandleMap(
+                    JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS)));
+              }
+
+              public void failure(String message) {
+                JsObjectImpl.this.failedResponse = true;
+              }
+            });
+    return ex;
+  }
+
+  private void processOriginalFormatPropertyRefs(
+      HandleManager handleManager, PropertyReference[] mirrorProperties) {
+    Map<JsVariableImpl, Long> variableToRefMap = new LinkedHashMap<JsVariableImpl, Long>();
+    Collection<Long> handlesToRequest = new HashSet<Long>(mirrorProperties.length);
+    prepareLookupData(handleManager, mirrorProperties, variableToRefMap, handlesToRequest);
+
+    properties = variableToRefMap.keySet().toArray(
+        new JsVariableImpl[variableToRefMap.values().size()]);
+    fillPropertiesFromLookup(handleManager, variableToRefMap, handlesToRequest);
+  }
+
+  private String getFullyQualifiedName(String propName) {
+    String fqn;
+    if (JsonUtil.isInteger(propName)) {
+      fqn = parentFqn + '[' + propName + ']';
+    } else {
+      if (propName.startsWith(".")) {
+        // ".arguments" is not legal
+        fqn = null;
+      }
+      fqn = parentFqn + '.' + propName;
+    }
+    return fqn;
   }
 
   @Override
@@ -184,7 +233,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return;
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), false);
+        new ArrayList<Long>(handlesToRequest), true);
     Exception ex = stackFrame.getDebugContext().getV8Handler().sendV8CommandBlocking(
         message,
         new BrowserTabImpl.V8HandlerCallback() {
