@@ -232,10 +232,13 @@ class V8Helper {
    * @param handle containing the object specification from the V8 debugger
    * @param name of the value to construct
    * @return a ValueMirror instance with the specified name, containing data
-   *         from handle
+   *         from handle, or {@code null} if {@code handle} is not a handle
    */
   static ValueMirror createValueMirror(JSONObject handle, String name) {
     String value = JsonUtil.getAsString(handle, V8Protocol.REF_TEXT);
+    if (value == null) { // try another format
+      return createValueMirrorFromValue(handle, name);
+    }
     String typeString = JsonUtil.getAsString(handle, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME);
     JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
@@ -245,11 +248,21 @@ class V8Helper {
       PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handle);
       return new ValueMirror(name, parentRef, propertyRefs, className);
     } else {
-      return new ValueMirror(name, value, type);
+      return new ValueMirror(name, value, type, className);
     }
   }
 
-  static ValueMirror createValueMirrorFromValue(JSONObject valueObject, String name) {
+  /**
+   * Constructs a ValueMirror given a value object (the one received with the
+   * "inlineRefs" or "compactFormat" argument).
+   *
+   * @param valueObject the value object
+   * @param name of the ValueMirror to construct
+   * @return a ValueMirror instance with the specified name, containing data
+   *         from valueObject, or {@code null} if the valueObject format is
+   *         not valid
+   */
+  private static ValueMirror createValueMirrorFromValue(JSONObject valueObject, String name) {
     String typeString = JsonUtil.getAsString(valueObject, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(valueObject, V8Protocol.REF_CLASSNAME);
     JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
@@ -257,13 +270,14 @@ class V8Helper {
       return null; // bad value object
     }
     if (JsDataType.isObjectType(type)) {
-      return new ValueMirror(name, JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue());
+      return new ValueMirror(
+          name, JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue(), null, className);
     } else {
       String value = JsonUtil.getAsString(valueObject, V8Protocol.REF_VALUE);
       if (value == null) {
         value = typeString; // e.g. "undefined"
       }
-      return new ValueMirror(name, value, type);
+      return new ValueMirror(name, value, type, className);
     }
   }
 

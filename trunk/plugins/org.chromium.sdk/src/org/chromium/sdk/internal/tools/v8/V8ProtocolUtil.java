@@ -108,29 +108,30 @@ public class V8ProtocolUtil {
   }
 
   /**
-   * Constructs {@code PropertyReference}s from the specified object.
+   * Constructs {@code PropertyReference}s from the specified object, be it in
+   * the "original" or "inlineRefs" format.
    *
-   * @param handle containing the object specification from the V8 debugger
-   * @return {@code PropertyReference}s based on the {@code handle} data
+   * @param handle to get property references from
+   * @return an array of PropertyReferences
    */
   public static PropertyReference[] extractObjectProperties(JSONObject handle) {
     JSONArray props = JsonUtil.getAsJSONArray(handle, V8Protocol.REF_PROPERTIES);
     int propsLen = props.size();
     List<PropertyReference> objProps = new ArrayList<PropertyReference>(propsLen);
-
     for (int i = 0; i < propsLen; i++) {
       JSONObject prop = (JSONObject) props.get(i);
-      int ref = JsonUtil.getAsLong(prop, V8Protocol.REF).intValue();
-      String name = JsonUtil.getAsString(prop, V8Protocol.REF_PROP_NAME);
-      if (name == null) {
-        name = String.valueOf(JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_NAME));
+      String name = getPropertyName(prop);
+      JSONObject propValue = JsonUtil.getAsJSON(prop, V8Protocol.REF_VALUE);
+      if (propValue == null) {
+        // Handle the original (non-"inlineRefs") format that contains the
+        // value data in the outer objects.
+        propValue = prop;
       }
-      Long propType = JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_TYPE);
-
       if (isInternalProperty(name)) {
         continue;
       }
 
+      Long propType = JsonUtil.getAsLong(propValue, V8Protocol.REF_PROP_TYPE);
       // propType is NORMAL by default
       int propTypeValue = propType != null
           ? propType.intValue()
@@ -138,11 +139,20 @@ public class V8ProtocolUtil {
       if (propTypeValue == PropertyType.FIELD.value ||
           propTypeValue == PropertyType.CALLBACKS.value ||
           propTypeValue == PropertyType.NORMAL.value) {
-        objProps.add(ValueMirror.newPropertyReference(ref, name));
+        Long longRef = JsonUtil.getAsLong(propValue, V8Protocol.REF);
+        objProps.add(ValueMirror.newPropertyReference(longRef.intValue(), name, propValue));
       }
     }
 
     return objProps.toArray(new PropertyReference[objProps.size()]);
+  }
+
+  private static String getPropertyName(JSONObject prop) {
+    String name = JsonUtil.getAsString(prop, V8Protocol.REF_PROP_NAME);
+    if (name == null) {
+      name = String.valueOf(JsonUtil.getAsLong(prop, V8Protocol.REF_PROP_NAME));
+    }
+    return name;
   }
 
   /**
@@ -152,7 +162,7 @@ public class V8ProtocolUtil {
    */
   public static boolean isInternalProperty(String propertyName) {
     // Chrome can return properties like ".arguments". They should be ignored.
-    return propertyName.startsWith(".");
+    return propertyName.length() == 0 || propertyName.startsWith(".");
   }
 
   /**
