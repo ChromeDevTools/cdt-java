@@ -54,8 +54,8 @@ public class DebuggerMessageFactory {
     return new ClearBreakpointMessage(breakpoint.getId());
   }
 
-  public static DebuggerMessage lookup(List<Long> refs) {
-    return new LookupMessage(refs);
+  public static DebuggerMessage lookup(List<Long> refs, Boolean inlineRefs) {
+    return new LookupMessage(refs, inlineRefs);
   }
 
   private static Integer getV8IgnoreCount(int count) {
