@@ -24,6 +24,8 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   protected FixtureChromeStub messageResponder;
 
+  protected Browser browser;
+
   protected BrowserTab browserTab;
 
   protected DebugContext suspendContext;
@@ -45,7 +47,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   }
 
   protected void attachToBrowserTab() throws IOException, UnsupportedVersionException {
-    Browser browser = ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
+    browser = ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
     browser.connect();
     BrowserTab[] tabs = browser.getTabs();
     browserTab = tabs[0];

@@ -61,7 +61,6 @@ public class BrowserImpl implements Browser, NetListener {
 
   public BrowserTab[] getTabs() throws IOException {
     checkConnection();
-    tabUidToTabImpl.clear();
     List<TabIdAndUrl> entries = devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
     if (entries.isEmpty()) {
       return EMPTY_TABS;
@@ -69,8 +68,11 @@ public class BrowserImpl implements Browser, NetListener {
 
     List<BrowserTab> browserTabs = new ArrayList<BrowserTab>(entries.size());
     for (TabIdAndUrl entry : entries) {
-      BrowserTabImpl tab = new BrowserTabImpl(entry.id, entry.url, this);
-      tabUidToTabImpl.put(entry.id, tab);
+      BrowserTabImpl tab = tabUidToTabImpl.get(entry.id);
+      if (tab == null || !tab.isAttached()) {
+        tab = new BrowserTabImpl(entry.id, entry.url, this);
+        tabUidToTabImpl.put(entry.id, tab);
+      }
       browserTabs.add(tab);
     }
     return browserTabs.toArray(new BrowserTab[browserTabs.size()]);

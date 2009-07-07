@@ -66,7 +66,7 @@ public class ChromiumScriptFileStore extends FileStore {
 
   @Override
   public IFileStore getParent() {
-    if (path.isEmpty()) {
+    if (path.segmentCount() == 0) {
       return null;
     }
     return new ChromiumScriptFileStore(fileSystem, path.removeLastSegments(1));
