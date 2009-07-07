@@ -112,7 +112,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       if (handle[0] == null) {
         ex = debugContext.getV8Handler().sendV8CommandBlocking(
             DebuggerMessageFactory.lookup(
-                Collections.singletonList(ref)),
+                Collections.singletonList(ref), false),
                 new BrowserTabImpl.V8HandlerCallback() {
                   public void messageReceived(JSONObject response) {
                     if (!JsonUtil.isSuccessful(response)) {
@@ -184,7 +184,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return;
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest));
+        new ArrayList<Long>(handlesToRequest), false);
     Exception ex = stackFrame.getDebugContext().getV8Handler().sendV8CommandBlocking(
         message,
         new BrowserTabImpl.V8HandlerCallback() {
