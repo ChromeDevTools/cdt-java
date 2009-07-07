@@ -15,18 +15,10 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+  BrowserImplTest.class,
   DebugEventListenerTest.class,
   JsVariableTest.class,
   V8Tests.class,
   DevToolsServiceHandlerTest.class})
 public class AllTests {
-
-//  public static Test suite() {
-//    TestSuite suite = new TestSuite("ChromeDevTools SDK");
-//    suite.addTestSuite(DebugEventListenerTest.class);
-//    suite.addTestSuite(JsVariableTest.class);
-//    suite.addTest(V8Tests.suite());
-//    suite.addTestSuite(DevToolsServiceHandlerTest.class);
-//    return suite;
-//  }
 }

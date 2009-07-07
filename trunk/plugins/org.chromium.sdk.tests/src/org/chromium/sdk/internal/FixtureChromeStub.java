@@ -227,7 +227,7 @@ public class FixtureChromeStub implements ChromeStub {
       response = "{\"command\":\"detach\",\"result\":0}";
     } else if (DevToolsServiceCommand.LIST_TABS.commandName.equals(protocolCommand)) {
       response =
-          "{\"command\":\"list_tabs\",\"data\":[[2,\"file:///C:/1.html\"]],\"result\":0}";
+          "{\"command\":\"list_tabs\",\"data\":[[2,\"file:///C:/1.html\"],[4,\"file:///C:/1.html\"]],\"result\":0}";
     } else if (DevToolsServiceCommand.VERSION.commandName.equals(protocolCommand)) {
       response = "{\"command\":\"version\",\"data\":\"0.1\",\"result\":0}";
     }
