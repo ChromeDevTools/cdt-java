@@ -15,7 +15,7 @@ public interface BrowserTab {
   /**
    * A callback for breakpoint-related requests.
    */
-  interface BreakpointCallback {
+  public interface BreakpointCallback {
 
     void success(Breakpoint breakpoint);
 
@@ -25,7 +25,7 @@ public interface BrowserTab {
   /**
    * A callback for retrieving scripts.
    */
-  interface ScriptsCallback {
+  public interface ScriptsCallback {
 
     void success(Collection<Script> scripts);
 

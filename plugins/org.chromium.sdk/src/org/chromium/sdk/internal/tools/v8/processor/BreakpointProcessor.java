@@ -44,9 +44,11 @@ public class BreakpointProcessor extends V8ResponseCallback {
     if (V8MessageType.EVENT == type) {
       String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
+        getDebugContext().suspended();
         getDebugContext().setState(State.NORMAL);
         onBreakpointsHit(response);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
+        getDebugContext().suspended();
         getDebugContext().setState(State.NORMAL);
         getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
         getDebugContext().setException(response);
@@ -54,8 +56,6 @@ public class BreakpointProcessor extends V8ResponseCallback {
       getDebugContext().getV8Handler().sendV8Command(
           DebuggerMessageFactory.backtrace(null, null, true),
           null);
-      // Clear the scripts cache
-      getDebugContext().reloadAllScripts(null);
     }
   }
 

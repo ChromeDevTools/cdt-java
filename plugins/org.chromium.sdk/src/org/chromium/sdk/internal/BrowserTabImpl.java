@@ -7,7 +7,6 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler.AttachmentFailureException;
 import org.json.simple.JSONObject;
 
@@ -109,24 +108,7 @@ public class BrowserTabImpl implements BrowserTab {
   }
 
   public void getScripts(final ScriptsCallback callback) {
-    context.reloadAllScripts(
-        new V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (callback != null) {
-              if (JsonUtil.isSuccessful(response)) {
-                callback.success(context.getScriptManager().allScripts());
-              } else {
-                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-              }
-            }
-          }
-
-          public void failure(String message) {
-            if (callback != null) {
-              callback.failure(message);
-            }
-          }
-        });
+    context.reloadAllScripts(callback);
   }
 
   public void setBreakpoint(Breakpoint.Type type, String target, int line,
