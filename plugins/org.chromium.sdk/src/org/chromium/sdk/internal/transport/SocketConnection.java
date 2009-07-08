@@ -61,8 +61,11 @@ public class SocketConnection implements Connection {
    */
   private class WriterThread extends InterruptibleThread {
 
-    public WriterThread() {
+    private final BufferedWriter writer;
+
+    public WriterThread(BufferedWriter writer) {
       super("WriterThread");
+      this.writer = writer;
     }
 
     @Override
@@ -78,12 +81,8 @@ public class SocketConnection implements Connection {
 
     private void handleOutboundMessage(Message message) {
       try {
-        synchronized (socket) {
-          if (!socket.isClosed()) {
-            log(Level.FINER, "-->" + message, null);
-            message.sendThrough(writer);
-          }
-        }
+        log(Level.FINER, "-->" + message, null);
+        message.sendThrough(writer);
       } catch (IOException e) {
         SocketConnection.this.shutdown(e, false);
       }
@@ -103,8 +102,11 @@ public class SocketConnection implements Connection {
 
     private boolean handshakeDone = false;
 
-    public ReaderThread() {
+    private final BufferedReader reader;
+
+    public ReaderThread(BufferedReader reader) {
       super("ReaderThread");
+      this.reader = reader;
     }
 
     @Override
@@ -169,6 +171,9 @@ public class SocketConnection implements Connection {
     }
   }
 
+  /** The class logger. */
+  private static final Logger LOGGER = Logger.getLogger(SocketConnection.class.getName());
+
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
 
@@ -232,21 +237,19 @@ public class SocketConnection implements Connection {
     this.connectionTimeoutMs = connectionTimeoutMs;
   }
 
-  synchronized void attach() throws IOException {
+  void attach() throws IOException {
     this.socket = new Socket();
-    this.readerThread = new ReaderThread();
-    this.writerThread = new WriterThread();
-    this.dispatcherThread = new ResponseDispatcherThread();
-
-    socket.connect(socketEndpoint, connectionTimeoutMs);
+    this.socket.connect(socketEndpoint, connectionTimeoutMs);
     this.writer =
         new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET));
     this.reader = new BufferedReader(
         new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET),
         INPUT_BUFFER_SIZE_BYTES);
-
     isAttached = true;
 
+    this.readerThread = new ReaderThread(reader);
+    this.writerThread = new WriterThread(writer);
+    this.dispatcherThread = new ResponseDispatcherThread();
     writerThread.setDaemon(true);
     writerThread.start();
     readerThread.setDaemon(true);
@@ -269,6 +272,11 @@ public class SocketConnection implements Connection {
     return isAttached;
   }
 
+  /**
+   * The method is synchronized so that it does not get called
+   * from the {Reader,Writer}Thread when the underlying socket is
+   * closed in another invocation of this method.
+   */
   private synchronized void shutdown(Exception cause, boolean lameduckMode) {
     if (!isAttached) {
       return;
@@ -294,7 +302,6 @@ public class SocketConnection implements Connection {
       interruptServiceThreads();
     }
 
-    // Do not synchronize on anything as all pending transfers should be terminated.
     try {
       socket.shutdownInput();
     } catch (IOException e) {
@@ -331,7 +338,7 @@ public class SocketConnection implements Connection {
   }
 
   private static void log(Level level, String message, Exception exception) {
-    Logger.getLogger(SocketConnection.class.getName()).log(level, message, exception);
+    LOGGER.log(level, message, exception);
   }
 
   public void close() {

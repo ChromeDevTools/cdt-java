@@ -12,7 +12,8 @@ import org.chromium.sdk.DebugContext.EvaluateCallback;
 public interface JsStackFrame {
 
   /**
-   * @return the variables known in this frame, an empty array if none
+   * @return the variables known in this frame, an empty array if none. Clients
+   *         must not modify the returned array
    */
   JsVariable[] getVariables();
 

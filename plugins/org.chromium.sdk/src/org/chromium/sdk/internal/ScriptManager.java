@@ -94,16 +94,6 @@ public class ScriptManager {
   }
 
   /**
-   * @param name script original document URL
-   * @param lineOffset script start line offset in the original document
-   * @param lineCount script line count
-   * @return the corresponding script, or null if no such script found
-   */
-  private Script findScript(Descriptor descriptor) {
-    return findById(descriptor.id);
-  }
-
-  /**
    * @param id of the script to find
    * @return the script with {@code id == ref} or {@code null} if none found
    */

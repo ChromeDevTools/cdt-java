@@ -68,7 +68,8 @@ public interface DebugContext {
   ExceptionData getExceptionData();
 
   /**
-   * @return current set of stack frames associated with their scripts
+   * @return current set of stack frames associated with their scripts. Clients
+   *         must not modify the returned array
    */
   JsStackFrame[] getStackFrames();
 

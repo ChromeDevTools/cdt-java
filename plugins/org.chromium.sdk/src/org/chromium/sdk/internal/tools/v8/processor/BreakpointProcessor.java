@@ -43,17 +43,18 @@ public class BreakpointProcessor extends V8ResponseCallback {
         V8MessageType.forString(JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
     if (V8MessageType.EVENT == type) {
       String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
+      DebugContextImpl debugContext = getDebugContext();
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
-        getDebugContext().suspended();
-        getDebugContext().setState(State.NORMAL);
+        debugContext.suspended();
+        debugContext.setState(State.NORMAL);
         onBreakpointsHit(response);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
-        getDebugContext().suspended();
-        getDebugContext().setState(State.NORMAL);
-        getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
-        getDebugContext().setException(response);
+        debugContext.suspended();
+        debugContext.setState(State.NORMAL);
+        debugContext.onBreakpointsHit(Collections.<Breakpoint>emptySet());
+        debugContext.setException(response);
       }
-      getDebugContext().getV8Handler().sendV8Command(
+      debugContext.getV8Handler().sendV8Command(
           DebuggerMessageFactory.backtrace(null, null, true),
           null);
     }

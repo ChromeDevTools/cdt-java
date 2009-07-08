@@ -52,7 +52,7 @@ public class JsVariableImpl implements JsVariable {
   // Sentry to stop drilling in for props of type object.
   private boolean waitDrilling;
 
-  protected boolean failedResponse = false;
+  protected volatile boolean failedResponse = false;
 
   /**
    * Constructs a variable contained in the given stack frame with the given
@@ -87,7 +87,7 @@ public class JsVariableImpl implements JsVariable {
    *         {@code null} if there was an error lazy-loading the value data.
    */
   public synchronized JsValueImpl getValue() {
-    if (failedResponse) {
+    if (isFailedResponse()) {
       return null;
     }
     if (value == null) {
@@ -284,17 +284,25 @@ public class JsVariableImpl implements JsVariable {
         getV8Handler().sendV8CommandBlocking(message, new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!fillVariablesFromLookupReply(handleManager, vars, variableToRef, response)) {
-              JsVariableImpl.this.failedResponse = false;
+              setFailedResponse();
             }
           }
 
           public void failure(String message) {
-            JsVariableImpl.this.failedResponse = true;
+            setFailedResponse();
           }
         });
     if (ex != null) {
-      this.failedResponse = true;
+      setFailedResponse();
     }
+  }
+
+  protected void setFailedResponse() {
+    this.failedResponse = true;
+  }
+
+  protected boolean isFailedResponse() {
+    return failedResponse;
   }
 
   private HandleManager getHandleManager() {

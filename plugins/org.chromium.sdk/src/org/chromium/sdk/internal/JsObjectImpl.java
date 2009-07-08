@@ -30,13 +30,18 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   protected JsVariableImpl[] properties;
 
-  protected boolean failedResponse;
+  protected volatile boolean failedResponse;
 
   private final JsStackFrameImpl stackFrame;
 
   private final String parentFqn;
 
   private Map<String, JsVariableImpl> propertyMap;
+
+  /**
+   * A lock for the properties and propertyMap fields access/modification.
+   */
+  private final Object propertyLock = new Object();
 
   /**
    * This constructor implies the lazy resolution of object properties.
@@ -74,13 +79,16 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
   }
 
-  private synchronized void createPropertyMap() {
+  /**
+   * Calls to this method must be synchronized on propertyLock.
+   */
+  private void createPropertyMap() {
     if (properties == null) {
       propertyMap = Collections.emptyMap();
       return;
     }
     Map<String, JsVariableImpl> map =
-        new HashMap<String, JsVariableImpl>(properties.length * 2, 0.75f);
+      new HashMap<String, JsVariableImpl>(properties.length * 2, 0.75f);
     for (JsVariableImpl prop : properties) {
       map.put(prop.getName(), prop);
     }
@@ -89,39 +97,46 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   public JsVariableImpl[] getProperties() {
     ensureProperties();
-    return (properties != null && !failedResponse) ? properties : EMPTY_VARIABLES;
+    synchronized (propertyLock) {
+      return (properties != null && !isFailedResponse()) ? properties : EMPTY_VARIABLES;
+    }
   }
 
-  protected synchronized void ensureProperties() {
-    if (properties != null) {
-      return;
-    }
-    DebugContextImpl debugContext = stackFrame.getDebugContext();
-    final HandleManager handleManager = debugContext.getHandleManager();
-    ValueMirror mirror = getMirror();
-    PropertyReference[] mirrorProperties = mirror.getProperties();
-    if (mirrorProperties == null) {
-      // "this" is an object with PropertyReferences. Resolve them.
-      final Long ref = Long.valueOf(mirror.getRef());
-      Exception ex = null;
-      final JSONObject[] handle = new JSONObject[1];
-      handle[0] = handleManager.getHandle(ref);
-      if (handle[0] == null) {
-        ex = resolveThisHandle(debugContext, handleManager, ref, handle);
-      }
-      if (ex != null || this.failedResponse) {
+  protected void ensureProperties() {
+    synchronized (propertyLock) {
+      if (properties != null) {
         return;
-      } else {
-        mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
-        mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
-            mirrorProperties);
       }
-    }
+      DebugContextImpl debugContext = stackFrame.getDebugContext();
+      final HandleManager handleManager = debugContext.getHandleManager();
+      ValueMirror mirror = getMirror();
+      PropertyReference[] mirrorProperties = mirror.getProperties();
+      if (mirrorProperties == null) {
+        // "this" is an object with PropertyReferences. Resolve them.
+        final Long ref = Long.valueOf(mirror.getRef());
+        Exception ex = null;
+        final JSONObject[] handle = new JSONObject[1];
+        handle[0] = handleManager.getHandle(ref);
+        if (handle[0] == null) {
+          ex = resolveThisHandle(debugContext, handleManager, ref, handle);
+        }
+        if (ex != null || isFailedResponse()) {
+          return;
+        } else {
+          mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
+          mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
+              mirrorProperties);
+        }
+      }
 
-    fillPropertiesFromMirror(handleManager, mirrorProperties);
-    createPropertyMap();
+      fillPropertiesFromMirror(handleManager, mirrorProperties);
+      createPropertyMap();
+    }
   }
 
+  /**
+   * Calls to this method must be synchronized on propertyLock.
+   */
   private void fillPropertiesFromMirror(
       final HandleManager handleManager, PropertyReference[] mirrorProperties) {
     properties = new JsVariableImpl[mirrorProperties.length];
@@ -154,12 +169,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
             new BrowserTabImpl.V8HandlerCallback() {
               public void messageReceived(JSONObject response) {
                 if (!JsonUtil.isSuccessful(response)) {
-                  JsObjectImpl.this.failedResponse = true;
+                  setFailedResponse();
                   return;
                 }
                 JSONObject body = JsonUtil.getBody(response);
                 targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-                if (targetHandle != null) {
+                if (targetHandle[0] != null) {
                   handleManager.put(ref, targetHandle[0]);
                 }
                 handleManager.putAll(V8ProtocolUtil.getRefHandleMap(
@@ -167,7 +182,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
               }
 
               public void failure(String message) {
-                JsObjectImpl.this.failedResponse = true;
+                setFailedResponse();
               }
             });
     return ex;
@@ -240,17 +255,25 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
           public void messageReceived(JSONObject response) {
             if (!JsVariableImpl.fillVariablesFromLookupReply(
                     handleManager, properties, variableToRef, response)) {
-              JsObjectImpl.this.failedResponse = true;
+              setFailedResponse();
             }
           }
 
           public void failure(String message) {
-            JsObjectImpl.this.failedResponse = true;
+            setFailedResponse();
           }
         });
     if (ex != null) {
-      this.failedResponse = true;
+      setFailedResponse();
     }
+  }
+
+  protected void setFailedResponse() {
+    this.failedResponse = true;
+  }
+
+  protected boolean isFailedResponse() {
+    return this.failedResponse;
   }
 
   private void prepareLookupData(final HandleManager handleManager,
