@@ -43,6 +43,11 @@ public class DevToolsServiceHandler implements ToolHandler {
    */
   private VersionCallback versionCallback;
 
+  /**
+   * An access/modification lock for the callback fields.
+   */
+  private final Object lock = new Object();
+
   public static class TabIdAndUrl {
     public final int id;
 
@@ -105,9 +110,12 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   private void handleVersion(JSONObject json) {
-    VersionCallback callback = versionCallback;
-    if (callback != null) {
+    VersionCallback callback;
+    synchronized (lock) {
+      callback = versionCallback;
       versionCallback = null;
+    }
+    if (callback != null) {
       String versionString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
       String[] parts = versionString.split("\\.");
       if (parts.length != 2) {
@@ -121,9 +129,12 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   private void handleListTabs(JSONObject json) {
-    ListTabsCallback callback = listTabsCallback;
-    if (callback != null) {
+    ListTabsCallback callback;
+    synchronized (lock) {
+      callback = listTabsCallback;
       listTabsCallback = null;
+    }
+    if (callback != null) {
       int result = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key).intValue();
       if (result != 0) {
         callback.failure(result);
@@ -142,26 +153,28 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   @SuppressWarnings("unchecked")
-  public synchronized List<TabIdAndUrl> listTabs(int timeout) {
-    if (listTabsCallback != null) {
-      throw new IllegalStateException("list_tabs request is pending");
-    }
+  public List<TabIdAndUrl> listTabs(int timeout) {
     final Semaphore sem = new Semaphore(0);
     final List<TabIdAndUrl>[] output = new List[1];
-    listTabsCallback = new ListTabsCallback() {
-      public void failure(int result) {
-        sem.release();
+    synchronized (lock) {
+      if (listTabsCallback != null) {
+        throw new IllegalStateException("list_tabs request is pending");
       }
+      listTabsCallback = new ListTabsCallback() {
+        public void failure(int result) {
+          sem.release();
+        }
 
-      public void tabsReceived(List<TabIdAndUrl> tabs) {
-        output[0] = tabs;
-        sem.release();
-      }
-    };
+        public void tabsReceived(List<TabIdAndUrl> tabs) {
+          output[0] = tabs;
+          sem.release();
+        }
+      };
+    }
     connection.send(MessageFactory.listTabs());
     try {
       if (!sem.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
-        listTabsCallback = null;
+        resetListTabsHandler();
       }
     } catch (InterruptedException e) {
       // Fall through
@@ -174,18 +187,20 @@ public class DevToolsServiceHandler implements ToolHandler {
     return output[0];
   }
 
-  public synchronized Version version(int timeout) {
-    if (versionCallback != null) {
-      throw new IllegalStateException("version request is pending");
-    }
+  public Version version(int timeout) {
     final Semaphore sem = new Semaphore(0);
     final Version[] output = new Version[1];
-    versionCallback = new VersionCallback() {
-      public void versionReceived(Version version) {
-        output[0] = version;
-        sem.release();
+    synchronized (lock) {
+      if (versionCallback != null) {
+        throw new IllegalStateException("version request is pending");
       }
-    };
+      versionCallback = new VersionCallback() {
+        public void versionReceived(Version version) {
+          output[0] = version;
+          sem.release();
+        }
+      };
+    }
     connection.send(MessageFactory.version());
     try {
       sem.tryAcquire(timeout, TimeUnit.MILLISECONDS);
@@ -198,7 +213,9 @@ public class DevToolsServiceHandler implements ToolHandler {
   /**
    * This can get called asynchronously.
    */
-  public synchronized void resetListTabsHandler() {
-    listTabsCallback = null;
+  public void resetListTabsHandler() {
+    synchronized (lock) {
+      listTabsCallback = null;
+    }
   }
 }

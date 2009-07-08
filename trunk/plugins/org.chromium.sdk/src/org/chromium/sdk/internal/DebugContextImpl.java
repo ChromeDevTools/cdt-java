@@ -41,6 +41,7 @@ public class DebugContextImpl implements DebugContext {
   private static final String FRAME_TEXT_REGEX =
       "^(?:.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
 
+  /** A pattern for the frame "text" regex. */
   private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
 
   /** The name of the "this" object to report as a variable name. */
@@ -49,8 +50,11 @@ public class DebugContextImpl implements DebugContext {
   /** The name of the "exception" object to report as a variable name. */
   private static final String EXCEPTION_NAME = "exception";
 
-  /** The latch that is released once the scripts are up-to-date while suspended. */
-  protected CountDownLatch scriptsReloadLatch;
+  /**
+   * The latch that is released once the scripts are up-to-date while suspended.
+   * The latch is null when NOT suspended.
+   */
+  protected CountDownLatch scriptsReloadLatch = null;
 
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
@@ -185,12 +189,17 @@ public class DebugContextImpl implements DebugContext {
   }
 
   private void updateScriptsFromRefs(JSONArray refs) {
+    final CountDownLatch latch = scriptsReloadLatch;
     v8Helper.updateScriptsIfNeeded(refs, new ScriptsCallback() {
       public void success(Collection<Script> scripts) {
-        scriptsReloadLatch.countDown();
+        if (latch != null) {
+          latch.countDown();
+        }
       }
       public void failure(String errorMessage) {
-        scriptsReloadLatch.countDown();
+        if (latch != null) {
+          latch.countDown();
+        }
       }
     });
   }
@@ -310,7 +319,8 @@ public class DebugContextImpl implements DebugContext {
    * @param callback to invoke when the scripts are ready
    */
   public void reloadAllScripts(final ScriptsCallback callback) {
-    if (scriptsReloadLatch == null) {
+    CountDownLatch latch = scriptsReloadLatch;
+    if (latch == null) {
       // Not suspended, do really reload.
       v8Helper.reloadAllScripts(new V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
@@ -332,7 +342,7 @@ public class DebugContextImpl implements DebugContext {
     } else {
       // Suspended, just wait for the scripts to reload.
       try {
-        scriptsReloadLatch.await();
+        latch.await();
         if (callback != null) {
           callback.success(getScriptManager().allScripts());
         }

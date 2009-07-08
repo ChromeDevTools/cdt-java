@@ -42,7 +42,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
    * This exception is thrown whenever the handler could not get a tab
    * attachment result from the debugged browser.
    */
-  public class AttachmentFailureException extends Exception {
+  public static class AttachmentFailureException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
@@ -86,6 +86,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
       this.semaphore = semaphore;
     }
   }
+
+  /** The class logger. */
+  private static final Logger LOGGER = Logger.getLogger(V8DebuggerToolHandler.class.getName());
 
   /**
    * The callbacks to invoke when the responses arrive.
@@ -147,7 +150,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
     try {
       json = JsonUtil.jsonObjectFromJson(message.getContent());
     } catch (ParseException e) {
-      log(Level.SEVERE, "Invalid JSON received: " + message.getContent());
+      LOGGER.log(Level.SEVERE, "Invalid JSON received: " + message.getContent());
       return;
     }
     String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
@@ -169,11 +172,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
         case CLOSED:
           processClosed(json);
           break;
-
       }
       return;
     }
-    throw new IllegalArgumentException("Invalid command: " + command);
+    throw new IllegalArgumentException("Invalid command: " + commandString);
   }
 
   public void onDebuggerDetached() {
@@ -322,7 +324,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
         : V8Protocol.KEY_EVENT);
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command == null) {
-      log(Level.WARNING,
+      LOGGER.log(Level.WARNING,
           MessageFormat.format("Unknown command in V8 debugger reply JSON: {0}", commandString));
       return;
     }
@@ -331,14 +333,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
       return;
     }
     handler.messageReceived(response);
-  }
-
-  private static void log(Level level, String message) {
-    Logger.getLogger(V8DebuggerToolHandler.class.getName()).log(level, message);
-  }
-
-  private static void log(Level level, String message, Exception e) {
-    Logger.getLogger(V8DebuggerToolHandler.class.getName()).log(level, message, e);
   }
 
   private void checkNull(Object object, String message) {
@@ -377,7 +371,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
     try {
       detachCallback.resultReceived(result);
     } catch (Exception e) {
-      log(Level.WARNING, "Exception in the detach callback", e);
+      LOGGER.log(Level.WARNING, "Exception in the detach callback", e);
     } finally {
       detachCallback = null;
     }
@@ -399,7 +393,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
         try {
           attachCallback.resultReceived(result);
         } catch (Exception e) {
-          log(Level.WARNING, "Exception in the attach callback", e);
+          LOGGER.log(Level.WARNING, "Exception in the attach callback", e);
         } finally {
           attachCallback = null;
         }
@@ -434,7 +428,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
       final CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
       if (callbackEntry != null) {
-        log(Level.INFO,
+        LOGGER.log(Level.INFO,
             MessageFormat.format(
                 "Request-response roundtrip: {0}ms",
                 getCurrentMillis() - callbackEntry.commitMillis));
@@ -442,7 +436,8 @@ public class V8DebuggerToolHandler implements ToolHandler {
           public void run() {
             try {
               if (callbackEntry.v8HandlerCallback != null) {
-                log(Level.INFO, "Notified debugger command callback, request_seq=" + requestSeq);
+                LOGGER.log(
+                    Level.INFO, "Notified debugger command callback, request_seq=" + requestSeq);
                 callbackEntry.v8HandlerCallback.messageReceived(v8Json);
               }
             } finally {

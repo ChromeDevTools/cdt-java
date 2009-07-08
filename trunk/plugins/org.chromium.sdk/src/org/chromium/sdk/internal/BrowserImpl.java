@@ -32,6 +32,8 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
  */
 public class BrowserImpl implements Browser, NetListener {
 
+  private static final Logger LOGGER = Logger.getLogger(BrowserImpl.class.getName());
+
   public static final int OPERATION_TIMEOUT_MS = 3000;
 
   public static final Version INVALID_VERSION = new Version(0, 0);
@@ -111,7 +113,7 @@ public class BrowserImpl implements Browser, NetListener {
   public void messageReceived(Message message) {
     ToolName toolName = ToolName.forString(message.getTool());
     if (toolName == null) {
-      Logger.getLogger(BrowserImpl.class.getName()).log(Level.SEVERE,
+      LOGGER.log(Level.SEVERE,
           MessageFormat.format("Bad 'Tool' header received: {0}", message.getTool()));
       return;
     }
@@ -127,11 +129,17 @@ public class BrowserImpl implements Browser, NetListener {
         }
         break;
       default:
-        Logger.getLogger(BrowserImpl.class.getName()).log(Level.SEVERE,
+        LOGGER.log(Level.SEVERE,
             MessageFormat.format("Unregistered handler for tool: {0}", message.getTool()));
         return;
     }
-    handler.handleMessage(message);
+    if (handler != null) {
+      handler.handleMessage(message);
+    } else {
+      LOGGER.log(Level.SEVERE,
+          MessageFormat.format("null handler for tool: {0}, destination: {1}",
+              message.getTool(), message.getDestination()));
+    }
   }
 
   public void sessionTerminated(int tabId) {

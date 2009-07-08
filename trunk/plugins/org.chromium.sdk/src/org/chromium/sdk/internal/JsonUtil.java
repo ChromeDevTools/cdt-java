@@ -22,6 +22,8 @@ import org.json.simple.parser.ParseException;
  */
 public class JsonUtil {
 
+  private static final Logger LOGGER = Logger.getLogger(JsonUtil.class.getName());
+
   /**
    * Converts a JSONStreamAware into a String.
    *
@@ -192,7 +194,7 @@ public class JsonUtil {
   }
 
   private static void log(Level level, String message, Exception exception) {
-    Logger.getLogger(JsonUtil.class.getName()).log(level, message, exception);
+    LOGGER.log(level, message, exception);
   }
 
   private JsonUtil() {
