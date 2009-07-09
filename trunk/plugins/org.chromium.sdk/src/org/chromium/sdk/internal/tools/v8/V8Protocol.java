@@ -163,6 +163,10 @@ public enum V8Protocol implements CharSequence {
 
   ID("id"),
 
+  DATA("data"),
+
+  CONTEXT("context"),
+
   EXCEPTION("exception"),
 
   UNCAUGHT("uncaught"),

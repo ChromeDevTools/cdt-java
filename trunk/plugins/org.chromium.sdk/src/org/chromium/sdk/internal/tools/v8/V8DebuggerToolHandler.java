@@ -22,6 +22,7 @@ import org.chromium.sdk.internal.MessageFactory;
 import org.chromium.sdk.internal.Result;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
+import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
@@ -105,6 +106,9 @@ public class V8DebuggerToolHandler implements ToolHandler {
   /** The breakpoint processor. */
   private final BreakpointProcessor bpp;
 
+  /** The "afterCompile" event processor. */
+  private final AfterCompileProcessor afterCompileProcessor;
+
   /** The host BrowserImpl instance. */
   private final BrowserImpl browserImpl;
 
@@ -125,6 +129,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
     this.browserImpl = browserImpl;
     this.context = context;
     this.bpp = new BreakpointProcessor(context);
+    this.afterCompileProcessor = new AfterCompileProcessor(context);
 
     commandToHandlerMap.put(DebuggerCommand.CHANGEBREAKPOINT, bpp);
     commandToHandlerMap.put(DebuggerCommand.SETBREAKPOINT, bpp);
@@ -132,9 +137,13 @@ public class V8DebuggerToolHandler implements ToolHandler {
     commandToHandlerMap.put(DebuggerCommand.BREAK /* event */, bpp);
     commandToHandlerMap.put(DebuggerCommand.EXCEPTION /* event */, bpp);
 
+    commandToHandlerMap.put(DebuggerCommand.AFTER_COMPILE /* event */, afterCompileProcessor);
+
     commandToHandlerMap.put(DebuggerCommand.BACKTRACE, new BacktraceProcessor(context));
 
     commandToHandlerMap.put(DebuggerCommand.CONTINUE, new ContinueProcessor(context));
+
+
   }
 
   public DebugEventListener getDebugEventListener() {
@@ -308,6 +317,14 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   /**
+   * Blocks until after all scripts requested while processing afterCompile
+   * events have been loaded.
+   */
+  public void awaitScripts() {
+    afterCompileProcessor.awaitScripts();
+  }
+
+  /**
    * @return milliseconds since the epoch
    */
   protected long getCurrentMillis() {
@@ -455,8 +472,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   private void processNavigated(JSONObject json) {
-    String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
-    context.getTab().getDebugEventListener().navigated(newUrl);
+    context.navigated(JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key));
   }
 
   private Connection getConnection() {

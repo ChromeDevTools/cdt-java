@@ -14,6 +14,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.ScriptImpl.Descriptor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -41,24 +42,26 @@ public class ScriptManager {
   /**
    * Adds a script using a "script" V8 response.
    *
-   * @param response
+   * @param scriptBody to add the script from
+   * @param refs that contain the associated script debug context
    * @return the new script, or null if the response does not contain a script
    *         name
    */
-  public Script addScript(JSONObject response) {
+  public Script addScript(JSONObject scriptBody, JSONArray refs) {
 
-    ScriptImpl theScript = (ScriptImpl) findById(V8ProtocolUtil.getScriptIdFromResponse(response));
+    ScriptImpl theScript = (ScriptImpl) findById(
+        V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
-      Descriptor desc = Descriptor.forResponse(response);
+      Descriptor desc = Descriptor.forResponse(scriptBody, refs);
       if (desc == null) {
         return null;
       }
       theScript = new ScriptImpl(desc);
-      idToScript.put(JsonUtil.getAsLong(response, V8Protocol.ID), theScript);
+      idToScript.put(desc.id, theScript);
     }
-    if (response.containsKey(V8Protocol.SOURCE_CODE.key)) {
-      setSourceCode(response, theScript);
+    if (scriptBody.containsKey(V8Protocol.SOURCE_CODE.key)) {
+      setSourceCode(scriptBody, theScript);
     }
 
     return theScript;

@@ -7,7 +7,6 @@ package org.chromium.sdk.internal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +32,7 @@ public class DebugContextImpl implements DebugContext {
   /**
    * A no-op JavaScript to evaluate.
    */
-  private static final String JAVASCRIPT_VOID = "javascript:void(0);";
+  public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
@@ -49,12 +48,6 @@ public class DebugContextImpl implements DebugContext {
 
   /** The name of the "exception" object to report as a variable name. */
   private static final String EXCEPTION_NAME = "exception";
-
-  /**
-   * The latch that is released once the scripts are up-to-date while suspended.
-   * The latch is null when NOT suspended.
-   */
-  protected CountDownLatch scriptsReloadLatch = null;
 
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
@@ -89,6 +82,9 @@ public class DebugContextImpl implements DebugContext {
   /** The JavaScript exception state. */
   private ExceptionData exceptionData;
 
+  /** Whether the initial script loading has completed. */
+  private volatile boolean doneInitialScriptLoad = false;
+
   public DebugContextImpl(BrowserTabImpl browserTabImpl) {
     this.scriptManager = new ScriptManager();
     this.handleManager = new HandleManager();
@@ -120,7 +116,6 @@ public class DebugContextImpl implements DebugContext {
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
-    updateScriptsFromRefs(refs);
     for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
       JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
       int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
@@ -175,7 +170,6 @@ public class DebugContextImpl implements DebugContext {
     Map<Long, JSONObject> refHandleMap = V8ProtocolUtil.getRefHandleMap(refs);
     V8ProtocolUtil.putHandle(refHandleMap, exception);
     handleManager.putAll(refHandleMap);
-    updateScriptsFromRefs(refs);
 
     // source column is not exposed ("sourceColumn" in "body")
     String sourceText = JsonUtil.getAsString(body, V8Protocol.BODY_FRAME_SRCLINE);
@@ -188,28 +182,15 @@ public class DebugContextImpl implements DebugContext {
             JsonUtil.getAsString(exception, V8Protocol.REF_TEXT));
   }
 
-  private void updateScriptsFromRefs(JSONArray refs) {
-    final CountDownLatch latch = scriptsReloadLatch;
-    v8Helper.updateScriptsIfNeeded(refs, new ScriptsCallback() {
-      public void success(Collection<Script> scripts) {
-        if (latch != null) {
-          latch.countDown();
-        }
-      }
-      public void failure(String errorMessage) {
-        if (latch != null) {
-          latch.countDown();
-        }
-      }
-    });
-  }
-
   public State getState() {
     return state;
   }
 
   public JsStackFrameImpl[] getStackFrames() {
     if (stackFramesCached == null) {
+      // At this point we need to make sure ALL the V8 scripts are loaded so as
+      // to hook them up to the stack frames.
+      loadAllScripts(null);
       int frameCount = getFrameCount();
       stackFramesCached = new JsStackFrameImpl[frameCount];
       for (int i = 0; i < frameCount; ++i) {
@@ -221,7 +202,6 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
-    scriptsReloadLatch = null;
     DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
     // Use non-null commandCallback only if callback is not null
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
@@ -294,12 +274,6 @@ public class DebugContextImpl implements DebugContext {
    * @param frameIndex to associate a script with
    */
   public void hookupScriptToFrame(int frameIndex) {
-    try {
-      scriptsReloadLatch.await();
-    } catch (InterruptedException e) {
-      // Wrap and throw
-      throw new RuntimeException(e);
-    }
     FrameMirror frame = getFrame(frameIndex);
     if (frame != null && frame.getScript() == null) {
       Script script = getScriptManager().findById(frame.getScriptId());
@@ -309,21 +283,28 @@ public class DebugContextImpl implements DebugContext {
     }
   }
 
+  /**
+   * Stores the breakpoints associated with V8 suspension event (empty if an
+   * exception or a step end).
+   *
+   * @param breakpointsHit the breakpoints that were hit
+   */
   public void onBreakpointsHit(Collection<Breakpoint> breakpointsHit) {
     this.breakpointsHit = Collections.unmodifiableCollection(breakpointsHit);
   }
 
   /**
-   * Clears the scripts cache and reloads all scripts from the remote.
+   * Loads all scripts from the remote if necessary, and feeds them into the
+   * callback provided (if any).
    *
-   * @param callback to invoke when the scripts are ready
+   * @param callback nullable callback to invoke when the scripts are ready
    */
-  public void reloadAllScripts(final ScriptsCallback callback) {
-    CountDownLatch latch = scriptsReloadLatch;
-    if (latch == null) {
-      // Not suspended, do really reload.
+  public void loadAllScripts(final ScriptsCallback callback) {
+    if (!doneInitialScriptLoad) {
+      // Not loaded the scripts initially, do full load.
       v8Helper.reloadAllScripts(new V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
+          doneInitialScriptLoad = true;
           if (callback != null) {
             if (JsonUtil.isSuccessful(response)) {
               callback.success(getScriptManager().allScripts());
@@ -334,22 +315,18 @@ public class DebugContextImpl implements DebugContext {
         }
 
         public void failure(String message) {
+          doneInitialScriptLoad = true;
           if (callback != null) {
             callback.failure(message);
           }
         }
       });
     } else {
-      // Suspended, just wait for the scripts to reload.
-      try {
-        latch.await();
-        if (callback != null) {
-          callback.success(getScriptManager().allScripts());
-        }
-      } catch (InterruptedException e) {
-        callback.failure("Interrupted");
+      // Just wait for the scripts from afterCompile to load (if any).
+      getV8Handler().awaitScripts();
+      if (callback != null) {
+        callback.success(getScriptManager().allScripts());
       }
-      return;
     }
   }
 
@@ -374,13 +351,6 @@ public class DebugContextImpl implements DebugContext {
   }
 
   /**
-   * Gets invoked once a "break" or "exception" event is received.
-   */
-  public void suspended() {
-    scriptsReloadLatch = new CountDownLatch(1);
-  }
-
-  /**
    * Gets all resolved locals for the stack frame, caches scripts and objects in
    * the scriptManager and handleManager.
    *
@@ -399,6 +369,16 @@ public class DebugContextImpl implements DebugContext {
       getV8Handler().sendV8Command(message, commandCallback);
       return null;
     }
+  }
+
+  /**
+   * Gets invoked when a navigation event is reported by the browser tab.
+   *
+   * @param newUrl the new URL of the tab being debugged
+   */
+  public void navigated(String newUrl) {
+    doneInitialScriptLoad = false; // we should forget all our scripts
+    getTab().getDebugEventListener().navigated(newUrl);
   }
 
 }
