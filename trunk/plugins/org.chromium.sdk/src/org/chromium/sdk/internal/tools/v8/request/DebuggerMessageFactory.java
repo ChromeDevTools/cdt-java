@@ -36,6 +36,10 @@ public class DebuggerMessageFactory {
     return new ScriptsMessage(types, includeScripts);
   }
 
+  public static DebuggerMessage scripts(List<Long> ids, Boolean includeScripts) {
+    return new ScriptsMessage(ids, includeScripts);
+  }
+
   public static DebuggerMessage source(Integer frame, Integer fromLine, Integer toLine) {
     return new SourceMessage(frame, fromLine, toLine);
   }

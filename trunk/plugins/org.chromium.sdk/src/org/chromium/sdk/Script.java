@@ -33,8 +33,14 @@ public interface Script {
 
   /**
    * @return the original document URL for this script known by Chromium.
+   *         A synthetic name for eval'd scripts
    */
   String getName();
+
+  /**
+   * @return the script ID as reported by the JavaScript VM debugger
+   */
+  long getId();
 
   /**
    * @return the end line of this script in the original document (zero-based)

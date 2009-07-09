@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
@@ -11,6 +14,15 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
  * Represents a "setbreakpoint" V8 request message.
  */
 public class SetBreakpointMessage extends DebuggerMessage {
+
+  private static final Map<Breakpoint.Type, String> typeToV8Type =
+      new HashMap<Breakpoint.Type, String>();
+
+  static {
+    typeToV8Type.put(Breakpoint.Type.FUNCTION, "function");
+    typeToV8Type.put(Breakpoint.Type.SCRIPT_NAME, "script");
+    typeToV8Type.put(Breakpoint.Type.SCRIPT_ID, "scriptId");
+  }
 
   /**
    * @param type ("function", "handle", or "script")
@@ -26,7 +38,7 @@ public class SetBreakpointMessage extends DebuggerMessage {
       Integer line, Integer position, Boolean enabled, String condition,
       Integer ignoreCount) {
     super(DebuggerCommand.SETBREAKPOINT.value);
-    putArgument("type", type.toString().toLowerCase());
+    putArgument("type", typeToV8Type.get(type));
     putArgument("target", target);
     putArgument("line", line);
     putArgument("position", position);

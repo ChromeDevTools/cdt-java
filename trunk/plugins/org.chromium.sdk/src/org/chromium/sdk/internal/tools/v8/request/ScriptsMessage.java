@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
+import java.util.List;
+
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
@@ -34,6 +36,17 @@ public class ScriptsMessage extends DebuggerMessage {
   public ScriptsMessage(Integer types, Boolean includeSource) {
     super(DebuggerCommand.SCRIPTS.value);
     putArgument("types", types);
+    putArgument("includeSource", includeSource);
+  }
+
+  /**
+   * @param ids of scripts to retrieve
+   * @param includeSource whether to include script source in the response,
+   *        default is false
+   */
+  public ScriptsMessage(List<Long> ids, Boolean includeSource) {
+    super(DebuggerCommand.SCRIPTS.value);
+    putArgument("ids", ids);
     putArgument("includeSource", includeSource);
   }
 }

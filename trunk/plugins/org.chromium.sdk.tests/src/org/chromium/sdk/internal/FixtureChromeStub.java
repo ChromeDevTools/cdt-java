@@ -180,7 +180,7 @@ public class FixtureChromeStub implements ChromeStub {
           long id = (debuggerCommand == DebuggerCommand.SETBREAKPOINT)
               ? nextBreakpointId()
               : JsonUtil.getAsLong(args, "breakpoint");
-          breakpoints.put(id, new FakeBreakpoint(Type.SCRIPT, id,
+          breakpoints.put(id, new FakeBreakpoint(Type.SCRIPT_NAME, id,
               JsonUtil.getAsBoolean(args, "enabled"),
               JsonUtil.getAsLong(args, "ignoreCount").intValue(),
               JsonUtil.getAsString(args, "condition")));

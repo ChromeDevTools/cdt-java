@@ -34,7 +34,7 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     final CountDownLatch latch = new CountDownLatch(1);
     final Breakpoint[] bp = new Breakpoint[1];
     final String[] failure = new String[1];
-    browserTab.setBreakpoint(Breakpoint.Type.SCRIPT, "file:///C:/1.js", 18, 3, true, null, 0,
+    browserTab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, "file:///C:/1.js", 18, 3, true, null, 0,
         new BreakpointCallback() {
 
           public void failure(String errorMessage) {

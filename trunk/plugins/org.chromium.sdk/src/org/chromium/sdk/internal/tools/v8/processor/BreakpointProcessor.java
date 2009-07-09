@@ -90,7 +90,9 @@ public class BreakpointProcessor extends V8ResponseCallback {
               public void messageReceived(JSONObject response) {
                 if (JsonUtil.isSuccessful(response)) {
                   JSONObject body = JsonUtil.getBody(response);
-                  Breakpoint.Type type = Breakpoint.Type.SCRIPT; // TODO(apavlov): implement others
+                  // TODO(apavlov): change to SCRIPT_ID when appropriate
+                  // and support other types (FUNCTION)
+                  Breakpoint.Type type = Breakpoint.Type.SCRIPT_NAME;
                   long id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT);
 
                   final BreakpointImpl breakpoint =

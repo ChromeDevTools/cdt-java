@@ -16,7 +16,9 @@ public interface Breakpoint {
    */
   public enum Type {
     FUNCTION,
-    SCRIPT, ;
+    SCRIPT_NAME,
+    SCRIPT_ID,
+    ;
   }
 
   /**
