@@ -117,6 +117,10 @@ public class ScriptImpl implements Script {
     return descriptor.lineCount;
   }
 
+  public long getId() {
+    return descriptor.id;
+  }
+
   public void setSource(String source) {
     this.source = source;
   }

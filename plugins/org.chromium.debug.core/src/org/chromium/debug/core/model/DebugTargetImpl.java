@@ -364,11 +364,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
           // Might be a script from a different debug target
           return;
         }
-        getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT,
-            script.getName(),
+        getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_ID,
+            String.valueOf(script.getId()),
             // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-            (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset(), Breakpoint.NO_VALUE,
-            breakpoint.isEnabled(), lineBreakpoint.getCondition(), lineBreakpoint.getIgnoreCount(),
+            (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset(),
+            Breakpoint.NO_VALUE,
+            breakpoint.isEnabled(),
+            lineBreakpoint.getCondition(),
+            lineBreakpoint.getIgnoreCount(),
             new BreakpointCallback() {
               public void success(Breakpoint breakpoint) {
                 lineBreakpoint.setBreakpoint(breakpoint);
@@ -450,13 +453,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     if (context.getState() == State.EXCEPTION) {
       ExceptionData exceptionData = context.getExceptionData();
       JsStackFrame topFrame = context.getStackFrames()[0];
+      Script script = topFrame.getScript();
       ChromiumDebugPlugin.logError(
           Messages.DebugTargetImpl_LogExceptionFormat,
           exceptionData.isUncaught()
               ? Messages.DebugTargetImpl_Uncaught
               : Messages.DebugTargetImpl_Caught,
           exceptionData.getExceptionText(),
-          topFrame.getScript().getName(),
+          script != null ? script.getName() : "<unknown>", //$NON-NLS-1$
           topFrame.getLineNumber(),
           trim(exceptionData.getSourceText(), 80));
       suspended(DebugEvent.BREAKPOINT);

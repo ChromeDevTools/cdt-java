@@ -71,8 +71,13 @@ public interface BrowserTab {
    * Sets a breakpoint with the specified parameters.
    *
    * @param type of the breakpoint
-   * @param target function expression, script identification, or handle decimal
-   *        number
+   * @param target of the breakpoint, depends on the {@code type} value:
+   *        <table border=1>
+   *          <tr><td>type value</td><td>target value</td></tr>
+   *          <tr><td>FUNCTION</td><td>a function expression</td></tr>
+   *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by getName())</td></tr>
+   *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by getId())</td></tr>
+   *        </table>
    * @param line in the script or function. If not used, pass in
    *        {@link Breakpoint#NO_VALUE}
    * @param position of the target start within the line. If not used, pass in
