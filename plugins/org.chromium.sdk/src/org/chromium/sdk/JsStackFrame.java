@@ -36,7 +36,9 @@ public interface JsStackFrame {
   int getCharEnd();
 
   /**
-   * @return the source script this stack frame is associated with
+   * @return the source script this stack frame is associated with. {@code null}
+   *         if no script is associated with the stack frame (e.g. an exception
+   *         could have been thrown in a native script)
    */
   Script getScript();
 

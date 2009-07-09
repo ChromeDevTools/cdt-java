@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -62,21 +63,25 @@ public class ScriptImpl implements Script {
           this.lineCount == that.lineCount;
     }
 
-    public static Descriptor forResponse(JSONObject response) {
-      String name = JsonUtil.getAsString(response, V8Protocol.BODY_NAME);
+    public static Descriptor forResponse(JSONObject script, JSONArray refs) {
+      script = V8ProtocolUtil.scriptWithName(script, refs);
+      if (script == null) {
+        return null;
+      }
+      String name = JsonUtil.getAsString(script, V8Protocol.BODY_NAME);
       if (name == null) {
         // We do not handle unnamed scripts.
         return null;
       }
       try {
-        Long scriptType = JsonUtil.getAsLong(response, V8Protocol.BODY_SCRIPT_TYPE);
+        Long scriptType = JsonUtil.getAsLong(script, V8Protocol.BODY_SCRIPT_TYPE);
         Type type = V8ProtocolUtil.getScriptType(scriptType);
         if (type == null) {
           return null;
         }
-        int lineOffset = JsonUtil.getAsLong(response, V8Protocol.BODY_LINEOFFSET).intValue();
-        int lineCount = JsonUtil.getAsLong(response, V8Protocol.BODY_LINECOUNT).intValue();
-        int id = V8ProtocolUtil.getScriptIdFromResponse(response).intValue();
+        int lineOffset = JsonUtil.getAsLong(script, V8Protocol.BODY_LINEOFFSET).intValue();
+        int lineCount = JsonUtil.getAsLong(script, V8Protocol.BODY_LINECOUNT).intValue();
+        int id = V8ProtocolUtil.getScriptIdFromResponse(script).intValue();
         return new Descriptor(type, id, name, lineOffset, lineCount);
       } catch (Exception e) {
         // not a script object has been passed in

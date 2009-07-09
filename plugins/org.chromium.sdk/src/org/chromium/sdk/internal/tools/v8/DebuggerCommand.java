@@ -25,6 +25,7 @@ public enum DebuggerCommand {
   // Events
   BREAK("break"),
   EXCEPTION("exception"),
+  AFTER_COMPILE("afterCompile"),
   ;
 
   public String value;

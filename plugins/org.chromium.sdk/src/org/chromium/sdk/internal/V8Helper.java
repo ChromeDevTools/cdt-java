@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.JsDataType;
-import org.chromium.sdk.BrowserTab.ScriptsCallback;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -55,57 +54,16 @@ class V8Helper {
    * @param callback to invoke when the script reloading has completed
    */
   void reloadAllScripts(V8HandlerCallback callback) {
-    // A quick check goes first
-    try {
-      scriptsReloadSemaphore.acquire();
-    } catch (InterruptedException e) {
-      if (callback != null) {
-        callback.failure("Interrupted");
-      }
-      return;
-    }
-    final V8HandlerCallback finalCallback = (callback != null)
+    final V8HandlerCallback finalCallback = callback != null
         ? callback
         : V8HandlerCallback.NULL_CALLBACK;
-    context.getV8Handler().sendV8Command(
-        DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, false),
-        new V8HandlerCallback() {
-          public void failure(String message) {
-            scriptsReloadSemaphore.release();
-            finalCallback.failure(message);
-          }
-
-          public void messageReceived(JSONObject response) {
-            JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
-            ScriptManager scriptManager = context.getScriptManager();
-            boolean hasNewScripts = false;
-            for (int i = 0; i < body.size(); ++i) {
-              JSONObject scriptJson = (JSONObject) body.get(i);
-              if (JsonUtil.getAsString(scriptJson, V8Protocol.BODY_NAME) != null &&
-                  !scriptManager.hasScript(scriptJson)) {
-                // Do reload all scripts with sources if something has been
-                // added
-                doReloadAllScripts(finalCallback);
-                hasNewScripts = true;
-                break;
-              }
-            }
-            if (!hasNewScripts) {
-              scriptsReloadSemaphore.release();
-              finalCallback.messageReceived(response);
-            }
-          }
-        });
-    context.evaluateJavascript();
-  }
-
-  void doReloadAllScripts(final V8HandlerCallback callback) {
+    lock();
     context.getV8Handler().sendV8Command(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         new V8HandlerCallback() {
           public void failure(String message) {
-            scriptsReloadSemaphore.release();
-            callback.failure(message);
+            unlock();
+            finalCallback.failure(message);
           }
 
           public void messageReceived(JSONObject response) {
@@ -114,60 +72,30 @@ class V8Helper {
             for (int i = 0; i < body.size(); ++i) {
               JSONObject scriptJson = (JSONObject) body.get(i);
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);
-              if (scriptManager.findById(id) == null) {
-                scriptManager.addScript(scriptJson);
+              if (scriptManager.findById(id) == null &&
+                  !DebugContextImpl.JAVASCRIPT_VOID.equals(
+                      JsonUtil.getAsString(scriptJson, V8Protocol.SOURCE_CODE))) {
+                scriptManager.addScript(
+                    scriptJson, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
               }
             }
-            scriptsReloadSemaphore.release();
-            callback.messageReceived(response);
+            unlock();
+            finalCallback.messageReceived(response);
           }
         });
     context.evaluateJavascript();
   }
 
-  /**
-   * Traverses scripts from the "refs" array of a "backtrace" response and
-   * reloads scripts if new ones are found. Does NOT remove GC'ed scripts
-   * that are now absent in the "refs" array.
-   *
-   * @param refs array from the "backtrace" response
-   * @param callback to invoke when the scripts are reloaded
-   */
-  void updateScriptsIfNeeded(JSONArray refs, final ScriptsCallback callback) {
+  protected void lock() {
     try {
       scriptsReloadSemaphore.acquire();
     } catch (InterruptedException e) {
-      if (callback != null) {
-        callback.failure("Interrupted");
-      }
-      return;
+      // consider it a successful acquisition
     }
-    int size = refs.size();
-    final ScriptManager scriptManager = context.getScriptManager();
-    boolean scriptsChanged = false;
-    for (int i = 0; i < size; i++) {
-      JSONObject ref = (JSONObject) refs.get(i);
-      if (!V8Protocol.FRAME_SCRIPT.key.equals(JsonUtil.getAsString(ref, V8Protocol.KEY_TYPE))) {
-        continue;
-      }
-      if (scriptManager.findById(V8ProtocolUtil.getScriptIdFromResponse(ref)) == null) {
-        scriptsChanged = true;
-        break;
-      }
-    }
-    if (!scriptsChanged) {
-      scriptsReloadSemaphore.release();
-      callback.success(scriptManager.allScripts());
-      return;
-    }
-    doReloadAllScripts(new V8HandlerCallback(){
-      public void messageReceived(JSONObject response) {
-        callback.success(scriptManager.allScripts());
-      }
-      public void failure(String message) {
-        callback.failure(message);
-      }
-    });
+  }
+
+  protected void unlock() {
+    scriptsReloadSemaphore.release();
   }
 
   /**

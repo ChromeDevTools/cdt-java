@@ -45,11 +45,9 @@ public class BreakpointProcessor extends V8ResponseCallback {
       String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
       DebugContextImpl debugContext = getDebugContext();
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
-        debugContext.suspended();
         debugContext.setState(State.NORMAL);
         onBreakpointsHit(response);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
-        debugContext.suspended();
         debugContext.setState(State.NORMAL);
         debugContext.onBreakpointsHit(Collections.<Breakpoint>emptySet());
         debugContext.setException(response);
@@ -90,9 +88,8 @@ public class BreakpointProcessor extends V8ResponseCallback {
               public void messageReceived(JSONObject response) {
                 if (JsonUtil.isSuccessful(response)) {
                   JSONObject body = JsonUtil.getBody(response);
-                  // TODO(apavlov): change to SCRIPT_ID when appropriate
-                  // and support other types (FUNCTION)
-                  Breakpoint.Type type = Breakpoint.Type.SCRIPT_NAME;
+                  // TODO(apavlov): implement other types
+                  Breakpoint.Type type = Breakpoint.Type.SCRIPT_ID;
                   long id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT);
 
                   final BreakpointImpl breakpoint =

@@ -108,7 +108,7 @@ public class BrowserTabImpl implements BrowserTab {
   }
 
   public void getScripts(final ScriptsCallback callback) {
-    context.reloadAllScripts(callback);
+    context.loadAllScripts(callback);
   }
 
   public void setBreakpoint(Breakpoint.Type type, String target, int line,

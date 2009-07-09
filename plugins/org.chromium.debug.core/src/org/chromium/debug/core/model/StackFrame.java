@@ -83,6 +83,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   public String getName() throws DebugException {
     String name = stackFrame.getFunctionName();
     Script script = stackFrame.getScript();
+    if (script == null) {
+      return Messages.StackFrame_UnknownScriptName;
+    }
     int line = script.getLineOffset() + getLineNumber();
     if (line != -1) {
       name = NLS.bind(Messages.StackFrame_NameFormat, new Object[] {name, script.getName(), line});
@@ -164,7 +167,11 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
    * @return the name of the source file this stack frame is associated with
    */
   String getSourceName() {
-    return stackFrame.getScript().getName();
+    Script script = stackFrame.getScript();
+    if (script == null) {
+      return Messages.StackFrame_UnknownScriptName;
+    }
+    return script.getName();
   }
 
   // Returns the external file name of script on local machine.
