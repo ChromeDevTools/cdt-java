@@ -11,7 +11,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
@@ -28,7 +27,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
    * operations (lookup etc.) on the "continue" request.
    * @throws Exception
    */
-  @Test
+  @Test(timeout = 5000)
   public void checkContextIsInvalidatedOnContinue() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final Breakpoint[] bp = new Breakpoint[1];
@@ -46,7 +45,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
             latch.countDown();
           }
         });
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull("Failed to set a breakpoint: " + failure[0], failure[0]);
     assertNotNull("Breakpoint not set", bp[0]);
 
@@ -67,7 +66,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
    * (lookup etc.) is valid before sending the "continue" request.
    * @throws Exception
    */
-  @Test
+  @Test(timeout = 5000)
   public void checkContextIsValidOffHand() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final Breakpoint[] bp = new Breakpoint[1];
@@ -85,7 +84,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
             latch.countDown();
           }
         });
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull("Failed to set a breakpoint: " + failure[0], failure[0]);
     assertNotNull("Breakpoint not set", bp[0]);
 
