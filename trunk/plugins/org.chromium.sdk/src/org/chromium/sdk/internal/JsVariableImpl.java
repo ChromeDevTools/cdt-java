@@ -275,8 +275,8 @@ public class JsVariableImpl implements JsVariable {
 
     synchronized (this) {
       this.value = (valueData.getType() == JsDataType.TYPE_OBJECT)
-          ? new JsObjectImpl(this.valueData, vars)
-          : new JsArrayImpl(this.valueData, vars);
+          ? new JsObjectImpl(getStackFrame(), this.valueData, vars)
+          : new JsArrayImpl(getStackFrame(), this.valueData, vars);
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
         new ArrayList<Long>(handlesToRequest), true, getStackFrame().getToken());
