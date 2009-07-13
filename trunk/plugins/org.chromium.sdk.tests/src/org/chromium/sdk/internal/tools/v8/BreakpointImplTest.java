@@ -4,10 +4,13 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
@@ -37,11 +40,17 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     @Override
     public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
       BreakpointImplTest.this.isBreakpointChanged = true;
+      if (callback != null) {
+        callback.success(breakpointImpl);
+      }
     }
 
     @Override
     public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
       BreakpointImplTest.this.isBreakpointCleared = true;
+      if (callback != null) {
+        callback.success(breakpointImpl);
+      }
     }
 
     @Override
@@ -55,7 +64,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
 
   }
 
-  @Test
+  @Test(timeout = 5000)
   public void testCreateChange() throws Exception {
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -64,20 +73,19 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       final CountDownLatch latch = new CountDownLatch(1);
 
       // The "create" part
-      browserTab.setBreakpoint(Type.SCRIPT_NAME, "1", 4, 1, true, "false", 3, new BreakpointCallback() {
+      browserTab.setBreakpoint(Type.SCRIPT_NAME, "1", 4, 1, true, "false", 3,
+          new BreakpointCallback() {
+            public void failure(String errorMessage) {
+              resultMessage[0] = errorMessage;
+              latch.countDown();
+            }
 
-        public void failure(String errorMessage) {
-          resultMessage[0] = errorMessage;
-          latch.countDown();
-        }
-
-        public void success(Breakpoint breakpoint) {
-          resultBreakpoint[0] = breakpoint;
-          latch.countDown();
-        }
-
-      });
-      latch.await(100, TimeUnit.MILLISECONDS);
+            public void success(Breakpoint breakpoint) {
+              resultBreakpoint[0] = breakpoint;
+              latch.countDown();
+            }
+          });
+      latch.await();
       assertNull(resultMessage[0], resultMessage[0]);
       assertNotNull(resultBreakpoint[0]);
 
@@ -107,16 +115,16 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       }
 
     });
-    latch2.await(100, TimeUnit.MILLISECONDS);
+    latch2.await();
     assertNull(resultMessage[0], resultMessage[0]);
     assertNotNull(resultBreakpoint[0]);
     TestUtil.assertBreakpointsEqual(breakpoint, resultBreakpoint[0]);
   }
 
-  @Test
+  @Test(timeout = 5000)
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, true, 0, null,
-        new TestBreakpointProcessor((DebugContextImpl) suspendContext));
+        new TestBreakpointProcessor(suspendContext));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -134,7 +142,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       }
 
     });
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull(resultMessage[0], resultMessage[0]);
     assertTrue(isBreakpointCleared);
   }
@@ -142,7 +150,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test
   public void testNonDirtyChanges() throws Exception {
     TestBreakpointProcessor breakpointProcessor =
-        new TestBreakpointProcessor((DebugContextImpl) suspendContext);
+        new TestBreakpointProcessor(suspendContext);
     String condition = "true";
     int ignoreCount = 3;
     boolean enabled = true;
