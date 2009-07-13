@@ -58,18 +58,19 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     trySetMirrorProperties();
   }
 
-  public JsObjectImpl(ValueMirror valueState, JsVariableImpl[] properties) {
+  public JsObjectImpl(
+      JsStackFrameImpl stackFrame, ValueMirror valueState, JsVariableImpl[] properties) {
     super(valueState);
+    this.stackFrame = stackFrame;
     this.properties = properties;
-    createPropertyMap();
-    this.stackFrame = null;
+    ensurePropertyMap();
     this.parentFqn = "";
     trySetMirrorProperties();
   }
 
   private void trySetMirrorProperties() {
     ValueMirror mirror = getMirror();
-    if (mirror.getProperties() == null) {
+    if (mirror.getProperties() == null && isTokenValid()) {
       // "this" is an object with PropertyReferences. Resolve them.
       final Long ref = Long.valueOf(mirror.getRef());
       final JSONObject handle = stackFrame.getDebugContext().getHandleManager().getHandle(ref);
@@ -81,15 +82,25 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   /**
+   * @return whether the context token is valid
+   */
+  private boolean isTokenValid() {
+    return stackFrame != null && stackFrame.getToken().isValid();
+  }
+
+  /**
    * Calls to this method must be synchronized on propertyLock.
    */
-  private void createPropertyMap() {
+  private void ensurePropertyMap() {
+    if (propertyMap != null) {
+      return;
+    }
     if (properties == null || properties.length == 0) {
       propertyMap = Collections.emptyMap();
       return;
     }
     Map<String, JsVariableImpl> map =
-      new HashMap<String, JsVariableImpl>(properties.length * 2, 0.75f);
+        new HashMap<String, JsVariableImpl>(properties.length * 2, 0.75f);
     for (JsVariableImpl prop : properties) {
       map.put(prop.getName(), prop);
     }
@@ -106,6 +117,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   protected void ensureProperties() {
     synchronized (propertyLock) {
       if (properties != null) {
+        return;
+      }
+
+      final ContextToken token = stackFrame.getToken();
+      if (!token.isValid()) {
+        properties = new JsVariableImpl[0];
         return;
       }
       DebugContextImpl debugContext = stackFrame.getDebugContext();
@@ -133,7 +150,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         }
         fillPropertiesFromMirror(handleManager, mirrorProperties);
       } finally {
-        createPropertyMap();
+        ensurePropertyMap();
       }
     }
   }
@@ -143,6 +160,10 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    */
   private void fillPropertiesFromMirror(
       final HandleManager handleManager, PropertyReference[] mirrorProperties) {
+    if (!isTokenValid()) {
+      properties = new JsVariableImpl[0];
+      return;
+    }
     properties = new JsVariableImpl[mirrorProperties.length];
     for (int i = 0, size = properties.length; i < size; i++) {
       PropertyReference ref = mirrorProperties[i];
@@ -193,6 +214,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return ex;
   }
 
+  /**
+   * The method must be called only when the token is valid.
+   */
   private void processOriginalFormatPropertyRefs(
       HandleManager handleManager, PropertyReference[] mirrorProperties) {
     Map<JsVariableImpl, Long> variableToRefMap = new LinkedHashMap<JsVariableImpl, Long>();
@@ -246,6 +270,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return getMirror().getClassName();
   }
 
+  /**
+   * The method must be called only when the token is valid.
+   */
   private void fillPropertiesFromLookup(final HandleManager handleManager,
       final Map<JsVariableImpl, Long> variableToRef, final Collection<Long> handlesToRequest) {
     if (handlesToRequest.isEmpty()) {
@@ -282,6 +309,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return this.failedResponse;
   }
 
+  /**
+   * The method must be called only when the token is valid.
+   */
   private void prepareLookupData(final HandleManager handleManager,
       PropertyReference[] mirrorProperties, final Map<JsVariableImpl, Long> variableToRef,
       final Collection<Long> handlesToRequest) {

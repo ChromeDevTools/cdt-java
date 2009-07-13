@@ -35,8 +35,9 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     super(stackFrame, parentFqn, valueState);
   }
 
-  public JsArrayImpl(ValueMirror valueState, JsVariableImpl[] properties) {
-    super(valueState, properties);
+  public JsArrayImpl(JsStackFrameImpl stackFrame, ValueMirror valueState,
+      JsVariableImpl[] properties) {
+    super(stackFrame, valueState, properties);
   }
 
   private synchronized void ensureElementsMap() {
