@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-
 /**
  * This kind of lock counts the number of locking and unlocking operations
  * and allows synchronization on complete unlocking.
@@ -12,26 +11,34 @@ package org.chromium.sdk.internal;
 public class CountingLock {
   private int lockedCount = 0;
 
-  public synchronized void lock() {
-    ++lockedCount;
-  }
+  private final Object lockObject = new Object();
 
-  public synchronized void unlock() {
-    --lockedCount;
-    if (lockedCount == 0) {
-      notifyAll();
-    } else if (lockedCount < 0) {
-      throw new IllegalStateException("unlock() without lock()");
+  public void lock() {
+    synchronized (lockObject) {
+      ++lockedCount;
     }
   }
 
-  public synchronized void await() {
-    while (lockedCount > 0) {
-      try {
-        wait();
-      } catch (InterruptedException e) {
-        // Consider it an unlocking event.
-        break;
+  public void unlock() {
+    synchronized (lockObject) {
+      --lockedCount;
+      if (lockedCount == 0) {
+        lockObject.notifyAll();
+      } else if (lockedCount < 0) {
+        throw new IllegalStateException("unlock() without lock()");
+      }
+    }
+  }
+
+  public void await() {
+    synchronized (lockObject) {
+      while (lockedCount > 0) {
+        try {
+          lockObject.wait();
+        } catch (InterruptedException e) {
+          // Consider it an unlocking event.
+          break;
+        }
       }
     }
   }
