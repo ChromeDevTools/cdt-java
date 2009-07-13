@@ -202,7 +202,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
-    DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
+    DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount, null);
     // Use non-null commandCallback only if callback is not null
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null

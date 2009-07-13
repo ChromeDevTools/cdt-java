@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.chromium.sdk.internal.ContextToken;
 import org.json.simple.JSONStreamAware;
 import org.json.simple.JSONValue;
 
@@ -19,15 +20,30 @@ import org.json.simple.JSONValue;
  */
 public class DebuggerMessage implements JSONStreamAware {
 
+  private static final ContextToken VALID_TOKEN = new ContextToken() {
+    @Override
+    public boolean isValid() {
+      return true;
+    }
+  };
+
   private final int sequence;
 
   private final String command;
 
+  private final ContextToken token;
+
   private final Map<String, Object> arguments = new HashMap<String, Object>();
 
-  public DebuggerMessage(String command) {
+
+  public DebuggerMessage(String command, ContextToken token) {
     this.sequence = SeqGenerator.getInstance().next();
     this.command = command;
+    this.token = token;
+  }
+
+  public ContextToken getToken() {
+    return token != null ? token : VALID_TOKEN;
   }
 
   public Integer getSeq() {

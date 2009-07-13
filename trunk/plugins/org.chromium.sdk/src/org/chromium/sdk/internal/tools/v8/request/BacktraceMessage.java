@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
+import org.chromium.sdk.internal.ContextToken;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
@@ -14,14 +15,16 @@ public class BacktraceMessage extends DebuggerMessage {
   /**
    * @param fromFrame nullable frame range start (0 by default)
    * @param toFrame nullable frame range end (last frame by default)
-   * @param compactFormat
+   * @param inlineRefs whether to inline object refs
+   * @param token the context validity token
    */
-  public BacktraceMessage(Integer fromFrame, Integer toFrame, boolean compactFormat) {
-    super(DebuggerCommand.BACKTRACE.value);
+  public BacktraceMessage(Integer fromFrame, Integer toFrame, boolean inlineRefs,
+      ContextToken token) {
+    super(DebuggerCommand.BACKTRACE.value, token);
     putArgument("fromFrame", fromFrame);
     putArgument("toFrame", toFrame);
-    if (compactFormat) {
-      putArgument("compactFormat", compactFormat);
+    if (inlineRefs) {
+      putArgument("inlineRefs", inlineRefs);
     }
   }
 }

@@ -49,13 +49,13 @@ public class JsVariableTest implements DebugEventListener {
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
         }, null);
+    DebugContextImpl debugContext = ((BrowserTabImpl) browserTab).getDebugContext();
     FrameMirror frameMirror = new FrameMirror(
-        ((BrowserTabImpl) browserTab).getDebugContext(),
+        debugContext,
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.stackFrame = new JsStackFrameImpl(
-        frameMirror, 0, ((BrowserTabImpl) browserTab).getDebugContext());
+    this.stackFrame = new JsStackFrameImpl(frameMirror, 0, debugContext);
   }
 
   @Test

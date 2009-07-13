@@ -90,7 +90,7 @@ public class JsStackFrameImpl implements JsStackFrame {
 
   public void evaluate(final String expression, boolean isSync, final EvaluateCallback callback) {
     DebuggerMessage message =
-        DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null);
+        DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, null);
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null
         : new BrowserTabImpl.V8HandlerCallback() {

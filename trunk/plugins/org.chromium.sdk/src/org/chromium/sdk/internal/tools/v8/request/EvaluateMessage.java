@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
+import org.chromium.sdk.internal.ContextToken;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
@@ -16,10 +17,11 @@ public class EvaluateMessage extends DebuggerMessage {
    * @param frame number (top is 0).
    * @param global nullable. Default is false
    * @param disableBreak nullable. Default is true
+   * @param token the context validity token
    */
   public EvaluateMessage(String expression, Integer frame,
-      Boolean global, Boolean disableBreak) {
-    super(DebuggerCommand.EVALUATE.value);
+      Boolean global, Boolean disableBreak, ContextToken token) {
+    super(DebuggerCommand.EVALUATE.value, token);
     putArgument("expression", expression);
     putArgument("frame", frame);
     putArgument("global", global);

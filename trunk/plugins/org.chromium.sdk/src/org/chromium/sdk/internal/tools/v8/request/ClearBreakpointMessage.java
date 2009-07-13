@@ -15,7 +15,7 @@ public class ClearBreakpointMessage extends DebuggerMessage {
    * @param breakpoint id in V8 to clear
    */
   public ClearBreakpointMessage(Long breakpoint) {
-    super(DebuggerCommand.CLEARBREAKPOINT.value);
+    super(DebuggerCommand.CLEARBREAKPOINT.value, null);
     putArgument("breakpoint", breakpoint);
   }
 }
