@@ -78,7 +78,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
     getDebugContext().onBreakpointsHit(breakpointsHit);
   }
 
-  public void setBreakpoint(Breakpoint.Type type, String target, int line, int position,
+  public void setBreakpoint(final Breakpoint.Type type, String target, int line, int position,
       final boolean enabled, final String condition, final int ignoreCount,
       final BrowserTab.BreakpointCallback callback) {
     getDebugContext().sendMessage(
@@ -92,8 +92,6 @@ public class BreakpointProcessor extends V8ResponseCallback {
               public void messageReceived(JSONObject response) {
                 if (JsonUtil.isSuccessful(response)) {
                   JSONObject body = JsonUtil.getBody(response);
-                  // TODO(apavlov): implement other types
-                  Breakpoint.Type type = Breakpoint.Type.SCRIPT_ID;
                   long id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT);
 
                   final BreakpointImpl breakpoint =

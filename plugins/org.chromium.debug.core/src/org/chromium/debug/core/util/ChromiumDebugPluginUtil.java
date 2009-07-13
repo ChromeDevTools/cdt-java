@@ -165,8 +165,10 @@ public class ChromiumDebugPluginUtil {
    */
   public static void writeFile(IFile file, String data) throws CoreException {
     if (file != null && file.exists()) {
-      file.setContents(new ByteArrayInputStream(data.getBytes()), IFile.FORCE, null);
       ResourceAttributes resourceAttributes = file.getResourceAttributes();
+      resourceAttributes.setReadOnly(false);
+      file.setResourceAttributes(resourceAttributes);
+      file.setContents(new ByteArrayInputStream(data.getBytes()), IFile.FORCE, null);
       resourceAttributes.setReadOnly(true);
       file.setResourceAttributes(resourceAttributes);
     }

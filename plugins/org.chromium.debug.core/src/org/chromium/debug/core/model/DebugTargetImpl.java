@@ -140,12 +140,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
           }
 
           public void success(Collection<Script> scripts) {
+            if (!targetTab.isAttached()) {
+              return;
+            }
             for (Script script : scripts) {
-              if (script != null && !getResourceManager().scriptHasResource(script)) {
-                IFile resource = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
-                getResourceManager().putScript(script, resource);
+              if (script != null) {
+                IFile resource = getResourceManager().getResource(script);
+                if (resource == null) {
+                  resource = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
+                  getResourceManager().putScript(script, resource);
+                }
                 if (script.hasSource()) {
                   try {
+                    // Overwrites the file if one existed before.
                     ChromiumDebugPluginUtil.writeFile(resource, script.getSource());
                   } catch (CoreException e) {
                     ChromiumDebugPlugin.log(e);
@@ -363,28 +370,42 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       if (breakpoint.isEnabled()) {
         // Class cast is ensured by the supportsBreakpoint implementation
         final ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
-        Script script = getResourceManager().getScript(breakpoint.getMarker().getResource());
+        Script script = getResourceManager().getScript(
+            (IFile) breakpoint.getMarker().getResource());
         if (script == null) {
           // Might be a script from a different debug target
           return;
         }
-        getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_ID,
-            String.valueOf(script.getId()),
-            // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-            (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset(),
-            Breakpoint.NO_VALUE,
-            breakpoint.isEnabled(),
-            lineBreakpoint.getCondition(),
-            lineBreakpoint.getIgnoreCount(),
-            new BreakpointCallback() {
-              public void success(Breakpoint breakpoint) {
-                lineBreakpoint.setBreakpoint(breakpoint);
-              }
+        BreakpointCallback callback = new BreakpointCallback() {
+          public void success(Breakpoint breakpoint) {
+            lineBreakpoint.setBreakpoint(breakpoint);
+          }
 
-              public void failure(String errorMessage) {
-                ChromiumDebugPlugin.logError(errorMessage);
-              }
-            });
+          public void failure(String errorMessage) {
+            ChromiumDebugPlugin.logError(errorMessage);
+          }
+        };
+        // ILineBreakpoint lines are 1-based while V8 lines are 0-based
+        int line = (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset();
+        if (script.getName() != null) {
+          getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_NAME,
+              script.getName(),
+              line,
+              Breakpoint.NO_VALUE,
+              breakpoint.isEnabled(),
+              lineBreakpoint.getCondition(),
+              lineBreakpoint.getIgnoreCount(),
+              callback);
+        } else {
+          getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_ID,
+              String.valueOf(script.getId()),
+              line,
+              Breakpoint.NO_VALUE,
+              breakpoint.isEnabled(),
+              lineBreakpoint.getCondition(),
+              lineBreakpoint.getIgnoreCount(),
+              callback);
+        }
       }
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
