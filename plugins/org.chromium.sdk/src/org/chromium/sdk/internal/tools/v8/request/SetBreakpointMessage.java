@@ -37,7 +37,7 @@ public class SetBreakpointMessage extends DebuggerMessage {
   public SetBreakpointMessage(Breakpoint.Type type, String target,
       Integer line, Integer position, Boolean enabled, String condition,
       Integer ignoreCount) {
-    super(DebuggerCommand.SETBREAKPOINT.value);
+    super(DebuggerCommand.SETBREAKPOINT.value, null);
     putArgument("type", typeToV8Type.get(type));
     putArgument("target", target);
     putArgument("line", line);

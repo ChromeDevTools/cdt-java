@@ -53,7 +53,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
         debugContext.setException(response);
       }
       debugContext.getV8Handler().sendV8Command(
-          DebuggerMessageFactory.backtrace(null, null, true),
+          DebuggerMessageFactory.backtrace(null, null, true, null),
           null);
     }
   }

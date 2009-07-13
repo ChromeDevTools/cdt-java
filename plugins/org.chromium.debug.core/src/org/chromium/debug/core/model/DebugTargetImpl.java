@@ -90,7 +90,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         }
         monitor.done();
         // Could not attach. Log warning...
-        ChromiumDebugPlugin.logWarning("Could not attach to a browser instance"); //$NON-NLS-1$
+        ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
         // ... and fall through.
       }
       // Attachment cancelled
@@ -270,7 +270,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     if (!canDisconnect()) {
       return;
     }
-    removeAllBrekpoints();
+    removeAllBreakpoints();
     if (!targetTab.detach()) {
       ChromiumDebugPlugin.logWarning(Messages.DebugTargetImpl_BadResultWhileDisconnecting);
     }
@@ -516,7 +516,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID, message, cause));
   }
 
-  private void removeAllBrekpoints() {
+  private void removeAllBreakpoints() {
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
     IBreakpoint[] breakpoints =
         breakpointManager.getBreakpoints(ChromiumDebugPlugin.DEBUG_MODEL_ID);

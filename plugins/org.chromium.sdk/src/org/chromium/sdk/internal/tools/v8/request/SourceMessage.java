@@ -18,7 +18,7 @@ public class SourceMessage extends DebuggerMessage {
    *        result). Default is the number of lines in the script
    */
   public SourceMessage(Integer frame, Integer fromLine, Integer toLine) {
-    super(DebuggerCommand.SOURCE.value);
+    super(DebuggerCommand.SOURCE.value, null);
     putArgument("frame", frame);
     putArgument("fromLine", fromLine);
     putArgument("toLine", toLine);

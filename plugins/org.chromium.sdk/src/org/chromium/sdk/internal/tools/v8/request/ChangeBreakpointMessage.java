@@ -20,7 +20,7 @@ public class ChangeBreakpointMessage extends DebuggerMessage {
    */
   public ChangeBreakpointMessage(Long breakpoint, Boolean enabled,
       String condition, Integer ignoreCount) {
-    super(DebuggerCommand.CHANGEBREAKPOINT.value);
+    super(DebuggerCommand.CHANGEBREAKPOINT.value, null);
     putArgument("breakpoint", breakpoint);
     putArgument("enabled", enabled);
     putArgument("condition", condition);

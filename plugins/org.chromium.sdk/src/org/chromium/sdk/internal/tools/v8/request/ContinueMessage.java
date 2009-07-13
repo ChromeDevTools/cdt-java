@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.sdk.DebugContext.StepAction;
+import org.chromium.sdk.internal.ContextToken;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
@@ -27,9 +28,10 @@ public class ContinueMessage extends DebuggerMessage {
    * @param stepAction nullable "in", "next", or "out". Default is "let it go" (do not step)
    * @param stepCount nullable number of steps to perform (positive if not null).
    *        Default is 1 step. Does not make sense when {@code stepAction == null}
+   * @param token the context validity token
    */
-  public ContinueMessage(StepAction stepAction, Integer stepCount) {
-    super(DebuggerCommand.CONTINUE.value);
+  public ContinueMessage(StepAction stepAction, Integer stepCount, ContextToken token) {
+    super(DebuggerCommand.CONTINUE.value, token);
     if (stepAction != null) {
       putArgument("stepaction", stepActionToV8.get(stepAction));
       putArgument("stepcount", stepCount);

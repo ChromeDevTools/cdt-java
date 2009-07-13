@@ -34,7 +34,7 @@ public class ScriptsMessage extends DebuggerMessage {
    *        default is false
    */
   public ScriptsMessage(Integer types, Boolean includeSource) {
-    super(DebuggerCommand.SCRIPTS.value);
+    super(DebuggerCommand.SCRIPTS.value, null);
     putArgument("types", types);
     putArgument("includeSource", includeSource);
   }
@@ -45,7 +45,7 @@ public class ScriptsMessage extends DebuggerMessage {
    *        default is false
    */
   public ScriptsMessage(List<Long> ids, Boolean includeSource) {
-    super(DebuggerCommand.SCRIPTS.value);
+    super(DebuggerCommand.SCRIPTS.value, null);
     putArgument("ids", ids);
     putArgument("includeSource", includeSource);
   }
