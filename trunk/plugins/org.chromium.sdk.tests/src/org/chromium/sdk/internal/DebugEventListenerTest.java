@@ -4,16 +4,18 @@
 
 package org.chromium.sdk.internal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
-import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -29,7 +31,7 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     assertTrue(this.isDisconnected);
   }
 
-  @Test
+  @Test(timeout = 5000)
   public void testSuspendResume() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final Breakpoint[] bp = new Breakpoint[1];
@@ -47,7 +49,7 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
             latch.countDown();
           }
         });
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull("Failed to set a breakpoint: " + failure[0], failure[0]);
     assertNotNull("Breakpoint not set", bp[0]);
 
@@ -70,60 +72,30 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     resume();
   }
 
-  private void resume() throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-    final String[] failure = new String[1];
-    suspendContext.continueVm(null, 0, new ContinueCallback() {
-      public void failure(String errorMessage) {
-        failure[0] = errorMessage == null ? "" : errorMessage;
-        latch.countDown();
-      }
-
-      public void success() {
-        latch.countDown();
-      }
-    });
-    latch.await(100, TimeUnit.MILLISECONDS);
-    assertNull("Failure on continue: " + failure[0], failure[0]);
-    assertNull(suspendContext);
-  }
-
-  @Test
+  @Test(timeout = 3000)
   public void testClosed() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
-    suspendCallback = new Runnable() {
+    closedCallback = new Runnable() {
       public void run() {
         latch.countDown();
       }
     };
     messageResponder.tabClosed();
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull(this.newTabUrl);
   }
 
-  @Test
+  @Test(timeout = 3000)
   public void testNavigated() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
-    suspendCallback = new Runnable() {
+    navigatedCallback = new Runnable() {
       public void run() {
         latch.countDown();
       }
     };
     messageResponder.tabNavigated("newUrl");
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertEquals("newUrl", this.newTabUrl);
-  }
-
-  private void waitForSuspend() throws InterruptedException {
-    final CountDownLatch latch = new CountDownLatch(1);
-    suspendCallback = new Runnable() {
-      public void run() {
-        latch.countDown();
-      }
-    };
-    if (!latch.await(100, TimeUnit.MILLISECONDS)) {
-      fail("No \"suspended\" event received");
-    }
   }
 
   @Override

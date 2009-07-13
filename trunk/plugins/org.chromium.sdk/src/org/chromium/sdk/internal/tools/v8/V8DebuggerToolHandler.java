@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import java.text.MessageFormat;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -91,6 +92,11 @@ public class V8DebuggerToolHandler implements ToolHandler {
   /** The class logger. */
   private static final Logger LOGGER = Logger.getLogger(V8DebuggerToolHandler.class.getName());
 
+  private static final EnumSet<DebuggerCommand> CONTEXT_DEPENDENT_COMMANDS = EnumSet.of(
+      DebuggerCommand.LOOKUP,
+      DebuggerCommand.EVALUATE,
+      DebuggerCommand.FRAME);
+
   /**
    * The callbacks to invoke when the responses arrive.
    */
@@ -125,6 +131,13 @@ public class V8DebuggerToolHandler implements ToolHandler {
 
   private ResultAwareCallback detachCallback;
 
+  private final Object sendLock = new Object();
+
+  /**
+   * A no-op JavaScript to evaluate.
+   */
+  public static final String JAVASCRIPT_VOID = "javascript:void(0);";
+
   public V8DebuggerToolHandler(BrowserImpl browserImpl, DebugContextImpl context) {
     this.browserImpl = browserImpl;
     this.context = context;
@@ -142,8 +155,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
     commandToHandlerMap.put(DebuggerCommand.BACKTRACE, new BacktraceProcessor(context));
 
     commandToHandlerMap.put(DebuggerCommand.CONTINUE, new ContinueProcessor(context));
-
-
   }
 
   public DebugEventListener getDebugEventListener() {
@@ -215,11 +226,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
     }
   }
 
-  public void sendEvaluateJavascript(String javascript) {
-    getConnection().send(
-        MessageFactory.evaluateJavascript(String.valueOf(getAttachedTab()), javascript));
-  }
-
   public Exception sendV8CommandBlocking(
       DebuggerMessage message, BrowserTabImpl.V8HandlerCallback v8HandlerCallback) {
     BlockingV8RequestCommand command =
@@ -229,22 +235,38 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   public void sendV8Command(DebuggerMessage message,
-      BrowserTabImpl.V8HandlerCallback v8HandlerCallback) {
-    if (v8HandlerCallback != null) {
-      seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
-          getCurrentMillis()));
-    }
-    try {
-      getConnection().send(
-          MessageFactory.debuggerCommand(
-              String.valueOf(getAttachedTab()),
-              JsonUtil.streamAwareToJson(message)));
-    } catch (RuntimeException e) {
-      if (v8HandlerCallback != null) {
-        v8HandlerCallback.failure(e.getMessage());
-        seqToV8Callbacks.remove(message.getSeq());
+      boolean isImmediate, BrowserTabImpl.V8HandlerCallback v8HandlerCallback) {
+    synchronized (sendLock) {
+      if (isMessageContextDependent(message) && !message.getToken().isValid()) {
+        if (v8HandlerCallback != null) {
+          v8HandlerCallback.failure("Invalid context");
+        }
+        return;
       }
-      throw e;
+      if (DebuggerCommand.CONTINUE.value.equals(message.getCommand())) {
+        message.getToken().invalidate();
+      }
+      if (v8HandlerCallback != null) {
+        seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
+            getCurrentMillis()));
+      }
+      try {
+        String destination = String.valueOf(getAttachedTab());
+        getConnection().send(
+            MessageFactory.debuggerCommand(
+                destination,
+                JsonUtil.streamAwareToJson(message)));
+        if (isImmediate) {
+          getConnection().send(
+              MessageFactory.evaluateJavascript(destination, JAVASCRIPT_VOID));
+        }
+      } catch (RuntimeException e) {
+        if (v8HandlerCallback != null) {
+          v8HandlerCallback.failure(e.getMessage());
+          seqToV8Callbacks.remove(message.getSeq());
+        }
+        throw e;
+      }
     }
   }
 
@@ -478,4 +500,14 @@ public class V8DebuggerToolHandler implements ToolHandler {
   private Connection getConnection() {
     return browserImpl.getConnection();
   }
+
+
+  private static boolean isMessageContextDependent(DebuggerMessage message) {
+    DebuggerCommand command = DebuggerCommand.forString(message.getCommand());
+    if (command == null) {
+      return false;
+    }
+    return CONTEXT_DEPENDENT_COMMANDS.contains(command);
+  }
+
 }

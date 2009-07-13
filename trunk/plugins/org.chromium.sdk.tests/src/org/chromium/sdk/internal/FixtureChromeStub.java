@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
@@ -53,7 +54,7 @@ public class FixtureChromeStub implements ChromeStub {
         "  arr[100] = 0.99999887;\\r\\n//  var b = a + 1\\r\\n//  console.log('Foo');\\r\\n" +
         "  anotherScript();\\r\\n}\\r\\n\\r\\nfunction anotherScript() {\\r\\n  var i = 0;\\r\\n" +
         "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
-        "\"scriptType\":2,\"context\":{\"ref\":4},\"text\":\"file:///C:/1.js (lines: 32)\"}");
+        "\"scriptType\":2,\"context\":{\"ref\":0},\"text\":\"file:///C:/1.js (lines: 32)\"}");
     // Function
     refToObjectMap.put(Long.valueOf(getFunctionRef()),
         "{\"handle\":" + getFunctionRef() + ",\"type\":\"function\",\"className\":\"Function\"," +
@@ -151,8 +152,7 @@ public class FixtureChromeStub implements ChromeStub {
     if (DebuggerToolCommand.DEBUGGER_COMMAND.commandName.equals(protocolCommand)) {
       JSONObject responseMessage = new JSONObject();
       JSONObject data = JsonUtil.getAsJSON(content, "data");
-      Object responseBodyObject = new JSONObject();
-      JSONObject responseBody = (JSONObject) responseBodyObject;
+      Map<String, Object> nameToJsonValue = new HashMap<String, Object>();
       Long seq = JsonUtil.getAsLong(data, V8Protocol.KEY_SEQ);
       String debuggerCommandString = JsonUtil.getAsString(data, V8Protocol.KEY_COMMAND);
       DebuggerCommand debuggerCommand = DebuggerCommand.forString(debuggerCommandString);
@@ -165,7 +165,10 @@ public class FixtureChromeStub implements ChromeStub {
             String objectData = refToObjectMap.get(ref);
             if (objectData != null) {
               try {
-                responseBody.put(String.valueOf(ref), JsonUtil.jsonObjectFromJson(objectData));
+                JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
+                jsonBody.put(String.valueOf(ref), JsonUtil.jsonObjectFromJson(objectData));
+                JSONArray jsonRefs = putJsonValue("refs", new JSONArray(), nameToJsonValue);
+                jsonRefs.add(getJsonObjectByRef(getNumber3Ref()));
               } catch (ParseException e) {
                 throw new RuntimeException(e);
               }
@@ -184,25 +187,29 @@ public class FixtureChromeStub implements ChromeStub {
               JsonUtil.getAsBoolean(args, "enabled"),
               JsonUtil.getAsLong(args, "ignoreCount").intValue(),
               JsonUtil.getAsString(args, "condition")));
-          responseBody.put("type", "script");
-          responseBody.put("breakpoint", id);
+          JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
+          jsonBody.put("type", "script");
+          jsonBody.put("breakpoint", id);
           break;
         }
         case CLEARBREAKPOINT: {
           long id = JsonUtil.getAsLong(args, "breakpoint");
           breakpoints.remove(id);
-          responseBody.put("type", "script");
-          responseBody.put("breakpoint", id);
+          JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
+          jsonBody.put("type", "script");
+          jsonBody.put("breakpoint", id);
           break;
         }
         case CONTINUE:
           isRunning = true;
           break;
         case BACKTRACE:
-          constructBacktrace(responseMessage, responseBody);
+          JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
+          constructBacktrace(responseMessage, jsonBody);
           break;
         case SCRIPTS:
-          responseBodyObject = constructScripts();
+          nameToJsonValue.put("body", constructScripts());
+          nameToJsonValue.put("refs", constructScriptRefs());
           break;
         case SOURCE:
           //constructSource();
@@ -214,7 +221,9 @@ public class FixtureChromeStub implements ChromeStub {
       if (success) {
         responseMessage.put("success", true);
         responseMessage.put("running", isRunning);
-        responseMessage.put("body", responseBodyObject);
+        for (Entry<String, Object> entry : nameToJsonValue.entrySet()) {
+          responseMessage.put(entry.getKey(), entry.getValue());
+        }
       } else {
         responseMessage.put("success", false);
         responseMessage.put("message", "An error occurred");
@@ -241,7 +250,26 @@ public class FixtureChromeStub implements ChromeStub {
         response);
   }
 
-  private Object constructScripts() {
+  private <T> T putJsonValue(String name, T value, Map<String, Object> targetMap) {
+    targetMap.put(name, value);
+    return value;
+  }
+
+  private JSONArray constructScriptRefs() {
+    JSONArray refs = new JSONArray();
+    JSONObject ref = new JSONObject();
+    JSONObject data = new JSONObject();
+    refs.add(ref);
+    ref.put("text", "#<a ContextMirror>");
+    ref.put("handle", 0L); // must match the context ref in the script object
+    ref.put("type", "context");
+    ref.put("data", data);
+    data.put("value", 1L);
+    data.put("type", "page");
+    return refs;
+  }
+
+  private JSONArray constructScripts() {
     JSONArray scripts = new JSONArray();
     scripts.add(getJsonObjectByRef(getScriptRef()));
     return scripts;

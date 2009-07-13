@@ -20,7 +20,7 @@ public class ContinueProcessor extends V8ResponseCallback {
 
   public void messageReceived(JSONObject response) {
     if (JsonUtil.getAsBoolean(response, V8Protocol.KEY_RUNNING)) {
-      getDebugContext().getV8Handler().getDebugEventListener().resumed();
+      getDebugContext().getDebugEventListener().resumed();
     }
   }
 

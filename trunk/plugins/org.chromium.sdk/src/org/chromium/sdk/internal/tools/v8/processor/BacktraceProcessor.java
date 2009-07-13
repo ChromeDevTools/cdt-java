@@ -44,7 +44,7 @@ public class BacktraceProcessor extends V8ResponseCallback {
   }
 
   protected void suspend() {
-    getDebugContext().getV8Handler().getDebugEventListener().suspended(getDebugContext());
+    getDebugContext().getDebugEventListener().suspended(getDebugContext());
   }
 
 }
