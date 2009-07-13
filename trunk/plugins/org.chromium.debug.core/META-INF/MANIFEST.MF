@@ -15,11 +15,9 @@ Require-Bundle: org.eclipse.core.runtime,
  org.chromium.sdk;bundle-version="0.1.0"
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: bin/,
- .,
- lib/json_simple/json_simple-1.1.jar
+ .
 Export-Package: org.chromium.debug.core,
  org.chromium.debug.core.model,
- org.chromium.debug.core.util,
- org.json.simple
+ org.chromium.debug.core.util
 Eclipse-LazyStart: true
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
