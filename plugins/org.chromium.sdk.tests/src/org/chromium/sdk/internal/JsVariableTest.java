@@ -55,7 +55,7 @@ public class JsVariableTest implements DebugEventListener {
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.stackFrame = new JsStackFrameImpl(frameMirror, 0, debugContext);
+    this.stackFrame = new JsStackFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
   }
 
   @Test

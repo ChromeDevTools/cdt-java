@@ -4,14 +4,18 @@
 
 package org.chromium.sdk.internal;
 
-import java.io.IOException;
+import static org.junit.Assert.assertNull;
 
-import org.chromium.sdk.Browser;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.internal.transport.Connection;
 import org.junit.After;
 import org.junit.Before;
@@ -24,13 +28,17 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   protected FixtureChromeStub messageResponder;
 
-  protected Browser browser;
+  protected BrowserImpl browser;
 
-  protected BrowserTab browserTab;
+  protected BrowserTabImpl browserTab;
 
-  protected DebugContext suspendContext;
+  protected DebugContextImpl suspendContext;
 
   protected Runnable suspendCallback;
+
+  protected Runnable closedCallback;
+
+  protected Runnable navigatedCallback;
 
   protected String newTabUrl;
 
@@ -46,11 +54,16 @@ public abstract class AbstractAttachedTest<T extends Connection>
     attachToBrowserTab();
   }
 
+  @After
+  public void tearDownAfter() {
+    browser.disconnect();
+  }
+
   protected void attachToBrowserTab() throws IOException, UnsupportedVersionException {
-    browser = ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
+    browser = (BrowserImpl) ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
     browser.connect();
     BrowserTab[] tabs = browser.getTabs();
-    browserTab = tabs[0];
+    browserTab = (BrowserTabImpl) tabs[0];
     browserTab.attach(this);
   }
 
@@ -67,6 +80,9 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   public void closed() {
     this.newTabUrl = null;
+    if (closedCallback != null) {
+      closedCallback.run();
+    }
   }
 
   public void disconnected() {
@@ -75,6 +91,9 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   public void navigated(String newUrl) {
     this.newTabUrl = newUrl;
+    if (navigatedCallback != null) {
+      navigatedCallback.run();
+    }
   }
 
   public void resumed() {
@@ -82,10 +101,38 @@ public abstract class AbstractAttachedTest<T extends Connection>
   }
 
   public void suspended(DebugContext context) {
-    this.suspendContext = context;
+    this.suspendContext = (DebugContextImpl) context;
     if (suspendCallback != null) {
       suspendCallback.run();
     }
+  }
+
+  protected void waitForSuspend() throws InterruptedException {
+    final CountDownLatch latch = new CountDownLatch(1);
+    suspendCallback = new Runnable() {
+      public void run() {
+        latch.countDown();
+      }
+    };
+    latch.await();
+  }
+
+  protected void resume() throws Exception {
+    final CountDownLatch latch = new CountDownLatch(1);
+    final String[] failure = new String[1];
+    suspendContext.continueVm(null, 0, new ContinueCallback() {
+      public void failure(String errorMessage) {
+        failure[0] = errorMessage == null ? "" : errorMessage;
+        latch.countDown();
+      }
+
+      public void success() {
+        latch.countDown();
+      }
+    });
+    latch.await(100, TimeUnit.MILLISECONDS);
+    assertNull("Failure on continue: " + failure[0], failure[0]);
+    assertNull(suspendContext);
   }
 
 }

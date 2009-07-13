@@ -90,10 +90,7 @@ class BlockingV8RequestCommand implements Runnable {
           }
         }
       };
-      handler.sendV8Command(message, commandCallback);
-      if (isImmediate) {
-        handler.sendEvaluateJavascript("javascript:void(0);");
-      }
+      handler.sendV8Command(message, isImmediate, commandCallback);
       if (!sem.tryAcquire(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
         commandCallback.failure("Timed out");
       }

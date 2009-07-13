@@ -10,7 +10,9 @@ import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
+import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
+import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -58,7 +60,8 @@ class V8Helper {
         ? callback
         : V8HandlerCallback.NULL_CALLBACK;
     lock();
-    context.getV8Handler().sendV8Command(
+    context.sendMessage(
+        SendingType.SYNC,
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         new V8HandlerCallback() {
           public void failure(String message) {
@@ -73,7 +76,7 @@ class V8Helper {
               JSONObject scriptJson = (JSONObject) body.get(i);
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);
               if (scriptManager.findById(id) == null &&
-                  !DebugContextImpl.JAVASCRIPT_VOID.equals(
+                  !V8DebuggerToolHandler.JAVASCRIPT_VOID.equals(
                       JsonUtil.getAsString(scriptJson, V8Protocol.SOURCE_CODE))) {
                 scriptManager.addScript(
                     scriptJson, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
@@ -83,7 +86,6 @@ class V8Helper {
             finalCallback.messageReceived(response);
           }
         });
-    context.evaluateJavascript();
   }
 
   protected void lock() {

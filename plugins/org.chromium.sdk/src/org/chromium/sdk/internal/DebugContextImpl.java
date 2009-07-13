@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.BrowserTab.ScriptsCallback;
@@ -30,9 +31,19 @@ import org.json.simple.JSONObject;
 public class DebugContextImpl implements DebugContext {
 
   /**
-   * A no-op JavaScript to evaluate.
+   * The enum constants specify how a request should be sent to the browser.
    */
-  public static final String JAVASCRIPT_VOID = "javascript:void(0);";
+  public enum SendingType {
+
+    /** Wait until the response has been received (evaluates javascript). */
+    SYNC,
+
+    /** Send and return immediately. */
+    ASYNC,
+
+    /** ASYNC + evaluate javascript. */
+    ASYNC_IMMEDIATE,
+  }
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
@@ -67,6 +78,9 @@ public class DebugContextImpl implements DebugContext {
   /** The parent BrowserImpl instance. */
   private final BrowserTabImpl browserTabImpl;
 
+  /** Whether the initial script loading has completed. */
+  private volatile boolean doneInitialScriptLoad = false;
+
   /** The frame mirrors while on a breakpoint. */
   private volatile FrameMirror[] frameMirrors;
 
@@ -82,10 +96,14 @@ public class DebugContextImpl implements DebugContext {
   /** The JavaScript exception state. */
   private ExceptionData exceptionData;
 
-  /** Whether the initial script loading has completed. */
-  private volatile boolean doneInitialScriptLoad = false;
+  /** The context validity token. */
+  private ContextToken token;
+
+  /** The context validity token access lock. */
+  private final Object tokenAccessLock = new Object();
 
   public DebugContextImpl(BrowserTabImpl browserTabImpl) {
+    createNewToken();
     this.scriptManager = new ScriptManager();
     this.handleManager = new HandleManager();
     this.browserTabImpl = browserTabImpl;
@@ -187,39 +205,67 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public JsStackFrameImpl[] getStackFrames() {
-    if (stackFramesCached == null) {
-      // At this point we need to make sure ALL the V8 scripts are loaded so as
-      // to hook them up to the stack frames.
-      loadAllScripts(null);
-      int frameCount = getFrameCount();
-      stackFramesCached = new JsStackFrameImpl[frameCount];
-      for (int i = 0; i < frameCount; ++i) {
-        stackFramesCached[i] = new JsStackFrameImpl(getFrame(i), i, this);
-        hookupScriptToFrame(i);
+    synchronized (tokenAccessLock) {
+      if (stackFramesCached == null) {
+        // At this point we need to make sure ALL the V8 scripts are loaded so as
+        // to hook them up to the stack frames.
+        loadAllScripts(null);
+        int frameCount = getFrameCount();
+        stackFramesCached = new JsStackFrameImpl[frameCount];
+        ContextToken theToken = getToken();
+        for (int i = 0; i < frameCount; ++i) {
+          stackFramesCached[i] = new JsStackFrameImpl(getFrame(i), i, this, theToken);
+          hookupScriptToFrame(i);
+        }
       }
+      return stackFramesCached;
     }
-    return stackFramesCached;
   }
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
-    DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount, null);
-    // Use non-null commandCallback only if callback is not null
-    BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
-        ? null
-        : new BrowserTabImpl.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (JsonUtil.isSuccessful(response)) {
-              callback.success();
-            } else {
-              callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-            }
+    synchronized (tokenAccessLock) {
+      createNewToken();
+      DebuggerMessage message = DebuggerMessageFactory.goOn(
+          stepAction, stepCount, getContinueToken());
+      // Use non-null commandCallback only if callback is not null
+      BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
+          ? null
+          : new BrowserTabImpl.V8HandlerCallback() {
+        public void messageReceived(JSONObject response) {
+          if (JsonUtil.isSuccessful(response)) {
+            callback.success();
+          } else {
+            callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
           }
+        }
 
-          public void failure(String message) {
-            callback.failure(message);
-          }
-        };
-    sendMessage(false, message, commandCallback);
+        public void failure(String message) {
+          callback.failure(message);
+        }
+      };
+      sendMessage(SendingType.ASYNC_IMMEDIATE, message, commandCallback);
+    }
+  }
+
+  private ContextToken getContinueToken() {
+    synchronized (tokenAccessLock) {
+      ContextToken theToken;
+      if (stackFramesCached != null && stackFramesCached.length > 0) {
+        theToken = stackFramesCached[0].getToken();
+      } else {
+        theToken = getToken();
+      }
+      return theToken;
+    }
+  }
+
+  private void createNewToken() {
+    synchronized (tokenAccessLock) {
+      if (token != null) {
+        token.invalidate();
+      }
+      token = new ContextToken();
+    }
   }
 
   public Collection<Breakpoint> getBreakpointsHit() {
@@ -240,7 +286,7 @@ public class DebugContextImpl implements DebugContext {
     return handleManager;
   }
 
-  public V8DebuggerToolHandler getV8Handler() {
+  V8DebuggerToolHandler getV8Handler() {
     return handler;
   }
 
@@ -248,6 +294,7 @@ public class DebugContextImpl implements DebugContext {
     getV8Handler().onDebuggerDetached();
     getScriptManager().reset();
     getHandleManager().reset();
+    createNewToken();
     this.stackFramesCached = null;
     this.frameMirrors = null;
   }
@@ -300,11 +347,11 @@ public class DebugContextImpl implements DebugContext {
    * @param callback nullable callback to invoke when the scripts are ready
    */
   public void loadAllScripts(final ScriptsCallback callback) {
-    if (!doneInitialScriptLoad) {
+    if (!isDoneInitialScriptLoad()) {
       // Not loaded the scripts initially, do full load.
       v8Helper.reloadAllScripts(new V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
-          doneInitialScriptLoad = true;
+          setDoneInitialScriptLoad(true);
           if (callback != null) {
             if (JsonUtil.isSuccessful(response)) {
               callback.success(getScriptManager().allScripts());
@@ -315,7 +362,7 @@ public class DebugContextImpl implements DebugContext {
         }
 
         public void failure(String message) {
-          doneInitialScriptLoad = true;
+          setDoneInitialScriptLoad(true);
           if (callback != null) {
             callback.failure(message);
           }
@@ -328,13 +375,6 @@ public class DebugContextImpl implements DebugContext {
         callback.success(getScriptManager().allScripts());
       }
     }
-  }
-
-  /**
-   * Evaluates a JavaScript snippet to pump the debugger command queue.
-   */
-  public void evaluateJavascript() {
-    getV8Handler().sendEvaluateJavascript(JAVASCRIPT_VOID);
   }
 
   /**
@@ -361,14 +401,21 @@ public class DebugContextImpl implements DebugContext {
     return v8Helper.computeLocals(frame);
   }
 
-  private Exception sendMessage(boolean isSync, DebuggerMessage message,
+  public Exception sendMessage(SendingType manner, DebuggerMessage message,
       BrowserTabImpl.V8HandlerCallback commandCallback) {
-    if (isSync) {
-      return getV8Handler().sendV8CommandBlocking(message, commandCallback);
-    } else {
-      getV8Handler().sendV8Command(message, commandCallback);
-      return null;
+    Exception result = null;
+    switch (manner) {
+      case SYNC:
+        result = getV8Handler().sendV8CommandBlocking(message, commandCallback);
+        break;
+      case ASYNC:
+        getV8Handler().sendV8Command(message, false, commandCallback);
+        break;
+      case ASYNC_IMMEDIATE:
+        getV8Handler().sendV8Command(message, true, commandCallback);
+        break;
     }
+    return result;
   }
 
   /**
@@ -377,8 +424,35 @@ public class DebugContextImpl implements DebugContext {
    * @param newUrl the new URL of the tab being debugged
    */
   public void navigated(String newUrl) {
-    doneInitialScriptLoad = false; // we should forget all our scripts
+    setDoneInitialScriptLoad(false); // we should forget all our scripts
     getTab().getDebugEventListener().navigated(newUrl);
   }
 
+  /**
+   * This method MUST NOT be used in short-lived objects that get created on
+   * every VM suspension and issue requests dependent on the suspension state
+   * of the VM.
+   *
+   * @return current context token
+   */
+  public ContextToken getToken() {
+    synchronized (tokenAccessLock) {
+      return token;
+    }
+  }
+
+  /**
+   * @return the DebugEventListener associated with this context
+   */
+  public DebugEventListener getDebugEventListener() {
+    return getV8Handler().getDebugEventListener();
+  }
+
+  private boolean isDoneInitialScriptLoad() {
+    return doneInitialScriptLoad;
+  }
+
+  private void setDoneInitialScriptLoad(boolean doneInitialScriptLoad) {
+    this.doneInitialScriptLoad = doneInitialScriptLoad;
+  }
 }

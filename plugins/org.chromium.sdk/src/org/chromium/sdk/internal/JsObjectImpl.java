@@ -14,6 +14,7 @@ import java.util.Map;
 
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -83,7 +84,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * Calls to this method must be synchronized on propertyLock.
    */
   private void createPropertyMap() {
-    if (properties == null) {
+    if (properties == null || properties.length == 0) {
       propertyMap = Collections.emptyMap();
       return;
     }
@@ -111,26 +112,29 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final HandleManager handleManager = debugContext.getHandleManager();
       ValueMirror mirror = getMirror();
       PropertyReference[] mirrorProperties = mirror.getProperties();
-      if (mirrorProperties == null) {
-        // "this" is an object with PropertyReferences. Resolve them.
-        final Long ref = Long.valueOf(mirror.getRef());
-        Exception ex = null;
-        final JSONObject[] handle = new JSONObject[1];
-        handle[0] = handleManager.getHandle(ref);
-        if (handle[0] == null) {
-          ex = resolveThisHandle(debugContext, handleManager, ref, handle);
+      try {
+        if (mirrorProperties == null) {
+          // "this" is an object with PropertyReferences. Resolve them.
+          final Long ref = Long.valueOf(mirror.getRef());
+          Exception ex = null;
+          final JSONObject[] handle = new JSONObject[1];
+          handle[0] = handleManager.getHandle(ref);
+          if (handle[0] == null) {
+            ex = resolveThisHandle(debugContext, handleManager, ref, handle);
+          }
+          if (ex != null || isFailedResponse()) {
+            properties = new JsVariableImpl[0];
+            return;
+          } else {
+            mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
+            mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
+                mirrorProperties);
+          }
         }
-        if (ex != null || isFailedResponse()) {
-          return;
-        } else {
-          mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
-          mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
-              mirrorProperties);
-        }
+        fillPropertiesFromMirror(handleManager, mirrorProperties);
+      } finally {
+        createPropertyMap();
       }
-
-      fillPropertiesFromMirror(handleManager, mirrorProperties);
-      createPropertyMap();
     }
   }
 
@@ -161,30 +165,31 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
   }
 
-  private Exception resolveThisHandle(DebugContextImpl debugContext,
+  private Exception resolveThisHandle(final DebugContextImpl debugContext,
       final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle) {
-    Exception ex = debugContext.getV8Handler().sendV8CommandBlocking(
+    Exception ex = debugContext.sendMessage(
+        SendingType.SYNC,
         DebuggerMessageFactory.lookup(
-            Collections.singletonList(ref), true, null),
-            new BrowserTabImpl.V8HandlerCallback() {
-              public void messageReceived(JSONObject response) {
-                if (!JsonUtil.isSuccessful(response)) {
-                  setFailedResponse();
-                  return;
-                }
-                JSONObject body = JsonUtil.getBody(response);
-                targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-                if (targetHandle[0] != null) {
-                  handleManager.put(ref, targetHandle[0]);
-                }
-                handleManager.putAll(V8ProtocolUtil.getRefHandleMap(
-                    JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS)));
-              }
+            Collections.singletonList(ref), true, stackFrame.getToken()),
+        new BrowserTabImpl.V8HandlerCallback() {
+          public void messageReceived(JSONObject response) {
+            if (!JsonUtil.isSuccessful(response)) {
+              setFailedResponse();
+              return;
+            }
+            JSONObject body = JsonUtil.getBody(response);
+            targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
+            if (targetHandle[0] != null) {
+              handleManager.put(ref, targetHandle[0]);
+            }
+            handleManager.putAll(V8ProtocolUtil.getRefHandleMap(
+                JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS)));
+          }
 
-              public void failure(String message) {
-                setFailedResponse();
-              }
-            });
+          public void failure(String message) {
+            setFailedResponse();
+          }
+        });
     return ex;
   }
 
@@ -248,8 +253,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return;
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, null);
-    Exception ex = stackFrame.getDebugContext().getV8Handler().sendV8CommandBlocking(
+        new ArrayList<Long>(handlesToRequest), true, stackFrame.getToken());
+    Exception ex = stackFrame.getDebugContext().sendMessage(
+        SendingType.SYNC,
         message,
         new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {

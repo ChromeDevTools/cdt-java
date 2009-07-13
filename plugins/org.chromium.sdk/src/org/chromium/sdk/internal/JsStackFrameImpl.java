@@ -8,6 +8,7 @@ import org.chromium.sdk.JsStackFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.DebugContext.EvaluateCallback;
+import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -30,6 +31,8 @@ public class JsStackFrameImpl implements JsStackFrame {
   /** The variables known in this stack frame. */
   private JsVariableImpl[] variables;
 
+  private final ContextToken token;
+
   /**
    * Constructs a stack frame for the given handler using the FrameMirror data
    * from the remote JavaScript VM.
@@ -37,11 +40,14 @@ public class JsStackFrameImpl implements JsStackFrame {
    * @param mirror frame in the VM
    * @param index stack frame id (0 is the stack top)
    * @param context in which the stack frame is created
+   * @param contextToken
    */
-  public JsStackFrameImpl(FrameMirror mirror, int index, DebugContextImpl context) {
+  public JsStackFrameImpl(FrameMirror mirror, int index, DebugContextImpl context,
+      ContextToken contextToken) {
     this.context = context;
     this.frameId = index;
     this.frameMirror = mirror;
+    this.token = contextToken;
   }
 
   public DebugContextImpl getDebugContext() {
@@ -90,7 +96,7 @@ public class JsStackFrameImpl implements JsStackFrame {
 
   public void evaluate(final String expression, boolean isSync, final EvaluateCallback callback) {
     DebuggerMessage message =
-        DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, null);
+        DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null
         : new BrowserTabImpl.V8HandlerCallback() {
@@ -113,10 +119,15 @@ public class JsStackFrameImpl implements JsStackFrame {
             callback.failure(message);
           }
         };
-    Exception ex = sendMessage(isSync, message, commandCallback);
+    Exception ex = getDebugContext().sendMessage(
+        isSync ? SendingType.SYNC : SendingType.ASYNC_IMMEDIATE, message, commandCallback);
     if (ex != null && callback != null) {
       callback.failure(ex.getMessage());
     }
+  }
+
+  ContextToken getToken() {
+    return token;
   }
 
   /**
@@ -137,26 +148,6 @@ public class JsStackFrameImpl implements JsStackFrame {
       result[i] = new JsVariableImpl(this, frameMirror.getLocal(i));
     }
     return result;
-  }
-
-  /**
-   * Sends a DebuggerMessage in a synchronous or asynchronous way.
-   *
-   * @param isSync whether to send in a synchronous way
-   * @param message to send
-   * @param commandCallback to invoke
-   * @return an Exception that occurred while sending the message synchronously
-   *         or {@code null} if sent asynchronously or no error
-   */
-  private Exception sendMessage(boolean isSync, DebuggerMessage message,
-      BrowserTabImpl.V8HandlerCallback commandCallback) {
-    if (isSync) {
-      return getDebugContext().getV8Handler().sendV8CommandBlocking(
-          message, commandCallback);
-    } else {
-      getDebugContext().getV8Handler().sendV8Command(message, commandCallback);
-      return null;
-    }
   }
 
 }

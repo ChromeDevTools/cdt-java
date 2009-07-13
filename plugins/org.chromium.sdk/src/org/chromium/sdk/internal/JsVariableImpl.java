@@ -12,8 +12,8 @@ import java.util.Map;
 
 import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -279,9 +279,11 @@ public class JsVariableImpl implements JsVariable {
           : new JsArrayImpl(this.valueData, vars);
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, null);
-    Exception ex =
-        getV8Handler().sendV8CommandBlocking(message, new BrowserTabImpl.V8HandlerCallback() {
+        new ArrayList<Long>(handlesToRequest), true, getStackFrame().getToken());
+    Exception ex = getStackFrame().getDebugContext().sendMessage(
+        SendingType.SYNC,
+        message,
+        new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!fillVariablesFromLookupReply(handleManager, vars, variableToRef, response)) {
               setFailedResponse();
@@ -307,10 +309,6 @@ public class JsVariableImpl implements JsVariable {
 
   private HandleManager getHandleManager() {
     return getStackFrame().getDebugContext().getHandleManager();
-  }
-
-  private V8DebuggerToolHandler getV8Handler() {
-    return stackFrame.getDebugContext().getV8Handler();
   }
 
   /**

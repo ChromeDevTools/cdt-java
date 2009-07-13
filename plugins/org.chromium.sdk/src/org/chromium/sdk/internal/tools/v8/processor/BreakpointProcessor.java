@@ -17,6 +17,7 @@ import org.chromium.sdk.DebugContext.State;
 import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -52,8 +53,9 @@ public class BreakpointProcessor extends V8ResponseCallback {
         debugContext.onBreakpointsHit(Collections.<Breakpoint>emptySet());
         debugContext.setException(response);
       }
-      debugContext.getV8Handler().sendV8Command(
-          DebuggerMessageFactory.backtrace(null, null, true, null),
+      debugContext.sendMessage(
+          SendingType.ASYNC,
+          DebuggerMessageFactory.backtrace(null, null, true, getDebugContext().getToken()),
           null);
     }
   }
@@ -79,10 +81,12 @@ public class BreakpointProcessor extends V8ResponseCallback {
   public void setBreakpoint(Breakpoint.Type type, String target, int line, int position,
       final boolean enabled, final String condition, final int ignoreCount,
       final BrowserTab.BreakpointCallback callback) {
-    getDebugContext().getV8Handler().sendV8Command(
+    getDebugContext().sendMessage(
+        SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.setBreakpoint(type, target, toNullableInteger(line),
             toNullableInteger(position), enabled, condition,
-            toNullableInteger(ignoreCount)), callback == null
+            toNullableInteger(ignoreCount)),
+        callback == null
             ? null
             : new BrowserTabImpl.V8HandlerCallback() {
               public void messageReceived(JSONObject response) {
@@ -108,7 +112,6 @@ public class BreakpointProcessor extends V8ResponseCallback {
                 }
               }
             });
-    getDebugContext().evaluateJavascript();
   }
 
   public void clearBreakpoint(
@@ -118,50 +121,50 @@ public class BreakpointProcessor extends V8ResponseCallback {
       return;
     }
     idToBreakpoint.remove(id);
-    getDebugContext().getV8Handler().sendV8Command(
+    getDebugContext().sendMessage(
+        SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
-            new BrowserTabImpl.V8HandlerCallback() {
-              public void messageReceived(JSONObject response) {
-                if (JsonUtil.isSuccessful(response)) {
-                  if (callback != null) {
-                    callback.success(null);
-                  }
-                } else {
-                  if (callback != null) {
-                    callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-                  }
-                }
+        new BrowserTabImpl.V8HandlerCallback() {
+          public void messageReceived(JSONObject response) {
+            if (JsonUtil.isSuccessful(response)) {
+              if (callback != null) {
+                callback.success(null);
               }
-              public void failure(String message) {
-                if (callback != null) {
-                  callback.failure(message);
-                }
+            } else {
+              if (callback != null) {
+                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
               }
-            });
-    getDebugContext().evaluateJavascript();
+            }
+          }
+          public void failure(String message) {
+            if (callback != null) {
+              callback.failure(message);
+            }
+          }
+        });
   }
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback) {
-    getDebugContext().getV8Handler().sendV8Command(
+    getDebugContext().sendMessage(
+        SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
-            new BrowserTabImpl.V8HandlerCallback() {
-              public void messageReceived(JSONObject response) {
-                if (callback != null) {
-                  if (JsonUtil.isSuccessful(response)) {
-                      callback.success(breakpointImpl);
-                  } else {
-                      callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-                  }
-                }
+        new BrowserTabImpl.V8HandlerCallback() {
+          public void messageReceived(JSONObject response) {
+            if (callback != null) {
+              if (JsonUtil.isSuccessful(response)) {
+                  callback.success(breakpointImpl);
+              } else {
+                  callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
               }
-              public void failure(String message) {
-                if (callback != null) {
-                  callback.failure(message);
-                }
-              }
-            });
-    getDebugContext().evaluateJavascript();
+            }
+          }
+          public void failure(String message) {
+            if (callback != null) {
+              callback.failure(message);
+            }
+          }
+        });
   }
 
   private static Integer toNullableInteger(int value) {

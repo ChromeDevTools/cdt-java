@@ -4,11 +4,13 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.chromium.sdk.internal.AbstractAttachedTest;
-import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.MessageFactory;
+import org.chromium.sdk.internal.TestUtil;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Before;
@@ -23,7 +25,7 @@ public class V8DebuggerToolHandlerTest extends AbstractAttachedTest<FakeConnecti
 
   @Before
   public void setUp() throws Exception {
-    this.handler = ((BrowserTabImpl) browserTab).getDebugContext().getV8Handler();
+    this.handler = TestUtil.getV8DebuggerToolHandler(browserTab);
   }
 
   @Test(expected = IllegalArgumentException.class)

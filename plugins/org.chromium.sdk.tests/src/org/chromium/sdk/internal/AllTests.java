@@ -16,6 +16,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
   BrowserImplTest.class,
+  DebugContextImplTest.class,
   DebugEventListenerTest.class,
   JsVariableTest.class,
   V8Tests.class,

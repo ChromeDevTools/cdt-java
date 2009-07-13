@@ -8,6 +8,7 @@ import junit.framework.Assert;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandler;
+import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 
 /**
  * A utility for performing some common test-related operations.
@@ -23,6 +24,10 @@ public class TestUtil {
 
   public static DevToolsServiceHandler getDevToolsServiceHandler(BrowserImpl browserImpl) {
     return browserImpl.getDevToolsServiceHandler();
+  }
+
+  public static V8DebuggerToolHandler getV8DebuggerToolHandler(BrowserTabImpl browserTabImpl) {
+    return browserTabImpl.getDebugContext().getV8Handler();
   }
 
   private TestUtil() {
