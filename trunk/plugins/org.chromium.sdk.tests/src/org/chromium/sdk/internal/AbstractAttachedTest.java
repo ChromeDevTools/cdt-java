@@ -8,7 +8,6 @@ import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
@@ -117,6 +116,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
     latch.await();
   }
 
+  /** This should be called from a timed test. */
   protected void resume() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] failure = new String[1];
@@ -130,7 +130,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
         latch.countDown();
       }
     });
-    latch.await(100, TimeUnit.MILLISECONDS);
+    latch.await();
     assertNull("Failure on continue: " + failure[0], failure[0]);
     assertNull(suspendContext);
   }
