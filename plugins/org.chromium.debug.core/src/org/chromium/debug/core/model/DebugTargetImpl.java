@@ -237,12 +237,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return false;
   }
 
-  public boolean isSuspended() {
+  public synchronized boolean isSuspended() {
     return isSuspended;
   }
 
+  private synchronized void setSuspended(boolean isSuspended) {
+    this.isSuspended = isSuspended;
+  }
+
   public void suspended(int detail) {
-    isSuspended = true;
+    setSuspended(true);
     getThread().reset();
     fireSuspendEvent(detail);
   }
@@ -281,7 +285,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     disconnected();
   }
 
-  public boolean isDisconnected() {
+  public synchronized boolean isDisconnected() {
     return isDisconnected;
   }
 
@@ -329,18 +333,18 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
   }
 
-  private void setDisconnected(boolean value) {
+  private synchronized void setDisconnected(boolean value) {
     isDisconnected = value;
   }
 
   public void fireResumeEvent(int detail) {
-    isSuspended = false;
+    setSuspended(false);
     fireEventForThread(DebugEvent.RESUME, detail);
     fireEvent(new DebugEvent(this, DebugEvent.RESUME, detail));
   }
 
   public void fireSuspendEvent(int detail) {
-    isSuspended = true;
+    setSuspended(true);
     fireEventForThread(DebugEvent.SUSPEND, detail);
     fireEvent(new DebugEvent(this, DebugEvent.SUSPEND, detail));
   }
