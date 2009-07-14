@@ -25,4 +25,3 @@ The debugger exposes the following !JavaScript debugging capabilities:
 = Known issues =
   * Duplicate scripts can be loaded from V8 for the same resource.
   * Only V8-provided scripts are shown rather than actual resources loaded by the browser (the resources are not exposed through the V8 debugger protocol).
-  * The breakpoints are not retained between page refreshes (V8 does not curently expose existing breakpoints).
