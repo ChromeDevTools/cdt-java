@@ -122,6 +122,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
       final ContextToken token = stackFrame.getToken();
       if (!token.isValid()) {
+        setFailedResponse();
         properties = new JsVariableImpl[0];
         return;
       }
