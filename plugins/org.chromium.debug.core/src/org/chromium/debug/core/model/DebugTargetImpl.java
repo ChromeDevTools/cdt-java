@@ -144,16 +144,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
               return;
             }
             for (Script script : scripts) {
-              if (script != null) {
-                IFile resource = getResourceManager().getResource(script);
-                if (resource == null) {
-                  resource = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
-                  getResourceManager().putScript(script, resource);
-                }
+              if (script != null && !getResourceManager().scriptHasResource(script)) {
+                IFile file = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
+                getResourceManager().putScript(script, file);
                 if (script.hasSource()) {
                   try {
-                    // Overwrites the file if one existed before.
-                    ChromiumDebugPluginUtil.writeFile(resource, script.getSource());
+                    ChromiumDebugPluginUtil.writeFile(file, script.getSource());
                   } catch (CoreException e) {
                     ChromiumDebugPlugin.log(e);
                   }
