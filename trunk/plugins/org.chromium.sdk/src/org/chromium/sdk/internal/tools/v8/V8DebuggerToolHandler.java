@@ -199,15 +199,19 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   public void onDebuggerDetached() {
+    if (!isAttached()) {
+      // We've already been notified.
+      return;
+    }
+    synchronized (fieldAccessLock) {
+      isAttached = false;
+    }
     removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
     }
     context.getTab().sessionTerminated();
-    synchronized (fieldAccessLock) {
-      isAttached = false;
-    }
   }
 
   public int getAttachedTab() {
