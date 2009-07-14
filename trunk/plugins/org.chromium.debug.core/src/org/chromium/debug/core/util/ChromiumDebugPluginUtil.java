@@ -157,7 +157,8 @@ public class ChromiumDebugPluginUtil {
 
   /**
    * Writes data into a resource with the given resourceName residing in the
-   * source folder of the given project.
+   * source folder of the given project. The previous file content is lost.
+   * Temporarily resets the "read-only" file attribute if one is present.
    *
    * @param file to set contents for
    * @param data to write into the file
@@ -166,8 +167,10 @@ public class ChromiumDebugPluginUtil {
   public static void writeFile(IFile file, String data) throws CoreException {
     if (file != null && file.exists()) {
       ResourceAttributes resourceAttributes = file.getResourceAttributes();
-      resourceAttributes.setReadOnly(false);
-      file.setResourceAttributes(resourceAttributes);
+      if (resourceAttributes.isReadOnly()) {
+        resourceAttributes.setReadOnly(false);
+        file.setResourceAttributes(resourceAttributes);
+      }
       file.setContents(new ByteArrayInputStream(data.getBytes()), IFile.FORCE, null);
       resourceAttributes.setReadOnly(true);
       file.setResourceAttributes(resourceAttributes);
