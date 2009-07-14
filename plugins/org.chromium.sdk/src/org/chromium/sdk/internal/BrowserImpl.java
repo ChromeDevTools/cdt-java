@@ -63,6 +63,7 @@ public class BrowserImpl implements Browser, NetListener {
 
   public BrowserTab[] getTabs() throws IOException {
     checkConnection();
+    removeDetachedTabs();
     List<TabIdAndUrl> entries = devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
     if (entries.isEmpty()) {
       return EMPTY_TABS;
@@ -78,6 +79,16 @@ public class BrowserImpl implements Browser, NetListener {
       browserTabs.add(tab);
     }
     return browserTabs.toArray(new BrowserTab[browserTabs.size()]);
+  }
+
+  private void removeDetachedTabs() {
+    for (Iterator<Map.Entry<Integer, BrowserTabImpl>> it = tabUidToTabImpl.entrySet().iterator();
+         it.hasNext(); ) {
+      Map.Entry<Integer, BrowserTabImpl> entry = it.next();
+      if (!entry.getValue().isAttached()) {
+        it.remove();
+      }
+    }
   }
 
   /**
@@ -144,9 +155,18 @@ public class BrowserImpl implements Browser, NetListener {
 
   public void sessionTerminated(int tabId) {
     tabUidToTabImpl.remove(tabId);
-    if (tabUidToTabImpl.isEmpty() && getConnection().isConnected()) {
+    if (!hasAttachedTabs() && getConnection().isConnected()) {
       disconnect();
     }
+  }
+
+  private boolean hasAttachedTabs() {
+    for (BrowserTabImpl tab : tabUidToTabImpl.values()) {
+      if (tab.isAttached()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public void connect() throws UnsupportedVersionException, IOException {
