@@ -12,10 +12,10 @@ http://chromedevtools.googlecode.com/svn/update/dev/
 
 = Features =
 
-The debugger exposes the following !JavaScript debugging capabilities:
+The !JavaScript debugger exposes the following capabilities:
   * Breakpoints
   * Watches
-  * All kinds of stepping
+  * Step in/over/out
   * Stack context when suspended
   * Mouse on-hover identifier evaluation
   * Text selection evaluation
