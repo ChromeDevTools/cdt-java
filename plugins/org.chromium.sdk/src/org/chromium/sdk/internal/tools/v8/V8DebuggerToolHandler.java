@@ -343,14 +343,6 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   /**
-   * Blocks until after all scripts requested while processing afterCompile
-   * events have been loaded.
-   */
-  public void awaitScripts() {
-    afterCompileProcessor.awaitScripts();
-  }
-
-  /**
    * @return milliseconds since the epoch
    */
   protected long getCurrentMillis() {

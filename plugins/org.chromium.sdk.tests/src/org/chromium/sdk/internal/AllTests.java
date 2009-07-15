@@ -16,7 +16,6 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
   BrowserImplTest.class,
-  CountingLockTest.class,
   DebugContextImplTest.class,
   DebugEventListenerTest.class,
   JsVariableTest.class,
