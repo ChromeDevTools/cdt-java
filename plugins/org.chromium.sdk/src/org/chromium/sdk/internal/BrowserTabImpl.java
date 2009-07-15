@@ -91,8 +91,8 @@ public class BrowserTabImpl implements BrowserTab {
     Result result = null;
     try {
       result = getDebugContext().getV8Handler().attachToTab();
-    } catch (AttachmentFailureException e1) {
-      listener.disconnected();
+    } catch (AttachmentFailureException e) {
+      // fall through and return false
     }
     this.debugEventListener = listener;
     return Result.OK == result;
