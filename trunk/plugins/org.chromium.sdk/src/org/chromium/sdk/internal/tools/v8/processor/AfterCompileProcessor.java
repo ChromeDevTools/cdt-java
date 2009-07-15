@@ -7,7 +7,6 @@ package org.chromium.sdk.internal.tools.v8.processor;
 import java.util.Collections;
 
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.CountingLock;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
@@ -25,8 +24,6 @@ import org.json.simple.JSONObject;
  */
 public class AfterCompileProcessor extends V8ResponseCallback {
 
-  private final CountingLock completionLock = new CountingLock();
-
   public AfterCompileProcessor(DebugContextImpl context) {
     super(context);
   }
@@ -40,49 +37,29 @@ public class AfterCompileProcessor extends V8ResponseCallback {
       return;
     }
     final DebugContextImpl debugContext = getDebugContext();
-    lock();
     debugContext.sendMessage(
         SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.scripts(
             Collections.singletonList(V8ProtocolUtil.getScriptIdFromResponse(script)), true),
         new V8HandlerCallback(){
           public void messageReceived(JSONObject response) {
-            try {
-              if (!JsonUtil.isSuccessful(response)) {
-                return;
-              }
-              JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
-              // body is an array of scripts
-              if (body.size() == 0) {
-                return; // The script did not arrive (bad id?)
-              }
-              debugContext.getScriptManager().addScript(
-                  (JSONObject) body.get(0),
-                  JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
-            } finally {
-              unlock();
+            if (!JsonUtil.isSuccessful(response)) {
+              return;
             }
+            JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
+            // body is an array of scripts
+            if (body.size() == 0) {
+              return; // The script did not arrive (bad id?)
+            }
+            debugContext.getScriptManager().addScript(
+                (JSONObject) body.get(0),
+                JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
           }
 
           public void failure(String message) {
-            unlock();
+            // The script is now missing.
           }
         });
-  }
-
-  /**
-   * Waits until all the requested scripts have been loaded.
-   */
-  public void awaitScripts() {
-    completionLock.await();
-  }
-
-  protected void unlock() {
-    completionLock.unlock();
-  }
-
-  protected void lock() {
-    completionLock.lock();
   }
 
   private static JSONObject getScriptToLoad(JSONObject response) {

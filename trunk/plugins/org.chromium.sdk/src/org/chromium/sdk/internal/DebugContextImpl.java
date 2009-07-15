@@ -348,10 +348,10 @@ public class DebugContextImpl implements DebugContext {
    */
   public void loadAllScripts(final ScriptsCallback callback) {
     if (!isDoneInitialScriptLoad()) {
+      setDoneInitialScriptLoad(true);
       // Not loaded the scripts initially, do full load.
       v8Helper.reloadAllScripts(new V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
-          setDoneInitialScriptLoad(true);
           if (callback != null) {
             if (JsonUtil.isSuccessful(response)) {
               callback.success(getScriptManager().allScripts());
@@ -362,15 +362,12 @@ public class DebugContextImpl implements DebugContext {
         }
 
         public void failure(String message) {
-          setDoneInitialScriptLoad(true);
           if (callback != null) {
             callback.failure(message);
           }
         }
       });
     } else {
-      // Just wait for the scripts from afterCompile to load (if any).
-      getV8Handler().awaitScripts();
       if (callback != null) {
         callback.success(getScriptManager().allScripts());
       }
