@@ -18,7 +18,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- * Manages scripts known in the current stack context.
+ * Manages scripts known in the corresponding browser tab.
  */
 public class ScriptManager {
 
@@ -49,8 +49,7 @@ public class ScriptManager {
    */
   public Script addScript(JSONObject scriptBody, JSONArray refs) {
 
-    ScriptImpl theScript = (ScriptImpl) findById(
-        V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
+    ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
       Descriptor desc = Descriptor.forResponse(scriptBody, refs);
@@ -86,7 +85,7 @@ public class ScriptManager {
    * @param body the JSON response body
    * @param script the script to associate the source with
    */
-  public void setSourceCode(JSONObject body, Script script) {
+  public void setSourceCode(JSONObject body, ScriptImpl script) {
     String src = JsonUtil.getAsString(body, V8Protocol.SOURCE_CODE);
     if (src == null) {
       return;
@@ -100,7 +99,7 @@ public class ScriptManager {
    * @param id of the script to find
    * @return the script with {@code id == ref} or {@code null} if none found
    */
-  public Script findById(Long id) {
+  public ScriptImpl findById(Long id) {
     return idToScript.get(id);
   }
 

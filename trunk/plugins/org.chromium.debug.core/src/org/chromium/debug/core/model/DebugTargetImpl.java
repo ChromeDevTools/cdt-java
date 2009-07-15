@@ -12,14 +12,15 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.JsStackFrame;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.BrowserTab.ScriptsCallback;
 import org.chromium.sdk.DebugContext.State;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -255,7 +256,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   }
 
   public void resume() throws DebugException {
-    debugContext.continueVm(null, 1, null);
+    debugContext.continueVm(StepAction.CONTINUE, 1, null);
     // Let's pretend Chromium does respond to the "continue" request immediately
     resumed(DebugEvent.CLIENT_REQUEST);
   }
@@ -382,12 +383,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
           }
         };
         // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-        int line = (lineBreakpoint.getLineNumber() - 1) + script.getLineOffset();
+        int line = (lineBreakpoint.getLineNumber() - 1) + script.getStartLine();
         if (script.getName() != null) {
           getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_NAME,
               script.getName(),
               line,
-              Breakpoint.NO_VALUE,
+              Breakpoint.EMPTY_VALUE,
               breakpoint.isEnabled(),
               lineBreakpoint.getCondition(),
               lineBreakpoint.getIgnoreCount(),
@@ -396,7 +397,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
           getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_ID,
               String.valueOf(script.getId()),
               line,
-              Breakpoint.NO_VALUE,
+              Breakpoint.EMPTY_VALUE,
               breakpoint.isEnabled(),
               lineBreakpoint.getCondition(),
               lineBreakpoint.getIgnoreCount(),
@@ -449,7 +450,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         : threads[0];
   }
 
-  private static void breakpointsHit(Collection<Breakpoint> breakpointsHit) {
+  private static void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
     if (breakpointsHit.isEmpty()) {
       return;
     }
@@ -473,14 +474,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     breakpointsHit(context.getBreakpointsHit());
     if (context.getState() == State.EXCEPTION) {
       ExceptionData exceptionData = context.getExceptionData();
-      JsStackFrame topFrame = context.getStackFrames()[0];
+      CallFrame topFrame = context.getCallFrames().get(0);
       Script script = topFrame.getScript();
       ChromiumDebugPlugin.logError(
           Messages.DebugTargetImpl_LogExceptionFormat,
           exceptionData.isUncaught()
               ? Messages.DebugTargetImpl_Uncaught
               : Messages.DebugTargetImpl_Caught,
-          exceptionData.getExceptionText(),
+          exceptionData.getExceptionMessage(),
           script != null ? script.getName() : "<unknown>", //$NON-NLS-1$
           topFrame.getLineNumber(),
           trim(exceptionData.getSourceText(), 80));

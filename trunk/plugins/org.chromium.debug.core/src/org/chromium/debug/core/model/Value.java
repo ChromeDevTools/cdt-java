@@ -5,7 +5,6 @@
 package org.chromium.debug.core.model;
 
 import org.chromium.sdk.JsArray;
-import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsValue;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
@@ -23,7 +22,7 @@ public class Value extends DebugElementImpl implements IValue {
   private IVariable[] variables;
 
   public static Value create(DebugTargetImpl debugTarget, JsValue value) {
-    if (JsDataType.TYPE_ARRAY == value.getReferenceType()) {
+    if (JsValue.Type.TYPE_ARRAY == value.getType()) {
       return new ArrayValue(debugTarget, (JsArray) value);
     }
     return new Value(debugTarget, value);
@@ -35,7 +34,7 @@ public class Value extends DebugElementImpl implements IValue {
   }
 
   public String getReferenceTypeName() throws DebugException {
-    return value.getReferenceType().toString();
+    return value.getType().toString();
   }
 
   public String getValueString() throws DebugException {

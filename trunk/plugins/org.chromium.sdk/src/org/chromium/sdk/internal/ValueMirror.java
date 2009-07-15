@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.JsDataType;
+import org.chromium.sdk.JsValue.Type;
 import org.json.simple.JSONObject;
 
 /**
@@ -50,7 +50,7 @@ public class ValueMirror {
 
   private final int ref;
 
-  private JsDataType type;
+  private Type type;
 
   private String value;
 
@@ -72,10 +72,10 @@ public class ValueMirror {
   }
 
   public ValueMirror(String varName, String value) {
-    this(varName, value, JsDataType.TYPE_STRING, null);
+    this(varName, value, Type.TYPE_STRING, null);
   }
 
-  public ValueMirror(String varName, String value, JsDataType type, String className) {
+  public ValueMirror(String varName, String value, Type type, String className) {
     this.type = type;
     this.name = varName;
     this.value = value;
@@ -84,7 +84,7 @@ public class ValueMirror {
   }
 
   public ValueMirror(String varName, int refID) {
-    this.type = JsDataType.TYPE_OBJECT;
+    this.type = Type.TYPE_OBJECT;
     this.name = varName;
     this.ref = refID;
     this.className = OBJECT_CLASSNAME;
@@ -102,7 +102,7 @@ public class ValueMirror {
     return name;
   }
 
-  public JsDataType getType() {
+  public Type getType() {
     return type;
   }
 
@@ -156,7 +156,7 @@ public class ValueMirror {
     }
   }
 
-  public void setType(JsDataType type) {
+  public void setType(Type type) {
     this.type = type;
   }
 
@@ -187,7 +187,7 @@ public class ValueMirror {
     return className;
   }
 
-  private static JsDataType getObjectJsType(String className) {
+  private static Type getObjectJsType(String className) {
     return JsDataTypeUtil.fromJsonTypeAndClassName("object", className);
   }
 }

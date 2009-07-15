@@ -4,6 +4,8 @@
 
 package org.chromium.sdk;
 
+import java.util.Collection;
+
 /**
  * A compound JsValue that has zero or more properties.
  */
@@ -17,7 +19,7 @@ public interface JsObject extends JsValue {
   /**
    * @return the properties of this compound value
    */
-  JsVariable[] getProperties();
+  Collection<? extends JsVariable> getProperties();
 
   /**
    * @param name of the property to get

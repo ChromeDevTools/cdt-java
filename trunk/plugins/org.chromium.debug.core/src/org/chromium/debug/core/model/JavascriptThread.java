@@ -4,8 +4,10 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.List;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.sdk.JsStackFrame;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.DebugEvent;
@@ -62,13 +64,13 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   private void ensureStackFrames() {
-    this.stackFrames = wrapStackFrames(getDebugTarget().getDebugContext().getStackFrames());
+    this.stackFrames = wrapStackFrames(getDebugTarget().getDebugContext().getCallFrames());
   }
 
-  private StackFrame[] wrapStackFrames(JsStackFrame[] jsFrames) {
-    StackFrame[] frames = new StackFrame[jsFrames.length];
+  private StackFrame[] wrapStackFrames(List<? extends CallFrame> jsFrames) {
+    StackFrame[] frames = new StackFrame[jsFrames.size()];
     for (int i = 0, size = frames.length; i < size; ++i) {
-      frames[i] = new StackFrame(getDebugTarget(), this, jsFrames[i]);
+      frames[i] = new StackFrame(getDebugTarget(), this, jsFrames.get(i));
     }
     return frames;
   }
@@ -147,10 +149,10 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
 
   private void step(StepAction stepAction, int detail) throws DebugException {
     setStepping(true);
-    getDebugTarget().fireResumeEvent(detail);
+    getDebugTarget().getDebugContext().continueVm(stepAction, 1, null);
     // The suspend event should be fired once the backtrace is ready
     // (in BacktraceProcessor).
-    getDebugTarget().getDebugContext().continueVm(stepAction, 1, null);
+    getDebugTarget().fireResumeEvent(detail);
   }
 
   public void stepInto() throws DebugException {
@@ -158,7 +160,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public void stepOver() throws DebugException {
-    step(StepAction.NEXT, DebugEvent.STEP_OVER);
+    step(StepAction.OVER, DebugEvent.STEP_OVER);
   }
 
   public void stepReturn() throws DebugException {

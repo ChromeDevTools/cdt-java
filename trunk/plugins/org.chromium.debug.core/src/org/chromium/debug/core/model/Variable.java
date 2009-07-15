@@ -30,11 +30,13 @@ public class Variable extends DebugElementImpl implements IVariable {
   }
 
   public String getReferenceTypeName() throws DebugException {
-    return variable.getType().toString();
+    return variable.getValue().getType().toString();
   }
 
   public IValue getValue() throws DebugException {
-    JsValue value = variable.getValue();
+    JsValue value = variable.isReadable()
+        ? variable.getValue()
+        : null;
     if (value == null) {
       return null;
     }
@@ -79,7 +81,7 @@ public class Variable extends DebugElementImpl implements IVariable {
   }
 
   public boolean verifyValue(String expression) {
-    switch (variable.getType()) {
+    switch (variable.getValue().getType()) {
       case TYPE_NUMBER:
         return ChromiumDebugPluginUtil.isInteger(expression);
       default:

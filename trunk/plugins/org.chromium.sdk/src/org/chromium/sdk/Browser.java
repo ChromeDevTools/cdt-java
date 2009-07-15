@@ -13,17 +13,6 @@ import java.io.IOException;
 public interface Browser {
 
   /**
-   * Retrieves the browser tabs that can be debugged.
-   *
-   * @return tabs that can be debugged in the associated Browser instance. An
-   *         empty array is returned if no tabs are available.
-   * @throws IOException if there was a transport layer failure
-   * @throws IllegalStateException if this method was called while another
-   *         invocation of the same method is in flight
-   */
-  BrowserTab[] getTabs() throws IOException, IllegalStateException;
-
-  /**
    * Establishes the browser connection and checks for the protocol version
    * supported by the remote.
    * <p>
@@ -36,12 +25,25 @@ public interface Browser {
   void connect() throws IOException, UnsupportedVersionException;
 
   /**
-   * Immediately disconnects from the Browser instance closing. No method
-   * invocations relying on the Browser connection will succeed after this call.
-   * This method SHOULD be called at the end of a debugging session (once there
-   * are no more attached tabs.)
+   * Immediately disconnects from the Browser instance and closes the
+   * connection. No method invocations relying on the Browser connection will
+   * succeed after this call. This method SHOULD be called at the end of a
+   * debugging session (once there are no more attached tabs.)
    * <p>
    * Does nothing if the Browser instance is not connected.
    */
   void disconnect();
+
+  /**
+   * Retrieves all browser tabs currently opened. Can only be invoked after the
+   * browser connection has been successfully established.
+   *
+   * @return tabs that can be debugged in the associated Browser instance. An
+   *         empty array is returned if no tabs are available.
+   * @throws IOException if there was a transport layer failure
+   * @throws IllegalStateException if this method is called while another
+   *         invocation of the same method is in flight, or the Browser instance
+   *         is not connected
+   */
+  BrowserTab[] getTabs() throws IOException, IllegalStateException;
 }

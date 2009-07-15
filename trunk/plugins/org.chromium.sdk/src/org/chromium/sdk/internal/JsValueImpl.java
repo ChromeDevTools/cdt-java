@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsValue;
 
 /**
@@ -20,7 +19,7 @@ public class JsValueImpl implements JsValue {
     this.valueData = valueData;
   }
 
-  public JsDataType getReferenceType() {
+  public Type getType() {
     return valueData.getType();
   }
 
@@ -38,6 +37,6 @@ public class JsValueImpl implements JsValue {
 
   @Override
   public String toString() {
-    return String.format("[JsValue: type=%s,value=%s]", getReferenceType(), getValueString());
+    return String.format("[JsValue: type=%s,value=%s]", getType(), getValueString());
   }
 }

@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.JsObject;
@@ -29,11 +30,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   private static final JsVariableImpl[] EMPTY_VARIABLES = new JsVariableImpl[0];
 
-  protected JsVariableImpl[] properties;
+  protected Collection<JsVariableImpl> properties;
 
   protected volatile boolean failedResponse;
 
-  private final JsStackFrameImpl stackFrame;
+  private final CallFrameImpl callFrame;
 
   private final String parentFqn;
 
@@ -47,22 +48,22 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   /**
    * This constructor implies the lazy resolution of object properties.
    *
-   * @param stackFrame
+   * @param callFrame
    * @param parentFqn
    * @param valueState
    */
-  public JsObjectImpl(JsStackFrameImpl stackFrame, String parentFqn, ValueMirror valueState) {
+  public JsObjectImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
     super(valueState);
-    this.stackFrame = stackFrame;
+    this.callFrame = callFrame;
     this.parentFqn = parentFqn;
     trySetMirrorProperties();
   }
 
   public JsObjectImpl(
-      JsStackFrameImpl stackFrame, ValueMirror valueState, JsVariableImpl[] properties) {
+      CallFrameImpl callFrame, ValueMirror valueState, Collection<JsVariableImpl> properties) {
     super(valueState);
-    this.stackFrame = stackFrame;
-    this.properties = properties;
+    this.callFrame = callFrame;
+    this.properties = Collections.unmodifiableCollection(properties);
     ensurePropertyMap();
     this.parentFqn = "";
     trySetMirrorProperties();
@@ -73,7 +74,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     if (mirror.getProperties() == null && isTokenValid()) {
       // "this" is an object with PropertyReferences. Resolve them.
       final Long ref = Long.valueOf(mirror.getRef());
-      final JSONObject handle = stackFrame.getDebugContext().getHandleManager().getHandle(ref);
+      final JSONObject handle = callFrame.getDebugContext().getHandleManager().getHandle(ref);
       if (handle != null) {
         mirror.setProperties(JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
             V8ProtocolUtil.extractObjectProperties(handle));
@@ -85,7 +86,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * @return whether the context token is valid
    */
   private boolean isTokenValid() {
-    return stackFrame != null && stackFrame.getToken().isValid();
+    return callFrame != null && callFrame.getToken().isValid();
   }
 
   /**
@@ -95,22 +96,24 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     if (propertyMap != null) {
       return;
     }
-    if (properties == null || properties.length == 0) {
+    if (properties == null || properties.size() == 0) {
       propertyMap = Collections.emptyMap();
       return;
     }
     Map<String, JsVariableImpl> map =
-        new HashMap<String, JsVariableImpl>(properties.length * 2, 0.75f);
+        new HashMap<String, JsVariableImpl>(properties.size() * 2, 0.75f);
     for (JsVariableImpl prop : properties) {
       map.put(prop.getName(), prop);
     }
     propertyMap = Collections.unmodifiableMap(map);
   }
 
-  public JsVariableImpl[] getProperties() {
+  public Collection<JsVariableImpl> getProperties() {
     ensureProperties();
     synchronized (propertyLock) {
-      return (properties != null && !isFailedResponse()) ? properties : EMPTY_VARIABLES;
+      return (properties != null && !isFailedResponse())
+          ? properties
+          : Collections.<JsVariableImpl>emptySet();
     }
   }
 
@@ -120,13 +123,13 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         return;
       }
 
-      final ContextToken token = stackFrame.getToken();
+      final ContextToken token = callFrame.getToken();
       if (!token.isValid()) {
         setFailedResponse();
-        properties = new JsVariableImpl[0];
+        properties = Collections.<JsVariableImpl>emptySet();
         return;
       }
-      DebugContextImpl debugContext = stackFrame.getDebugContext();
+      DebugContextImpl debugContext = callFrame.getDebugContext();
       final HandleManager handleManager = debugContext.getHandleManager();
       ValueMirror mirror = getMirror();
       PropertyReference[] mirrorProperties = mirror.getProperties();
@@ -141,7 +144,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
             ex = resolveThisHandle(debugContext, handleManager, ref, handle);
           }
           if (ex != null || isFailedResponse()) {
-            properties = new JsVariableImpl[0];
+            properties = Collections.<JsVariableImpl>emptySet();
             return;
           } else {
             mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
@@ -162,11 +165,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   private void fillPropertiesFromMirror(
       final HandleManager handleManager, PropertyReference[] mirrorProperties) {
     if (!isTokenValid()) {
-      properties = new JsVariableImpl[0];
+      properties = Collections.<JsVariableImpl>emptySet();
       return;
     }
-    properties = new JsVariableImpl[mirrorProperties.length];
-    for (int i = 0, size = properties.length; i < size; i++) {
+    List<JsVariableImpl> propertyList = new ArrayList<JsVariableImpl>(mirrorProperties.length);
+    for (int i = 0, size = mirrorProperties.length; i < size; i++) {
       PropertyReference ref = mirrorProperties[i];
       String propName = ref.getName();
       String fqn = getFullyQualifiedName(propName);
@@ -181,10 +184,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         processOriginalFormatPropertyRefs(handleManager, mirrorProperties);
         return;
       }
-      properties[i] = new JsVariableImpl(
-          stackFrame, V8Helper.createValueMirror(handleObject, ref.getName()),
-          fqn, true);
+      propertyList.add(new JsVariableImpl(
+          callFrame, V8Helper.createValueMirror(handleObject, ref.getName()),
+          fqn, true));
     }
+    properties = Collections.unmodifiableCollection(propertyList);
   }
 
   private Exception resolveThisHandle(final DebugContextImpl debugContext,
@@ -192,7 +196,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     Exception ex = debugContext.sendMessage(
         SendingType.SYNC,
         DebuggerMessageFactory.lookup(
-            Collections.singletonList(ref), true, stackFrame.getToken()),
+            Collections.singletonList(ref), true, callFrame.getToken()),
         new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!JsonUtil.isSuccessful(response)) {
@@ -224,8 +228,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     Collection<Long> handlesToRequest = new HashSet<Long>(mirrorProperties.length);
     prepareLookupData(handleManager, mirrorProperties, variableToRefMap, handlesToRequest);
 
-    properties = variableToRefMap.keySet().toArray(
-        new JsVariableImpl[variableToRefMap.values().size()]);
+    properties = Collections.unmodifiableCollection(variableToRefMap.keySet());
     fillPropertiesFromLookup(handleManager, variableToRefMap, handlesToRequest);
   }
 
@@ -246,7 +249,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append("[JsObject: type=").append(getReferenceType());
+    result.append("[JsObject: type=").append(getType());
     for (JsVariable prop : getProperties()) {
       result.append(',').append(prop);
     }
@@ -281,8 +284,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return;
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, stackFrame.getToken());
-    Exception ex = stackFrame.getDebugContext().sendMessage(
+        new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
+    Exception ex = callFrame.getDebugContext().sendMessage(
         SendingType.SYNC,
         message,
         new BrowserTabImpl.V8HandlerCallback() {
@@ -335,7 +338,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         fqn = parentFqn + '.' + propName;
       }
 
-      JsVariableImpl variable = new JsVariableImpl(stackFrame, mirror, fqn, true);
+      JsVariableImpl variable = new JsVariableImpl(callFrame, mirror, fqn, true);
       Long ref = Long.valueOf(prop.getRef());
       JSONObject handle = handleManager.getHandle(ref);
       if (handle != null) {

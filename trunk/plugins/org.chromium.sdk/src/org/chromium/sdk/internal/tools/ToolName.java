@@ -32,7 +32,7 @@ public enum ToolName {
     return map.get(value);
   }
 
-  public String value;
+  public final String value;
 
   private ToolName(String value) {
     this.value = value;

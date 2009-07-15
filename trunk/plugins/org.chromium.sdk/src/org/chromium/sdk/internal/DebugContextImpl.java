@@ -4,8 +4,10 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,8 +86,8 @@ public class DebugContextImpl implements DebugContext {
   /** The frame mirrors while on a breakpoint. */
   private volatile FrameMirror[] frameMirrors;
 
-  /** The cached stack frames constructed using frameMirrors. */
-  private volatile JsStackFrameImpl[] stackFramesCached;
+  /** The cached call frames constructed using frameMirrors. */
+  private volatile List<CallFrameImpl> callFramesCached;
 
   /** The breakpoints hit before suspending. */
   private volatile Collection<Breakpoint> breakpointsHit;
@@ -130,7 +132,7 @@ public class DebugContextImpl implements DebugContext {
     JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
     int frameCnt = jsonFrames.size();
     this.frameMirrors = new FrameMirror[frameCnt];
-    this.stackFramesCached = null;
+    this.callFramesCached = null;
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
@@ -181,7 +183,7 @@ public class DebugContextImpl implements DebugContext {
     setState(State.EXCEPTION);
     JSONObject body = JsonUtil.getBody(response);
     this.frameMirrors = new FrameMirror[1];
-    this.stackFramesCached = null;
+    this.callFramesCached = null;
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     JSONObject exception = JsonUtil.getAsJSON(body, V8Protocol.EXCEPTION);
@@ -204,25 +206,29 @@ public class DebugContextImpl implements DebugContext {
     return state;
   }
 
-  public JsStackFrameImpl[] getStackFrames() {
+  public List<CallFrameImpl> getCallFrames() {
     synchronized (tokenAccessLock) {
-      if (stackFramesCached == null) {
+      if (callFramesCached == null) {
         // At this point we need to make sure ALL the V8 scripts are loaded so as
-        // to hook them up to the stack frames.
+        // to hook them up to the call frames.
         loadAllScripts(null);
         int frameCount = getFrameCount();
-        stackFramesCached = new JsStackFrameImpl[frameCount];
+        List<CallFrameImpl> frames = new ArrayList<CallFrameImpl>(frameCount);
         ContextToken theToken = getToken();
         for (int i = 0; i < frameCount; ++i) {
-          stackFramesCached[i] = new JsStackFrameImpl(getFrame(i), i, this, theToken);
+          frames.add(new CallFrameImpl(getFrame(i), i, this, theToken));
           hookupScriptToFrame(i);
         }
+        callFramesCached = Collections.unmodifiableList(frames);
       }
-      return stackFramesCached;
+      return callFramesCached;
     }
   }
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
+    if (stepAction == null) {
+      throw new NullPointerException();
+    }
     synchronized (tokenAccessLock) {
       createNewToken();
       DebuggerMessage message = DebuggerMessageFactory.goOn(
@@ -250,8 +256,8 @@ public class DebugContextImpl implements DebugContext {
   private ContextToken getContinueToken() {
     synchronized (tokenAccessLock) {
       ContextToken theToken;
-      if (stackFramesCached != null && stackFramesCached.length > 0) {
-        theToken = stackFramesCached[0].getToken();
+      if (callFramesCached != null && callFramesCached.size() > 0) {
+        theToken = callFramesCached.get(0).getToken();
       } else {
         theToken = getToken();
       }
@@ -295,7 +301,7 @@ public class DebugContextImpl implements DebugContext {
     getScriptManager().reset();
     getHandleManager().reset();
     createNewToken();
-    this.stackFramesCached = null;
+    this.callFramesCached = null;
     this.frameMirrors = null;
   }
 
@@ -336,7 +342,7 @@ public class DebugContextImpl implements DebugContext {
    *
    * @param breakpointsHit the breakpoints that were hit
    */
-  public void onBreakpointsHit(Collection<Breakpoint> breakpointsHit) {
+  public void onBreakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
     this.breakpointsHit = Collections.unmodifiableCollection(breakpointsHit);
   }
 
@@ -388,7 +394,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   /**
-   * Gets all resolved locals for the stack frame, caches scripts and objects in
+   * Gets all resolved locals for the call frame, caches scripts and objects in
    * the scriptManager and handleManager.
    *
    * @param frame to get the data for

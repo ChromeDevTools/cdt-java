@@ -57,6 +57,17 @@ public class DevToolsServiceHandler implements ToolHandler {
       this.id = id;
       this.url = url;
     }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append('[')
+          .append(id)
+          .append('=')
+          .append(url)
+          .append(']')
+          .toString();
+    }
   }
 
   /**

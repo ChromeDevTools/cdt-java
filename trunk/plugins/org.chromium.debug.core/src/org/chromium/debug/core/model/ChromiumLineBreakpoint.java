@@ -91,7 +91,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   public int getIgnoreCount() {
-    return getMarker().getAttribute(IGNORE_COUNT_ATTR, Breakpoint.NO_VALUE);
+    return getMarker().getAttribute(IGNORE_COUNT_ATTR, Breakpoint.EMPTY_VALUE);
   }
 
   public void setCondition(String condition) throws CoreException {

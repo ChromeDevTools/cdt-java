@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import org.chromium.sdk.DebugContext.StepAction;
@@ -16,24 +16,27 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
  */
 public class ContinueMessage extends DebuggerMessage {
 
-  private static final Map<StepAction, String> stepActionToV8 = new HashMap<StepAction, String>();
+  private static final Map<StepAction, String> stepActionToV8 =
+      new EnumMap<StepAction, String>(StepAction.class);
 
   static {
     stepActionToV8.put(StepAction.IN, "in");
     stepActionToV8.put(StepAction.OUT, "out");
-    stepActionToV8.put(StepAction.NEXT, "next");
+    stepActionToV8.put(StepAction.OVER, "next");
+    stepActionToV8.put(StepAction.CONTINUE, null);
   }
 
   /**
-   * @param stepAction nullable "in", "next", or "out". Default is "let it go" (do not step)
+   * @param stepAction the kind of step to perform
    * @param stepCount nullable number of steps to perform (positive if not null).
-   *        Default is 1 step. Does not make sense when {@code stepAction == null}
+   *        Default is 1 step. Not used when {@code stepAction == CONTINUE}
    * @param token the context validity token
    */
   public ContinueMessage(StepAction stepAction, Integer stepCount, ContextToken token) {
     super(DebuggerCommand.CONTINUE.value, token);
-    if (stepAction != null) {
-      putArgument("stepaction", stepActionToV8.get(stepAction));
+    String stepActionString = stepActionToV8.get(stepAction);
+    if (stepActionString != null) {
+      putArgument("stepaction", stepActionString);
       putArgument("stepcount", stepCount);
     }
   }

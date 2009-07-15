@@ -78,14 +78,14 @@ public interface BrowserTab {
    *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by getName())</td></tr>
    *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by getId())</td></tr>
    *        </table>
-   * @param line in the script or function. If not used, pass in
-   *        {@link Breakpoint#NO_VALUE}
-   * @param position of the target start within the line. If not used, pass in
-   *        {@link Breakpoint#NO_VALUE}
+   * @param line in the script or function. If none, use
+   *        {@link Breakpoint#EMPTY_VALUE}
+   * @param position of the target start within the line. If none, use
+   *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
    * @param ignoreCount number specifying the amount of breakpoint hits to
-   *        ignore. If not used, pass in {@link Breakpoint#NO_VALUE}
+   *        ignore. If none, use {@link Breakpoint#EMPTY_VALUE}
    * @param callback to invoke when the evaluation result is ready
    */
   void setBreakpoint(Breakpoint.Type type, String target, int line, int position, boolean enabled,

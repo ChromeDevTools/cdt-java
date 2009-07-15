@@ -8,9 +8,8 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugElementImpl;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.Variable;
-import org.chromium.sdk.JsStackFrame;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IDebugElement;
@@ -142,8 +141,8 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       return;
     }
     StackFrame stackFrame = (StackFrame) contextImpl;
-    final JsStackFrame frame = stackFrame.getJsStackFrame();
-    frame.evaluate(expression, false, new EvaluateCallback() {
+    final CallFrame frame = stackFrame.getCallFrame();
+    frame.evaluate(expression, false, new CallFrame.EvaluateCallback() {
       public void success(JsVariable variable) {
         final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
         listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));

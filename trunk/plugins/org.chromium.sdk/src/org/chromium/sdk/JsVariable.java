@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * An object that represents a variable in a browser JavaScript VM stack frame.
+ * An object that represents a variable in a browser JavaScript VM call frame.
  */
 public interface JsVariable {
 
@@ -19,10 +19,19 @@ public interface JsVariable {
   }
 
   /**
+   * @return whether it is possible to read this variable
+   */
+  boolean isReadable();
+
+  /**
+   * Returns the value of this variable.
+   *
    * @return a [probably compound] JsValue corresponding to this variable.
    *         {@code null} if there was an error reading the value data
+   * @see #isReadable()
+   * @throws UnsupportedOperationException if this variable is not readable
    */
-  JsValue getValue();
+  JsValue getValue() throws UnsupportedOperationException;
 
   /**
    * @return the name of this variable
@@ -33,11 +42,6 @@ public interface JsVariable {
    * @return whether it is possible to modify this variable
    */
   boolean isMutable();
-
-  /**
-   * @return whether it is possible to read this variable
-   */
-  boolean isReadable();
 
   /**
    * Sets a new value for this variable.
@@ -52,12 +56,8 @@ public interface JsVariable {
 
   /**
    * @return the fully qualified name of this variable relative to the context
-   *         of its stack frame
+   *         of its call frame
    */
   String getFullyQualifiedName();
 
-  /**
-   * @return this variable type
-   */
-  JsDataType getType();
 }

@@ -4,7 +4,11 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.sdk.JsStackFrame;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IResource;
@@ -22,7 +26,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   private final JavascriptThread thread;
 
-  private final JsStackFrame stackFrame;
+  private final CallFrame stackFrame;
 
   private IVariable[] variables;
 
@@ -34,13 +38,13 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
    * @param thread for which the stack frame is created
    * @param stackFrame an underlying SDK stack frame
    */
-  public StackFrame(DebugTargetImpl debugTarget, JavascriptThread thread, JsStackFrame stackFrame) {
+  public StackFrame(DebugTargetImpl debugTarget, JavascriptThread thread, CallFrame stackFrame) {
     super(debugTarget);
     this.thread = thread;
     this.stackFrame = stackFrame;
   }
 
-  public JsStackFrame getJsStackFrame() {
+  public CallFrame getCallFrame() {
     return stackFrame;
   }
 
@@ -55,16 +59,17 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return variables;
   }
 
-  static IVariable[] wrapVariables(DebugTargetImpl debugTarget, JsVariable[] jsVars) {
-    Variable[] vars = new Variable[jsVars.length];
-    for (int i = 0, size = jsVars.length; i < size; ++i) {
-      vars[i] = new Variable(debugTarget, jsVars[i]);
+  static IVariable[] wrapVariables(
+      DebugTargetImpl debugTarget, Collection<? extends JsVariable> jsVars) {
+    List<Variable> vars = new ArrayList<Variable>(jsVars.size());
+    for (JsVariable jsVar : jsVars) {
+      vars.add(new Variable(debugTarget, jsVar));
     }
-    return vars;
+    return vars.toArray(new IVariable[vars.size()]);
   }
 
   public boolean hasVariables() throws DebugException {
-    return stackFrame.getVariables().length > 0;
+    return stackFrame.getVariables().size() > 0;
   }
 
   public int getLineNumber() throws DebugException {
@@ -86,7 +91,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     if (script == null) {
       return Messages.StackFrame_UnknownScriptName;
     }
-    int line = script.getLineOffset() + getLineNumber();
+    int line = script.getStartLine() + getLineNumber();
     if (line != -1) {
       name = NLS.bind(Messages.StackFrame_NameFormat, new Object[] {name, script.getName(), line});
     }

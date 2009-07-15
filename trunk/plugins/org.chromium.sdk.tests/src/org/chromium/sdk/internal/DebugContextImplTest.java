@@ -9,11 +9,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -51,12 +53,12 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
 
     messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
     waitForSuspend();
-    JsVariableImpl[] variables = suspendContext.getStackFrames()[0].getVariables();
+    Collection<JsVariableImpl> variables = suspendContext.getCallFrames().get(0).getVariables();
 
     // This call invalidates the debug context for the "lookup" operation that is invoked
     // inside "ensureProperties".
-    suspendContext.continueVm(null, 1, null);
-    JsObjectImpl jsObject = variables[0].getValue().asObject();
+    suspendContext.continueVm(StepAction.CONTINUE, 1, null);
+    JsObjectImpl jsObject = variables.iterator().next().getValue().asObject();
     jsObject.ensureProperties();
     assertTrue(jsObject.isFailedResponse());
   }
@@ -90,9 +92,9 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
 
     messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
     waitForSuspend();
-    JsVariableImpl[] variables = suspendContext.getStackFrames()[0].getVariables();
+    Collection<JsVariableImpl> variables = suspendContext.getCallFrames().get(0).getVariables();
 
-    JsObjectImpl jsObject = variables[0].getValue().asObject();
+    JsObjectImpl jsObject = variables.iterator().next().getValue().asObject();
     jsObject.ensureProperties();
     assertFalse(jsObject.isFailedResponse());
   }

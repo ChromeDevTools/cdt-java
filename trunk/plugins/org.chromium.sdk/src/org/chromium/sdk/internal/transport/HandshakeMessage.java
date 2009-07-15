@@ -4,8 +4,8 @@
 
 package org.chromium.sdk.internal.transport;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Collections;
 
 /**
@@ -19,7 +19,7 @@ public class HandshakeMessage extends Message {
   }
 
   @Override
-  public void sendThrough(BufferedWriter writer) throws IOException {
+  public void sendThrough(Writer writer) throws IOException {
     writer.write("ChromeDevToolsHandshake\r\n");
     writer.flush();
   }

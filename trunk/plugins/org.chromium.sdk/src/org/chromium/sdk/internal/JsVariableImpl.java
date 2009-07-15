@@ -10,8 +10,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -37,8 +37,8 @@ public class JsVariableImpl implements JsVariable {
    */
   private final ValueMirror valueData;
 
-  /** The stack frame this variable belongs in. */
-  private final JsStackFrameImpl stackFrame;
+  /** The call frame this variable belongs in. */
+  private final CallFrameImpl callFrame;
 
   /** The fully qualified name of this variable. */
   private final String variableFqn;
@@ -55,28 +55,28 @@ public class JsVariableImpl implements JsVariable {
   protected volatile boolean failedResponse = false;
 
   /**
-   * Constructs a variable contained in the given stack frame with the given
+   * Constructs a variable contained in the given call frame with the given
    * value mirror.
    *
-   * @param frame that owns this variable
+   * @param callFrame that owns this variable
    * @param valueData value data for this variable
    */
-  JsVariableImpl(JsStackFrameImpl frame, ValueMirror valueData) {
-    this(frame, valueData, null, false);
+  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData) {
+    this(callFrame, valueData, null, false);
   }
 
   /**
-   * Constructs a variable contained in the given stack frame with the given
+   * Constructs a variable contained in the given call frame with the given
    * value mirror.
    *
-   * @param frame that owns this variable
+   * @param callFrame that owns this variable
    * @param valueData for this variable
    * @param variableFqn the fully qualified name of this variable
    * @param waitDrilling whether to halt drilling in for any properties of type "object"
    */
   JsVariableImpl(
-      JsStackFrameImpl frame, ValueMirror valueData, String variableFqn, boolean waitDrilling) {
-    this.stackFrame = frame;
+      CallFrameImpl callFrame, ValueMirror valueData, String variableFqn, boolean waitDrilling) {
+    this.callFrame = callFrame;
     this.valueData = valueData;
     this.variableFqn = variableFqn;
     this.waitDrilling = waitDrilling;
@@ -91,13 +91,13 @@ public class JsVariableImpl implements JsVariable {
       return null;
     }
     if (value == null) {
-      JsDataType type = this.valueData.getType();
+      Type type = this.valueData.getType();
       switch (type) {
         case TYPE_OBJECT:
-          this.value = new JsObjectImpl(stackFrame, getFullyQualifiedName(), this.valueData);
+          this.value = new JsObjectImpl(callFrame, getFullyQualifiedName(), this.valueData);
           break;
         case TYPE_ARRAY:
-          this.value = new JsArrayImpl(stackFrame, getFullyQualifiedName(), this.valueData);
+          this.value = new JsArrayImpl(callFrame, getFullyQualifiedName(), this.valueData);
           break;
         default:
           this.value = new JsValueImpl(this.valueData);
@@ -143,7 +143,7 @@ public class JsVariableImpl implements JsVariable {
     }
   }
 
-  public JsDataType getType() {
+  public Type getType() {
     return valueData.getType();
   }
 
@@ -157,17 +157,17 @@ public class JsVariableImpl implements JsVariable {
   }
 
   /**
-   * Returns the stack frame owning this variable.
+   * Returns the call frame owning this variable.
    */
-  protected JsStackFrameImpl getStackFrame() {
-    return stackFrame;
+  protected CallFrameImpl getCallFrame() {
+    return callFrame;
   }
 
   // Used for object properties filling
-  public void setTypeValue(JsDataType type, String val) {
+  public void setTypeValue(Type type, String val) {
     valueData.setType(type);
 
-    JsDataType existingType = valueData.getType();
+    Type existingType = valueData.getType();
     if (existingType == null) {
       valueData.setValue(val);
       setValue(new JsValueImpl(valueData));
@@ -258,7 +258,7 @@ public class JsVariableImpl implements JsVariable {
         fqn = getFullyQualifiedName() + DOT + propName;
       }
 
-      JsVariableImpl variable = new JsVariableImpl(stackFrame, mirror, fqn, true);
+      JsVariableImpl variable = new JsVariableImpl(callFrame, mirror, fqn, true);
       Long longRef = Long.valueOf(prop.getRef());
       JSONObject handle = handleManager.getHandle(longRef);
       if (handle != null) {
@@ -270,17 +270,16 @@ public class JsVariableImpl implements JsVariable {
       variableToRef.put(variable, longRef);
     }
 
-    final JsVariableImpl[] vars =
-        variableToRef.keySet().toArray(new JsVariableImpl[variableToRef.values().size()]);
+    final Collection<JsVariableImpl> vars = variableToRef.keySet();
 
     synchronized (this) {
-      this.value = (valueData.getType() == JsDataType.TYPE_OBJECT)
-          ? new JsObjectImpl(getStackFrame(), this.valueData, vars)
-          : new JsArrayImpl(getStackFrame(), this.valueData, vars);
+      this.value = (valueData.getType() == Type.TYPE_OBJECT)
+          ? new JsObjectImpl(getCallFrame(), this.valueData, vars)
+          : new JsArrayImpl(getCallFrame(), this.valueData, vars);
     }
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, getStackFrame().getToken());
-    Exception ex = getStackFrame().getDebugContext().sendMessage(
+        new ArrayList<Long>(handlesToRequest), true, getCallFrame().getToken());
+    Exception ex = getCallFrame().getDebugContext().sendMessage(
         SendingType.SYNC,
         message,
         new BrowserTabImpl.V8HandlerCallback() {
@@ -308,7 +307,7 @@ public class JsVariableImpl implements JsVariable {
   }
 
   private HandleManager getHandleManager() {
-    return getStackFrame().getDebugContext().getHandleManager();
+    return getCallFrame().getDebugContext().getHandleManager();
   }
 
   /**
@@ -317,8 +316,8 @@ public class JsVariableImpl implements JsVariable {
    * @param reply with the requested handles (some of {@code vars} may be
    *        missing if they were known at the moment of ensuring the properties)
    */
-  static boolean fillVariablesFromLookupReply(HandleManager handleManager, JsVariableImpl[] vars,
-      Map<JsVariableImpl, Long> variableToRef, JSONObject reply) {
+  static boolean fillVariablesFromLookupReply(HandleManager handleManager,
+      Collection<JsVariableImpl> vars, Map<JsVariableImpl, Long> variableToRef, JSONObject reply) {
     if (!JsonUtil.isSuccessful(reply)) {
       return false;
     }
@@ -351,14 +350,14 @@ public class JsVariableImpl implements JsVariable {
       if (valueString == null) {
         valueString = "An error occurred while retrieving the value.";
       }
-      variable.setTypeValue(JsDataType.TYPE_STRING, valueString);
+      variable.setTypeValue(Type.TYPE_STRING, valueString);
       variable.resetPending();
       return;
     }
-    JsDataType type =
+    Type type =
         JsDataTypeUtil.fromJsonTypeAndClassName(typeString, JsonUtil.getAsString(handleObject,
             V8Protocol.REF_CLASSNAME));
-    if (JsDataType.isObjectType(type)) {
+    if (Type.isObjectType(type)) {
       if (!variable.isPendingReq()) {
         if (!variable.isWaitDrilling()) {
           PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handleObject);
@@ -371,7 +370,7 @@ public class JsVariableImpl implements JsVariable {
       variable.setTypeValue(type, valueString);
       variable.resetPending();
     } else {
-      variable.setTypeValue(JsDataType.TYPE_STRING, "<Error>");
+      variable.setTypeValue(Type.TYPE_STRING, "<Error>");
       variable.resetPending();
     }
   }

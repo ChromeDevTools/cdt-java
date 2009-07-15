@@ -27,7 +27,7 @@ public interface JsArray extends JsObject {
   /**
    * @return a map whose keys are array indices and values are {@code
    *         JsVariable} instances found at the corresponding indices. The
-   *         resulting map is guaranteed to be sorted in the the ascending key
+   *         resulting map is guaranteed to be sorted in the ascending key
    *         order.
    */
   SortedMap<Integer, ? extends JsVariable> toSparseArray();

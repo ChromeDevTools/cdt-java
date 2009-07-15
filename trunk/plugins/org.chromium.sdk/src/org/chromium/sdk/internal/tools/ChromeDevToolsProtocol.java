@@ -13,7 +13,7 @@ public enum ChromeDevToolsProtocol {
   RESULT("result"),
   ;
 
-  public String key;
+  public final String key;
 
   private ChromeDevToolsProtocol(String key) {
     this.key = key;

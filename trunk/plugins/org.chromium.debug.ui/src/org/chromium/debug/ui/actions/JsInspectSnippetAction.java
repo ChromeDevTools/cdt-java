@@ -8,8 +8,8 @@ import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
 import org.chromium.debug.ui.JsEvalContextManager;
 import org.chromium.debug.ui.editors.JavascriptUtil;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.eclipse.debug.core.model.IExpression;
 import org.eclipse.debug.ui.DebugPopup;
 import org.eclipse.debug.ui.InspectPopupDialog;
@@ -38,7 +38,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * Action for inspecting a JavaScript snippet.
  */
 public class JsInspectSnippetAction implements IEditorActionDelegate,
-    IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate, EvaluateCallback {
+    IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate, CallFrame.EvaluateCallback {
 
   private static final String ACTION_DEFINITION_ID = "org.chromium.debug.ui.commands.Inspect"; //$NON-NLS-1$
 
@@ -152,7 +152,7 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
   }
 
   private void run() {
-    getStackFrameContext().getJsStackFrame().evaluate(getSelectedText(), false, this);
+    getStackFrameContext().getCallFrame().evaluate(getSelectedText(), false, this);
   }
 
   protected String getSelectedText() {

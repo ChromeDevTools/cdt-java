@@ -8,7 +8,7 @@ import org.chromium.sdk.Script;
 import org.json.simple.JSONObject;
 
 /**
- * A representation of a remote JavaScript VM stack frame.
+ * A representation of a remote JavaScript VM call frame.
  */
 public class FrameMirror {
 

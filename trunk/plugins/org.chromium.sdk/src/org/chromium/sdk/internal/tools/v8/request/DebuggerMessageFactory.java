@@ -65,6 +65,6 @@ public class DebuggerMessageFactory {
   }
 
   private static Integer getV8IgnoreCount(int count) {
-    return count == Breakpoint.NO_VALUE ? null : count;
+    return count == Breakpoint.EMPTY_VALUE ? null : count;
   }
 }
