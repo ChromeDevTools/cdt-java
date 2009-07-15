@@ -7,7 +7,9 @@ package org.chromium.sdk.internal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.chromium.sdk.Browser;
@@ -28,7 +30,7 @@ import org.junit.Test;
 public class JsVariableTest implements DebugEventListener {
 
   private ChromeStub messageResponder;
-  private JsStackFrameImpl stackFrame;
+  private CallFrameImpl stackFrame;
 
   private ValueMirror eventMirror;
 
@@ -55,7 +57,7 @@ public class JsVariableTest implements DebugEventListener {
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.stackFrame = new JsStackFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
+    this.stackFrame = new CallFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
   }
 
   @Test
@@ -64,10 +66,11 @@ public class JsVariableTest implements DebugEventListener {
     var.ensureProperties(eventMirror.getProperties());
     JsValueImpl value = var.getValue();
     assertNotNull(value.asObject());
-    JsVariableImpl[] variables = value.asObject().getProperties();
-    assertEquals(2, variables.length); // "x" and "y"
-    JsVariableImpl firstVar = variables[0];
-    JsVariableImpl secondVar = variables[1];
+    Collection<JsVariableImpl> variables = value.asObject().getProperties();
+    assertEquals(2, variables.size()); // "x" and "y"
+    Iterator<JsVariableImpl> it = variables.iterator();
+    JsVariableImpl firstVar = it.next();
+    JsVariableImpl secondVar = it.next();
     Set<String> names = new HashSet<String>();
     names.add("x"); //$NON-NLS-1$
     names.add("y"); //$NON-NLS-1$

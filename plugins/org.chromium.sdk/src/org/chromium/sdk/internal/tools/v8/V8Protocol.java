@@ -173,7 +173,7 @@ public enum V8Protocol implements CharSequence {
 
   ;
 
-  public String key;
+  public final String key;
 
   private V8Protocol(String key) {
     this.key = key;

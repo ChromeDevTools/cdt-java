@@ -28,7 +28,7 @@ public enum DebuggerCommand {
   AFTER_COMPILE("afterCompile"),
   ;
 
-  public String value;
+  public final String value;
 
   DebuggerCommand(String value) {
     this.value = value;

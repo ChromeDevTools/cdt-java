@@ -166,7 +166,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
   }
 
   private static Integer toNullableInteger(int value) {
-    return value == Breakpoint.NO_VALUE
+    return value == Breakpoint.EMPTY_VALUE
         ? null
         : value;
   }

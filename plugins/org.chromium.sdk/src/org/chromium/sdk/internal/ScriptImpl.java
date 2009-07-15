@@ -110,24 +110,16 @@ public class ScriptImpl implements Script {
     return descriptor.name;
   }
 
+  public int getStartLine() {
+    return descriptor.lineOffset;
+  }
+
   public int getEndLine() {
     return descriptor.lineOffset + descriptor.lineCount;
   }
 
-  public int getLineOffset() {
-    return descriptor.lineOffset;
-  }
-
-  public int getLineCount() {
-    return descriptor.lineCount;
-  }
-
   public long getId() {
     return descriptor.id;
-  }
-
-  public void setSource(String source) {
-    this.source = source;
   }
 
   public String getSource() {
@@ -136,6 +128,10 @@ public class ScriptImpl implements Script {
 
   public boolean hasSource() {
     return source != null;
+  }
+
+  public void setSource(String source) {
+    this.source = source;
   }
 
   @Override
@@ -167,7 +163,7 @@ public class ScriptImpl implements Script {
     sb.append("[Script (").append(hasSource()
         ? "has"
         : "no").append(" source): name=").append(getName()).append(", lineRange=[").append(
-        getLineOffset()).append(';').append(getEndLine()).append("]]");
+        getStartLine()).append(';').append(getEndLine()).append("]]");
     return sb.toString();
   }
 

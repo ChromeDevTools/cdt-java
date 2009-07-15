@@ -33,10 +33,9 @@ public interface Connection {
   }
 
   /**
-   * Sets a callback that will be notified of network events. The callback will
-   * be set before calling {@link #start()} and it cannot be changed over the
-   * connection lifetime (even though it should be possible to set the same
-   * listener once again.
+   * Sets a listener that will be notified of network events. The listener must
+   * be set before calling {@link #start()} and cannot be changed over the
+   * connection lifetime.
    *
    * @param netListener to set
    */

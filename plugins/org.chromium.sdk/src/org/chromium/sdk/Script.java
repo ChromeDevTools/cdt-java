@@ -43,26 +43,14 @@ public interface Script {
   long getId();
 
   /**
+   * @return the start line of this script in the original document (zero-based)
+   */
+  int getStartLine();
+
+  /**
    * @return the end line of this script in the original document (zero-based)
    */
   int getEndLine();
-
-  /**
-   * @return the start line of this script in the original document (zero-based)
-   */
-  int getLineOffset();
-
-  /**
-   * @return the number of lines this script spans in the original document
-   */
-  int getLineCount();
-
-  /**
-   * Sets the source text of this script.
-   *
-   * @param source of the script
-   */
-  void setSource(String source);
 
   /**
    * @return the currently set source text of this script

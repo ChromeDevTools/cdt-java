@@ -5,6 +5,7 @@
 package org.chromium.sdk;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * An object that matches the execution state of the browser JavaScript VM while
@@ -14,12 +15,28 @@ import java.util.Collection;
 public interface DebugContext {
 
   /**
-   * Known JavaScript debugger step actions.
+   * JavaScript debugger step actions.
    */
   public enum StepAction {
+    /**
+     * Resume the JavaScript execution.
+     */
+    CONTINUE,
+
+    /**
+     * Step into the current statement.
+     */
     IN,
-    NEXT,
-    OUT, ;
+
+    /**
+     * Step over the current statement.
+     */
+    OVER,
+
+    /**
+     * Step out of the current function.
+     */
+    OUT
   }
 
   /**
@@ -34,7 +51,7 @@ public interface DebugContext {
     /**
      * A suspension due to an exception.
      */
-    EXCEPTION, ;
+    EXCEPTION
   }
 
   /**
@@ -42,15 +59,6 @@ public interface DebugContext {
    */
   interface ContinueCallback {
     void success();
-
-    void failure(String errorMessage);
-  }
-
-  /**
-   * A callback for the "evaluate" request.
-   */
-  interface EvaluateCallback {
-    void success(JsVariable variable);
 
     void failure(String errorMessage);
   }
@@ -68,23 +76,25 @@ public interface DebugContext {
   ExceptionData getExceptionData();
 
   /**
-   * @return current set of stack frames associated with their scripts. Clients
-   *         must not modify the returned array
+   * @return a list of call frames for the current JavaScript suspended state
    */
-  JsStackFrame[] getStackFrames();
+  List<? extends CallFrame> getCallFrames();
 
   /**
    * @return a set of the breakpoints hit on VM suspension with which this
    *         context is associated. An empty collection if the suspension was
    *         not related to hitting breakpoints (e.g. a step end)
    */
-  Collection<Breakpoint> getBreakpointsHit();
+  Collection<? extends Breakpoint> getBreakpointsHit();
 
   /**
-   * Resumes the JavaScript VM execution using a "continue" request.
+   * Resumes the JavaScript VM execution using a "continue" request. This
+   * context becomes invalid until another context is supplied through the
+   * {@link DebugEventListener#suspended(DebugContext)} event.
    *
-   * @param stepAction to perform ({@code null} means "let the VM go")
-   * @param stepCount steps to perform (not used if {@code stepAction == null})
+   * @param stepAction to perform
+   * @param stepCount steps to perform (not used if
+   *        {@code stepAction == CONTINUE})
    * @param callback to invoke when the request result is ready
    */
   void continueVm(StepAction stepAction, int stepCount, ContinueCallback callback);

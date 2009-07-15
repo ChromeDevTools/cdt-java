@@ -29,7 +29,7 @@ public enum DebuggerToolCommand {
     }
   }
 
-  public String commandName;
+  public final String commandName;
 
   private DebuggerToolCommand(String value) {
     this.commandName = value;

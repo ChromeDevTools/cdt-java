@@ -25,7 +25,7 @@ public enum DevToolsServiceCommand {
     }
   }
 
-  public String commandName;
+  public final String commandName;
 
   private DevToolsServiceCommand(String commandName) {
     this.commandName = commandName;

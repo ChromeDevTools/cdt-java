@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
@@ -27,17 +28,17 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
   /**
    * This constructor implies lazy resolution of object properties.
    *
-   * @param stackFrame this array belongs in
+   * @param callFrame this array belongs in
    * @param parentFqn the fully qualified name of this array parent
    * @param valueState the mirror corresponding to this array
    */
-  public JsArrayImpl(JsStackFrameImpl stackFrame, String parentFqn, ValueMirror valueState) {
-    super(stackFrame, parentFqn, valueState);
+  public JsArrayImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
+    super(callFrame, parentFqn, valueState);
   }
 
-  public JsArrayImpl(JsStackFrameImpl stackFrame, ValueMirror valueState,
-      JsVariableImpl[] properties) {
-    super(stackFrame, valueState, properties);
+  public JsArrayImpl(CallFrameImpl callFrame, ValueMirror valueState,
+      Collection<JsVariableImpl> properties) {
+    super(callFrame, valueState, properties);
   }
 
   private synchronized void ensureElementsMap() {

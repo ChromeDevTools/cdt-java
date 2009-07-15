@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -55,7 +56,7 @@ public class Message {
     TOOL("Tool"),
     DESTINATION("Destination"), ;
 
-    public String name;
+    public final String name;
 
     Header(String value) {
       this.name = value;
@@ -90,7 +91,7 @@ public class Message {
    * @param writer to send the message through
    * @throws IOException
    */
-  public void sendThrough(BufferedWriter writer) throws IOException {
+  public void sendThrough(Writer writer) throws IOException {
     String content = maskNull(this.content);
     for (Map.Entry<String, String> entry : this.headers.entrySet()) {
       writeNonEmptyHeader(writer, entry.getKey(), entry.getValue());
@@ -159,14 +160,14 @@ public class Message {
    * @return the "Tool" header value
    */
   public String getTool() {
-    return getHeader(headers, Header.TOOL.name, null);
+    return getHeader(Header.TOOL.name, null);
   }
 
   /**
    * @return the "Destination" header value
    */
   public String getDestination() {
-    return getHeader(headers, Header.DESTINATION.name, null);
+    return getHeader(Header.DESTINATION.name, null);
   }
 
   /**
@@ -196,16 +197,16 @@ public class Message {
     return value;
   }
 
-  private String maskNull(String string) {
+  private static String maskNull(String string) {
     return string == null
         ? ""
         : string;
   }
 
-  private void writeNonEmptyHeader(BufferedWriter writer, String headerName, String headerValue)
+  private static void writeNonEmptyHeader(Writer writer, String headerName, String headerValue)
       throws IOException {
     if (headerValue != null) {
-      writer.write(buildHeader(headerName, headerValue));
+      writeHeader(writer, headerName, headerValue);
     }
   }
 
@@ -220,9 +221,7 @@ public class Message {
     return sw.toString();
   }
 
-  private static String buildHeader(String name, String value) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(name).append(':').append(value).append(HEADER_TERMINATOR);
-    return sb.toString();
+  private static void writeHeader(Writer writer, String name, String value) throws IOException {
+    writer.append(name).append(':').append(value).append(HEADER_TERMINATOR);
   }
 }

@@ -13,7 +13,7 @@ public interface ExceptionData {
   /**
    * @return the thrown exception object
    */
-  JsVariable getException();
+  JsObject getExceptionObject();
 
   /**
    * @return whether this exception is uncaught
@@ -28,5 +28,5 @@ public interface ExceptionData {
   /**
    * @return the exception description (plain text)
    */
-  String getExceptionText();
+  String getExceptionMessage();
 }

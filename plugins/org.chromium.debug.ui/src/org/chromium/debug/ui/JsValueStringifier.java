@@ -4,14 +4,15 @@
 
 package org.chromium.debug.ui;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.SortedMap;
 
 import org.chromium.sdk.JsArray;
-import org.chromium.sdk.JsDataType;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsValue.Type;
 
 /**
  * A converter of JsValues into human-readable strings used in various contexts.
@@ -72,7 +73,7 @@ public class JsValueStringifier {
       renderPrimitive(value, maxLength, output);
       return;
     }
-    JsDataType type = value.getReferenceType();
+    Type type = value.getType();
     // TODO(apavlov): implement good stringification of other types?
     switch (type) {
       case TYPE_ARRAY:
@@ -134,7 +135,7 @@ public class JsValueStringifier {
 
   private StringBuilder renderObject(JsObject value, int maxLength, StringBuilder output) {
     output.append('[');
-    JsVariable[] properties = value.getProperties();
+    Collection<? extends JsVariable> properties = value.getProperties();
     boolean isFirst = true;
     int maxLengthWithoutLastBracket = maxLength - 1;
     StringBuilder elementBuilder = new StringBuilder();
@@ -152,7 +153,7 @@ public class JsValueStringifier {
           false, elementBuilder);
       if (output.length() + elementBuilder.length() >= maxLengthWithoutLastBracket) {
         // reached max length
-        appendNMore(output, properties.length - entriesWritten);
+        appendNMore(output, properties.size() - entriesWritten);
         break;
       } else {
         output.append(elementBuilder.toString());

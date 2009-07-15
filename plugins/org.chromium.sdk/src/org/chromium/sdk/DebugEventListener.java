@@ -4,7 +4,6 @@
 
 package org.chromium.sdk;
 
-
 /**
  * This interface is used by the SDK to report debug events for a certain tab to
  * the clients.
@@ -21,7 +20,10 @@ public interface DebugEventListener {
   void suspended(DebugContext context);
 
   /**
-   * Reports the browser JavaScript virtual machine has resumed.
+   * Reports the browser JavaScript virtual machine has resumed. This can happen
+   * asynchronously, due to a user action in the browser (without explicitly
+   * resuming the VM through
+   * {@link DebugContext#continueVm(org.chromium.sdk.DebugContext.StepAction, int, org.chromium.sdk.DebugContext.ContinueCallback)}).
    */
   void resumed();
 

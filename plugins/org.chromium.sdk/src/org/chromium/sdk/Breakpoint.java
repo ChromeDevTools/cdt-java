@@ -14,18 +14,20 @@ public interface Breakpoint {
   /**
    * Known breakpoint types.
    */
-  public enum Type {
+  enum Type {
     FUNCTION,
     SCRIPT_NAME,
-    SCRIPT_ID,
-    ;
+    SCRIPT_ID
   }
 
   /**
-   * This value is used to denote the absence of a value when dealing with
-   * breakpoint properties.
+   * This value is used when the corresponding parameter is absent.
+   *
+   * @see #getIgnoreCount()
+   * @see #setIgnoreCount(int)
+   * @see BrowserTab#setBreakpoint(Type, String, int, int, boolean, String, int, org.chromium.sdk.BrowserTab.BreakpointCallback)
    */
-  int NO_VALUE = -1;
+  int EMPTY_VALUE = -1;
 
   /**
    * A breakpoint has this ID if it does not reflect an actual breakpoint in a
@@ -56,12 +58,12 @@ public interface Breakpoint {
   void setEnabled(boolean enabled);
 
   /**
-   * @return ignore count for this breakpoint or {@code NO_VALUE} if none
+   * @return ignore count for this breakpoint or {@code EMPTY_VALUE} if none
    */
   int getIgnoreCount();
 
   /**
-   * Sets the ignore count for this breakpoint ({@code NO_VALUE} to clear).
+   * Sets the ignore count for this breakpoint ({@code EMPTY_VALUE} to clear).
    *
    * @param ignoreCount the new ignored hits count to set
    */
@@ -80,8 +82,9 @@ public interface Breakpoint {
   void setCondition(String condition);
 
   /**
-   * Immediately removes the breakpoint from the JS debugger and invokes the
-   * callback once the operation has finished.
+   * Removes the breakpoint from the JS debugger and invokes the
+   * callback once the operation has finished. This operation does not require
+   * a flush() invocation.
    *
    * @param callback to invoke once the operation result is available
    */

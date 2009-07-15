@@ -4,18 +4,27 @@
 
 package org.chromium.sdk;
 
-import org.chromium.sdk.DebugContext.EvaluateCallback;
+import java.util.Collection;
+
 
 /**
- * An object that represents a browser JavaScript VM stack frame.
+ * An object that represents a browser JavaScript VM call frame.
  */
-public interface JsStackFrame {
+public interface CallFrame {
 
   /**
-   * @return the variables known in this frame, an empty array if none. Clients
-   *         must not modify the returned array
+   * A callback for the "evaluate" request.
    */
-  JsVariable[] getVariables();
+  interface EvaluateCallback {
+    void success(JsVariable variable);
+
+    void failure(String errorMessage);
+  }
+
+  /**
+   * @return the variables known in this frame
+   */
+  Collection<? extends JsVariable> getVariables();
 
   /**
    * @return the current line number in the Script corresponding to this frame
@@ -36,8 +45,8 @@ public interface JsStackFrame {
   int getCharEnd();
 
   /**
-   * @return the source script this stack frame is associated with. {@code null}
-   *         if no script is associated with the stack frame (e.g. an exception
+   * @return the source script this call frame is associated with. {@code null}
+   *         if no script is associated with the call frame (e.g. an exception
    *         could have been thrown in a native script)
    */
   Script getScript();
@@ -49,7 +58,7 @@ public interface JsStackFrame {
 
   /**
    * Evaluates an arbitrary JavaScript {@code expression} in the context of the
-   * stack frame. The evaluation result is reported to the specified {@code
+   * call frame. The evaluation result is reported to the specified {@code
    * callback}. The method will block until the evaluation result is available
    * if {@code isSync == true}.
    *

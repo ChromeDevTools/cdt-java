@@ -25,7 +25,7 @@ public enum V8MessageType {
     }
   }
 
-  public String value;
+  public final String value;
 
   private V8MessageType(String value) {
     this.value = value;

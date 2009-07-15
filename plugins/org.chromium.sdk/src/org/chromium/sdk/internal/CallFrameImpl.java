@@ -4,10 +4,13 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.JsStackFrame;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -15,34 +18,34 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
 
 /**
- * A generic implementation of the JsStackFrame interface.
+ * A generic implementation of the CallFrame interface.
  */
-public class JsStackFrameImpl implements JsStackFrame {
+public class CallFrameImpl implements CallFrame {
 
   /** The frame ID as reported by the JavaScript VM. */
   private final int frameId;
 
-  /** The debug context this stack frame belongs in. */
+  /** The debug context this call frame belongs in. */
   private final DebugContextImpl context;
 
   /** The underlying frame data from the JavaScript VM. */
   private final FrameMirror frameMirror;
 
-  /** The variables known in this stack frame. */
-  private JsVariableImpl[] variables;
+  /** The variables known in this call frame. */
+  private Collection<JsVariableImpl> variables;
 
   private final ContextToken token;
 
   /**
-   * Constructs a stack frame for the given handler using the FrameMirror data
+   * Constructs a call frame for the given handler using the FrameMirror data
    * from the remote JavaScript VM.
    *
    * @param mirror frame in the VM
-   * @param index stack frame id (0 is the stack top)
-   * @param context in which the stack frame is created
+   * @param index call frame id (0 is the stack top)
+   * @param context in which the call frame is created
    * @param contextToken
    */
-  public JsStackFrameImpl(FrameMirror mirror, int index, DebugContextImpl context,
+  public CallFrameImpl(FrameMirror mirror, int index, DebugContextImpl context,
       ContextToken contextToken) {
     this.context = context;
     this.frameId = index;
@@ -54,19 +57,19 @@ public class JsStackFrameImpl implements JsStackFrame {
     return context;
   }
 
-  public JsVariableImpl[] getVariables() {
+  public Collection<JsVariableImpl> getVariables() {
     ensureVariables();
     return variables;
   }
 
   private void ensureVariables() {
     if (variables == null) {
-      this.variables = createVariables();
+      this.variables = Collections.unmodifiableCollection(createVariables());
     }
   }
 
   public boolean hasVariables() {
-    return getVariables().length > 0;
+    return getVariables().size() > 0;
   }
 
   public int getLineNumber() {
@@ -74,7 +77,7 @@ public class JsStackFrameImpl implements JsStackFrame {
     // Recalculate respective to the script start
     // (frameMirror.getLine() returns the line offset in the resource).
     return script != null
-        ? frameMirror.getLine() - script.getLineOffset()
+        ? frameMirror.getLine() - script.getStartLine()
         : -1;
   }
 
@@ -94,7 +97,7 @@ public class JsStackFrameImpl implements JsStackFrame {
     return frameMirror.getScript();
   }
 
-  public void evaluate(final String expression, boolean isSync, final EvaluateCallback callback) {
+  public void evaluate(final String expression, boolean isSync, final CallFrame.EvaluateCallback callback) {
     DebuggerMessage message =
         DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
@@ -103,7 +106,7 @@ public class JsStackFrameImpl implements JsStackFrame {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
               JsVariable variable =
-                  new JsVariableImpl(JsStackFrameImpl.this, V8Helper.createValueMirror(
+                  new JsVariableImpl(CallFrameImpl.this, V8Helper.createValueMirror(
                       JsonUtil.getBody(response), expression));
               if (variable != null) {
                 callback.success(variable);
@@ -131,7 +134,7 @@ public class JsStackFrameImpl implements JsStackFrame {
   }
 
   /**
-   * @return this stack frame's unique identifier within the V8 VM (0 is the top
+   * @return this call frame's unique identifier within the V8 VM (0 is the top
    *         frame)
    */
   int getIdentifier() {
@@ -141,11 +144,11 @@ public class JsStackFrameImpl implements JsStackFrame {
   /**
    * Initializes this frame with variables based on the frameMirror locals.
    */
-  private JsVariableImpl[] createVariables() {
+  private Collection<JsVariableImpl> createVariables() {
     int numVars = frameMirror.getLocalsCount();
-    JsVariableImpl[] result = new JsVariableImpl[numVars];
+    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(numVars);
     for (int i = 0; i < numVars; i++) {
-      result[i] = new JsVariableImpl(this, frameMirror.getLocal(i));
+      result.add(new JsVariableImpl(this, frameMirror.getLocal(i)));
     }
     return result;
   }

@@ -6,8 +6,8 @@ package org.chromium.debug.ui.editors;
 
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.ui.JsValueStringifier;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.DebugContext.EvaluateCallback;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.jface.text.IDocument;
@@ -40,7 +40,7 @@ public class JsDebugTextHover implements ITextHover {
     }
 
     final JsVariable[] result = new JsVariable[1];
-    frame.getJsStackFrame().evaluate(expression, true, new EvaluateCallback() {
+    frame.getCallFrame().evaluate(expression, true, new CallFrame.EvaluateCallback() {
       public void success(JsVariable var) {
         result[0] = var;
       }

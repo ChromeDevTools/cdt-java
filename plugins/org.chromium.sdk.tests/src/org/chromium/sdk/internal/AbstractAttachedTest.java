@@ -15,6 +15,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.DebugContext.ContinueCallback;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.internal.transport.Connection;
 import org.junit.After;
 import org.junit.Before;
@@ -120,7 +121,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   protected void resume() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] failure = new String[1];
-    suspendContext.continueVm(null, 0, new ContinueCallback() {
+    suspendContext.continueVm(StepAction.CONTINUE, 0, new ContinueCallback() {
       public void failure(String errorMessage) {
         failure[0] = errorMessage == null ? "" : errorMessage;
         latch.countDown();

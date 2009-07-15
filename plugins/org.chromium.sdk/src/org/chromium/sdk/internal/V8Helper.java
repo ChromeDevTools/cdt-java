@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import org.chromium.sdk.JsDataType;
+import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
@@ -101,7 +101,7 @@ class V8Helper {
   }
 
   /**
-   * Gets all resolved locals for the stack frame, caches scripts and objects in
+   * Gets all resolved locals for the call frame, caches scripts and objects in
    * the scriptManager and handleManager.
    *
    * @param frame to get the data for
@@ -171,8 +171,8 @@ class V8Helper {
     }
     String typeString = JsonUtil.getAsString(handle, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME);
-    JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
-    if (JsDataType.isObjectType(type)) {
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
+    if (Type.isObjectType(type)) {
       JSONObject protoObj = JsonUtil.getAsJSON(handle, V8Protocol.REF_PROTOOBJECT);
       int parentRef = JsonUtil.getAsLong(protoObj, V8Protocol.REF).intValue();
       PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handle);
@@ -195,11 +195,11 @@ class V8Helper {
   private static ValueMirror createValueMirrorFromValue(JSONObject valueObject, String name) {
     String typeString = JsonUtil.getAsString(valueObject, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(valueObject, V8Protocol.REF_CLASSNAME);
-    JsDataType type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
     if (type == null) {
       return null; // bad value object
     }
-    if (JsDataType.isObjectType(type)) {
+    if (Type.isObjectType(type)) {
       return new ValueMirror(
           name, JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue(), null, className);
     } else {

@@ -27,7 +27,7 @@ public enum Result {
   /** An unknown command was specified. */
   UNKNOWN_COMMAND(4), ;
 
-  public int code;
+  public final int code;
 
   private static final Map<Integer, Result> codeToResult = new HashMap<Integer, Result>();
 

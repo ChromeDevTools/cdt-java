@@ -21,7 +21,7 @@ public enum PropertyType {
   NULL_DESCRIPTOR(7),
   ;
 
-  public int value;
+  public final int value;
 
   private PropertyType(int value) {
     this.value = value;
