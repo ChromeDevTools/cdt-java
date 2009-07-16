@@ -1,0 +1,3 @@
+org.chromium.debug.core/debug=true
+org.chromium.debug.core/debug/transport=true
+org.chromium.debug.core/debug/v8DebuggerTool=true
