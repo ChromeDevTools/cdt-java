@@ -427,8 +427,17 @@ public class DebugContextImpl implements DebugContext {
    * @param newUrl the new URL of the tab being debugged
    */
   public void navigated(String newUrl) {
-    setDoneInitialScriptLoad(false); // we should forget all our scripts
+    getScriptManager().reset();
     getTab().getDebugEventListener().navigated(newUrl);
+  }
+
+  /**
+   * Gets invoked after a new script has been loaded into the browser tab.
+   *
+   * @param newScript the newly loaded script
+   */
+  public void scriptLoaded(Script newScript) {
+    getTab().getDebugEventListener().scriptLoaded(newScript);
   }
 
   /**

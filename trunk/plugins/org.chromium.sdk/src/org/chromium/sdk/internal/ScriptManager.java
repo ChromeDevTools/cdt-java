@@ -44,10 +44,10 @@ public class ScriptManager {
    *
    * @param scriptBody to add the script from
    * @param refs that contain the associated script debug context
-   * @return the new script, or null if the response does not contain a script
-   *         name
+   * @return the new script, or {@code null} if the response does not contain
+   *         a valid script JSON
    */
-  public Script addScript(JSONObject scriptBody, JSONArray refs) {
+  public synchronized Script addScript(JSONObject scriptBody, JSONArray refs) {
 
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
@@ -141,7 +141,7 @@ public class ScriptManager {
    * @param callback to invoke for every script, until
    *        {@link Callback#process(Script)} returns {@code false}.
    */
-  public void forEach(Callback callback) {
+  public synchronized void forEach(Callback callback) {
     for (Script script : idToScript.values()) {
       if (!callback.process(script)) {
         return;

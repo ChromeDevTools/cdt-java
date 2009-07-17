@@ -27,7 +27,7 @@ public class ScriptImpl implements Script {
 
     public final int lineOffset;
 
-    public final int lineCount;
+    public final int endLine;
 
     public final long id;
 
@@ -36,16 +36,15 @@ public class ScriptImpl implements Script {
       this.id = id;
       this.name = name;
       this.lineOffset = lineOffset;
-      this.lineCount = lineCount;
+      this.endLine = lineOffset + lineCount - 1;
     }
 
     @Override
     public int hashCode() {
       return
-          name.hashCode() +
-          (int) id * 0x101 +
+          name != null ? name.hashCode() : (int) id * 0x101 +
           lineOffset * 0x1001 +
-          lineCount * 0x10001;
+          endLine * 0x10001;
     }
 
     @Override
@@ -60,19 +59,15 @@ public class ScriptImpl implements Script {
       // The id equality is stronger than the name equality.
       return this.id == that.id &&
           this.lineOffset == that.lineOffset &&
-          this.lineCount == that.lineCount;
+          this.endLine == that.endLine;
     }
 
     public static Descriptor forResponse(JSONObject script, JSONArray refs) {
-      script = V8ProtocolUtil.scriptWithName(script, refs);
+      script = V8ProtocolUtil.validScript(script, refs);
       if (script == null) {
         return null;
       }
       String name = JsonUtil.getAsString(script, V8Protocol.BODY_NAME);
-      if (name == null) {
-        // We do not handle unnamed scripts.
-        return null;
-      }
       try {
         Long scriptType = JsonUtil.getAsLong(script, V8Protocol.BODY_SCRIPT_TYPE);
         Type type = V8ProtocolUtil.getScriptType(scriptType);
@@ -115,7 +110,7 @@ public class ScriptImpl implements Script {
   }
 
   public int getEndLine() {
-    return descriptor.lineOffset + descriptor.lineCount;
+    return descriptor.endLine;
   }
 
   public long getId() {

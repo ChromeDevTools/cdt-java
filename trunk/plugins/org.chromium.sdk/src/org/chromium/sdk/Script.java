@@ -33,7 +33,7 @@ public interface Script {
 
   /**
    * @return the original document URL for this script known by Chromium.
-   *         A synthetic name for eval'd scripts
+   *         A null name for eval'd scripts
    */
   String getName();
 
@@ -43,12 +43,14 @@ public interface Script {
   long getId();
 
   /**
-   * @return the start line of this script in the original document (zero-based)
+   * @return the start line of this script in the original document
+   *         (zero-based), inclusive
    */
   int getStartLine();
 
   /**
-   * @return the end line of this script in the original document (zero-based)
+   * @return the end line of this script in the original document (zero-based),
+   *         inclusive
    */
   int getEndLine();
 

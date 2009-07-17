@@ -44,4 +44,11 @@ public interface DebugEventListener {
    * with the associated tab are illegal.
    */
   void closed();
+
+  /**
+   * Reports that a new script has been loaded into a tab.
+   *
+   * @param newScript loaded into the tab
+   */
+  void scriptLoaded(Script newScript);
 }

@@ -17,6 +17,7 @@ import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -98,5 +99,8 @@ public class JsVariableTest implements DebugEventListener {
   }
 
   public void suspended(DebugContext context) {
+  }
+
+  public void scriptLoaded(Script newScript) {
   }
 }
