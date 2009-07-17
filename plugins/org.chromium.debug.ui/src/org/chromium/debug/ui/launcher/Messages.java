@@ -18,6 +18,10 @@ public class Messages extends NLS {
   public static String ChromiumRemoteTab_ProjectNameLabel;
 
   public static String ChromiumRemoteTab_RemoteTabName;
+  
+  public static String ChromiumRemoteTab_InvalidPortNumberError;
+  
+  public static String ChromiumRemoteTab_InvalidProjectNameError;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
