@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 
 /**
@@ -52,18 +51,22 @@ public class LaunchType implements ILaunchConfigurationDelegate {
       } catch (IOException e) {
         throw newCoreException(e);
       }
-      IDebugTarget target = new DebugTargetImpl(
+      DebugTargetImpl target = new DebugTargetImpl(
           launch,
           browser,
-          new DialogBasedTabSelector(),
+          monitor);
+      boolean attached = target.attach(
           projectName,
+          new DialogBasedTabSelector(),
           new Runnable() {
             public void run() {
               PluginUtil.openProjectExplorerView();
             }
           },
           monitor);
-      launch.addDebugTarget(target);
+      if (attached) {
+        launch.addDebugTarget(target);
+      }
     }
   }
 

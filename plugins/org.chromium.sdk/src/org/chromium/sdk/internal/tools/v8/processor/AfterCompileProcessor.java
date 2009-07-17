@@ -51,9 +51,12 @@ public class AfterCompileProcessor extends V8ResponseCallback {
             if (body.size() == 0) {
               return; // The script did not arrive (bad id?)
             }
-            debugContext.getScriptManager().addScript(
+            Script newScript = debugContext.getScriptManager().addScript(
                 (JSONObject) body.get(0),
                 JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
+            if (newScript != null) {
+              getDebugContext().scriptLoaded(newScript);
+            }
           }
 
           public void failure(String message) {
@@ -70,7 +73,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
             Script.Type.NATIVE) {
       return null;
     }
-    return V8ProtocolUtil.scriptWithName(
+    return V8ProtocolUtil.validScript(
         script, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
   }
 

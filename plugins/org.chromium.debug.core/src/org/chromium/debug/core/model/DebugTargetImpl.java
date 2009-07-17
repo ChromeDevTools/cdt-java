@@ -52,9 +52,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private final JavascriptThread[] threads;
 
-  private final BrowserTab targetTab;
+  private BrowserTab targetTab;
 
-  private final ResourceManager resourceManager;
+  private ResourceManager resourceManager;
+
+  private BreakpointRegistry breakpointRegistry;
 
   private IProject debugProject;
 
@@ -64,51 +66,73 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private boolean isDisconnected = false;
 
-  public DebugTargetImpl(ILaunch launch, Browser browser, TabSelector selector,
-      String projectName, Runnable attachCallback, IProgressMonitor monitor) throws CoreException {
+  private final Browser browser;
+
+  public DebugTargetImpl(ILaunch launch, Browser browser, IProgressMonitor monitor)
+      throws CoreException {
     super(null);
+    this.launch = launch;
+    this.browser = browser;
+    this.threads = new JavascriptThread[] { new JavascriptThread(this) };
+  }
+
+
+  /**
+   * Loads browser tabs, consults the {@code selector} which of the tabs to
+   * attach to, and if any has been selected, requests an attachment to the tab.
+   *
+   * @param projectName to create for the browser scripts
+   * @param selector that returns the user-selected tab to attach to
+   * @param attachCallback to invoke on successful attachment
+   * @param monitor to report the progress to
+   * @return whether the target has attached to a tab
+   * @throws CoreException
+   */
+  public boolean attach(String projectName, TabSelector selector, Runnable attachCallback,
+      IProgressMonitor monitor) throws CoreException {
     monitor.beginTask("", 2); //$NON-NLS-1$
     try {
-      BrowserTab[] tabs;
-      try {
-        tabs = browser.getTabs();
-      } catch (IOException e) {
-        monitor.done();
-        throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
-      } catch (IllegalStateException e) {
-        monitor.done();
-        throw newCoreException("Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
-      }
-      this.launch = launch;
-      this.threads = new JavascriptThread[] { new JavascriptThread(this) };
+      BrowserTab[] tabs = getBrowserTabs(browser);
       this.targetTab = selector.selectTab(tabs);
-      this.resourceManager = new ResourceManager();
-      if (targetTab != null) {
-        monitor.worked(1);
-        if (targetTab.attach(this)) {
-          onAttach(projectName, monitor, attachCallback);
-          return;
-        }
-        monitor.done();
-        // Could not attach. Log warning...
-        ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
-        // ... and fall through.
+      if (targetTab == null) {
+        return false;
       }
-      // Attachment cancelled
-      setDisconnected(true);
-      fireTerminateEvent();
-    } catch (CoreException e) {
+      return performAttach(projectName, attachCallback, monitor);
+    } finally {
       monitor.done();
-      throw e;
-    } catch (RuntimeException e) {
-      monitor.done();
-      throw e;
     }
+  }
+
+  private boolean performAttach(
+      String projectName, Runnable attachCallback, IProgressMonitor monitor) {
+    monitor.worked(1);
+    if (targetTab.attach(this)) {
+      this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
+      this.breakpointRegistry = new BreakpointRegistry();
+      this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
+      onAttach(projectName, monitor, attachCallback);
+      return true;
+    }
+    monitor.done();
+    // Could not attach. Log a warning...
+    ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
+    return false;
+  }
+
+  private static BrowserTab[] getBrowserTabs(Browser browser) throws CoreException {
+    BrowserTab[] tabs;
+    try {
+      tabs = browser.getTabs();
+    } catch (IOException e) {
+      throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
+    } catch (IllegalStateException e) {
+      throw newCoreException("Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
+    }
+    return tabs;
   }
 
   private void onAttach(String projectName, final IProgressMonitor monitor,
       final Runnable attachCallback) {
-    this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
     try {
       reloadScriptsAndResume(attachCallback);
@@ -145,22 +169,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
               return;
             }
             for (Script script : scripts) {
-              if (script != null && !getResourceManager().scriptHasResource(script)) {
-                IFile file = ChromiumDebugPluginUtil.createFile(debugProject, script.getName());
-                getResourceManager().putScript(script, file);
-                if (script.hasSource()) {
-                  try {
-                    ChromiumDebugPluginUtil.writeFile(file, script.getSource());
-                  } catch (CoreException e) {
-                    ChromiumDebugPlugin.log(e);
-                  }
-                }
-              }
+              getResourceManager().addScript(script);
             }
             if (runnable != null) {
               runnable.run();
             }
           }
+
         });
       }
     };
@@ -367,15 +382,20 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       if (breakpoint.isEnabled()) {
         // Class cast is ensured by the supportsBreakpoint implementation
         final ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
-        Script script = getResourceManager().getScript(
-            (IFile) breakpoint.getMarker().getResource());
+        IFile file = (IFile) breakpoint.getMarker().getResource();
+        if (getResourceManager().isAddingFile(file)) {
+          return; // restoring breakpoints in progress
+        }
+        final Script script = getResourceManager().getScript(file);
         if (script == null) {
           // Might be a script from a different debug target
           return;
         }
+        final int line = (lineBreakpoint.getLineNumber() - 1) + script.getStartLine();
         BreakpointCallback callback = new BreakpointCallback() {
           public void success(Breakpoint breakpoint) {
             lineBreakpoint.setBreakpoint(breakpoint);
+            breakpointRegistry.add(script, line, breakpoint);
           }
 
           public void failure(String errorMessage) {
@@ -383,7 +403,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
           }
         };
         // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-        int line = (lineBreakpoint.getLineNumber() - 1) + script.getStartLine();
         if (script.getName() != null) {
           getTargetTab().setBreakpoint(Breakpoint.Type.SCRIPT_NAME,
               script.getName(),
@@ -424,7 +443,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     try {
       if (breakpoint.isEnabled()) {
         // Class cast is ensured by the supportsBreakpoint implementation
-        ((ChromiumLineBreakpoint) breakpoint).clear();
+        ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
+        lineBreakpoint.clear();
+        breakpointRegistry.remove(
+            getResourceManager().getScript((IFile) breakpoint.getMarker().getResource()),
+            lineBreakpoint.getLineNumber() - 1,
+            lineBreakpoint.getBrowserBreakpoint());
       }
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
@@ -488,14 +512,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
       suspended(DebugEvent.BREAKPOINT);
       return;
     }
-    final boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
-    reloadScripts(false, new Runnable() {
-      public void run() {
-        suspended(hasBreakpointsHit
-            ? DebugEvent.BREAKPOINT
-            : DebugEvent.STEP_END);
-      }
-    });
+    boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
+    suspended(hasBreakpointsHit
+        ? DebugEvent.BREAKPOINT
+        : DebugEvent.STEP_END);
   }
 
   private static String trim(String text, int maxLength) {
@@ -518,19 +538,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   }
 
   public void navigated(String newUrl) {
-    if (newUrl == null) {
-      fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
-    } else {
-      reloadScriptsAndResume(new Runnable(){
-        public void run() {
-          fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE, DebugEvent.STATE));
-        }
-      });
-    }
+    getResourceManager().clear();
+    fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+  }
+
+  public void scriptLoaded(Script newScript) {
+    getResourceManager().addScript(newScript);
   }
 
   public void closed() {
-    navigated(null);
+    fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
   }
 
   private static CoreException newCoreException(String message, Throwable cause) {

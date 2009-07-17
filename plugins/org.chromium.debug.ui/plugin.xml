@@ -127,15 +127,6 @@
   </extension>
 
   <extension
-      point="org.eclipse.ui.navigator.viewer">
-    <viewerContentBinding viewerId="org.eclipse.ui.navigator.ProjectExplorer">
-      <includes>
-        <contentExtension pattern="org.eclipse.ui.navigator.resources.filters.*" />
-      </includes>
-    </viewerContentBinding>
-  </extension>
-
-  <extension
       point="org.eclipse.ui.decorators">
     <decorator
         label="%ChromiumJavascriptDecorator.label"

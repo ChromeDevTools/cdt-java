@@ -53,7 +53,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
    * @param lineNumber 1-based line number of the breakpoint
    * @throws CoreException if unable to create the breakpoint
    */
-  public ChromiumLineBreakpoint(final IResource resource, final int lineNumber) throws CoreException {
+  public ChromiumLineBreakpoint(final IResource resource, final int lineNumber)
+      throws CoreException {
     IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
       public void run(IProgressMonitor monitor) throws CoreException {
         IMarker marker = resource.createMarker(ChromiumDebugPlugin.BP_MARKER);

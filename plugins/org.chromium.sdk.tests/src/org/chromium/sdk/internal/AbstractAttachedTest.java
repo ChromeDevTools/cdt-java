@@ -13,6 +13,7 @@ import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.DebugContext.StepAction;
@@ -39,6 +40,8 @@ public abstract class AbstractAttachedTest<T extends Connection>
   protected Runnable closedCallback;
 
   protected Runnable navigatedCallback;
+
+  protected Runnable scriptLoadedCallback;
 
   protected String newTabUrl;
 
@@ -104,6 +107,12 @@ public abstract class AbstractAttachedTest<T extends Connection>
     this.suspendContext = (DebugContextImpl) context;
     if (suspendCallback != null) {
       suspendCallback.run();
+    }
+  }
+
+  public void scriptLoaded(Script newScript) {
+    if (scriptLoadedCallback != null) {
+      scriptLoadedCallback.run();
     }
   }
 
