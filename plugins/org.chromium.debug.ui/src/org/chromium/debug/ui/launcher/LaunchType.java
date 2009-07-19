@@ -51,23 +51,36 @@ public class LaunchType implements ILaunchConfigurationDelegate {
       } catch (IOException e) {
         throw newCoreException(e);
       }
-      DebugTargetImpl target = new DebugTargetImpl(
-          launch,
-          browser,
-          monitor);
-      boolean attached = target.attach(
-          projectName,
-          new DialogBasedTabSelector(),
-          new Runnable() {
-            public void run() {
-              PluginUtil.openProjectExplorerView();
-            }
-          },
-          monitor);
-      if (attached) {
+      DebugTargetImpl target = new DebugTargetImpl(launch, browser);
+      try {
+        boolean attached = target.attach(
+            projectName,
+            new DialogBasedTabSelector(),
+            new Runnable() {
+              public void run() {
+                PluginUtil.openProjectExplorerView();
+              }
+            },
+            monitor);
+        if (!attached) {
+          terminateTarget(target);
+        }
+      } catch (CoreException e) {
+        terminateTarget(target);
+        throw e;
+      } catch (RuntimeException e) {
+        terminateTarget(target);
+        throw e;
+      } finally {
         launch.addDebugTarget(target);
+        monitor.done();
       }
     }
+  }
+
+  private static void terminateTarget(DebugTargetImpl target) {
+    target.setDisconnected(true);
+    target.fireTerminateEvent();
   }
 
   private static CoreException newCoreException(Exception e) {

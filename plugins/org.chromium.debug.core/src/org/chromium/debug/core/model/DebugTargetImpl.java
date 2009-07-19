@@ -68,8 +68,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private final Browser browser;
 
-  public DebugTargetImpl(ILaunch launch, Browser browser, IProgressMonitor monitor)
-      throws CoreException {
+  public DebugTargetImpl(ILaunch launch, Browser browser) throws CoreException {
     super(null);
     this.launch = launch;
     this.browser = browser;
@@ -91,29 +90,23 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   public boolean attach(String projectName, TabSelector selector, Runnable attachCallback,
       IProgressMonitor monitor) throws CoreException {
     monitor.beginTask("", 2); //$NON-NLS-1$
-    try {
-      BrowserTab[] tabs = getBrowserTabs(browser);
-      this.targetTab = selector.selectTab(tabs);
-      if (targetTab == null) {
-        return false;
-      }
-      return performAttach(projectName, attachCallback, monitor);
-    } finally {
-      monitor.done();
+    BrowserTab[] tabs = getBrowserTabs(browser);
+    this.targetTab = selector.selectTab(tabs);
+    if (targetTab == null) {
+      return false;
     }
+    monitor.worked(1);
+    return performAttach(projectName, attachCallback);
   }
 
-  private boolean performAttach(
-      String projectName, Runnable attachCallback, IProgressMonitor monitor) {
-    monitor.worked(1);
+  private boolean performAttach(String projectName, Runnable attachCallback) {
     if (targetTab.attach(this)) {
       this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
       this.breakpointRegistry = new BreakpointRegistry();
       this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
-      onAttach(projectName, monitor, attachCallback);
+      onAttach(projectName, attachCallback);
       return true;
     }
-    monitor.done();
     // Could not attach. Log a warning...
     ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
     return false;
@@ -131,14 +124,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     return tabs;
   }
 
-  private void onAttach(String projectName, final IProgressMonitor monitor,
-      final Runnable attachCallback) {
+  private void onAttach(String projectName, Runnable attachCallback) {
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
-    try {
-      reloadScriptsAndResume(attachCallback);
-    } finally {
-      monitor.done();
-    }
+    reloadScriptsAndResume(attachCallback);
   }
 
   private void reloadScriptsAndResume(final Runnable attachCallback) {
@@ -339,10 +327,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
         fireEvent(new DebugEvent(threads[0], kind, detail));
       }
     } catch (DebugException e) {
-      // Actually, this is not thrown in out getThreads()
-      return;
-    }
-    if (threads.length == 0) {
+      // Actually, this is not thrown in our getThreads()
       return;
     }
   }
@@ -352,7 +337,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
   }
 
-  private synchronized void setDisconnected(boolean value) {
+  public synchronized void setDisconnected(boolean value) {
     isDisconnected = value;
   }
 
