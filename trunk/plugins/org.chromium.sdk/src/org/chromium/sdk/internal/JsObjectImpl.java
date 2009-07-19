@@ -28,8 +28,6 @@ import org.json.simple.JSONObject;
  */
 public class JsObjectImpl extends JsValueImpl implements JsObject {
 
-  private static final JsVariableImpl[] EMPTY_VARIABLES = new JsVariableImpl[0];
-
   protected Collection<JsVariableImpl> properties;
 
   protected volatile boolean failedResponse;
