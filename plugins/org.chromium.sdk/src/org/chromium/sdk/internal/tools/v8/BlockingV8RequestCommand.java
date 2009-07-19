@@ -24,7 +24,7 @@ class BlockingV8RequestCommand implements Runnable {
    * The waiting time for an operation. An operation is considered timed out if
    * it does not complete within this period.
    */
-  private static final long OPERATION_TIMEOUT_MS = 30000;
+  private static final long OPERATION_TIMEOUT_MS = 120000;
 
   /**
    * The handler to use while sending a message.
