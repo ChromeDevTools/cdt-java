@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsValue;
 import org.eclipse.debug.core.DebugException;
@@ -38,7 +39,7 @@ public class Value extends DebugElementImpl implements IValue {
   }
 
   public String getValueString() throws DebugException {
-    return value.getValueString();
+    return JsValueStringifier.toVisibleString(value);
   }
 
   public IVariable[] getVariables() throws DebugException {
