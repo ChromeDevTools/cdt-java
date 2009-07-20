@@ -5,7 +5,7 @@
 package org.chromium.debug.ui.editors;
 
 import org.chromium.debug.core.model.StackFrame;
-import org.chromium.debug.ui.JsValueStringifier;
+import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.eclipse.core.runtime.IAdaptable;

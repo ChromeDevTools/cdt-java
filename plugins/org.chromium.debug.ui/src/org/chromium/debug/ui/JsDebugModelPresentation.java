@@ -4,9 +4,9 @@
 
 package org.chromium.debug.ui;
 
+import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.ILineBreakpoint;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.ui.IDebugModelPresentation;
@@ -38,9 +38,10 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
 
   public void computeDetail(IValue value, IValueDetailListener listener) {
     String detail = ""; //$NON-NLS-1$
-    try {
-      detail = value.getValueString();
-    } catch (DebugException e) {
+    if (value instanceof Value) {
+      // Avoid quoting string JavaScript values by getting the value string
+      // from the underlying JsValue.
+      detail = ((Value) value).getJsValue().getValueString();
     }
 
     listener.detailComputed(value, detail);

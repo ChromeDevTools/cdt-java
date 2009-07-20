@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.debug.ui;
+package org.chromium.debug.core.util;
 
 import java.util.Collection;
 import java.util.Map;
@@ -37,6 +37,30 @@ public class JsValueStringifier {
   private static final String UNKNOWN_VALUE = "<null>"; //$NON-NLS-1$
 
   private final Config config;
+
+
+  /**
+   * Constructs a visible string for the given {@code value} (without exposing
+   * the value structure). Encloses JavaScript string values in double quotes.
+   *
+   * @param value to build a visible string for
+   * @return {@code value.getValueString()} (enclosed in double quotes if
+   *         {@code value.getType() == TYPE_STRING}), or {@code null} if
+   *         {@code value==null}
+   */
+  public static String toVisibleString(JsValue value) {
+    return possiblyQuoteValueString(value);
+  }
+
+  private static String possiblyQuoteValueString(JsValue value) {
+    if (value == null) {
+      return UNKNOWN_VALUE;
+    }
+    String valueString = value.getValueString();
+    return value.getType() == JsValue.Type.TYPE_STRING
+        ? "\"" + valueString + "\"" //$NON-NLS-1$ //$NON-NLS-2$
+        : valueString;
+  }
 
   /**
    * Use the default config values.
@@ -89,7 +113,7 @@ public class JsValueStringifier {
   }
 
   private void renderPrimitive(JsValue value, int maxLength, StringBuilder output) {
-    output.append(value.getValueString());
+    output.append(possiblyQuoteValueString(value));
     truncate(output, maxLength, ELLIPSIS);
   }
 
@@ -164,6 +188,6 @@ public class JsValueStringifier {
   }
 
   private StringBuilder appendNMore(StringBuilder output, int n) {
-    return output.append(" +").append(n).append("..."); //$NON-NLS-1$ //$NON-NLS-2$
+    return output.append(" +").append(n).append(ELLIPSIS); //$NON-NLS-1$
   }
 }
