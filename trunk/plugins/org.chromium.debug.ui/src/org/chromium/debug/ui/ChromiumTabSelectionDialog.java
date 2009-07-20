@@ -9,6 +9,8 @@ import java.util.List;
 import org.chromium.debug.core.model.Messages;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -62,32 +64,39 @@ class ChromiumTabSelectionDialog extends Dialog {
     urlColumn.setText(Messages.ChromiumTabSelectionDialog_UrlColumnName);
     urlColumn.setWidth(400);
 
-    synchronized (this) {
-      table.addListener(SWT.SetData, new Listener() {
-        public void handleEvent(Event event) {
-          if (table.isDisposed()) {
-            return;
-          }
-          processData(event);
+    table.addListener(SWT.SetData, new Listener() {
+      public void handleEvent(Event event) {
+        if (table.isDisposed()) {
+          return;
         }
+        processData(event);
+      }
 
-        private void processData(Event event) {
-          TableItem item = (TableItem) event.item;
-          int index = table.indexOf(item);
-          if (index < urls.size()) {
-            item.setText(urls.get(index));
-            GridData data = new GridData();
-            data.grabExcessHorizontalSpace = true;
-            item.setData(data);
-            if (index == 0) {
-              table.select(0);
-            }
+      private void processData(Event event) {
+        TableItem item = (TableItem) event.item;
+        int index = table.indexOf(item);
+        if (index < urls.size()) {
+          item.setText(urls.get(index));
+          GridData data = new GridData();
+          data.grabExcessHorizontalSpace = true;
+          item.setData(data);
+          if (index == 0) {
+            table.select(0);
           }
         }
-      });
-      table.setItemCount(urls.size());
-      table.clearAll();
-    }
+      }
+    });
+    table.addSelectionListener(new SelectionListener() {
+      public void widgetDefaultSelected(SelectionEvent e) {
+        okPressed();
+      }
+      public void widgetSelected(SelectionEvent e) {
+      }
+    });
+    
+    table.setItemCount(urls.size());
+    table.clearAll();
+
     return composite;
   }
 
