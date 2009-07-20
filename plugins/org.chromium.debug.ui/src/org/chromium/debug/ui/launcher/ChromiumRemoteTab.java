@@ -28,8 +28,8 @@ import org.eclipse.swt.widgets.Composite;
  */
 public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
-  private static final String port_field_name = "port_field"; //$NON-NLS-1$
-  private static final String project_name_field_name = "project_name_field"; //$NON-NLS-1$
+  private static final String PORT_FIELD_NAME = "port_field"; //$NON-NLS-1$
+  private static final String PROJECT_NAME_FIELD_NAME = "project_name_field"; //$NON-NLS-1$
   
    // However, recommended range is [1024, 32767].
   private static final int minimumPortValue = 0;
@@ -50,13 +50,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
     Composite propertiesComp = createInnerComposite(composite, 2);
     // Port text field
-    debugPort = new IntegerFieldEditor(port_field_name, Messages.ChromiumRemoteTab_PortLabel,
+    debugPort = new IntegerFieldEditor(PORT_FIELD_NAME, Messages.ChromiumRemoteTab_PortLabel,
         propertiesComp);
     debugPort.setPropertyChangeListener(modifyListener);
     debugPort.setPreferenceStore(store);
 
     // Project name text field
-    projectName = new StringFieldEditor(project_name_field_name,
+    projectName = new StringFieldEditor(PROJECT_NAME_FIELD_NAME,
         Messages.ChromiumRemoteTab_ProjectNameLabel, propertiesComp);
     projectName.setPropertyChangeListener(modifyListener);
     projectName.setPreferenceStore(store);
@@ -73,14 +73,14 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME);
     
     try {
-      store.setDefault(port_field_name, config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
+      store.setDefault(PORT_FIELD_NAME, config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
           debugPortDefault));
-      store.setDefault(project_name_field_name, config.getAttribute(
+      store.setDefault(PROJECT_NAME_FIELD_NAME, config.getAttribute(
           LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, projectNameDefault));
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
-      store.setDefault(port_field_name, debugPortDefault);
-      store.setDefault(project_name_field_name, projectNameDefault);
+      store.setDefault(PORT_FIELD_NAME, debugPortDefault);
+      store.setDefault(PROJECT_NAME_FIELD_NAME, projectNameDefault);
     }
 
     debugPort.loadDefault();
@@ -91,9 +91,9 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     storeEditor(debugPort, "-1"); //$NON-NLS-1$
     storeEditor(projectName, ""); //$NON-NLS-1$
 
-    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, store.getInt(port_field_name));
+    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-        store.getString(project_name_field_name).trim());
+        store.getString(PROJECT_NAME_FIELD_NAME).trim());
   }
   
   @Override
