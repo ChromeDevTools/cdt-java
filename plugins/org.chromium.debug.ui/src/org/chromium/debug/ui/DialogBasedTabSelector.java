@@ -22,6 +22,12 @@ import org.eclipse.ui.PlatformUI;
 public class DialogBasedTabSelector implements TabSelector {
 
   public BrowserTab selectTab(final BrowserTab[] tabs) {
+    if (autoSelectSingleTab()) {
+      if (tabs.length == 1) {
+        return tabs[0];
+      }
+    }
+    
     final Map<Integer, BrowserTab> map = new HashMap<Integer, BrowserTab>();
     final List<String> urls = new ArrayList<String>(tabs.length);
     for (int i = 0; i < tabs.length; ++i) {
@@ -43,6 +49,10 @@ public class DialogBasedTabSelector implements TabSelector {
       }
     });
     return result[0];
+  }
+  
+  private boolean autoSelectSingleTab() {
+    return true;
   }
 
 }
