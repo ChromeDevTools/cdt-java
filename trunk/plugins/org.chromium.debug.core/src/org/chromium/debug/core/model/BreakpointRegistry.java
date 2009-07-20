@@ -159,12 +159,16 @@ public class BreakpointRegistry {
   }
 
   /**
-   * Gets breakpoint entries for the given script.
+   * Gets breakpoint entries for the given script. An empty collection for a
+   * {@code null} script.
    *
    * @param script to extract the breakpoints for
    * @return the breakpoints that fall within the given script line range
    */
   public Collection<? extends BreakpointEntry> getBreakpointEntries(Script script) {
+    if (script == null) {
+      return Collections.emptySet();
+    }
     Collection<BreakpointEntry> entries =
         scriptIdToBreakpointEntries.get(ScriptIdentifier.forScript(script));
     if (entries == null) {
@@ -182,13 +186,18 @@ public class BreakpointRegistry {
   }
 
   /**
-   * Removes the given line breakpoint.
+   * Removes the given line breakpoint in the given script. Does nothing for a
+   * {@code null} script (which may be the case after a navigation + disconnect
+   * when the resource referenced by the breakpoint marker is absent.)
    *
    * @param script where the breakpoint is set
    * @param line (0-based, like in V8) in the script
    * @param breakpoint
    */
   public void remove(Script script, int line, Breakpoint breakpoint) {
+    if (script == null) {
+      return;
+    }
     ScriptIdentifier scriptId = ScriptIdentifier.forScript(script);
     Collection<BreakpointEntry> entries = scriptIdToBreakpointEntries.get(scriptId);
     if (entries == null) {
