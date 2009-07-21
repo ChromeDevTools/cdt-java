@@ -12,6 +12,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
+import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceStore;
@@ -19,6 +21,7 @@ import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -126,6 +129,11 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     String projectName = PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME);
     projectName = getNewProjectName(projectName);
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, projectName);
+  }
+  
+  @Override
+  public Image getImage() {
+    return DebugUITools.getImage(IDebugUIConstants.IMG_LCL_DISCONNECT);
   }
 
   private Composite createDefaultComposite(Composite parent) {
