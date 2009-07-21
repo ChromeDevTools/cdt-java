@@ -12,15 +12,15 @@ import java.util.SortedMap;
 public interface JsArray extends JsObject {
 
   /**
-   * @return the index of the last element in the array or 0 if the array is
-   *         empty
+   * @return the array length (index of the last element plus one),
+   *         0 iff the array is empty
    */
   int length();
 
   /**
    * @param index in the array
-   * @return a {@code JsVariable} at the {@code index}. {@code null} if there is
-   *         no value at the specified index in the array
+   * @return a {@code JsVariable} at the {@code index}, or {@code null} if there
+   *         is no value at the specified index in the array
    */
   JsVariable get(int index);
 
