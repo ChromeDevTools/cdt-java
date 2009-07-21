@@ -76,7 +76,7 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
   }
 
   public int length() {
-    int length = 0;
+    int lastIndex = -1;
     PropertyReference[] propRefs = getMirror().getProperties();
     for (PropertyReference propRef : propRefs) {
       String name = propRef.getName();
@@ -84,15 +84,15 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
         String indexString = name.substring(1, name.length() - 1);
         try {
           int index = Integer.parseInt(indexString);
-          if (index > length) {
-            length = index;
+          if (index > lastIndex) {
+            lastIndex = index;
           }
         } catch (NumberFormatException e) {
           // not an array element
         }
       }
     }
-    return length;
+    return lastIndex + 1;
   }
 
   @Override
