@@ -50,7 +50,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
         onBreakpointsHit(response);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
         debugContext.setState(State.NORMAL);
-        debugContext.onBreakpointsHit(Collections.<Breakpoint>emptySet());
+        debugContext.onBreakpointsHit(Collections.<Breakpoint> emptySet());
         debugContext.setException(response);
       }
       debugContext.sendMessage(
@@ -65,7 +65,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
     JSONArray breakpointIdsArray = JsonUtil.getAsJSONArray(body, V8Protocol.BREAK_BREAKPOINTS);
     if (breakpointIdsArray == null) {
       // Suspended on step end.
-      getDebugContext().onBreakpointsHit(Collections.<Breakpoint>emptySet());
+      getDebugContext().onBreakpointsHit(Collections.<Breakpoint> emptySet());
       return;
     }
     Collection<Breakpoint> breakpointsHit = new ArrayList<Breakpoint>(breakpointIdsArray.size());

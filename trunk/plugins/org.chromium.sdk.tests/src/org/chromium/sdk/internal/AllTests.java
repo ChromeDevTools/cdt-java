@@ -18,7 +18,9 @@ import org.junit.runners.Suite.SuiteClasses;
   BrowserImplTest.class,
   DebugContextImplTest.class,
   DebugEventListenerTest.class,
-  JsVariableTest.class,
+  JsArrayImplTest.class,
+  JsObjectImplTest.class,
+  ScriptsTest.class,
   V8Tests.class,
   DevToolsServiceHandlerTest.class})
 public class AllTests {

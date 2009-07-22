@@ -20,7 +20,6 @@ import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.TestUtil;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.transport.FakeConnection;
-import org.json.simple.JSONObject;
 import org.junit.Test;
 
 /**
@@ -40,26 +39,13 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     @Override
     public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
       BreakpointImplTest.this.isBreakpointChanged = true;
-      if (callback != null) {
-        callback.success(breakpointImpl);
-      }
+      super.changeBreakpoint(breakpointImpl, callback);
     }
 
     @Override
     public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
       BreakpointImplTest.this.isBreakpointCleared = true;
-      if (callback != null) {
-        callback.success(breakpointImpl);
-      }
-    }
-
-    @Override
-    public void messageReceived(JSONObject response) {
-    }
-
-    @Override
-    public void setBreakpoint(Type type, String target, int line, int position, boolean enabled,
-        String condition, int ignoreCount, BreakpointCallback callback) {
+      super.clearBreakpoint(breakpointImpl, callback);
     }
 
   }
@@ -124,7 +110,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test(timeout = 5000)
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, true, 0, null,
-        new TestBreakpointProcessor(suspendContext));
+        new TestBreakpointProcessor(browserTab.getDebugContext()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -149,13 +135,11 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
 
   @Test
   public void testNonDirtyChanges() throws Exception {
-    TestBreakpointProcessor breakpointProcessor =
-        new TestBreakpointProcessor(suspendContext);
     String condition = "true";
     int ignoreCount = 3;
     boolean enabled = true;
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, enabled, ignoreCount, condition,
-        breakpointProcessor);
+        new TestBreakpointProcessor(browserTab.getDebugContext()));
 
     bp.setCondition(condition);
     bp.flush(null);

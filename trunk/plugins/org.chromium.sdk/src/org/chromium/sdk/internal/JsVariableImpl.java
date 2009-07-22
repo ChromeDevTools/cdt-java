@@ -4,21 +4,10 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONObject;
 
 /**
  * A generic implementation of the JsVariable interface.
@@ -149,11 +138,15 @@ public class JsVariableImpl implements JsVariable {
 
   @Override
   public String toString() {
-    StringBuilder result = new StringBuilder();
-    result.append("[JsVariable: name=").append(getName()).append(",type=").append(getType())
-        .append(",value=").append(getValue());
-    result.append(']');
-    return result.toString();
+    return new StringBuilder()
+        .append("[JsVariable: name=")
+        .append(getName())
+        .append(",type=")
+        .append(getType())
+        .append(",value=")
+        .append(getValue())
+        .append(']')
+        .toString();
   }
 
   /**
@@ -231,147 +224,11 @@ public class JsVariableImpl implements JsVariable {
     pendingReq = false;
   }
 
-  // Exposed as "package local" for testing.
-  /* package local */void ensureProperties(PropertyReference[] properties) {
-    final HandleManager handleManager = getHandleManager();
-    // Use linked map to preserve the original (somewhat alphabetical)
-    // properties order.
-    final Map<JsVariableImpl, Long> variableToRef = new LinkedHashMap<JsVariableImpl, Long>();
-    final Collection<Long> handlesToRequest = new HashSet<Long>(properties.length);
-
-    for (PropertyReference prop : properties) {
-      String propName = prop.getName();
-      if (propName.length() == 0) {
-        // Do not provide a synthetic "hidden properties" property.
-        continue;
-      }
-      ValueMirror mirror = new ValueMirror(propName, prop.getRef());
-      String fqn;
-
-      if (JsonUtil.isInteger(propName)) {
-        fqn = getFullyQualifiedName() + OPEN_BRACKET + propName + CLOSE_BRACKET;
-      } else {
-        if (propName.startsWith(DOT)) {
-          // ".arguments" is not legal
-          continue;
-        }
-        fqn = getFullyQualifiedName() + DOT + propName;
-      }
-
-      JsVariableImpl variable = new JsVariableImpl(callFrame, mirror, fqn, true);
-      Long longRef = Long.valueOf(prop.getRef());
-      JSONObject handle = handleManager.getHandle(longRef);
-      if (handle != null) {
-        // do not re-request from V8
-        fillVariable(variable, handle);
-      } else {
-        handlesToRequest.add(longRef);
-      }
-      variableToRef.put(variable, longRef);
-    }
-
-    final Collection<JsVariableImpl> vars = variableToRef.keySet();
-
-    synchronized (this) {
-      this.value = (valueData.getType() == Type.TYPE_OBJECT)
-          ? new JsObjectImpl(getCallFrame(), this.valueData, vars)
-          : new JsArrayImpl(getCallFrame(), this.valueData, vars);
-    }
-    DebuggerMessage message = DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, getCallFrame().getToken());
-    Exception ex = getCallFrame().getDebugContext().sendMessage(
-        SendingType.SYNC,
-        message,
-        new BrowserTabImpl.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (!fillVariablesFromLookupReply(handleManager, vars, variableToRef, response)) {
-              setFailedResponse();
-            }
-          }
-
-          public void failure(String message) {
-            setFailedResponse();
-          }
-        });
-    if (ex != null) {
-      setFailedResponse();
-    }
-  }
-
   protected void setFailedResponse() {
     this.failedResponse = true;
   }
 
   protected boolean isFailedResponse() {
     return failedResponse;
-  }
-
-  private HandleManager getHandleManager() {
-    return getCallFrame().getDebugContext().getHandleManager();
-  }
-
-  /**
-   * @param vars all the variables for the properties
-   * @param variableToRef variable to ref map
-   * @param reply with the requested handles (some of {@code vars} may be
-   *        missing if they were known at the moment of ensuring the properties)
-   */
-  static boolean fillVariablesFromLookupReply(HandleManager handleManager,
-      Collection<JsVariableImpl> vars, Map<JsVariableImpl, Long> variableToRef, JSONObject reply) {
-    if (!JsonUtil.isSuccessful(reply)) {
-      return false;
-    }
-    JSONObject body = JsonUtil.getBody(reply);
-    for (JsVariableImpl var : vars) {
-      Long ref = variableToRef.get(var);
-      JSONObject object = JsonUtil.getAsJSON(body, String.valueOf(ref));
-      if (object != null) {
-        handleManager.put(ref, object);
-        fillVariable(var, JsonUtil.getAsJSON(body, String.valueOf(variableToRef.get(var))));
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Fills in a variable from a handle object.
-   * @param variable to fill in
-   * @param handleObject to get the data from
-   */
-  static void fillVariable(JsVariableImpl variable, JSONObject handleObject) {
-    String typeString = null;
-    String valueString = null;
-    if (handleObject != null) {
-      typeString = JsonUtil.getAsString(handleObject, V8Protocol.REF_TYPE);
-      valueString = JsonUtil.getAsString(handleObject, V8Protocol.REF_TEXT);
-    }
-    if ("error".equals(typeString)) {
-      // Report the JS VM error.
-      if (valueString == null) {
-        valueString = "An error occurred while retrieving the value.";
-      }
-      variable.setTypeValue(Type.TYPE_STRING, valueString);
-      variable.resetPending();
-      return;
-    }
-    Type type =
-        JsDataTypeUtil.fromJsonTypeAndClassName(typeString, JsonUtil.getAsString(handleObject,
-            V8Protocol.REF_CLASSNAME));
-    if (Type.isObjectType(type)) {
-      if (!variable.isPendingReq()) {
-        if (!variable.isWaitDrilling()) {
-          PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handleObject);
-          variable.setProperties(JsonUtil.getAsString(handleObject, V8Protocol.REF_CLASSNAME),
-              propertyRefs);
-        }
-        variable.resetDrilling();
-      }
-    } else if (valueString != null && type != null) {
-      variable.setTypeValue(type, valueString);
-      variable.resetPending();
-    } else {
-      variable.setTypeValue(Type.TYPE_STRING, "<Error>");
-      variable.resetPending();
-    }
   }
 }

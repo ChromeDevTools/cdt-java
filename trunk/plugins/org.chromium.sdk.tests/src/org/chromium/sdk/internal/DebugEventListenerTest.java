@@ -63,7 +63,7 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
 
     resume();
 
-    messageResponder.hitBreakpoints(Collections.<Long>emptySet());
+    messageResponder.hitBreakpoints(Collections.<Long> emptySet());
     waitForSuspend();
     assertNotNull("suspended() not invoked after the break event", suspendContext);
     breakpointsHit = suspendContext.getBreakpointsHit();
