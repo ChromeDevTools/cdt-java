@@ -28,16 +28,24 @@ public class BreakpointRegistry {
 
     private final long id;
 
+    private final int startLine;
+
+    private final int endLine;
+
     public static ScriptIdentifier forScript(Script script) {
       String name = script.getName();
-      return new ScriptIdentifier(name, name != null
-          ? -1
-          : script.getId());
+      return new ScriptIdentifier(
+          name,
+          name != null ? -1 : script.getId(),
+          script.getStartLine(),
+          script.getEndLine());
     }
 
-    private ScriptIdentifier(String name, long id) {
+    private ScriptIdentifier(String name, long id, int startLine, int endLine) {
       this.name = name;
       this.id = id;
+      this.startLine = startLine;
+      this.endLine = endLine;
     }
 
     @Override
@@ -45,9 +53,8 @@ public class BreakpointRegistry {
       final int prime = 31;
       int result = 1;
       result = prime * result + (int) (id ^ (id >>> 32));
-      result = prime * result + ((name == null)
-          ? 0
-          : name.hashCode());
+      result = prime * result + ((name == null) ? 0 : name.hashCode());
+      result = prime * result + 17 * startLine + 19 * endLine;
       return result;
     }
 
@@ -57,6 +64,9 @@ public class BreakpointRegistry {
         return false;
       }
       ScriptIdentifier that = (ScriptIdentifier) obj;
+      if (this.startLine != that.startLine || this.endLine != that.endLine) {
+        return false;
+      }
       if (name == null) {
         // an unnamed script, only id is known
         return that.name == null && this.id == that.id;
