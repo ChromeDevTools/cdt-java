@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -198,7 +199,7 @@ public class DevToolsServiceHandler implements ToolHandler {
     return output[0];
   }
 
-  public Version version(int timeout) {
+  public Version version(int timeout) throws TimeoutException {
     final Semaphore sem = new Semaphore(0);
     final Version[] output = new Version[1];
     synchronized (lock) {
@@ -213,10 +214,14 @@ public class DevToolsServiceHandler implements ToolHandler {
       };
     }
     connection.send(MessageFactory.version());
+    boolean res;
     try {
-      sem.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+      res = sem.tryAcquire(timeout, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
-      // Fall through (serverVersion will be null)
+      throw new RuntimeException(e);
+    }
+    if (!res) {
+      throw new TimeoutException("Failed to get version response in " + timeout + " ms");
     }
     return output[0];
   }

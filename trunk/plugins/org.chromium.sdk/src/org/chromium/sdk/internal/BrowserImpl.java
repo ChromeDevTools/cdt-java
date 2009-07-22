@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -174,7 +175,12 @@ public class BrowserImpl implements Browser, NetListener {
       // No need to check the version for an already established connection.
       return;
     }
-    Version serverVersion = devToolsHandler.version(OPERATION_TIMEOUT_MS);
+    Version serverVersion;
+    try {
+      serverVersion = devToolsHandler.version(OPERATION_TIMEOUT_MS);
+    } catch (TimeoutException e) {
+      throw new IOException("Failed to get protocol version from remote", e);
+    }
     if (serverVersion == null ||
         !BrowserImpl.PROTOCOL_VERSION.isCompatibleWithServer(serverVersion)) {
       isNetworkSetUp = false;

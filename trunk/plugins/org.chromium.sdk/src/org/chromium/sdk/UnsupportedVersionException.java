@@ -15,7 +15,8 @@ public class UnsupportedVersionException extends Exception {
   private final Version remoteVersion;
 
   public UnsupportedVersionException(Version localVersion, Version remoteVersion) {
-    this(localVersion, remoteVersion, null);
+    this(localVersion, remoteVersion, "localVersion=" + localVersion
+        + "; remoteVersion=" + remoteVersion);
   }
 
   public UnsupportedVersionException(Version localVersion, Version remoteVersion, String message) {

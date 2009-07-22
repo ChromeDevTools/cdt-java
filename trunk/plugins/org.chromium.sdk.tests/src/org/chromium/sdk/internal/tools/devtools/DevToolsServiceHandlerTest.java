@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.tools.devtools;
 import static org.junit.Assert.*;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 
 import org.chromium.sdk.internal.AbstractAttachedTest;
 import org.chromium.sdk.internal.BrowserImpl;
@@ -81,6 +82,10 @@ public class DevToolsServiceHandlerTest extends AbstractAttachedTest<ControlledF
         try {
           handler.version(timeout);
         } catch (IllegalStateException e) {
+          if (ex != null) {
+            ex[0] = e;
+          }
+        } catch (TimeoutException e) {
           if (ex != null) {
             ex[0] = e;
           }
