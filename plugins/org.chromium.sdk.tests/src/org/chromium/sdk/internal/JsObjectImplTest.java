@@ -6,6 +6,7 @@ package org.chromium.sdk.internal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,10 +29,10 @@ import org.junit.Test;
 /**
  * A test for the JsVariable implementor.
  */
-public class JsVariableTest implements DebugEventListener {
+public class JsObjectImplTest implements DebugEventListener {
 
   private ChromeStub messageResponder;
-  private CallFrameImpl stackFrame;
+  private CallFrameImpl callFrame;
 
   private ValueMirror eventMirror;
 
@@ -58,16 +59,16 @@ public class JsVariableTest implements DebugEventListener {
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.stackFrame = new CallFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
+    this.callFrame = new CallFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
   }
 
   @Test
-  public void testEnsureProperties() throws Exception {
-    JsVariableImpl var = new JsVariableImpl(stackFrame, eventMirror);
-    var.ensureProperties(eventMirror.getProperties());
-    JsValueImpl value = var.getValue();
-    assertNotNull(value.asObject());
-    Collection<JsVariableImpl> variables = value.asObject().getProperties();
+  public void testObjectData() throws Exception {
+    JsObjectImpl jsObject = new JsObjectImpl(callFrame, "", eventMirror);
+    assertNotNull(jsObject.asObject());
+    assertNull(jsObject.asArray());
+    jsObject.ensureProperties();
+    Collection<JsVariableImpl> variables = jsObject.getProperties();
     assertEquals(2, variables.size()); // "x" and "y"
     Iterator<JsVariableImpl> it = variables.iterator();
     JsVariableImpl firstVar = it.next();
@@ -84,6 +85,8 @@ public class JsVariableTest implements DebugEventListener {
     JsValueImpl secondVal = firstVar.getValue();
     assertEquals("3", firstVal.getValueString()); //$NON-NLS-1$
     assertEquals("3", secondVal.getValueString()); //$NON-NLS-1$
+    assertNull(firstVal.asObject());
+    assertNull(secondVal.asObject());
   }
 
   public void closed() {

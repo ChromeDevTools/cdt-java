@@ -63,7 +63,11 @@ public interface BrowserTab {
   boolean isAttached();
 
   /**
-   * @param callback to invoke once the operation result is available
+   * Retrieves user scripts loaded into the tab.
+   * Blocks until the result is ready.
+   *
+   * @param callback to invoke once the operation result is available,
+   *        may be {@code null}
    */
   void getScripts(ScriptsCallback callback);
 
@@ -75,8 +79,8 @@ public interface BrowserTab {
    *        <table border=1>
    *          <tr><td>type value</td><td>target value</td></tr>
    *          <tr><td>FUNCTION</td><td>a function expression</td></tr>
-   *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by getName())</td></tr>
-   *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by getId())</td></tr>
+   *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by Script#getName())</td></tr>
+   *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by Script#getId())</td></tr>
    *        </table>
    * @param line in the script or function. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
@@ -86,7 +90,8 @@ public interface BrowserTab {
    * @param condition nullable string with breakpoint condition
    * @param ignoreCount number specifying the amount of breakpoint hits to
    *        ignore. If none, use {@link Breakpoint#EMPTY_VALUE}
-   * @param callback to invoke when the evaluation result is ready
+   * @param callback to invoke when the evaluation result is ready,
+   *        may be {@code null}
    */
   void setBreakpoint(Breakpoint.Type type, String target, int line, int position, boolean enabled,
       String condition, int ignoreCount, BreakpointCallback callback);

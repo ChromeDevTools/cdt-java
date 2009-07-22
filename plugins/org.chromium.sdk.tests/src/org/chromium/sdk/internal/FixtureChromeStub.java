@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.chromium.sdk.Script;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.internal.tools.ToolName;
@@ -32,6 +33,8 @@ import org.json.simple.parser.ParseException;
 public class FixtureChromeStub implements ChromeStub {
 
   private static final Map<Long, String> refToObjectMap = new HashMap<Long, String>();
+  private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
+
   static {
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
@@ -42,7 +45,7 @@ public class FixtureChromeStub implements ChromeStub {
         "{\"name\":\"y\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}]}");
     // Script
     refToObjectMap.put(Long.valueOf(getScriptRef()),
-        "{\"handle\":5,\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
+        "{\"handle\":" + getScriptRef() + ",\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
         "\"id\":" + getScriptId() + ",\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
         "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
         "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
@@ -55,6 +58,23 @@ public class FixtureChromeStub implements ChromeStub {
         "  anotherScript();\\r\\n}\\r\\n\\r\\nfunction anotherScript() {\\r\\n  var i = 0;\\r\\n" +
         "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
         "\"scriptType\":2,\"context\":{\"ref\":0},\"text\":\"file:///C:/1.js (lines: 32)\"}");
+    // Compiled Script
+    refToObjectMap.put(Long.valueOf(getCompiledScriptRef()),
+        "{\"handle\":" + getCompiledScriptRef() +
+        ",\"type\":\"script\",\"name\":\"file:///C:/2.js\"," +
+        "\"id\":" + getCompiledScriptId() +
+        ",\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
+        "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
+        "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
+        "\\r\\n}\\r\\n\\r\\n\\r\\nfunction compiled() {\\r\\n  var obj = {\\r\\n" +
+        "    compiled : { internalObj : { intField : 1}, simpleString : \\\"foo\\\" },\\r\\n" +
+        "    someNumber : 3\\r\\n  };\\r\\n  var a = 1;\\r\\n\\r\\n  var arr;\\r\\n" +
+        "  arr = [\\\"foo\\\", 3, new Date(), obj, arr];\\r\\n" +
+        "  for (var i = 5; i < 240; i += 2) {\\r\\n    arr[i] = \\\"bar\\\";\\r\\n  }\\r\\n" +
+        "  arr[100] = 0.99999887;\\r\\n//  var b = a + 1\\r\\n//  console.log('Foo');\\r\\n" +
+        "  anotherScript();\\r\\n}\\r\\n\\r\\nfunction anotherScript() {\\r\\n  var i = 0;\\r\\n" +
+        "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
+        "\"scriptType\":2,\"context\":{\"ref\":0},\"text\":\"file:///C:/2.js (lines: 32)\"}");
     // Function
     refToObjectMap.put(Long.valueOf(getFunctionRef()),
         "{\"handle\":" + getFunctionRef() + ",\"type\":\"function\",\"className\":\"Function\"," +
@@ -81,10 +101,23 @@ public class FixtureChromeStub implements ChromeStub {
     // Number "3"
     refToObjectMap.put(Long.valueOf(getNumber3Ref()),
         "{\"handle\":" + getNumber3Ref() + ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
+
+    scriptIdToScriptRefMap.put(Long.valueOf(getScriptId()), getScriptRef());
+    scriptIdToScriptRefMap.put(Long.valueOf(getCompiledScriptId()), getCompiledScriptRef());
+  }
+
+  private final ScriptManager scriptManager = new ScriptManager();
+
+  public FixtureChromeStub() {
+    scriptManager.addScript(getJsonObjectByRef(getScriptRef()), constructScriptRefs());
   }
 
   public static int getNumber3Ref() {
     return 65;
+  }
+
+  private static int getCompiledScriptRef() {
+    return 6;
   }
 
   public static int getFunctionRef() {
@@ -97,6 +130,10 @@ public class FixtureChromeStub implements ChromeStub {
 
   public static int getScriptId() {
     return 566;
+  }
+
+  public static int getCompiledScriptId() {
+    return 567;
   }
 
   public static int getMouseEventRef() {
@@ -271,7 +308,9 @@ public class FixtureChromeStub implements ChromeStub {
 
   private JSONArray constructScripts() {
     JSONArray scripts = new JSONArray();
-    scripts.add(getJsonObjectByRef(getScriptRef()));
+    for (Script script : scriptManager.allScripts()) {
+      scripts.add(getJsonObjectByRef(scriptIdToScriptRefMap.get(script.getId())));
+    }
     return scripts;
   }
 
@@ -371,6 +410,23 @@ public class FixtureChromeStub implements ChromeStub {
     // TODO: add other data if needed
     eventObject.put("body", body);
     sendEvent(createMessage(createDebuggerCommandResponse(eventObject.toJSONString())));
+  }
+
+  public void sendAfterCompile() {
+    JSONObject afterCompileObject = new JSONObject();
+    afterCompileObject.put("seq", nextSeq());
+    afterCompileObject.put("type", "event");
+    afterCompileObject.put("event", "afterCompile");
+    afterCompileObject.put("success", true);
+    JSONObject body = new JSONObject();
+    JSONArray refs = constructScriptRefs();
+    JSONObject scriptObject = getJsonObjectByRef(getCompiledScriptRef());
+    scriptObject.remove("source");
+    body.put("script", scriptObject);
+    afterCompileObject.put("body", body);
+    afterCompileObject.put("refs", refs);
+    scriptManager.addScript(getJsonObjectByRef(getCompiledScriptRef()), refs);
+    sendEvent(createMessage(createDebuggerCommandResponse(afterCompileObject.toJSONString())));
   }
 
   private Message createMessage(String content) {

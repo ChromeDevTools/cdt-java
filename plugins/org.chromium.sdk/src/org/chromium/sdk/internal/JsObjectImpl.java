@@ -46,9 +46,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   /**
    * This constructor implies the lazy resolution of object properties.
    *
-   * @param callFrame
-   * @param parentFqn
-   * @param valueState
+   * @param callFrame where this instance belongs in
+   * @param parentFqn the fully qualified name of the object parent
+   * @param valueState the value data from the JS VM
    */
   public JsObjectImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
     super(valueState);
@@ -74,7 +74,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final Long ref = Long.valueOf(mirror.getRef());
       final JSONObject handle = callFrame.getDebugContext().getHandleManager().getHandle(ref);
       if (handle != null) {
-        mirror.setProperties(JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
+        mirror.setProperties(
+            JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
             V8ProtocolUtil.extractObjectProperties(handle));
       }
     }
@@ -111,7 +112,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     synchronized (propertyLock) {
       return (properties != null && !isFailedResponse())
           ? properties
-          : Collections.<JsVariableImpl>emptySet();
+          : Collections.<JsVariableImpl> emptySet();
     }
   }
 
@@ -124,7 +125,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final ContextToken token = callFrame.getToken();
       if (!token.isValid()) {
         setFailedResponse();
-        properties = Collections.<JsVariableImpl>emptySet();
+        properties = Collections.<JsVariableImpl> emptySet();
         return;
       }
       DebugContextImpl debugContext = callFrame.getDebugContext();
@@ -142,11 +143,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
             ex = resolveThisHandle(debugContext, handleManager, ref, handle);
           }
           if (ex != null || isFailedResponse()) {
-            properties = Collections.<JsVariableImpl>emptySet();
+            properties = Collections.<JsVariableImpl> emptySet();
             return;
           } else {
             mirrorProperties = V8ProtocolUtil.extractObjectProperties(handle[0]);
-            mirror.setProperties(JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
+            mirror.setProperties(
+                JsonUtil.getAsString(handle[0], V8Protocol.REF_CLASSNAME),
                 mirrorProperties);
           }
         }
@@ -160,10 +162,10 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   /**
    * Calls to this method must be synchronized on propertyLock.
    */
-  private void fillPropertiesFromMirror(
-      final HandleManager handleManager, PropertyReference[] mirrorProperties) {
+  private void fillPropertiesFromMirror(final HandleManager handleManager,
+      PropertyReference[] mirrorProperties) {
     if (!isTokenValid()) {
-      properties = Collections.<JsVariableImpl>emptySet();
+      properties = Collections.<JsVariableImpl> emptySet();
       return;
     }
     List<JsVariableImpl> propertyList = new ArrayList<JsVariableImpl>(mirrorProperties.length);
@@ -182,9 +184,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         processOriginalFormatPropertyRefs(handleManager, mirrorProperties);
         return;
       }
-      propertyList.add(new JsVariableImpl(
-          callFrame, V8Helper.createValueMirror(handleObject, ref.getName()),
-          fqn, true));
+      propertyList.add(
+          new JsVariableImpl(
+              callFrame,
+              V8Helper.createValueMirror(handleObject, ref.getName()),
+              fqn,
+              true));
     }
     properties = Collections.unmodifiableCollection(propertyList);
   }
@@ -197,17 +202,17 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
             Collections.singletonList(ref), true, callFrame.getToken()),
         new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
-            if (!JsonUtil.isSuccessful(response)) {
-              setFailedResponse();
-              return;
-            }
-            JSONObject body = JsonUtil.getBody(response);
-            targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-            if (targetHandle[0] != null) {
-              handleManager.put(ref, targetHandle[0]);
-            }
-            handleManager.putAll(V8ProtocolUtil.getRefHandleMap(
-                JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS)));
+          if (!JsonUtil.isSuccessful(response)) {
+            setFailedResponse();
+            return;
+          }
+          JSONObject body = JsonUtil.getBody(response);
+          targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
+          if (targetHandle[0] != null) {
+            handleManager.put(ref, targetHandle[0]);
+          }
+          handleManager.putAll(V8ProtocolUtil.getRefHandleMap(JsonUtil.getAsJSONArray(
+              response, V8Protocol.FRAME_REFS)));
           }
 
           public void failure(String message) {
@@ -281,15 +286,15 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       // All handles are known, nothing to look up
       return;
     }
-    DebuggerMessage message = DebuggerMessageFactory.lookup(
+    DebuggerMessage message =
+        DebuggerMessageFactory.lookup(
         new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
     Exception ex = callFrame.getDebugContext().sendMessage(
-        SendingType.SYNC,
-        message,
+        SendingType.SYNC, message,
         new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
-            if (!JsVariableImpl.fillVariablesFromLookupReply(
-                    handleManager, properties, variableToRef, response)) {
+            if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
+                response)) {
               setFailedResponse();
             }
           }
@@ -341,11 +346,77 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       JSONObject handle = handleManager.getHandle(ref);
       if (handle != null) {
         // cache hit
-        JsVariableImpl.fillVariable(variable, handle);
+        fillVariable(variable, handle);
       } else {
         handlesToRequest.add(ref);
       }
       variableToRef.put(variable, ref);
     }
+  }
+
+  /**
+   * Fills in a variable from a handle object.
+   *
+   * @param variable to fill in
+   * @param handleObject to get the data from
+   */
+  private static void fillVariable(JsVariableImpl variable, JSONObject handleObject) {
+    String typeString = null;
+    String valueString = null;
+    if (handleObject != null) {
+      typeString = JsonUtil.getAsString(handleObject, V8Protocol.REF_TYPE);
+      valueString = JsonUtil.getAsString(handleObject, V8Protocol.REF_TEXT);
+    }
+    if ("error".equals(typeString)) {
+      // Report the JS VM error.
+      if (valueString == null) {
+        valueString = "An error occurred while retrieving the value.";
+      }
+      variable.setTypeValue(Type.TYPE_STRING, valueString);
+      variable.resetPending();
+      return;
+    }
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(
+        typeString, JsonUtil.getAsString(handleObject, V8Protocol.REF_CLASSNAME));
+    if (Type.isObjectType(type)) {
+      if (!variable.isPendingReq()) {
+        if (!variable.isWaitDrilling()) {
+          PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handleObject);
+          variable.setProperties(
+              JsonUtil.getAsString(handleObject, V8Protocol.REF_CLASSNAME),
+              propertyRefs);
+        }
+        variable.resetDrilling();
+      }
+    } else if (valueString != null && type != null) {
+      variable.setTypeValue(type, valueString);
+      variable.resetPending();
+    } else {
+      variable.setTypeValue(Type.TYPE_STRING, "<Error>");
+      variable.resetPending();
+    }
+  }
+
+  /**
+   * @param vars all the variables for the properties
+   * @param variableToRef variable to ref map
+   * @param reply with the requested handles (some of {@code vars} may be
+   *        missing if they were known at the moment of ensuring the properties)
+   */
+  private static boolean fillVariablesFromLookupReply(HandleManager handleManager,
+      Collection<JsVariableImpl> vars, Map<JsVariableImpl, Long> variableToRef, JSONObject reply) {
+    if (!JsonUtil.isSuccessful(reply)) {
+      return false;
+    }
+    JSONObject body = JsonUtil.getBody(reply);
+    for (JsVariableImpl var : vars) {
+      Long ref = variableToRef.get(var);
+      JSONObject object = JsonUtil.getAsJSON(body, String.valueOf(ref));
+      if (object != null) {
+        handleManager.put(ref, object);
+        fillVariable(var, JsonUtil.getAsJSON(body, String.valueOf(variableToRef.get(var))));
+      }
+    }
+    return true;
   }
 }

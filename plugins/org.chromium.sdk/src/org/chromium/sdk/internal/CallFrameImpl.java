@@ -97,7 +97,8 @@ public class CallFrameImpl implements CallFrame {
     return frameMirror.getScript();
   }
 
-  public void evaluate(final String expression, boolean isSync, final CallFrame.EvaluateCallback callback) {
+  public void evaluate(
+      final String expression, boolean isSync, final CallFrame.EvaluateCallback callback) {
     DebuggerMessage message =
         DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
     BrowserTabImpl.V8HandlerCallback commandCallback = callback == null

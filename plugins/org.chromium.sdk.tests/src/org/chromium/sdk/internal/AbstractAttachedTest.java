@@ -35,6 +35,8 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   protected DebugContextImpl suspendContext;
 
+  protected Script loadedScript;
+
   protected Runnable suspendCallback;
 
   protected Runnable closedCallback;
@@ -48,6 +50,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   protected boolean isDisconnected = false;
 
   protected T connection;
+
 
   @Before
   public void setUpBefore() throws Exception {
@@ -111,6 +114,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   }
 
   public void scriptLoaded(Script newScript) {
+    this.loadedScript = newScript;
     if (scriptLoadedCallback != null) {
       scriptLoadedCallback.run();
     }
