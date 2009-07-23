@@ -51,6 +51,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   private final ILaunch launch;
 
   private final JavascriptThread[] threads;
+  
+  private final ConsolePseudoProcess consolePseudoProcess;
 
   private BrowserTab targetTab;
 
@@ -68,11 +70,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private final Browser browser;
 
-  public DebugTargetImpl(ILaunch launch, Browser browser) throws CoreException {
+  public DebugTargetImpl(ILaunch launch, Browser browser, ConsolePseudoProcess consolePseudoProcess) throws CoreException {
     super(null);
     this.launch = launch;
     this.browser = browser;
     this.threads = new JavascriptThread[] { new JavascriptThread(this) };
+    this.consolePseudoProcess = consolePseudoProcess;
   }
 
 
@@ -337,8 +340,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
   }
 
-  public synchronized void setDisconnected(boolean value) {
-    isDisconnected = value;
+  public synchronized void setDisconnected(boolean disconnected) {
+    isDisconnected = disconnected;
+    if (disconnected && consolePseudoProcess != null) {
+      consolePseudoProcess.terminated();
+    }
   }
 
   public void fireResumeEvent(int detail) {
@@ -354,6 +360,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   }
 
   public void fireTerminateEvent() {
+    // TODO(peter.rybin): from Alexander Pavlov: I think you need to fire a terminate event after
+    // this line, for consolePseudoProcess if one is not null.
     fireEventForThread(DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED);
     fireEvent(new DebugEvent(this, DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
     fireEvent(new DebugEvent(getLaunch(), DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));

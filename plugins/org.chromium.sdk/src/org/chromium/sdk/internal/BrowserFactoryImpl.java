@@ -4,14 +4,15 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.Browser;
+import org.chromium.sdk.BrowserFactory;
+import org.chromium.sdk.ConnectionLogger;
+import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.SocketConnection;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.internal.transport.Connection;
-import org.chromium.sdk.internal.transport.SocketConnection;
 
 /**
  * A default, thread-safe implementation of the BrowserFactory interface.
@@ -25,30 +26,46 @@ public class BrowserFactoryImpl extends BrowserFactory {
       Collections.synchronizedMap(new HashMap<Connection, BrowserImpl>());
 
   @Override
-  public synchronized Browser create(int port) {
-    return cachedBrowserImpl(createConnection(LOCALHOST, port));
+  public synchronized Browser create(int port, ConnectionLogger connectionLogger) {
+    Connection connection = createConnection(LOCALHOST, port, connectionLogger);
+    return createBrowser(connection, connectionLogger != null);
   }
 
   @Override
-  public synchronized Browser create(String host, int port) {
-    return cachedBrowserImpl(createConnection(host, port));
+  public synchronized Browser create(String host, int port, ConnectionLogger connectionLogger) {
+    Connection connection = createConnection(host, port, connectionLogger);
+    return createBrowser(connection, connectionLogger != null);
   }
 
+  // Debug entry (no logger by definition)
   public synchronized Browser create(Connection connection) {
-    return cachedBrowserImpl(connection);
+    return createBrowser(connection, false);
   }
 
-  protected Connection createConnection(String host, int port) {
-    return new SocketConnection(host, port, getTimeout());
+  public synchronized Browser createBrowser(Connection connection, boolean hasLogger) {
+    if (hasLogger) {
+      return getNewBrowserImpl(connection);
+    } else {
+      return getCachedBrowserImpl(connection);
+    }
   }
 
-  private Browser cachedBrowserImpl(Connection connection) {
+  protected Connection createConnection(String host, int port, ConnectionLogger connectionLogger) {
+    return new SocketConnection(host, port, getTimeout(), connectionLogger);
+  }
+
+  private BrowserImpl getCachedBrowserImpl(Connection connection) {
+    // TODO(prybin): maybe separate connection (object) from endpoint (map key).
     BrowserImpl impl = endpointToBrowserImpl.get(connection);
     if (impl == null) {
       impl = new BrowserImpl(connection);
       endpointToBrowserImpl.put(connection, impl);
     }
     return impl;
+  }
+
+  private BrowserImpl getNewBrowserImpl(Connection connection) {
+    return new BrowserImpl(connection);
   }
 
   private int getTimeout() {

@@ -9,6 +9,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -17,6 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
@@ -200,6 +203,8 @@ public class SocketConnection implements Connection {
   /** The socket writer. */
   protected BufferedWriter writer;
 
+  private final ConnectionLogger connectionLogger;
+  
   /** The listener to report network events to. */
   protected volatile NetListener listener;
 
@@ -230,21 +235,27 @@ public class SocketConnection implements Connection {
   /** Browser server socket host. */
   private final int port;
 
-  public SocketConnection(String host, int port, int connectionTimeoutMs) {
+  public SocketConnection(String host, int port, int connectionTimeoutMs, ConnectionLogger connectionLogger) {
     this.host = host;
     this.port = port;
     this.socketEndpoint = new InetSocketAddress(host, port);
     this.connectionTimeoutMs = connectionTimeoutMs;
+    this.connectionLogger = connectionLogger;
   }
 
   void attach() throws IOException {
     this.socket = new Socket();
     this.socket.connect(socketEndpoint, connectionTimeoutMs);
-    this.writer =
-        new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET));
-    this.reader = new BufferedReader(
-        new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET),
-        INPUT_BUFFER_SIZE_BYTES);
+    Writer streamWriter = new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET);
+    Reader streamReader = new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET);
+    
+    if (connectionLogger != null) {
+      streamWriter = connectionLogger.wrapWriter(streamWriter);
+      streamReader = connectionLogger.wrapReader(streamReader);
+    }
+    
+    this.writer = new BufferedWriter(streamWriter);
+    this.reader = new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
     isAttached = true;
 
     this.readerThread = new ReaderThread(reader);

@@ -13,6 +13,8 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.ui.launcher.messages"; //$NON-NLS-1$
 
+  public static String ChromiumRemoteTab_ShowDebuggerNetworkCommunication;
+
   public static String ChromiumRemoteTab_PortLabel;
 
   public static String ChromiumRemoteTab_ProjectNameLabel;
@@ -22,6 +24,8 @@ public class Messages extends NLS {
   public static String ChromiumRemoteTab_InvalidPortNumberError;
   
   public static String ChromiumRemoteTab_InvalidProjectNameError;
+
+  public static String LaunchType_DebuggerChromeConnection;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);

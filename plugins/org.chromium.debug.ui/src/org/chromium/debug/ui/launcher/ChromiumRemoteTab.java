@@ -14,6 +14,7 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.IDebugUIConstants;
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceStore;
@@ -33,6 +34,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private static final String PORT_FIELD_NAME = "port_field"; //$NON-NLS-1$
   private static final String PROJECT_NAME_FIELD_NAME = "project_name_field"; //$NON-NLS-1$
+  private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
+      "add_network_console_field"; //$NON-NLS-1$
   
    // However, recommended range is [1024, 32767].
   private static final int minimumPortValue = 0;
@@ -40,6 +43,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   
   private IntegerFieldEditor debugPort;
   private StringFieldEditor projectName;
+  private BooleanFieldEditor addNetworkConsole;
   private final PreferenceStore store = new PreferenceStore();
 
   public void createControl(Composite parent) {
@@ -64,6 +68,12 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     projectName.setPropertyChangeListener(modifyListener);
     projectName.setPreferenceStore(store);
     projectName.setTextLimit(50);
+    
+    addNetworkConsole = new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
+        Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication,
+        propertiesComp);
+    addNetworkConsole.setPreferenceStore(store);
+    addNetworkConsole.setPropertyChangeListener(modifyListener);
   }
 
   public String getName() {
@@ -80,23 +90,30 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           debugPortDefault));
       store.setDefault(PROJECT_NAME_FIELD_NAME, config.getAttribute(
           LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, projectNameDefault));
+      store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, config.getAttribute(
+          LaunchType.ADD_NETWORK_CONSOLE, false));
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
       store.setDefault(PORT_FIELD_NAME, debugPortDefault);
       store.setDefault(PROJECT_NAME_FIELD_NAME, projectNameDefault);
+      store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, false);
     }
 
     debugPort.loadDefault();
     projectName.loadDefault();
+    addNetworkConsole.loadDefault();
   }
 
   public void performApply(ILaunchConfigurationWorkingCopy config) {
     storeEditor(debugPort, "-1"); //$NON-NLS-1$
     storeEditor(projectName, ""); //$NON-NLS-1$
+    storeEditor(addNetworkConsole, ""); //$NON-NLS-1$
 
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
         store.getString(PROJECT_NAME_FIELD_NAME).trim());
+    config.setAttribute(LaunchType.ADD_NETWORK_CONSOLE,
+        store.getBoolean(ADD_NETWORK_CONSOLE_FIELD_NAME));
   }
   
   @Override
