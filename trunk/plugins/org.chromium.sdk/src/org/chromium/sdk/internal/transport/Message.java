@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal.transport;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -214,7 +213,7 @@ public class Message {
   public String toString() {
     StringWriter sw = new StringWriter();
     try {
-      this.sendThrough(new BufferedWriter(sw));
+      this.sendThrough(sw);
     } catch (IOException e) {
       // never occurs
     }

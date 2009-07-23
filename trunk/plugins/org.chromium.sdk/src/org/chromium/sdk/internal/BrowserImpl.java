@@ -77,6 +77,7 @@ public class BrowserImpl implements Browser, NetListener {
         tab = new BrowserTabImpl(entry.id, entry.url, this);
         tabUidToTabImpl.put(entry.id, tab);
       }
+      // TODO(prybin): what do we do with already attached tabs? Do we handle them properly?
       browserTabs.add(tab);
     }
     return browserTabs.toArray(new BrowserTab[browserTabs.size()]);

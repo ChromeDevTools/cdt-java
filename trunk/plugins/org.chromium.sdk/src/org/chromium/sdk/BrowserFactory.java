@@ -43,9 +43,11 @@ public abstract class BrowserFactory {
    * instance if one was created earlier for localhost and {@code port}.
    *
    * @param port the browser is listening on at 127.0.0.1 (localhost)
+   * @param connectionLogger provides facility for listening to network
+   *        traffic; may be null
    * @return a Browser instance for the (127.0.0.1, port) endpoint
    */
-  public abstract Browser create(int port);
+  public abstract Browser create(int port, ConnectionLogger connectionLogger);
 
   /**
    * Constructs a Browser implementor instance that talks to a browser listening
@@ -54,8 +56,10 @@ public abstract class BrowserFactory {
    *
    * @param host the browser is running at
    * @param port the browser is listening on
+   * @param connectionLogger provides facility for listening to network
+   *        traffic; may be null
    * @return a Browser instance for the (host, port) endpoint
    */
-  public abstract Browser create(String host, int port);
+  public abstract Browser create(String host, int port, ConnectionLogger connectionLogger);
 
 }
