@@ -32,6 +32,8 @@ public class SocketConnection implements Connection {
 
   /**
    * A thread that can be gracefully interrupted by a third party.
+   * <p>Unfortunately there is no standard way of interrupting I/O in Java. See Bug #4514257
+   * on Java Bug Database (http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4514257). 
    */
   private static abstract class InterruptibleThread extends Thread {
 
