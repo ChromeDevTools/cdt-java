@@ -32,7 +32,8 @@ public class SocketConnection implements Connection {
 
   /**
    * A thread that can be gracefully interrupted by a third party.
-   * <p>Unfortunately there is no standard way of interrupting I/O in Java. See Bug #4514257
+   * <p>
+   * Unfortunately there is no standard way of interrupting I/O in Java. See Bug #4514257
    * on Java Bug Database (http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4514257). 
    */
   private static abstract class InterruptibleThread extends Thread {
@@ -99,47 +100,43 @@ public class SocketConnection implements Connection {
    */
   private class ReaderThread extends InterruptibleThread {
 
-    /**
-     * A handshake string to be sent by a browser on the connection start,
-     * specified by the protocol design doc.
-     */
-    private static final String CHROME_DEV_TOOLS_HANDSHAKE = "ChromeDevToolsHandshake";
-
-    private boolean handshakeDone = false;
-
     private final BufferedReader reader;
+    private final Writer handshakeWriter;
 
-    public ReaderThread(BufferedReader reader) {
+    public ReaderThread(BufferedReader reader, Writer handshakeWriter) {
       super("ReaderThread");
       this.reader = reader;
+      this.handshakeWriter = handshakeWriter;
     }
 
     @Override
     public void run() {
-      Message message;
+      Exception breakException;
       try {
+        handshaker.perform(reader, handshakeWriter);
+        
+        startWriterThread();
+        
         while (!isTerminated && isAttached) {
-          if (handshakeDone) {
-            try {
-              message = Message.fromBufferedReader(reader);
-            } catch (MalformedMessageException e) {
-              log(Level.SEVERE, "Malformed protocol message", e);
-              continue;
-            }
-            if (message != null) {
-              inboundQueue.add(message);
-            }
-          } else {
-            String line = reader.readLine();
-            if (CHROME_DEV_TOOLS_HANDSHAKE.equals(line)) {
-              handshakeDone = true;
-            }
+          Message message;
+          try {
+            message = Message.fromBufferedReader(reader);
+          } catch (MalformedMessageException e) {
+            log(Level.SEVERE, "Malformed protocol message", e);
+            continue;
           }
+          if (message == null) {
+            LOGGER.fine("End of stream");
+            break;
+          }
+          inboundQueue.add(message);
         }
+        breakException = null;
       } catch (IOException e) {
-        if (!isInterrupted()) {
-          SocketConnection.this.shutdown(e, false);
-        }
+        breakException = e;
+      }
+      if (!isInterrupted()) {
+        SocketConnection.this.shutdown(breakException, false);
       }
     }
   }
@@ -206,6 +203,9 @@ public class SocketConnection implements Connection {
   protected BufferedWriter writer;
 
   private final ConnectionLogger connectionLogger;
+
+  /** Handshaker used to establish connection. */
+  private final Handshaker handshaker;
   
   /** The listener to report network events to. */
   protected volatile NetListener listener;
@@ -237,12 +237,14 @@ public class SocketConnection implements Connection {
   /** Browser server socket host. */
   private final int port;
 
-  public SocketConnection(String host, int port, int connectionTimeoutMs, ConnectionLogger connectionLogger) {
+  public SocketConnection(String host, int port, int connectionTimeoutMs,
+      ConnectionLogger connectionLogger, Handshaker handshaker) {
     this.host = host;
     this.port = port;
     this.socketEndpoint = new InetSocketAddress(host, port);
     this.connectionTimeoutMs = connectionTimeoutMs;
     this.connectionLogger = connectionLogger;
+    this.handshaker = handshaker;
   }
 
   void attach() throws IOException {
@@ -260,17 +262,14 @@ public class SocketConnection implements Connection {
     this.reader = new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
     isAttached = true;
 
-    this.readerThread = new ReaderThread(reader);
-    this.writerThread = new WriterThread(writer);
+    this.readerThread = new ReaderThread(reader, writer);
+    // We do not start WriterThread until handshake is done (see ReaderThread)
+    this.writerThread = null;
     this.dispatcherThread = new ResponseDispatcherThread();
-    writerThread.setDaemon(true);
-    writerThread.start();
     readerThread.setDaemon(true);
     readerThread.start();
     dispatcherThread.setDaemon(true);
     dispatcherThread.start();
-
-    outboundQueue.add(new HandshakeMessage());
   }
 
   void detach(boolean lameduckMode) {
@@ -338,6 +337,15 @@ public class SocketConnection implements Connection {
     interruptThread(writerThread);
     interruptThread(readerThread);
     interruptThread(dispatcherThread);
+  }
+  
+  private void startWriterThread() {
+    if (writerThread != null) {
+      throw new IllegalStateException();
+    }
+    writerThread = new WriterThread(writer);
+    writerThread.setDaemon(true);
+    writerThread.start();
   }
 
   private void interruptThread(Thread thread) {

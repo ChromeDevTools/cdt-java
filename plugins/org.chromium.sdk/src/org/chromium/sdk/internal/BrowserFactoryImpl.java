@@ -8,6 +8,7 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
 
 import java.util.Collections;
@@ -51,7 +52,7 @@ public class BrowserFactoryImpl extends BrowserFactory {
   }
 
   protected Connection createConnection(String host, int port, ConnectionLogger connectionLogger) {
-    return new SocketConnection(host, port, getTimeout(), connectionLogger);
+    return new SocketConnection(host, port, getTimeout(), connectionLogger, Handshaker.CHROMIUM);
   }
 
   private BrowserImpl getCachedBrowserImpl(Connection connection) {
