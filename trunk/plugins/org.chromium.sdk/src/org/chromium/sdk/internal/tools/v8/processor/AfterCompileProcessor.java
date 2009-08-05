@@ -4,19 +4,19 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
-import java.util.Collections;
-
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
+import java.util.Collections;
 
 /**
  * Listens for scripts sent in the "afterCompile" events and requests their
@@ -41,7 +41,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
         SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.scripts(
             Collections.singletonList(V8ProtocolUtil.getScriptIdFromResponse(script)), true),
-        new V8HandlerCallback(){
+        new V8CommandProcessor.V8HandlerCallback(){
           public void messageReceived(JSONObject response) {
             if (!JsonUtil.isSuccessful(response)) {
               return;

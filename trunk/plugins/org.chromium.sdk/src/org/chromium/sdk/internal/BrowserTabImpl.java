@@ -15,36 +15,6 @@ import org.json.simple.JSONObject;
  */
 public class BrowserTabImpl implements BrowserTab {
 
-  /**
-   * A callback to handle V8 debugger responses.
-   */
-  public interface V8HandlerCallback {
-
-    /** A no-op callback implementation. */
-    V8HandlerCallback NULL_CALLBACK = new V8HandlerCallback() {
-      public void failure(String message) {
-      }
-
-      public void messageReceived(JSONObject response) {
-      }
-    };
-
-    /**
-     * This method is invoked when a debugger command result has become
-     * available.
-     *
-     * @param response from the V8 debugger
-     */
-    void messageReceived(JSONObject response);
-
-    /**
-     * This method is invoked when a debugger command has failed.
-     *
-     * @param message containing the failure reason
-     */
-    void failure(String message);
-  }
-
   /** Tab ID as reported by the DevTools server. */
   private final int tabId;
 
@@ -114,8 +84,8 @@ public class BrowserTabImpl implements BrowserTab {
   public void setBreakpoint(Breakpoint.Type type, String target, int line,
       int position, boolean enabled, String condition, int ignoreCount,
       final BreakpointCallback callback) {
-    context.getV8Handler().getBreakpointProcessor().setBreakpoint(type, target, line,
-        position, enabled, condition, ignoreCount, callback);
+    context.getV8Handler().getV8CommandProcessor().getBreakpointProcessor()
+        .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);  
   }
 
   public void sessionTerminated() {

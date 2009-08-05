@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -55,15 +55,15 @@ class V8Helper {
    *
    * @param callback to invoke when the script reloading has completed
    */
-  void reloadAllScripts(V8HandlerCallback callback) {
-    final V8HandlerCallback finalCallback = callback != null
+  void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback) {
+    final V8CommandProcessor.V8HandlerCallback finalCallback = callback != null
         ? callback
-        : V8HandlerCallback.NULL_CALLBACK;
+        : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
     lock();
     context.sendMessage(
         SendingType.SYNC,
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
-        new V8HandlerCallback() {
+        new V8CommandProcessor.V8HandlerCallback() {
           public void failure(String message) {
             unlock();
             finalCallback.failure(message);

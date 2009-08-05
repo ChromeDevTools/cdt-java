@@ -4,26 +4,26 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.DebugContext.State;
-import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Handles the suspension-related V8 command replies and events.
@@ -88,7 +88,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
             toNullableInteger(ignoreCount)),
         callback == null
             ? null
-            : new BrowserTabImpl.V8HandlerCallback() {
+            : new V8CommandProcessor.V8HandlerCallback() {
               public void messageReceived(JSONObject response) {
                 if (JsonUtil.isSuccessful(response)) {
                   JSONObject body = JsonUtil.getBody(response);
@@ -122,7 +122,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
     getDebugContext().sendMessage(
         SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
-        new BrowserTabImpl.V8HandlerCallback() {
+        new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
               if (callback != null) {
@@ -147,7 +147,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
     getDebugContext().sendMessage(
         SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
-        new BrowserTabImpl.V8HandlerCallback() {
+        new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (callback != null) {
               if (JsonUtil.isSuccessful(response)) {

@@ -4,6 +4,22 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.Script;
+import org.chromium.sdk.BrowserTab.ScriptsCallback;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
+import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,21 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.BrowserTab.ScriptsCallback;
-import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
@@ -234,9 +235,9 @@ public class DebugContextImpl implements DebugContext {
       DebuggerMessage message = DebuggerMessageFactory.goOn(
           stepAction, stepCount, getContinueToken());
       // Use non-null commandCallback only if callback is not null
-      BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
+      V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
           ? null
-          : new BrowserTabImpl.V8HandlerCallback() {
+          : new V8CommandProcessor.V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
           if (JsonUtil.isSuccessful(response)) {
             callback.success();
@@ -405,20 +406,8 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public Exception sendMessage(SendingType manner, DebuggerMessage message,
-      BrowserTabImpl.V8HandlerCallback commandCallback) {
-    Exception result = null;
-    switch (manner) {
-      case SYNC:
-        result = getV8Handler().sendV8CommandBlocking(message, commandCallback);
-        break;
-      case ASYNC:
-        getV8Handler().sendV8Command(message, false, commandCallback);
-        break;
-      case ASYNC_IMMEDIATE:
-        getV8Handler().sendV8Command(message, true, commandCallback);
-        break;
-    }
-    return result;
+      V8CommandProcessor.V8HandlerCallback commandCallback) {
+    return getV8Handler().getV8CommandProcessor().sendV8Command(manner, message, commandCallback);
   }
 
   /**
