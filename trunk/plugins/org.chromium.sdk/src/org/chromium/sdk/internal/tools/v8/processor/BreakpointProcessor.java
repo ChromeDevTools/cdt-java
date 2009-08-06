@@ -6,7 +6,7 @@ package org.chromium.sdk.internal.tools.v8.processor;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
-import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.DebugContext.State;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;

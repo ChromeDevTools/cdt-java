@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 

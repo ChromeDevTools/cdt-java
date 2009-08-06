@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Breakpoint.Type;
-import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;

@@ -4,16 +4,14 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler.AttachmentFailureException;
-import org.json.simple.JSONObject;
 
 /**
  * A default, thread-safe implementation of the BrowserTab interface.
  */
-public class BrowserTabImpl implements BrowserTab {
+public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   /** Tab ID as reported by the DevTools server. */
   private final int tabId;
@@ -45,6 +43,7 @@ public class BrowserTabImpl implements BrowserTab {
     return tabId;
   }
 
+  @Override
   public DebugContextImpl getDebugContext() {
     return context;
   }
@@ -75,17 +74,6 @@ public class BrowserTabImpl implements BrowserTab {
 
   public boolean isAttached() {
     return context.getV8Handler().isAttached();
-  }
-
-  public void getScripts(final ScriptsCallback callback) {
-    context.loadAllScripts(callback);
-  }
-
-  public void setBreakpoint(Breakpoint.Type type, String target, int line,
-      int position, boolean enabled, String condition, int ignoreCount,
-      final BreakpointCallback callback) {
-    context.getV8Handler().getV8CommandProcessor().getBreakpointProcessor()
-        .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);  
   }
 
   public void sessionTerminated() {

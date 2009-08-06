@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
-import org.chromium.sdk.BrowserTab.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.TestUtil;
