@@ -6,7 +6,6 @@ package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
-import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 
 /**
  * A generic implementation of the Breakpoint interface.
@@ -41,9 +40,9 @@ public class BreakpointImpl implements Breakpoint {
   private String condition;
 
   /**
-   * The breakpoint processor that performs JavaScript VM communications.
+   * The breakpoint manager that manages this breakpoint.
    */
-  private final BreakpointProcessor breakpointProcessor;
+  private final BreakpointManager breakpointManager;
 
   /**
    * Whether the breakpoint data have changed with respect
@@ -52,13 +51,13 @@ public class BreakpointImpl implements Breakpoint {
   private volatile boolean isDirty = false;
 
   public BreakpointImpl(Type type, long id, boolean enabled, int ignoreCount, String condition,
-      BreakpointProcessor breakpointProcessor) {
+      BreakpointManager breakpointManager) {
     this.type = type;
     this.id = id;
     this.isEnabled = enabled;
     this.ignoreCount = ignoreCount;
     this.condition = condition;
-    this.breakpointProcessor = breakpointProcessor;
+    this.breakpointManager = breakpointManager;
   }
 
   public boolean isEnabled() {
@@ -108,7 +107,7 @@ public class BreakpointImpl implements Breakpoint {
   }
 
   public void clear(final BrowserTab.BreakpointCallback callback) {
-    breakpointProcessor.clearBreakpoint(this, callback);
+    breakpointManager.clearBreakpoint(this, callback);
     // The order must be preserved, otherwise the breakpointProcessor will not be able
     // to identify the original breakpoint ID.
     this.id = INVALID_ID;
@@ -121,7 +120,7 @@ public class BreakpointImpl implements Breakpoint {
       }
       return;
     }
-    breakpointProcessor.changeBreakpoint(this, callback);
+    breakpointManager.changeBreakpoint(this, callback);
     setDirty(false);
   }
 
