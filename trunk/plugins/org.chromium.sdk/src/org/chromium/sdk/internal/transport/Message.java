@@ -135,7 +135,8 @@ public class Message {
       }
 
       // Read payload if applicable
-      int contentLength = Integer.valueOf(getHeader(headers, Header.CONTENT_LENGTH.name, "0"));
+      String contentLengthStr = getHeader(headers, Header.CONTENT_LENGTH.name, "0");
+      int contentLength = Integer.valueOf(contentLengthStr.trim());
       char[] content = new char[contentLength];
       int totalRead = 0;
       LOGGER.finer("Reading payload: " + contentLength + " bytes");
