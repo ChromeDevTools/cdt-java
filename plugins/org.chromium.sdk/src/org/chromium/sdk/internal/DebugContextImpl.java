@@ -9,6 +9,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
@@ -90,9 +91,6 @@ public class DebugContextImpl implements DebugContext {
   /** The cached call frames constructed using frameMirrors. */
   private volatile List<CallFrameImpl> callFramesCached;
 
-  /** The breakpoints hit before suspending. */
-  private volatile Collection<Breakpoint> breakpointsHit;
-
   /** The suspension state. */
   private State state;
 
@@ -104,12 +102,16 @@ public class DebugContextImpl implements DebugContext {
 
   /** The context validity token access lock. */
   private final Object tokenAccessLock = new Object();
+  
+  /** Context owns breakpoint manager */ 
+  private final BreakpointManager breakpointManager;
 
   public DebugContextImpl(BrowserTabImpl browserTabImpl) {
     createNewToken();
     this.scriptManager = new ScriptManager();
     this.handleManager = new HandleManager();
     this.browserTabImpl = browserTabImpl;
+    this.breakpointManager = new BreakpointManager(this);
     this.handler = new V8DebuggerToolHandler(browserTabImpl.getBrowser(), this);
   }
 
@@ -276,9 +278,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public Collection<Breakpoint> getBreakpointsHit() {
-    return breakpointsHit != null
-        ? breakpointsHit
-        : Collections.<Breakpoint> emptySet();
+    return breakpointManager.getBreakpointsHit();
   }
 
   public ExceptionData getExceptionData() {
@@ -335,16 +335,6 @@ public class DebugContextImpl implements DebugContext {
         frame.setScript(script);
       }
     }
-  }
-
-  /**
-   * Stores the breakpoints associated with V8 suspension event (empty if an
-   * exception or a step end).
-   *
-   * @param breakpointsHit the breakpoints that were hit
-   */
-  public void onBreakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
-    this.breakpointsHit = Collections.unmodifiableCollection(breakpointsHit);
   }
 
   /**
@@ -455,5 +445,9 @@ public class DebugContextImpl implements DebugContext {
 
   private void setDoneInitialScriptLoad(boolean doneInitialScriptLoad) {
     this.doneInitialScriptLoad = doneInitialScriptLoad;
+  }
+
+  public BreakpointManager getBreakpointManager() {
+    return breakpointManager;
   }
 }
