@@ -21,7 +21,7 @@ public class BrowserImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test
   public void checkGetTabsDoesNotResetTabImpls() throws Exception {
     browser.getTabs();
-    assertTrue(browser.getDebugContext(browserTab.getId()).getV8Handler().isAttached());
+    assertTrue(browser.getBrowserTab(browserTab.getId()).isAttached());
   }
 
   @Test

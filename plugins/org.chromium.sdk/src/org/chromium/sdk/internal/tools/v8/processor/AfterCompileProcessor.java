@@ -9,7 +9,7 @@ import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
+import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -67,7 +67,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
 
   private static JSONObject getScriptToLoad(JSONObject response) {
     JSONObject script = JsonUtil.getAsJSON(JsonUtil.getBody(response), V8Protocol.FRAME_SCRIPT);
-    if (V8DebuggerToolHandler.JAVASCRIPT_VOID.equals(JsonUtil.getAsString(script, "sourceStart")) ||
+    if (ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(JsonUtil.getAsString(script, "sourceStart")) ||
         script.get(V8Protocol.CONTEXT) != null ||
         V8ProtocolUtil.getScriptType(JsonUtil.getAsLong(script, V8Protocol.BODY_SCRIPT_TYPE)) ==
             Script.Type.NATIVE) {

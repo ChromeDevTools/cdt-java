@@ -8,6 +8,7 @@ import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.internal.BrowserImpl;
 import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.MessageFactory;
 import org.chromium.sdk.internal.Result;
@@ -27,7 +28,7 @@ import java.util.logging.Logger;
 /**
  * Handles the interaction with the "V8Debugger" tool.
  */
-public class V8DebuggerToolHandler implements ToolHandler {
+public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   /**
    * This exception is thrown whenever the handler could not get a tab
@@ -60,10 +61,11 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   /** The class logger. */
-  private static final Logger LOGGER = Logger.getLogger(V8DebuggerToolHandler.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(ChromeDevToolSessionManager.class.getName());
 
-  /** The host BrowserImpl instance. */
-  private final BrowserImpl browserImpl;
+  /** The host BrowserTabImpl instance. */
+  private final BrowserTabImpl browserTabImpl;
 
   /** The debug context for this handler. */
   private final DebugContextImpl context;
@@ -77,7 +79,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
   private ResultAwareCallback attachCallback;
 
   private ResultAwareCallback detachCallback;
-
+  
   private final V8CommandProcessor v8CommandProcessor;
 
   /**
@@ -85,18 +87,18 @@ public class V8DebuggerToolHandler implements ToolHandler {
    */
   public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
-  public V8DebuggerToolHandler(BrowserImpl browserImpl, DebugContextImpl context) {
-    this.browserImpl = browserImpl;
+  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, DebugContextImpl context) {
+    this.browserTabImpl = browserTabImpl;
     this.context = context;
-    ChromeDevToolMessageOutput messageOutput = new ChromeDevToolMessageOutput(context.getTab());
+    ChromeDevToolMessageOutput messageOutput = new ChromeDevToolMessageOutput(browserTabImpl);
     this.v8CommandProcessor = new V8CommandProcessor(messageOutput, context);
   }
 
   public DebugEventListener getDebugEventListener() {
-    return context.getTab().getDebugEventListener();
+    return browserTabImpl.getDebugEventListener();
   }
 
-  public void handleMessage(final Message message) {
+  private void handleChromeDevToolMessage(final Message message) {
     JSONObject json;
     try {
       json = JsonUtil.jsonObjectFromJson(message.getContent());
@@ -130,6 +132,10 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   public void onDebuggerDetached() {
+    onDebuggerDetachedImpl();
+  }
+
+  private void onDebuggerDetachedImpl() {
     if (!isAttached()) {
       // We've already been notified.
       return;
@@ -142,14 +148,14 @@ public class V8DebuggerToolHandler implements ToolHandler {
     if (debugEventListener != null) {
       debugEventListener.disconnected();
     }
-    context.getTab().sessionTerminated();
+    browserTabImpl.sessionTerminated();
   }
 
   public int getAttachedTab() {
     if (!isAttached()) {
       throw new IllegalStateException("Debugger is not attached to any tab");
     }
-    return context.getTabId();
+    return browserTabImpl.getId();
   }
 
   /**
@@ -189,7 +195,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
       };
     }
     // No guarding against invocation while an "attach" command is in flight.
-    getConnection().send(MessageFactory.attach(String.valueOf(context.getTabId())));
+    getConnection().send(MessageFactory.attach(String.valueOf(browserTabImpl.getId())));
 
     // If the attachment fails, notify the listener disconnected() method.
     try {
@@ -211,7 +217,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
    */
   public Result detachFromTab() {
     if (!isAttached()) {
-      onDebuggerDetached();
+      toolHandler.onDebuggerDetached();
       return Result.ILLEGAL_TAB_STATE;
     }
     final Semaphore sem = new Semaphore(0);
@@ -225,7 +231,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
       };
     }
     // No guarding against invocation while a "detach" command is in flight.
-    getConnection().send(MessageFactory.detach(String.valueOf(context.getTabId())));
+    getConnection().send(MessageFactory.detach(String.valueOf(browserTabImpl.getId())));
 
     try {
       sem.tryAcquire(BrowserImpl.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -235,6 +241,20 @@ public class V8DebuggerToolHandler implements ToolHandler {
     return output[0];
   }
 
+  public ToolHandler getToolHandler() {
+    return toolHandler;
+  }
+
+  private final ToolHandler toolHandler = new ToolHandler() {
+    public void handleMessage(Message message) {
+      handleChromeDevToolMessage(message);
+    }
+
+    public void onDebuggerDetached() {
+      onDebuggerDetachedImpl();
+    }
+  };
+
   private void processClosed(JSONObject json) {
     synchronized (fieldAccessLock) {
       if (detachCallback != null) {
@@ -242,8 +262,8 @@ public class V8DebuggerToolHandler implements ToolHandler {
         notifyDetachCallback(Result.OK);
       }
     }
-    context.getTab().getDebugEventListener().closed();
-    onDebuggerDetached();
+    browserTabImpl.getDebugEventListener().closed();
+    onDebuggerDetachedImpl();
   }
 
   /**
@@ -289,7 +309,7 @@ public class V8DebuggerToolHandler implements ToolHandler {
     Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
     Result result = Result.forCode(resultValue.intValue());
     if (result != null && result == Result.OK) {
-      onDebuggerDetached();
+      onDebuggerDetachedImpl();
     } else {
       if (result == null) {
         result = Result.DEBUGGER_ERROR;
@@ -309,11 +329,13 @@ public class V8DebuggerToolHandler implements ToolHandler {
   }
 
   private void processNavigated(JSONObject json) {
-    context.navigated(JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key));
+    String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
+    context.navigated();
+    getDebugEventListener().navigated(newUrl);
   }
 
   private Connection getConnection() {
-    return browserImpl.getConnection();
+    return browserTabImpl.getBrowser().getConnection();
   }
 
   public V8CommandProcessor getV8CommandProcessor() {

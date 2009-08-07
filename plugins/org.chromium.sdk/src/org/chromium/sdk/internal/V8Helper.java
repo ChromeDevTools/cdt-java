@@ -12,7 +12,7 @@ import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
+import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -76,7 +76,7 @@ class V8Helper {
               JSONObject scriptJson = (JSONObject) body.get(i);
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);
               if (scriptManager.findById(id) == null &&
-                  !V8DebuggerToolHandler.JAVASCRIPT_VOID.equals(
+                  !ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(
                       JsonUtil.getAsString(scriptJson, V8Protocol.SOURCE_CODE))) {
                 scriptManager.addScript(
                     scriptJson, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));

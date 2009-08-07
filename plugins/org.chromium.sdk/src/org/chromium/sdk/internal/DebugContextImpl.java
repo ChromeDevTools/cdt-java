@@ -9,10 +9,9 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
@@ -73,14 +72,8 @@ public class DebugContextImpl implements DebugContext {
   /** A helper for performing complex V8-related actions. */
   private final V8Helper v8Helper = new V8Helper(this, THIS_NAME);
 
-  /**
-   * The V8 debugger tool handler for the associated tab (used for sending
-   * messages).
-   */
-  private final V8DebuggerToolHandler handler;
-
-  /** The parent BrowserImpl instance. */
-  private final BrowserTabImpl browserTabImpl;
+  /** The parent JavascriptVm instance. */
+  private final JavascriptVmImpl javascriptVmImpl;
 
   /** Whether the initial script loading has completed. */
   private volatile boolean doneInitialScriptLoad = false;
@@ -106,23 +99,18 @@ public class DebugContextImpl implements DebugContext {
   /** Context owns breakpoint manager */ 
   private final BreakpointManager breakpointManager;
 
-  public DebugContextImpl(BrowserTabImpl browserTabImpl) {
+  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl) {
     createNewToken();
     this.scriptManager = new ScriptManager();
     this.handleManager = new HandleManager();
-    this.browserTabImpl = browserTabImpl;
+    this.javascriptVmImpl = javascriptVmImpl;
     this.breakpointManager = new BreakpointManager(this);
-    this.handler = new V8DebuggerToolHandler(browserTabImpl.getBrowser(), this);
   }
 
-  public BrowserTabImpl getTab() {
-    return browserTabImpl;
+  public JavascriptVmImpl getJavascriptVm() {
+    return javascriptVmImpl;
   }
-
-  public int getTabId() {
-    return browserTabImpl.getId();
-  }
-
+  
   /**
    * Sets current frames for this break event.
    * <p>
@@ -293,12 +281,12 @@ public class DebugContextImpl implements DebugContext {
     return handleManager;
   }
 
-  V8DebuggerToolHandler getV8Handler() {
-    return handler;
+  DebugSessionManager getSessionManager() {
+    return javascriptVmImpl.getSessionManager();
   }
 
   public void onDebuggerDetached() {
-    getV8Handler().onDebuggerDetached();
+    getSessionManager().onDebuggerDetached();
     getScriptManager().reset();
     getHandleManager().reset();
     createNewToken();
@@ -397,17 +385,15 @@ public class DebugContextImpl implements DebugContext {
 
   public Exception sendMessage(SendingType manner, DebuggerMessage message,
       V8CommandProcessor.V8HandlerCallback commandCallback) {
-    return getV8Handler().getV8CommandProcessor().sendV8Command(manner, message, commandCallback);
+    return getSessionManager().getV8CommandProcessor().sendV8Command(manner, message,
+        commandCallback);
   }
 
   /**
    * Gets invoked when a navigation event is reported by the browser tab.
-   *
-   * @param newUrl the new URL of the tab being debugged
    */
-  public void navigated(String newUrl) {
+  public void navigated() {
     getScriptManager().reset();
-    getTab().getDebugEventListener().navigated(newUrl);
   }
 
   /**
@@ -416,7 +402,7 @@ public class DebugContextImpl implements DebugContext {
    * @param newScript the newly loaded script
    */
   public void scriptLoaded(Script newScript) {
-    getTab().getDebugEventListener().scriptLoaded(newScript);
+    getJavascriptVm().getDebugEventListener().scriptLoaded(newScript);
   }
 
   /**
@@ -436,7 +422,7 @@ public class DebugContextImpl implements DebugContext {
    * @return the DebugEventListener associated with this context
    */
   public DebugEventListener getDebugEventListener() {
-    return getV8Handler().getDebugEventListener();
+    return getSessionManager().getDebugEventListener();
   }
 
   private boolean isDoneInitialScriptLoad() {
