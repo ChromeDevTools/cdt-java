@@ -120,14 +120,14 @@ public abstract class AbstractAttachedTest<T extends Connection>
     }
   }
 
-  protected CountDownLatch expectSuspend() {
+  protected void waitForSuspend() throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
     suspendCallback = new Runnable() {
       public void run() {
         latch.countDown();
       }
     };
-    return latch;
+    latch.await();
   }
 
   /** This should be called from a timed test. */

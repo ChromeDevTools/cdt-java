@@ -10,16 +10,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
-import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.TestUtil;
+import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
-
-import java.util.concurrent.CountDownLatch;
 
 /**
  * A BreakpointImpl test.
@@ -29,9 +30,9 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   public boolean isBreakpointChanged;
   public boolean isBreakpointCleared;
 
-  private class TestBreakpointManager extends BreakpointManager {
+  private class TestBreakpointProcessor extends BreakpointProcessor {
 
-    public TestBreakpointManager(DebugContextImpl context) {
+    public TestBreakpointProcessor(DebugContextImpl context) {
       super(context);
     }
 
@@ -109,7 +110,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test(timeout = 5000)
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, true, 0, null,
-        new TestBreakpointManager(browserTab.getDebugContext()));
+        new TestBreakpointProcessor(browserTab.getDebugContext()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -138,7 +139,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     int ignoreCount = 3;
     boolean enabled = true;
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, enabled, ignoreCount, condition,
-        new TestBreakpointManager(browserTab.getDebugContext()));
+        new TestBreakpointProcessor(browserTab.getDebugContext()));
 
     bp.setCondition(condition);
     bp.flush(null);

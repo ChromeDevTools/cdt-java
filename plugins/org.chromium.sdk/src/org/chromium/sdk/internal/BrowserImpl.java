@@ -93,8 +93,16 @@ public class BrowserImpl implements Browser, NetListener {
     }
   }
 
-  BrowserTabImpl getBrowserTab(int tabUid) {
-    return tabUidToTabImpl.get(tabUid);
+  /**
+   * Gets an existing V8DebuggerToolHandler instance corresponding to the
+   * specified {@code tabId} (owned by a BrowserTabImpl instance).
+   */
+  DebugContextImpl getDebugContext(int tabUid) {
+    BrowserTabImpl tab = tabUidToTabImpl.get(tabUid);
+    if (tab == null) {
+      return null;
+    }
+    return tab.getDebugContext();
   }
 
   public Connection getConnection() {
@@ -128,9 +136,9 @@ public class BrowserImpl implements Browser, NetListener {
         handler = devToolsHandler;
         break;
       case V8_DEBUGGER:
-        BrowserTabImpl tab = getBrowserTab(Integer.valueOf(message.getDestination()));
-        if (tab != null) {
-          handler = tab.getV8ToolHandler();
+        DebugContextImpl debugContext = getDebugContext(Integer.valueOf(message.getDestination()));
+        if (debugContext != null) {
+          handler = debugContext.getV8Handler();
         }
         break;
       default:

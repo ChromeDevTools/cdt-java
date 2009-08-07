@@ -12,7 +12,6 @@ import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -102,9 +101,9 @@ public class CallFrameImpl implements CallFrame {
       final String expression, boolean isSync, final CallFrame.EvaluateCallback callback) {
     DebuggerMessage message =
         DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
-    V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
+    BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
         ? null
-        : new V8CommandProcessor.V8HandlerCallback() {
+        : new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
               JsVariable variable =

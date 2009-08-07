@@ -4,16 +4,46 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.internal.tools.ToolHandler;
-import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
-import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager.AttachmentFailureException;
+import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler.AttachmentFailureException;
+import org.json.simple.JSONObject;
 
 /**
  * A default, thread-safe implementation of the BrowserTab interface.
  */
-public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
+public class BrowserTabImpl implements BrowserTab {
+
+  /**
+   * A callback to handle V8 debugger responses.
+   */
+  public interface V8HandlerCallback {
+
+    /** A no-op callback implementation. */
+    V8HandlerCallback NULL_CALLBACK = new V8HandlerCallback() {
+      public void failure(String message) {
+      }
+
+      public void messageReceived(JSONObject response) {
+      }
+    };
+
+    /**
+     * This method is invoked when a debugger command result has become
+     * available.
+     *
+     * @param response from the V8 debugger
+     */
+    void messageReceived(JSONObject response);
+
+    /**
+     * This method is invoked when a debugger command has failed.
+     *
+     * @param message containing the failure reason
+     */
+    void failure(String message);
+  }
 
   /** Tab ID as reported by the DevTools server. */
   private final int tabId;
@@ -26,8 +56,6 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   /** The debug context instance for this tab. */
   private final DebugContextImpl context;
-  
-  private final ChromeDevToolSessionManager devToolSessionManager;
 
   /** The listener to report debug events to. */
   private DebugEventListener debugEventListener;
@@ -37,7 +65,6 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.url = url;
     this.browserImpl = browserImpl;
     this.context = new DebugContextImpl(this);
-    this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);;
   }
 
   public String getUrl() {
@@ -48,12 +75,10 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return tabId;
   }
 
-  @Override
   public DebugContextImpl getDebugContext() {
     return context;
   }
 
-  @Override
   public synchronized DebugEventListener getDebugEventListener() {
     return debugEventListener;
   }
@@ -65,7 +90,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   public synchronized boolean attach(DebugEventListener listener) {
     Result result = null;
     try {
-      result = devToolSessionManager.attachToTab();
+      result = getDebugContext().getV8Handler().attachToTab();
     } catch (AttachmentFailureException e) {
       // fall through and return false
     }
@@ -74,24 +99,27 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public boolean detach() {
-    final Result result = devToolSessionManager.detachFromTab();
+    final Result result = getDebugContext().getV8Handler().detachFromTab();
     return Result.OK == result;
   }
 
   public boolean isAttached() {
-    return devToolSessionManager.isAttached();
+    return context.getV8Handler().isAttached();
+  }
+
+  public void getScripts(final ScriptsCallback callback) {
+    context.loadAllScripts(callback);
+  }
+
+  public void setBreakpoint(Breakpoint.Type type, String target, int line,
+      int position, boolean enabled, String condition, int ignoreCount,
+      final BreakpointCallback callback) {
+    context.getV8Handler().getBreakpointProcessor().setBreakpoint(type, target, line,
+        position, enabled, condition, ignoreCount, callback);
   }
 
   public void sessionTerminated() {
     browserImpl.sessionTerminated(this.tabId);
   }
 
-  public ToolHandler getV8ToolHandler() {
-      return devToolSessionManager.getToolHandler();
-  }
-  
-  @Override
-  public ChromeDevToolSessionManager getSessionManager() {
-    return devToolSessionManager;
-  }
 }

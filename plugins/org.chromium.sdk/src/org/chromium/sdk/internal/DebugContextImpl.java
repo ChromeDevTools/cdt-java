@@ -4,22 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.JavascriptVm.ScriptsCallback;
-import org.chromium.sdk.internal.tools.v8.BreakpointManager;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +11,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.Script;
+import org.chromium.sdk.BrowserTab.ScriptsCallback;
+import org.chromium.sdk.internal.BrowserTabImpl.V8HandlerCallback;
+import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler;
+import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
@@ -72,8 +71,14 @@ public class DebugContextImpl implements DebugContext {
   /** A helper for performing complex V8-related actions. */
   private final V8Helper v8Helper = new V8Helper(this, THIS_NAME);
 
-  /** The parent JavascriptVm instance. */
-  private final JavascriptVmImpl javascriptVmImpl;
+  /**
+   * The V8 debugger tool handler for the associated tab (used for sending
+   * messages).
+   */
+  private final V8DebuggerToolHandler handler;
+
+  /** The parent BrowserImpl instance. */
+  private final BrowserTabImpl browserTabImpl;
 
   /** Whether the initial script loading has completed. */
   private volatile boolean doneInitialScriptLoad = false;
@@ -83,6 +88,9 @@ public class DebugContextImpl implements DebugContext {
 
   /** The cached call frames constructed using frameMirrors. */
   private volatile List<CallFrameImpl> callFramesCached;
+
+  /** The breakpoints hit before suspending. */
+  private volatile Collection<Breakpoint> breakpointsHit;
 
   /** The suspension state. */
   private State state;
@@ -95,22 +103,23 @@ public class DebugContextImpl implements DebugContext {
 
   /** The context validity token access lock. */
   private final Object tokenAccessLock = new Object();
-  
-  /** Context owns breakpoint manager */ 
-  private final BreakpointManager breakpointManager;
 
-  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl) {
+  public DebugContextImpl(BrowserTabImpl browserTabImpl) {
     createNewToken();
     this.scriptManager = new ScriptManager();
     this.handleManager = new HandleManager();
-    this.javascriptVmImpl = javascriptVmImpl;
-    this.breakpointManager = new BreakpointManager(this);
+    this.browserTabImpl = browserTabImpl;
+    this.handler = new V8DebuggerToolHandler(browserTabImpl.getBrowser(), this);
   }
 
-  public JavascriptVmImpl getJavascriptVm() {
-    return javascriptVmImpl;
+  public BrowserTabImpl getTab() {
+    return browserTabImpl;
   }
-  
+
+  public int getTabId() {
+    return browserTabImpl.getId();
+  }
+
   /**
    * Sets current frames for this break event.
    * <p>
@@ -225,9 +234,9 @@ public class DebugContextImpl implements DebugContext {
       DebuggerMessage message = DebuggerMessageFactory.goOn(
           stepAction, stepCount, getContinueToken());
       // Use non-null commandCallback only if callback is not null
-      V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
+      BrowserTabImpl.V8HandlerCallback commandCallback = callback == null
           ? null
-          : new V8CommandProcessor.V8HandlerCallback() {
+          : new BrowserTabImpl.V8HandlerCallback() {
         public void messageReceived(JSONObject response) {
           if (JsonUtil.isSuccessful(response)) {
             callback.success();
@@ -266,7 +275,9 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public Collection<Breakpoint> getBreakpointsHit() {
-    return breakpointManager.getBreakpointsHit();
+    return breakpointsHit != null
+        ? breakpointsHit
+        : Collections.<Breakpoint> emptySet();
   }
 
   public ExceptionData getExceptionData() {
@@ -281,12 +292,12 @@ public class DebugContextImpl implements DebugContext {
     return handleManager;
   }
 
-  DebugSessionManager getSessionManager() {
-    return javascriptVmImpl.getSessionManager();
+  V8DebuggerToolHandler getV8Handler() {
+    return handler;
   }
 
   public void onDebuggerDetached() {
-    getSessionManager().onDebuggerDetached();
+    getV8Handler().onDebuggerDetached();
     getScriptManager().reset();
     getHandleManager().reset();
     createNewToken();
@@ -323,6 +334,16 @@ public class DebugContextImpl implements DebugContext {
         frame.setScript(script);
       }
     }
+  }
+
+  /**
+   * Stores the breakpoints associated with V8 suspension event (empty if an
+   * exception or a step end).
+   *
+   * @param breakpointsHit the breakpoints that were hit
+   */
+  public void onBreakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
+    this.breakpointsHit = Collections.unmodifiableCollection(breakpointsHit);
   }
 
   /**
@@ -384,16 +405,30 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public Exception sendMessage(SendingType manner, DebuggerMessage message,
-      V8CommandProcessor.V8HandlerCallback commandCallback) {
-    return getSessionManager().getV8CommandProcessor().sendV8Command(manner, message,
-        commandCallback);
+      BrowserTabImpl.V8HandlerCallback commandCallback) {
+    Exception result = null;
+    switch (manner) {
+      case SYNC:
+        result = getV8Handler().sendV8CommandBlocking(message, commandCallback);
+        break;
+      case ASYNC:
+        getV8Handler().sendV8Command(message, false, commandCallback);
+        break;
+      case ASYNC_IMMEDIATE:
+        getV8Handler().sendV8Command(message, true, commandCallback);
+        break;
+    }
+    return result;
   }
 
   /**
    * Gets invoked when a navigation event is reported by the browser tab.
+   *
+   * @param newUrl the new URL of the tab being debugged
    */
-  public void navigated() {
+  public void navigated(String newUrl) {
     getScriptManager().reset();
+    getTab().getDebugEventListener().navigated(newUrl);
   }
 
   /**
@@ -402,7 +437,7 @@ public class DebugContextImpl implements DebugContext {
    * @param newScript the newly loaded script
    */
   public void scriptLoaded(Script newScript) {
-    getJavascriptVm().getDebugEventListener().scriptLoaded(newScript);
+    getTab().getDebugEventListener().scriptLoaded(newScript);
   }
 
   /**
@@ -422,7 +457,7 @@ public class DebugContextImpl implements DebugContext {
    * @return the DebugEventListener associated with this context
    */
   public DebugEventListener getDebugEventListener() {
-    return getSessionManager().getDebugEventListener();
+    return getV8Handler().getDebugEventListener();
   }
 
   private boolean isDoneInitialScriptLoad() {
@@ -431,9 +466,5 @@ public class DebugContextImpl implements DebugContext {
 
   private void setDoneInitialScriptLoad(boolean doneInitialScriptLoad) {
     this.doneInitialScriptLoad = doneInitialScriptLoad;
-  }
-
-  public BreakpointManager getBreakpointManager() {
-    return breakpointManager;
   }
 }

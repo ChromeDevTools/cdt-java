@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.tools.v8.processor;
 
 import org.chromium.sdk.internal.DebugContextImpl;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.BrowserTabImpl;
 
 /**
  * An abstract base implementation of V8DebuggerToolHandler-aware
@@ -14,7 +14,7 @@ import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
  * NB! The {@link #messageReceived(org.json.simple.JSONObject)} implementation
  * MUST NOT perform debugger commands in a blocking way the current thread.
  */
-public abstract class V8ResponseCallback implements V8CommandProcessor.V8HandlerCallback {
+public abstract class V8ResponseCallback implements BrowserTabImpl.V8HandlerCallback {
 
   private final DebugContextImpl context;
 

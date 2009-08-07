@@ -11,11 +11,10 @@ import java.util.Map.Entry;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Breakpoint.Type;
-import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.BrowserTab.BreakpointCallback;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
-import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.DebuggerToolCommand;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -147,8 +146,8 @@ public class FixtureChromeStub implements ChromeStub {
   private static long breakpointCounter = 1;
   private static long seqCounter = 1;
 
-  private static final BreakpointManager NULL_BREAKPOINT_MANAGER =
-    new BreakpointManager(null) {
+  private static final BreakpointProcessor NULL_BREAKPOINT_PROCESSOR =
+    new BreakpointProcessor(null) {
 
       @Override
       public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
@@ -156,6 +155,10 @@ public class FixtureChromeStub implements ChromeStub {
 
       @Override
       public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
+      }
+
+      @Override
+      public void messageReceived(JSONObject response) {
       }
 
       @Override
@@ -432,7 +435,7 @@ public class FixtureChromeStub implements ChromeStub {
 
   private static class FakeBreakpoint extends BreakpointImpl {
     public FakeBreakpoint(Type type, long id, boolean enabled, int ignoreCount, String condition) {
-      super(type, id, enabled, ignoreCount, condition, NULL_BREAKPOINT_MANAGER);
+      super(type, id, enabled, ignoreCount, condition, NULL_BREAKPOINT_PROCESSOR);
     }
   }
 

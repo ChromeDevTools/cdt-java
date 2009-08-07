@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Script;
-import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.BrowserTab.ScriptsCallback;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 

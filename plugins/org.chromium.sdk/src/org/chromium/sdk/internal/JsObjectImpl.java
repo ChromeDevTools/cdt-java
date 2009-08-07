@@ -17,7 +17,6 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -201,7 +200,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         SendingType.SYNC,
         DebuggerMessageFactory.lookup(
             Collections.singletonList(ref), true, callFrame.getToken()),
-        new V8CommandProcessor.V8HandlerCallback() {
+        new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
           if (!JsonUtil.isSuccessful(response)) {
             setFailedResponse();
@@ -292,7 +291,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
     Exception ex = callFrame.getDebugContext().sendMessage(
         SendingType.SYNC, message,
-        new V8CommandProcessor.V8HandlerCallback() {
+        new BrowserTabImpl.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
                 response)) {
