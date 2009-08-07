@@ -70,7 +70,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   private final Browser browser;
 
-  public DebugTargetImpl(ILaunch launch, Browser browser, ConsolePseudoProcess consolePseudoProcess) throws CoreException {
+  public DebugTargetImpl(ILaunch launch, Browser browser, ConsolePseudoProcess consolePseudoProcess)
+      throws CoreException {
     super(null);
     this.launch = launch;
     this.browser = browser;
@@ -122,7 +123,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
     } catch (IOException e) {
       throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
     } catch (IllegalStateException e) {
-      throw newCoreException("Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
+      throw newCoreException(
+          "Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
     }
     return tabs;
   }
