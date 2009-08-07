@@ -21,16 +21,16 @@ import org.junit.Test;
  */
 public class V8DebuggerToolHandlerTest extends AbstractAttachedTest<FakeConnection> {
 
-  private V8DebuggerToolHandler handler;
+  private ChromeDevToolSessionManager sessionManager;
 
   @Before
   public void setUp() throws Exception {
-    this.handler = TestUtil.getV8DebuggerToolHandler(browserTab);
+    this.sessionManager = TestUtil.getV8DebuggerToolHandler(browserTab);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testBadCommand() throws Exception {
-    handler.handleMessage(MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, null,
+    sessionManager.getToolHandler().handleMessage(MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, null,
         "{\"command\":\"badcommand\"}"));
     fail("'badcommand' considered a valid command");
   }

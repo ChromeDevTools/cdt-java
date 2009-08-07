@@ -6,7 +6,9 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.internal.tools.v8.V8DebuggerToolHandler.AttachmentFailureException;
+import org.chromium.sdk.internal.tools.ToolHandler;
+import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
+import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager.AttachmentFailureException;
 
 /**
  * A default, thread-safe implementation of the BrowserTab interface.
@@ -24,6 +26,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   /** The debug context instance for this tab. */
   private final DebugContextImpl context;
+  
+  private final ChromeDevToolSessionManager devToolSessionManager;
 
   /** The listener to report debug events to. */
   private DebugEventListener debugEventListener;
@@ -33,6 +37,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.url = url;
     this.browserImpl = browserImpl;
     this.context = new DebugContextImpl(this);
+    this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);;
   }
 
   public String getUrl() {
@@ -48,6 +53,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return context;
   }
 
+  @Override
   public synchronized DebugEventListener getDebugEventListener() {
     return debugEventListener;
   }
@@ -59,7 +65,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   public synchronized boolean attach(DebugEventListener listener) {
     Result result = null;
     try {
-      result = getDebugContext().getV8Handler().attachToTab();
+      result = devToolSessionManager.attachToTab();
     } catch (AttachmentFailureException e) {
       // fall through and return false
     }
@@ -68,16 +74,24 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public boolean detach() {
-    final Result result = getDebugContext().getV8Handler().detachFromTab();
+    final Result result = devToolSessionManager.detachFromTab();
     return Result.OK == result;
   }
 
   public boolean isAttached() {
-    return context.getV8Handler().isAttached();
+    return devToolSessionManager.isAttached();
   }
 
   public void sessionTerminated() {
     browserImpl.sessionTerminated(this.tabId);
   }
 
+  public ToolHandler getV8ToolHandler() {
+      return devToolSessionManager.getToolHandler();
+  }
+  
+  @Override
+  public ChromeDevToolSessionManager getSessionManager() {
+    return devToolSessionManager;
+  }
 }
