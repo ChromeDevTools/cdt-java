@@ -78,7 +78,12 @@ public class ChromiumDebugPlugin extends Plugin {
   }
 
   public static void log(IStatus status) {
-    getDefault().getLog().log(status);
+    ChromiumDebugPlugin plugin = getDefault();
+    if (plugin != null) {
+      plugin.getLog().log(status);
+    } else {
+      System.err.println(status.getPlugin() + ": " + status.getMessage()); //$NON-NLS-1$
+    }
   }
 
   public static void log(Throwable e) {

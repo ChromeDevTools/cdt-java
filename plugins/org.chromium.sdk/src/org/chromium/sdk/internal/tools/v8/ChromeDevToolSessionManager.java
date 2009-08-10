@@ -79,7 +79,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private ResultAwareCallback attachCallback;
 
   private ResultAwareCallback detachCallback;
-  
+
   private final V8CommandProcessor v8CommandProcessor;
 
   /**
@@ -103,7 +103,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     try {
       json = JsonUtil.jsonObjectFromJson(message.getContent());
     } catch (ParseException e) {
-      LOGGER.log(Level.SEVERE, "Invalid JSON received: " + message.getContent());
+      LOGGER.log(Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
       return;
     }
     String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
@@ -341,14 +341,14 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   public V8CommandProcessor getV8CommandProcessor() {
     return v8CommandProcessor;
   }
-  
+
   private class ChromeDevToolMessageOutput implements V8CommandOutput {
     private final String destination;
-   
+
     ChromeDevToolMessageOutput(BrowserTabImpl browserTabImpl) {
       this.destination = String.valueOf(browserTabImpl.getId());
     }
-   
+
     public void send(DebuggerMessage debuggerMessage, boolean isImmediate) {
       getConnection().send(
           MessageFactory.debuggerCommand(

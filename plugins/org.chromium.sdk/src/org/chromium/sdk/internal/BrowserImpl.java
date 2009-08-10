@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -118,8 +117,7 @@ public class BrowserImpl implements Browser, NetListener {
   public void messageReceived(Message message) {
     ToolName toolName = ToolName.forString(message.getTool());
     if (toolName == null) {
-      LOGGER.log(Level.SEVERE,
-          MessageFormat.format("Bad 'Tool' header received: {0}", message.getTool()));
+      LOGGER.log(Level.SEVERE, "Bad 'Tool' header received: {0}", message.getTool());
       return;
     }
     ToolHandler handler = null;
@@ -134,16 +132,16 @@ public class BrowserImpl implements Browser, NetListener {
         }
         break;
       default:
-        LOGGER.log(Level.SEVERE,
-            MessageFormat.format("Unregistered handler for tool: {0}", message.getTool()));
+        LOGGER.log(Level.SEVERE, "Unregistered handler for tool: {0}", message.getTool());
         return;
     }
     if (handler != null) {
       handler.handleMessage(message);
     } else {
-      LOGGER.log(Level.SEVERE,
-          MessageFormat.format("null handler for tool: {0}, destination: {1}",
-              message.getTool(), message.getDestination()));
+      LOGGER.log(
+          Level.SEVERE,
+          "null handler for tool: {0}, destination: {1}",
+          new Object[] {message.getTool(), message.getDestination()});
     }
   }
 

@@ -6,7 +6,6 @@ package org.chromium.sdk.internal;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,7 +50,7 @@ public class JsonUtil {
     JSONParser p = new JSONParser();
     Object parsed = p.parse(json);
     if (false == parsed instanceof JSONObject) {
-      log(Level.SEVERE, MessageFormat.format("Not a JSON object: {0}", json), null);
+      LOGGER.log(Level.SEVERE, "Not a JSON object: {0}", json);
       return null;
     }
     return (JSONObject) parsed;
@@ -71,7 +70,7 @@ public class JsonUtil {
       return (Long) v;
     }
 
-    log(Level.SEVERE, MessageFormat.format("Key: {0}, found value: {1}", keyString, v), null);
+    LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return null;
   }
 
@@ -88,7 +87,7 @@ public class JsonUtil {
     if (v instanceof Double || v == null) {
       return (Double) v;
     }
-    log(Level.SEVERE, MessageFormat.format("Key: {0}, found value: {1}", keyString, v), null);
+    LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return null;
   }
 
@@ -124,7 +123,7 @@ public class JsonUtil {
           : false;
     }
 
-    log(Level.SEVERE, MessageFormat.format("Key: {0}, found value: {1}", keyString, v), null);
+    LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return false;
   }
 
@@ -142,7 +141,7 @@ public class JsonUtil {
       return (JSONObject) v;
     }
 
-    log(Level.SEVERE, MessageFormat.format("Key: {0}, found value: {1}", keyString, v), null);
+    LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return null;
   }
 
@@ -160,7 +159,7 @@ public class JsonUtil {
       return (JSONArray) v;
     }
 
-    log(Level.SEVERE, MessageFormat.format("Key: {0}, found value: {1}", keyString, v), null);
+    LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return null;
   }
 
@@ -191,10 +190,6 @@ public class JsonUtil {
    */
   public static boolean isSuccessful(JSONObject response) {
     return JsonUtil.getAsBoolean(response, V8Protocol.KEY_SUCCESS);
-  }
-
-  private static void log(Level level, String message, Exception exception) {
-    LOGGER.log(level, message, exception);
   }
 
   private JsonUtil() {
