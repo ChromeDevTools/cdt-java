@@ -10,6 +10,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -127,7 +128,7 @@ public class Message {
         }
         String[] nameValue = line.split(":", 2);
         if (nameValue.length != 2) {
-          LOGGER.severe("Bad header line: " + line);
+          LOGGER.log(Level.SEVERE, "Bad header line: {0}", line);
           return null;
         } else {
           headers.put(nameValue[0], nameValue[1]);
@@ -139,7 +140,7 @@ public class Message {
       int contentLength = Integer.valueOf(contentLengthStr.trim());
       char[] content = new char[contentLength];
       int totalRead = 0;
-      LOGGER.finer("Reading payload: " + contentLength + " bytes");
+      LOGGER.log(Level.FINER, "Reading payload: {0} bytes", contentLength);
       while (totalRead < contentLength) {
         int readBytes = reader.read(content, totalRead, contentLength - totalRead);
         if (readBytes == -1) {

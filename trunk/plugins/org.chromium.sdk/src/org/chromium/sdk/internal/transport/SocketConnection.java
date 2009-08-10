@@ -34,7 +34,7 @@ public class SocketConnection implements Connection {
    * A thread that can be gracefully interrupted by a third party.
    * <p>
    * Unfortunately there is no standard way of interrupting I/O in Java. See Bug #4514257
-   * on Java Bug Database (http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4514257). 
+   * on Java Bug Database (http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4514257).
    */
   private static abstract class InterruptibleThread extends Thread {
 
@@ -87,7 +87,7 @@ public class SocketConnection implements Connection {
 
     private void handleOutboundMessage(Message message) {
       try {
-        log(Level.FINER, "-->" + message, null);
+        LOGGER.log(Level.FINER, "-->{0}", message);
         message.sendThrough(writer);
       } catch (IOException e) {
         SocketConnection.this.shutdown(e, false);
@@ -114,15 +114,15 @@ public class SocketConnection implements Connection {
       Exception breakException;
       try {
         handshaker.perform(reader, handshakeWriter);
-        
+
         startWriterThread();
-        
+
         while (!isTerminated && isAttached) {
           Message message;
           try {
             message = Message.fromBufferedReader(reader);
           } catch (MalformedMessageException e) {
-            log(Level.SEVERE, "Malformed protocol message", e);
+            LOGGER.log(Level.SEVERE, "Malformed protocol message", e);
             continue;
           }
           if (message == null) {
@@ -159,7 +159,7 @@ public class SocketConnection implements Connection {
           try {
             handleInboundMessage(message);
           } catch (Exception e) {
-            log(Level.SEVERE, "Exception in message listener", e);
+            LOGGER.log(Level.SEVERE, "Exception in message listener", e);
           }
         }
       } catch (InterruptedException e) {
@@ -168,13 +168,13 @@ public class SocketConnection implements Connection {
     }
 
     private void handleInboundMessage(Message message) {
-      log(Level.FINER, "<--" + message, null);
+      LOGGER.log(Level.FINER, "<--{0}", message);
       listener.messageReceived(message);
     }
   }
 
   /** The class logger. */
-  private static final Logger LOGGER = Logger.getLogger(SocketConnection.class.getName());
+  protected static final Logger LOGGER = Logger.getLogger(SocketConnection.class.getName());
 
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
@@ -206,7 +206,7 @@ public class SocketConnection implements Connection {
 
   /** Handshaker used to establish connection. */
   private final Handshaker handshaker;
-  
+
   /** The listener to report network events to. */
   protected volatile NetListener listener;
 
@@ -252,12 +252,12 @@ public class SocketConnection implements Connection {
     this.socket.connect(socketEndpoint, connectionTimeoutMs);
     Writer streamWriter = new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET);
     Reader streamReader = new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET);
-    
+
     if (connectionLogger != null) {
       streamWriter = connectionLogger.wrapWriter(streamWriter);
       streamReader = connectionLogger.wrapReader(streamReader);
     }
-    
+
     this.writer = new BufferedWriter(streamWriter);
     this.reader = new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
     isAttached = true;
@@ -294,7 +294,7 @@ public class SocketConnection implements Connection {
       return;
     }
     isAttached = false;
-    log(Level.INFO, "Shutdown requested", cause);
+    LOGGER.log(Level.INFO, "Shutdown requested", cause);
 
     if (lameduckMode) {
       Thread terminationThread = new Thread("ServiceThreadTerminator") {
@@ -338,7 +338,7 @@ public class SocketConnection implements Connection {
     interruptThread(readerThread);
     interruptThread(dispatcherThread);
   }
-  
+
   private void startWriterThread() {
     if (writerThread != null) {
       throw new IllegalStateException();
@@ -356,10 +356,6 @@ public class SocketConnection implements Connection {
     } catch (SecurityException e) {
       // ignore
     }
-  }
-
-  private static void log(Level level, String message, Exception exception) {
-    LOGGER.log(level, message, exception);
   }
 
   public void close() {

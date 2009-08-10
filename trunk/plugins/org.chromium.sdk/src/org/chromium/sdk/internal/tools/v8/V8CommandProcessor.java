@@ -4,6 +4,14 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
@@ -15,19 +23,10 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
 
-import java.text.MessageFormat;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Sends JSON commands to V8 VM and handles responses. Command is sent
  * via {@code V8CommandOutput}. Response is passed back to callback if it was provided.
- * Also all responses and events are dispatched to group of dedicated processors. 
+ * Also all responses and events are dispatched to group of dedicated processors.
  */
 public class V8CommandProcessor {
 
@@ -42,19 +41,19 @@ public class V8CommandProcessor {
      * @param response from the V8 debugger
      */
     void messageReceived(JSONObject response);
-  
+
     /**
      * This method is invoked when a debugger command has failed.
      *
      * @param message containing the failure reason
      */
     void failure(String message);
-  
+
     /** A no-op callback implementation. */
     V8HandlerCallback NULL_CALLBACK = new V8HandlerCallback() {
       public void failure(String message) {
       }
-  
+
       public void messageReceived(JSONObject response) {
       }
     };
@@ -62,7 +61,7 @@ public class V8CommandProcessor {
 
   /** The class logger. */
   static final Logger LOGGER = Logger.getLogger(V8CommandProcessor.class.getName());
-  
+
   /** The breakpoint processor. */
   private final BreakpointProcessor bpp;
 
@@ -70,13 +69,13 @@ public class V8CommandProcessor {
   private final AfterCompileProcessor afterCompileProcessor;
 
   private final Object sendLock = new Object();
-  
+
   private final V8CommandOutput messageOutput;
 
   private final BacktraceProcessor backtraceProcessor;
 
   private final ContinueProcessor continueProcessor;
-  
+
   private final DebugContextImpl context;
 
   V8CommandProcessor(V8CommandOutput messageOutput, DebugContextImpl context) {
@@ -88,7 +87,7 @@ public class V8CommandProcessor {
     this.continueProcessor = new ContinueProcessor(context);
   }
 
-  
+
   public DebugContextImpl getContext() {
     return context;
   }
@@ -96,7 +95,7 @@ public class V8CommandProcessor {
   public BreakpointProcessor getBreakpointProcessor() {
     return bpp;
   }
-  
+
   public Exception sendV8Command(SendingType manner, DebuggerMessage message,
       V8CommandProcessor.V8HandlerCallback commandCallback) {
     Exception result = null;
@@ -151,10 +150,10 @@ public class V8CommandProcessor {
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
       final CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
       if (callbackEntry != null) {
-        LOGGER.log(Level.INFO,
-            MessageFormat.format(
-                "Request-response roundtrip: {0}ms",
-                getCurrentMillis() - callbackEntry.commitMillis));
+        LOGGER.log(
+            Level.INFO,
+            "Request-response roundtrip: {0}ms",
+            getCurrentMillis() - callbackEntry.commitMillis);
 
         // TODO(prybin): a new thread each time?
         Thread t = new Thread(new Runnable() {
@@ -162,7 +161,7 @@ public class V8CommandProcessor {
             try {
               if (callbackEntry.v8HandlerCallback != null) {
                 LOGGER.log(
-                    Level.INFO, "Notified debugger command callback, request_seq=" + requestSeq);
+                    Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
                 callbackEntry.v8HandlerCallback.messageReceived(v8Json);
               }
             } finally {
@@ -190,7 +189,7 @@ public class V8CommandProcessor {
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command == null) {
       LOGGER.log(Level.WARNING,
-          MessageFormat.format("Unknown command in V8 debugger reply JSON: {0}", commandString));
+          "Unknown command in V8 debugger reply JSON: {0}", commandString);
       return;
     }
     final HandlerGetter handlerGetter = command2HandlerGetter.get(command);
@@ -209,7 +208,7 @@ public class V8CommandProcessor {
       it.remove();
     }
   }
-  
+
   private Exception sendV8CommandBlocking(
       DebuggerMessage message, V8CommandProcessor.V8HandlerCallback v8HandlerCallback) {
     BlockingV8RequestCommand command =
@@ -243,13 +242,13 @@ public class V8CommandProcessor {
       DebuggerCommand.LOOKUP,
       DebuggerCommand.EVALUATE,
       DebuggerCommand.FRAME);
-  
+
   /**
    * The callbacks to invoke when the responses arrive.
    */
   private final Map<Integer, CallbackEntry> seqToV8Callbacks =
       new HashMap<Integer, CallbackEntry>();
-  
+
   private static class CallbackEntry {
     final V8HandlerCallback v8HandlerCallback;
 
@@ -272,7 +271,7 @@ public class V8CommandProcessor {
   private static abstract class HandlerGetter {
     abstract V8CommandProcessor.V8HandlerCallback get(V8CommandProcessor instance);
   }
-  
+
   /**
    * The handlers that should be invoked when certain command responses arrive.
    */
@@ -299,7 +298,7 @@ public class V8CommandProcessor {
       }
     });
 
-    command2HandlerGetter.put(DebuggerCommand.BACKTRACE, 
+    command2HandlerGetter.put(DebuggerCommand.BACKTRACE,
         new HandlerGetter() {
       @Override
       BacktraceProcessor get(V8CommandProcessor instance) {
@@ -307,7 +306,7 @@ public class V8CommandProcessor {
       }
     });
 
-    command2HandlerGetter.put(DebuggerCommand.CONTINUE, 
+    command2HandlerGetter.put(DebuggerCommand.CONTINUE,
         new HandlerGetter() {
       @Override
       ContinueProcessor get(V8CommandProcessor instance) {

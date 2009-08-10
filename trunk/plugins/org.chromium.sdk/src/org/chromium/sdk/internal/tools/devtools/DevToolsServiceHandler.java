@@ -102,7 +102,7 @@ public class DevToolsServiceHandler implements ToolHandler {
       json = JsonUtil.jsonObjectFromJson(message.getContent());
     } catch (ParseException e) {
       Logger.getLogger(DevToolsServiceHandler.class.getName()).log(
-          Level.SEVERE, "Invalid JSON received: " + message.getContent());
+          Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
       return;
     }
     String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
