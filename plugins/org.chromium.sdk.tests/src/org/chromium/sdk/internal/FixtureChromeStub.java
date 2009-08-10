@@ -19,7 +19,6 @@ import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.DebuggerToolCommand;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
