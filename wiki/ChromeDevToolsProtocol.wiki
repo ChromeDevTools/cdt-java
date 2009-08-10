@@ -81,7 +81,7 @@ The following *result* codes are possible:
 || *Command* || *Request content* || *Response "data" field* ||
 || ping || {"command":"ping"} || {{{ {"command":"ping", "result":0, "data":"ok"} }}} ||
 || version || {"command":"version"} || {{{ {"command":"version", "result":0, "data":version_id} }}} ||
-|| list_tabs || {"command":"list_tabs"} || {{{ {"command":"version", "result":0, "data":[[tab1_id,"tab1_url"], [tab2_id,"tab2_url"]]} }}} ||
+|| list_tabs || {"command":"list_tabs"} || {{{ {"command":"list_tabs", "result":0, "data":[[tab1_id,"tab1_url"], [tab2_id,"tab2_url"]]} }}} ||
 
 
 == !V8Debugger ==
