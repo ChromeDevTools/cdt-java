@@ -35,6 +35,12 @@ public class FixtureChromeStub implements ChromeStub {
   private static final Map<Long, String> refToObjectMap = new HashMap<Long, String>();
   private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
 
+  private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
+    public boolean requireDataField() {
+      return true;
+    }
+  };
+
   static {
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
@@ -106,7 +112,7 @@ public class FixtureChromeStub implements ChromeStub {
     scriptIdToScriptRefMap.put(Long.valueOf(getCompiledScriptId()), getCompiledScriptRef());
   }
 
-  private final ScriptManager scriptManager = new ScriptManager();
+  private final ScriptManager scriptManager = new ScriptManager(protocolOptions);
 
   public FixtureChromeStub() {
     scriptManager.addScript(getJsonObjectByRef(getScriptRef()), constructScriptRefs());

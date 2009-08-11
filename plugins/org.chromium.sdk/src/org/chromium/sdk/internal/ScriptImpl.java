@@ -62,8 +62,9 @@ public class ScriptImpl implements Script {
           this.endLine == that.endLine;
     }
 
-    public static Descriptor forResponse(JSONObject script, JSONArray refs) {
-      script = V8ProtocolUtil.validScript(script, refs);
+    public static Descriptor forResponse(JSONObject script, JSONArray refs,
+        ProtocolOptions protocolOptions) {
+      script = V8ProtocolUtil.validScript(script, refs, protocolOptions);
       if (script == null) {
         return null;
       }

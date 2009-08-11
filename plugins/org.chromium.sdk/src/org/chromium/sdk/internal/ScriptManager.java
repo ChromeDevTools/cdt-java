@@ -39,6 +39,12 @@ public class ScriptManager {
   private final Map<Long, ScriptImpl> idToScript =
       Collections.synchronizedMap(new HashMap<Long, ScriptImpl>());
 
+  private final ProtocolOptions protocolOptions;
+
+  ScriptManager(ProtocolOptions protocolOptions) {
+    this.protocolOptions = protocolOptions;
+  }
+
   /**
    * Adds a script using a "script" V8 response.
    *
@@ -52,7 +58,7 @@ public class ScriptManager {
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
-      Descriptor desc = Descriptor.forResponse(scriptBody, refs);
+      Descriptor desc = Descriptor.forResponse(scriptBody, refs, protocolOptions);
       if (desc == null) {
         return null;
       }
@@ -153,4 +159,7 @@ public class ScriptManager {
     idToScript.clear();
   }
 
+  public ProtocolOptions getProtocolOptions() {
+    return protocolOptions;
+  }
 }

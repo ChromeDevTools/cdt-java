@@ -95,13 +95,13 @@ public class DebugContextImpl implements DebugContext {
 
   /** The context validity token access lock. */
   private final Object tokenAccessLock = new Object();
-  
-  /** Context owns breakpoint manager */ 
+
+  /** Context owns breakpoint manager */
   private final BreakpointManager breakpointManager;
 
-  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl) {
+  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions) {
     createNewToken();
-    this.scriptManager = new ScriptManager();
+    this.scriptManager = new ScriptManager(protocolOptions);
     this.handleManager = new HandleManager();
     this.javascriptVmImpl = javascriptVmImpl;
     this.breakpointManager = new BreakpointManager(this);
@@ -110,7 +110,7 @@ public class DebugContextImpl implements DebugContext {
   public JavascriptVmImpl getJavascriptVm() {
     return javascriptVmImpl;
   }
-  
+
   /**
    * Sets current frames for this break event.
    * <p>

@@ -7,9 +7,10 @@ package org.chromium.sdk.internal.tools.v8.processor;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.DebugContextImpl.SendingType;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -32,11 +33,12 @@ public class AfterCompileProcessor extends V8ResponseCallback {
     if (!JsonUtil.isSuccessful(response)) {
       return;
     }
-    JSONObject script = getScriptToLoad(response);
+    final DebugContextImpl debugContext = getDebugContext();
+    JSONObject script = getScriptToLoad(response,
+        debugContext.getScriptManager().getProtocolOptions());
     if (script == null) {
       return;
     }
-    final DebugContextImpl debugContext = getDebugContext();
     debugContext.sendMessage(
         SendingType.ASYNC_IMMEDIATE,
         DebuggerMessageFactory.scripts(
@@ -65,7 +67,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
         });
   }
 
-  private static JSONObject getScriptToLoad(JSONObject response) {
+  private static JSONObject getScriptToLoad(JSONObject response, ProtocolOptions protocolOptions) {
     JSONObject script = JsonUtil.getAsJSON(JsonUtil.getBody(response), V8Protocol.FRAME_SCRIPT);
     if (ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(JsonUtil.getAsString(script, "sourceStart")) ||
         script.get(V8Protocol.CONTEXT) != null ||
@@ -74,7 +76,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
       return null;
     }
     return V8ProtocolUtil.validScript(
-        script, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
+        script, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS), protocolOptions);
   }
 
 }
