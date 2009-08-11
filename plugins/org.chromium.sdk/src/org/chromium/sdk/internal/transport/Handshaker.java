@@ -7,6 +7,13 @@ package org.chromium.sdk.internal.transport;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+
+import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
  * Handshaker handles "handshake" part of communication. It may write and read whatever it needs
@@ -31,9 +38,9 @@ public interface Handshaker {
       output.write(OUTGOING_MESSAGE);
       output.flush();
 
-      // TODO(prybin): expose this as a parameter or get rid of this option if we don't need it. 
+      // TODO(prybin): expose this as a parameter or get rid of this option if we don't need it.
       final boolean ignoreUnexpectedResponses = false;
-      
+
       while (true) {
         if (Thread.interrupted()) {
           throw new IOException("Interrupted");
@@ -63,4 +70,73 @@ public interface Handshaker {
      */
     private static final String OUTGOING_MESSAGE = "ChromeDevToolsHandshake\r\n";
   };
+
+  /**
+   * Stateful handshaker implementation for Standalone V8 protocol.
+   */
+  class StandaloneV8 implements Handshaker {
+    public interface RemoteInfo {
+      String getProtocolVersion();
+      String getV8VmVersion();
+      String getEmbeddingHostName();
+    }
+
+    public Future<RemoteInfo> getRemoteInfo() {
+      return runnableFuture;
+    }
+
+    private final RunnableFuture<RemoteInfo> runnableFuture =
+        new FutureTask<RemoteInfo>(new HandshakeTaks());
+
+    private BufferedReader input = null;
+
+    public void perform(BufferedReader input, Writer output) throws IOException {
+      this.input = input;
+      runnableFuture.run();
+
+      // Check for possible exceptions
+      try {
+        runnableFuture.get();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new IOException("Failed to perform handshake", e);
+      }
+
+    }
+
+    class HandshakeTaks implements Callable<RemoteInfo> {
+      public RemoteInfo call() throws IOException {
+        final Message message;
+        try {
+          message = Message.fromBufferedReader(input);
+        } catch (MalformedMessageException e) {
+          throw new IOException("Unrecognized handshake message from remote", e);
+        }
+        if (message == null) {
+          throw new IOException("End of stream");
+        }
+        final String protocolVersion = message.getHeader("Protocol-Version", null);
+        if (protocolVersion == null) {
+          throw new IOException("Absent protocol version");
+        }
+        final String vmVersion = message.getHeader("V8-Version", null);
+        if (vmVersion == null) {
+          throw new IOException("Absent V8 VM version");
+        }
+        RemoteInfo remoteInfo = new RemoteInfo() {
+          public String getProtocolVersion() {
+            return protocolVersion;
+          }
+          public String getV8VmVersion() {
+            return vmVersion;
+          }
+          public String getEmbeddingHostName() {
+            return message.getHeader("Embedding-Host", null);
+          }
+        };
+        return remoteInfo;
+      }
+    }
+  }
 }
