@@ -131,7 +131,8 @@ public class Message {
           LOGGER.log(Level.SEVERE, "Bad header line: {0}", line);
           return null;
         } else {
-          headers.put(nameValue[0], nameValue[1]);
+          String trimmedValue = nameValue[1].trim();
+          headers.put(nameValue[0], trimmedValue);
         }
       }
 

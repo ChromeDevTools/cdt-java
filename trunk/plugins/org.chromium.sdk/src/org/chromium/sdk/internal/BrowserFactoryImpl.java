@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
+import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
@@ -36,6 +37,15 @@ public class BrowserFactoryImpl extends BrowserFactory {
   public synchronized Browser create(String host, int port, ConnectionLogger connectionLogger) {
     Connection connection = createConnection(host, port, connectionLogger);
     return createBrowser(connection, connectionLogger != null);
+  }
+
+  @Override
+  public synchronized StandaloneVm createStandalone(String host, int port,
+      ConnectionLogger connectionLogger) {
+    Handshaker.StandaloneV8 handshaker = new Handshaker.StandaloneV8();
+    SocketConnection connection =
+        new SocketConnection(host, port, getTimeout(), connectionLogger, handshaker);
+    return new StandaloneVmImpl(connection, handshaker);
   }
 
   // Debug entry (no logger by definition)
