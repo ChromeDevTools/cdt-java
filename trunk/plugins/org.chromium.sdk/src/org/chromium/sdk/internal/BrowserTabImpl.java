@@ -15,6 +15,12 @@ import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager.Attachment
  */
 public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
+  private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
+    public boolean requireDataField() {
+      return true;
+    }
+  };
+
   /** Tab ID as reported by the DevTools server. */
   private final int tabId;
 
@@ -26,7 +32,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   /** The debug context instance for this tab. */
   private final DebugContextImpl context;
-  
+
   private final ChromeDevToolSessionManager devToolSessionManager;
 
   /** The listener to report debug events to. */
@@ -36,8 +42,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.tabId = tabId;
     this.url = url;
     this.browserImpl = browserImpl;
-    this.context = new DebugContextImpl(this);
-    this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);;
+    this.context = new DebugContextImpl(this, protocolOptions);
+    this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);
   }
 
   public String getUrl() {
@@ -89,7 +95,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   public ToolHandler getV8ToolHandler() {
       return devToolSessionManager.getToolHandler();
   }
-  
+
   @Override
   public ChromeDevToolSessionManager getSessionManager() {
     return devToolSessionManager;

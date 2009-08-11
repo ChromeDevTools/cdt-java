@@ -13,6 +13,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyType;
+import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.ValueMirror;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
@@ -204,7 +205,8 @@ public class V8ProtocolUtil {
    * @return script with a non-null name if the script is valid, {@code null}
    *         otherwise
    */
-  public static JSONObject validScript(JSONObject script, JSONArray refs) {
+  public static JSONObject validScript(JSONObject script, JSONArray refs,
+      ProtocolOptions protocolOptions) {
     Long contextRef = V8ProtocolUtil.getObjectRef(script, V8Protocol.CONTEXT);
     for (int i = 0, size = refs.size(); i < size; i++) {
       JSONObject ref = (JSONObject) refs.get(i);
@@ -212,7 +214,7 @@ public class V8ProtocolUtil {
         continue;
       }
       JSONObject data = JsonUtil.getAsJSON(ref, V8Protocol.DATA);
-      if (data == null) {
+      if (data == null && protocolOptions.requireDataField()) {
         return null;
       }
       return script;
