@@ -6,14 +6,12 @@ package org.chromium.sdk.internal;
 
 import static org.junit.Assert.assertNull;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.DebugContext.StepAction;
@@ -21,11 +19,14 @@ import org.chromium.sdk.internal.transport.Connection;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
 /**
  * A base class for all tests that require an attachment to a browser tab.
  */
 public abstract class AbstractAttachedTest<T extends Connection>
-    implements DebugEventListener {
+    implements DebugEventListener, TabDebugEventListener {
 
   protected FixtureChromeStub messageResponder;
 
@@ -93,6 +94,10 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   public void disconnected() {
     this.isDisconnected = true;
+  }
+
+  public DebugEventListener getDebugEventListener() {
+    return this;
   }
 
   public void navigated(String newUrl) {

@@ -19,6 +19,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -29,7 +30,7 @@ import org.junit.Test;
 /**
  * A test for the JsVariable implementor.
  */
-public class JsObjectImplTest implements DebugEventListener {
+public class JsObjectImplTest implements DebugEventListener, TabDebugEventListener {
 
   private ChromeStub messageResponder;
   private CallFrameImpl callFrame;
@@ -89,13 +90,17 @@ public class JsObjectImplTest implements DebugEventListener {
     assertNull(secondVal.asObject());
   }
 
+  public DebugEventListener getDebugEventListener() {
+    return this;
+  }
+
+  public void navigated(String newUrl) {
+  }
+
   public void closed() {
   }
 
   public void disconnected() {
-  }
-
-  public void navigated(String newUrl) {
   }
 
   public void resumed() {
