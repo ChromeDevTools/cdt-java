@@ -4,9 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
@@ -17,10 +14,11 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.JavascriptVm.BreakpointCallback;
-import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.DebugContext.State;
 import org.chromium.sdk.DebugContext.StepAction;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -38,11 +36,15 @@ import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IThread;
 
+import java.io.IOException;
+import java.util.Collection;
+
 /**
  * An IDebugTarget implementation for remote JavaScript debugging.
  * Can debug any target that supports the ChromeDevTools protocol.
  */
-public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, DebugEventListener {
+public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget,
+    TabDebugEventListener, DebugEventListener {
 
   private static final IThread[] EMPTY_THREADS = new IThread[0];
 
@@ -51,7 +53,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
   private final ILaunch launch;
 
   private final JavascriptThread[] threads;
-  
+
   private final ConsolePseudoProcess consolePseudoProcess;
 
   private BrowserTab targetTab;
@@ -530,6 +532,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget, D
 
   public DebugContext getDebugContext() {
     return debugContext;
+  }
+
+  public DebugEventListener getDebugEventListener() {
+    return this;
   }
 
   public void navigated(String newUrl) {

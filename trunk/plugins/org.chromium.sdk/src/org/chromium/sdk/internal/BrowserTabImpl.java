@@ -6,6 +6,7 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.tools.ToolHandler;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager.AttachmentFailureException;
@@ -36,7 +37,10 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   private final ChromeDevToolSessionManager devToolSessionManager;
 
   /** The listener to report debug events to. */
-  private DebugEventListener debugEventListener;
+  private DebugEventListener debugEventListener = null;
+
+  /** The listener to report browser-related debug events to. */
+  private TabDebugEventListener tabDebugEventListener = null;
 
   public BrowserTabImpl(int tabId, String url, BrowserImpl browserImpl) {
     this.tabId = tabId;
@@ -64,18 +68,23 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return debugEventListener;
   }
 
+  public synchronized TabDebugEventListener getTabDebugEventListener() {
+    return tabDebugEventListener;
+  }
+
   public BrowserImpl getBrowser() {
     return browserImpl;
   }
 
-  public synchronized boolean attach(DebugEventListener listener) {
+  public synchronized boolean attach(TabDebugEventListener listener) {
     Result result = null;
     try {
       result = devToolSessionManager.attachToTab();
     } catch (AttachmentFailureException e) {
       // fall through and return false
     }
-    this.debugEventListener = listener;
+    this.tabDebugEventListener = listener;
+    this.debugEventListener = listener.getDebugEventListener();
     return Result.OK == result;
   }
 

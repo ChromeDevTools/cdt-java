@@ -33,19 +33,6 @@ public interface DebugEventListener {
   void disconnected();
 
   /**
-   * Reports a navigation event on the target tab.
-   *
-   * @param newUrl the new URL of the debugged tab
-   */
-  void navigated(String newUrl);
-
-  /**
-   * Reports a closing event on the target tab. All following communications
-   * with the associated tab are illegal.
-   */
-  void closed();
-
-  /**
    * Reports that a new script has been loaded into a tab.
    *
    * @param newScript loaded into the tab

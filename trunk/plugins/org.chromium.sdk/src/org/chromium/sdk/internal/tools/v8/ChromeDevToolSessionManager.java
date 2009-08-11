@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.BrowserImpl;
 import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugContextImpl;
@@ -96,6 +97,10 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   public DebugEventListener getDebugEventListener() {
     return browserTabImpl.getDebugEventListener();
+  }
+
+  private TabDebugEventListener getTabDebugEventListener() {
+    return browserTabImpl.getTabDebugEventListener();
   }
 
   private void handleChromeDevToolMessage(final Message message) {
@@ -262,7 +267,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
         notifyDetachCallback(Result.OK);
       }
     }
-    browserTabImpl.getDebugEventListener().closed();
+    browserTabImpl.getTabDebugEventListener().closed();
     onDebuggerDetachedImpl();
   }
 
@@ -331,7 +336,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private void processNavigated(JSONObject json) {
     String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
     context.navigated();
-    getDebugEventListener().navigated(newUrl);
+    getTabDebugEventListener().navigated(newUrl);
   }
 
   private Connection getConnection() {

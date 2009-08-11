@@ -27,6 +27,6 @@ public interface BrowserTab extends JavascriptVm {
    * @param listener to report the debug events to
    * @return whether the operation succeeded
    */
-  boolean attach(DebugEventListener listener);
+  boolean attach(TabDebugEventListener listener);
 
 }

@@ -8,9 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.Collection;
-import java.util.SortedMap;
-
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
@@ -19,6 +16,7 @@ import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -26,10 +24,13 @@ import org.json.simple.JSONValue;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.SortedMap;
+
 /**
  * A test for the JsVariable implementor.
  */
-public class JsArrayImplTest implements DebugEventListener {
+public class JsArrayImplTest implements DebugEventListener, TabDebugEventListener {
 
   private ChromeStub messageResponder;
   private CallFrameImpl callFrame;
@@ -94,6 +95,10 @@ public class JsArrayImplTest implements DebugEventListener {
   }
 
   public void disconnected() {
+  }
+
+  public DebugEventListener getDebugEventListener() {
+    return this;
   }
 
   public void navigated(String newUrl) {
