@@ -4,6 +4,10 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
@@ -11,10 +15,6 @@ import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A default, thread-safe implementation of the BrowserFactory interface.
@@ -40,11 +40,11 @@ public class BrowserFactoryImpl extends BrowserFactory {
   }
 
   @Override
-  public synchronized StandaloneVm createStandalone(String host, int port,
+  public synchronized StandaloneVm createStandalone(int port,
       ConnectionLogger connectionLogger) {
     Handshaker.StandaloneV8 handshaker = new Handshaker.StandaloneV8();
     SocketConnection connection =
-        new SocketConnection(host, port, getTimeout(), connectionLogger, handshaker);
+        new SocketConnection(LOCALHOST, port, getTimeout(), connectionLogger, handshaker);
     return new StandaloneVmImpl(connection, handshaker);
   }
 

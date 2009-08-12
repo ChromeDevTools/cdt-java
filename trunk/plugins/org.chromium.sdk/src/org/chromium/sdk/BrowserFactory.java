@@ -62,16 +62,14 @@ public abstract class BrowserFactory {
    */
   public abstract Browser create(String host, int port, ConnectionLogger connectionLogger);
 
-
   /**
    * Constructs StandaloneVm instance that talks to a V8 JavaScript VM via
    * DebuggerAgent opened at {@code host} and {@code port}. Does not check whether
    * we already opened connection to this address.
-   * @param host V8 is running at
    * @param port V8 DebuggerAgent is listening on
    * @param connectionLogger provides facility for listening to network
    *        traffic; may be null
    */
-  public abstract StandaloneVm createStandalone(String host, int port,
+  public abstract StandaloneVm createStandalone(int port,
       ConnectionLogger connectionLogger);
 }
