@@ -11,6 +11,7 @@ import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
+import org.chromium.debug.core.model.JavascriptVmEmbedder.Attachable;
 import org.chromium.debug.ui.DialogBasedTabSelector;
 import org.chromium.debug.ui.PluginUtil;
 import org.chromium.sdk.ConnectionLogger;
@@ -24,7 +25,22 @@ import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 /**
  * A launch configuration delegate for the JavaScript debugging.
  */
-public class LaunchType implements ILaunchConfigurationDelegate {
+public abstract class LaunchType implements ILaunchConfigurationDelegate {
+
+  public static class Chromium extends LaunchType {
+    @Override
+    protected Attachable createAttachable(int port, ConnectionLogger logger) throws CoreException {
+      return JavascriptVmEmbedderFactory.connectToChromeDevTools(port, logger,
+          new DialogBasedTabSelector());
+    }
+  }
+
+  public static class StandaloneV8 extends LaunchType {
+    @Override
+    protected Attachable createAttachable(int port, ConnectionLogger logger) {
+      return JavascriptVmEmbedderFactory.connectToStandalone(port, logger);
+    }
+  }
 
   /** Launch configuration attribute (debug port). */
   public static final String CHROMIUM_DEBUG_PORT = "debug_port"; //$NON-NLS-1$
@@ -60,20 +76,7 @@ public class LaunchType implements ILaunchConfigurationDelegate {
         logger = null;
       }
 
-      // TODO(peter.rybin): get rid of this hack
-      final boolean allowContainsV8Hack = true;
-
-      boolean isStandaloneV8 = allowContainsV8Hack &&
-          projectName.toLowerCase().contains("v8"); //$NON-NLS-1$
-
-      JavascriptVmEmbedder.Attachable attachable;
-      if (isStandaloneV8) {
-        attachable = JavascriptVmEmbedderFactory.connectToStandalone("localhost", //$NON-NLS-1$
-            port, logger);
-      } else {
-        attachable = JavascriptVmEmbedderFactory.connectToChromeDevTools(port, logger,
-            new DialogBasedTabSelector());
-      }
+      JavascriptVmEmbedder.Attachable attachable = createAttachable(port, logger);
 
       // Construct process after we have constructed Attachable (and know it is constructed OK).
       ConsolePseudoProcess consolePseudoProcess;
@@ -112,6 +115,8 @@ public class LaunchType implements ILaunchConfigurationDelegate {
       }
     }
   }
+
+  protected abstract JavascriptVmEmbedder.Attachable createAttachable(int port, ConnectionLogger logger) throws CoreException;
 
   private static void terminateTarget(DebugTargetImpl target) {
     target.setDisconnected(true);

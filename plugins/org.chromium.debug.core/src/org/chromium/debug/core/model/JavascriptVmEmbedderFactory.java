@@ -94,9 +94,9 @@ public class JavascriptVmEmbedderFactory {
     }
   }
 
-  public static Attachable connectToStandalone(String host, int port,
+  public static Attachable connectToStandalone(int port,
       ConnectionLogger connectionLogger) {
-    final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(host, port,
+    final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(port,
         connectionLogger);
 
     return new Attachable() {

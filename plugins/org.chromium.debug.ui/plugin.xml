@@ -29,30 +29,50 @@
 
   <extension point="org.eclipse.debug.core.launchConfigurationTypes">
     <launchConfigurationType
-        id="org.chromium.debug.ui.LaunchType"
-        delegate="org.chromium.debug.ui.launcher.LaunchType"
+        id="org.chromium.debug.ui.LaunchType$Chromium"
+        delegate="org.chromium.debug.ui.launcher.LaunchType$Chromium"
         modes="debug"
-        name="%launchName"
+        name="%chromiumLaunchName"
         sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
         sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
         delegateName="Debug Chromium JavaScript"
         delegateDescription="JavaScript debugger for Chromium">
     </launchConfigurationType>
+    <launchConfigurationType
+        id="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        delegate="org.chromium.debug.ui.launcher.LaunchType$StandaloneV8"
+        modes="debug"
+        name="%standaloneV8LaunchName"
+        sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
+        sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
+        delegateName="Debug Standalone V8 JavaScript"
+        delegateDescription="JavaScript debugger for Standalone V8">
+    </launchConfigurationType>
   </extension>
 
   <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
     <launchConfigurationTypeImage
-        id="org.chromium.debug.ui.LaunchConfigTypeImage"
-        configTypeID="org.chromium.debug.ui.LaunchType"
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$Chromium"
+        configTypeID="org.chromium.debug.ui.LaunchType$Chromium"
         icon="res/chromium_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$StandaloneV8"
+        configTypeID="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        icon="res/standalone_v8_16.png">
     </launchConfigurationTypeImage>
   </extension>
 
   <extension point="org.eclipse.debug.ui.launchConfigurationTabGroups">
     <launchConfigurationTabGroup
-        type="org.chromium.debug.ui.LaunchType"
-        class="org.chromium.debug.ui.launcher.LaunchTabGroup"
-        id="org.chromium.debug.ui.LaunchTabGroup">
+        type="org.chromium.debug.ui.LaunchType$Chromium"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$Chromium"
+        id="org.chromium.debug.ui.LaunchTabGroup$Chromium">
+    </launchConfigurationTabGroup>
+    <launchConfigurationTabGroup
+        type="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$StandaloneV8"
+        id="org.chromium.debug.ui.LaunchTabGroup$StandaloneV8">
     </launchConfigurationTabGroup>
   </extension>
 
