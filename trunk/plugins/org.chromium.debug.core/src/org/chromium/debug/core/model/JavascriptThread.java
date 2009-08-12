@@ -92,7 +92,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public String getName() throws DebugException {
-    String url = getDebugTarget().getTargetTab().getUrl();
+    String url = getDebugTarget().getJavascriptEmbedder().getThreadName();
     return NLS.bind(Messages.JsThread_ThreadLabelFormat, (isSuspended()
         ? Messages.JsThread_ThreadLabelSuspended
         : Messages.JsThread_ThreadLabelRunning), (url.length() > 0

@@ -4,26 +4,22 @@
 
 package org.chromium.debug.ui.launcher;
 
+import java.io.Writer;
+
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
-import org.chromium.debug.ui.ChromiumDebugUIPlugin;
+import org.chromium.debug.core.model.JavascriptVmEmbedder;
+import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
 import org.chromium.debug.ui.DialogBasedTabSelector;
 import org.chromium.debug.ui.PluginUtil;
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.UnsupportedVersionException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
-
-import java.io.IOException;
-import java.io.Writer;
 
 /**
  * A launch configuration delegate for the JavaScript debugging.
@@ -37,7 +33,7 @@ public class LaunchType implements ILaunchConfigurationDelegate {
   public static final String CHROMIUM_DEBUG_PROJECT_NAME = "debug_project_name"; //$NON-NLS-1$
 
   public static final String ADD_NETWORK_CONSOLE = "add_network_console"; //$NON-NLS-1$
-  
+
   public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
     // Chromium JavaScript launch is only supported for debugging.
@@ -64,16 +60,22 @@ public class LaunchType implements ILaunchConfigurationDelegate {
         logger = null;
       }
 
-      Browser browser = BrowserFactory.getInstance().create(port, logger);
-      try {
-        browser.connect();
-      } catch (UnsupportedVersionException e) {
-        throw newCoreException(e);
-      } catch (IOException e) {
-        throw newCoreException(e);
+      // TODO(peter.rybin): get rid of this hack
+      final boolean allowContainsV8Hack = true;
+
+      boolean isStandaloneV8 = allowContainsV8Hack &&
+          projectName.toLowerCase().contains("v8"); //$NON-NLS-1$
+
+      JavascriptVmEmbedder.Attachable attachable;
+      if (isStandaloneV8) {
+        attachable = JavascriptVmEmbedderFactory.connectToStandalone("localhost", //$NON-NLS-1$
+            port, logger);
+      } else {
+        attachable = JavascriptVmEmbedderFactory.connectToChromeDevTools(port, logger,
+            new DialogBasedTabSelector());
       }
 
-      // Construct process after we have constructed Browser (and know it is constructed OK).
+      // Construct process after we have constructed Attachable (and know it is constructed OK).
       ConsolePseudoProcess consolePseudoProcess;
       if (consolePart == null) {
         consolePseudoProcess = null;
@@ -84,11 +86,11 @@ public class LaunchType implements ILaunchConfigurationDelegate {
         consolePart.startFlushing();
       }
 
-      DebugTargetImpl target = new DebugTargetImpl(launch, browser, consolePseudoProcess);
+      DebugTargetImpl target = new DebugTargetImpl(launch, consolePseudoProcess);
       try {
         boolean attached = target.attach(
             projectName,
-            new DialogBasedTabSelector(),
+            attachable,
             new Runnable() {
               public void run() {
                 PluginUtil.openProjectExplorerView();
@@ -115,11 +117,4 @@ public class LaunchType implements ILaunchConfigurationDelegate {
     target.setDisconnected(true);
     target.fireTerminateEvent();
   }
-
-  private static CoreException newCoreException(Exception e) {
-    return new CoreException(
-        new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID,
-            "Failed to connect to the remote browser", e)); //$NON-NLS-1$
-  }
-
 }
