@@ -5,16 +5,16 @@
 package org.chromium.sdk.internal.tools.v8.processor;
 
 import org.chromium.sdk.internal.DebugContextImpl;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.json.simple.JSONObject;
 
 /**
- * An abstract base implementation of V8DebuggerToolHandler-aware
+ * An abstract base implementation of DebugContextImpl-aware
  * reply handlers for certain V8 commands.
  * <p>
  * NB! The {@link #messageReceived(org.json.simple.JSONObject)} implementation
  * MUST NOT perform debugger commands in a blocking way the current thread.
  */
-public abstract class V8ResponseCallback implements V8CommandProcessor.V8HandlerCallback {
+public abstract class V8ResponseCallback {
 
   private final DebugContextImpl context;
 
@@ -22,9 +22,7 @@ public abstract class V8ResponseCallback implements V8CommandProcessor.V8Handler
     this.context = context;
   }
 
-  public void failure(String message) {
-    // not used
-  }
+  public abstract void messageReceived(JSONObject response);
 
   protected DebugContextImpl getDebugContext() {
     return context;

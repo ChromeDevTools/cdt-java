@@ -19,6 +19,7 @@ import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
+import org.chromium.sdk.internal.tools.v8.processor.V8ResponseCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
@@ -263,7 +264,7 @@ public class V8CommandProcessor {
   }
 
   private static abstract class HandlerGetter {
-    abstract V8CommandProcessor.V8HandlerCallback get(V8CommandProcessor instance);
+    abstract V8ResponseCallback get(V8CommandProcessor instance);
   }
 
   /**
