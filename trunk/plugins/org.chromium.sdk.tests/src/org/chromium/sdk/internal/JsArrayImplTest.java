@@ -8,15 +8,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.Collection;
+import java.util.SortedMap;
+
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -24,18 +23,17 @@ import org.json.simple.JSONValue;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.SortedMap;
-
 /**
  * A test for the JsVariable implementor.
  */
-public class JsArrayImplTest implements DebugEventListener, TabDebugEventListener {
+public class JsArrayImplTest {
 
   private ChromeStub messageResponder;
   private CallFrameImpl callFrame;
 
   private ValueMirror arrayMirror;
+
+  private final StubListener listener = new StubListener();
 
   @Before
   public void setUpBefore() throws Exception {
@@ -45,7 +43,12 @@ public class JsArrayImplTest implements DebugEventListener, TabDebugEventListene
     browser.connect();
     BrowserTab[] tabs = browser.getTabs();
     BrowserTab browserTab = tabs[0];
-    browserTab.attach(this);
+    browserTab.attach(listener);
+
+    listener.expectSuspendedEvent();
+    messageResponder.sendSuspendedEvent();
+    DebugContextImpl debugContext = (DebugContextImpl) listener.getDebugContext();
+
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
@@ -54,7 +57,6 @@ public class JsArrayImplTest implements DebugEventListener, TabDebugEventListene
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "[1]", valueObject),
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "[3]", valueObject),
         }, null);
-    DebugContextImpl debugContext = ((BrowserTabImpl) browserTab).getDebugContext();
     FrameMirror frameMirror = new FrameMirror(
         debugContext,
         null,
@@ -89,27 +91,5 @@ public class JsArrayImplTest implements DebugEventListener, TabDebugEventListene
     JsValue value = arrayElement.getValue();
     assertEquals(JsValue.Type.TYPE_NUMBER, value.getType());
     assertEquals("3", value.getValueString());
-  }
-
-  public void closed() {
-  }
-
-  public void disconnected() {
-  }
-
-  public DebugEventListener getDebugEventListener() {
-    return this;
-  }
-
-  public void navigated(String newUrl) {
-  }
-
-  public void resumed() {
-  }
-
-  public void suspended(DebugContext context) {
-  }
-
-  public void scriptLoaded(Script newScript) {
   }
 }
