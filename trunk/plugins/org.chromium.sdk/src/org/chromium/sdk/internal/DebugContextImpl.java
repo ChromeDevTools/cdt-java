@@ -4,6 +4,14 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
@@ -19,14 +27,6 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
@@ -50,13 +50,6 @@ public class DebugContextImpl implements DebugContext {
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
-  /** Regex for the "text" field of the "backtrace" element response. */
-  private static final String FRAME_TEXT_REGEX =
-      "^(?:.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
-
-  /** A pattern for the frame "text" regex. */
-  private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
-
   /** The name of the "this" object to report as a variable name. */
   private static final String THIS_NAME = "this";
 
@@ -75,15 +68,6 @@ public class DebugContextImpl implements DebugContext {
   /** The parent JavascriptVm instance. */
   private final JavascriptVmImpl javascriptVmImpl;
 
-  /** Whether the initial script loading has completed. */
-  private volatile boolean doneInitialScriptLoad = false;
-
-  /** The frame mirrors while on a breakpoint. */
-  private volatile FrameMirror[] frameMirrors;
-
-  /** The cached call frames constructed using frameMirrors. */
-  private volatile List<CallFrameImpl> callFramesCached;
-
   /** The suspension state. */
   private State state;
 
@@ -98,6 +82,10 @@ public class DebugContextImpl implements DebugContext {
 
   /** Context owns breakpoint manager */
   private final BreakpointManager breakpointManager;
+
+  private final ScriptLoader scriptLoader = new ScriptLoader();
+
+  private final Frames frames = new Frames(this);
 
   public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions) {
     createNewToken();
@@ -119,50 +107,7 @@ public class DebugContextImpl implements DebugContext {
    * @param response the "backtrace" V8 reply
    */
   public void setFrames(JSONObject response) {
-    JSONObject body = JsonUtil.getBody(response);
-    JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
-    int frameCnt = jsonFrames.size();
-    this.frameMirrors = new FrameMirror[frameCnt];
-    this.callFramesCached = null;
-
-    JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
-    handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
-    for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
-      JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
-      int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
-      JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
-      JSONObject func = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_FUNC);
-
-      String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT)
-          .replace('\r', ' ').replace('\n', ' ');
-      Matcher m = FRAME_TEXT_PATTERN.matcher(text);
-      m.matches();
-      String url = m.group(1);
-
-      int currentLine = JsonUtil.getAsLong(frame, V8Protocol.BODY_FRAME_LINE).intValue();
-
-      // If we stopped because of the debuggerword then we're on the next line.
-      // TODO(apavlov): Terry says: we need to use the [e.g. Rhino] AST to
-      // decide if line is debuggerword. If so, find the next sequential line.
-      // The below works for simple scripts but doesn't take into account
-      // comments, etc.
-      String srcLine = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_SRCLINE);
-      if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
-        currentLine++;
-      }
-      Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
-
-      Long scriptId = -1L;
-      if (scriptRef != null) {
-        JSONObject handle = handleManager.getHandle(scriptRef);
-        if (handle != null) {
-          scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
-        }
-      }
-      frameMirrors[index] = new FrameMirror(
-          this, frameObject, url, currentLine, scriptId,
-          V8ProtocolUtil.getFunctionName(func));
-    }
+    frames.setFrames(response);
   }
 
   /**
@@ -173,8 +118,7 @@ public class DebugContextImpl implements DebugContext {
   public void setException(JSONObject response) {
     setState(State.EXCEPTION);
     JSONObject body = JsonUtil.getBody(response);
-    this.frameMirrors = new FrameMirror[1];
-    this.callFramesCached = null;
+    frames.setFramesToOneElementArray();
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     JSONObject exception = JsonUtil.getAsJSON(body, V8Protocol.EXCEPTION);
@@ -198,22 +142,7 @@ public class DebugContextImpl implements DebugContext {
   }
 
   public List<CallFrameImpl> getCallFrames() {
-    synchronized (tokenAccessLock) {
-      if (callFramesCached == null) {
-        // At this point we need to make sure ALL the V8 scripts are loaded so as
-        // to hook them up to the call frames.
-        loadAllScripts(null);
-        int frameCount = getFrameCount();
-        List<CallFrameImpl> frames = new ArrayList<CallFrameImpl>(frameCount);
-        ContextToken theToken = getToken();
-        for (int i = 0; i < frameCount; ++i) {
-          frames.add(new CallFrameImpl(getFrame(i), i, this, theToken));
-          hookupScriptToFrame(i);
-        }
-        callFramesCached = Collections.unmodifiableList(frames);
-      }
-      return callFramesCached;
-    }
+    return frames.getCallFrames();
   }
 
   public void continueVm(StepAction stepAction, int stepCount, final ContinueCallback callback) {
@@ -247,8 +176,8 @@ public class DebugContextImpl implements DebugContext {
   private ContextToken getContinueToken() {
     synchronized (tokenAccessLock) {
       ContextToken theToken;
-      if (callFramesCached != null && callFramesCached.size() > 0) {
-        theToken = callFramesCached.get(0).getToken();
+      if (frames.callFramesCached != null && frames.callFramesCached.size() > 0) {
+        theToken = frames.callFramesCached.get(0).getToken();
       } else {
         theToken = getToken();
       }
@@ -290,74 +219,15 @@ public class DebugContextImpl implements DebugContext {
     getScriptManager().reset();
     getHandleManager().reset();
     createNewToken();
-    this.callFramesCached = null;
-    this.frameMirrors = null;
+    frames.callFramesCached = null;
+    frames.frameMirrors = null;
   }
 
 
-  /**
-   * @return count of frames in the current stack
-   */
-  public int getFrameCount() {
-    return frameMirrors.length;
+  public void loadAllScripts(ScriptsCallback callback) {
+    scriptLoader.loadAllScripts(callback);
   }
 
-  /**
-   * @param index of the frame
-   * @return a FrameMirror instance for the specified frame index
-   */
-  public FrameMirror getFrame(int index) {
-    return frameMirrors[index];
-  }
-
-  /**
-   * Associates a script found in the ScriptManager with the given frame.
-   *
-   * @param frameIndex to associate a script with
-   */
-  public void hookupScriptToFrame(int frameIndex) {
-    FrameMirror frame = getFrame(frameIndex);
-    if (frame != null && frame.getScript() == null) {
-      Script script = getScriptManager().findById(frame.getScriptId());
-      if (script != null) {
-        frame.setScript(script);
-      }
-    }
-  }
-
-  /**
-   * Loads all scripts from the remote if necessary, and feeds them into the
-   * callback provided (if any).
-   *
-   * @param callback nullable callback to invoke when the scripts are ready
-   */
-  public void loadAllScripts(final ScriptsCallback callback) {
-    if (!isDoneInitialScriptLoad()) {
-      setDoneInitialScriptLoad(true);
-      // Not loaded the scripts initially, do full load.
-      v8Helper.reloadAllScripts(new V8HandlerCallback() {
-        public void messageReceived(JSONObject response) {
-          if (callback != null) {
-            if (JsonUtil.isSuccessful(response)) {
-              callback.success(getScriptManager().allScripts());
-            } else {
-              callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
-            }
-          }
-        }
-
-        public void failure(String message) {
-          if (callback != null) {
-            callback.failure(message);
-          }
-        }
-      });
-    } else {
-      if (callback != null) {
-        callback.success(getScriptManager().allScripts());
-      }
-    }
-  }
 
   /**
    * Sets the current suspension state and performs suspension cleanup.
@@ -425,15 +295,178 @@ public class DebugContextImpl implements DebugContext {
     return getSessionManager().getDebugEventListener();
   }
 
-  private boolean isDoneInitialScriptLoad() {
-    return doneInitialScriptLoad;
-  }
-
-  private void setDoneInitialScriptLoad(boolean doneInitialScriptLoad) {
-    this.doneInitialScriptLoad = doneInitialScriptLoad;
-  }
-
   public BreakpointManager getBreakpointManager() {
     return breakpointManager;
+  }
+
+  private static class Frames {
+
+    /** Regex for the "text" field of the "backtrace" element response. */
+    private static final String FRAME_TEXT_REGEX =
+        "^(?:.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
+
+    /** A pattern for the frame "text" regex. */
+    private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
+
+    private final DebugContextImpl debugContextImpl;
+
+    /** The frame mirrors while on a breakpoint. */
+    private volatile FrameMirror[] frameMirrors;
+
+    /** The cached call frames constructed using frameMirrors. */
+    private volatile List<CallFrameImpl> callFramesCached;
+
+    Frames(DebugContextImpl debugContextImpl) {
+      this.debugContextImpl = debugContextImpl;
+    }
+
+    void setFrames(JSONObject response) {
+      JSONObject body = JsonUtil.getBody(response);
+      JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
+      int frameCnt = jsonFrames.size();
+      this.frameMirrors = new FrameMirror[frameCnt];
+      this.callFramesCached = null;
+
+      JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
+      debugContextImpl.handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
+      for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
+        JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
+        int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
+        JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
+        JSONObject func = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_FUNC);
+
+        String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT)
+            .replace('\r', ' ').replace('\n', ' ');
+        Matcher m = FRAME_TEXT_PATTERN.matcher(text);
+        m.matches();
+        String url = m.group(1);
+
+        int currentLine = JsonUtil.getAsLong(frame, V8Protocol.BODY_FRAME_LINE).intValue();
+
+        // If we stopped because of the debuggerword then we're on the next line.
+        // TODO(apavlov): Terry says: we need to use the [e.g. Rhino] AST to
+        // decide if line is debuggerword. If so, find the next sequential line.
+        // The below works for simple scripts but doesn't take into account
+        // comments, etc.
+        String srcLine = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_SRCLINE);
+        if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
+          currentLine++;
+        }
+        Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
+
+        Long scriptId = -1L;
+        if (scriptRef != null) {
+          JSONObject handle = debugContextImpl.handleManager.getHandle(scriptRef);
+          if (handle != null) {
+            scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
+          }
+        }
+        frameMirrors[index] = new FrameMirror(
+            debugContextImpl, frameObject, url, currentLine, scriptId,
+            V8ProtocolUtil.getFunctionName(func));
+      }
+    }
+    void setFramesToOneElementArray() {
+      frameMirrors = new FrameMirror[1];
+      callFramesCached = null;
+    }
+
+    public List<CallFrameImpl> getCallFrames() {
+      synchronized (debugContextImpl.tokenAccessLock) {
+        if (callFramesCached == null) {
+          // At this point we need to make sure ALL the V8 scripts are loaded so as
+          // to hook them up to the call frames.
+          debugContextImpl.scriptLoader.loadAllScripts(null);
+          int frameCount = getFrameCount();
+          List<CallFrameImpl> frames = new ArrayList<CallFrameImpl>(frameCount);
+          ContextToken theToken = debugContextImpl.getToken();
+          for (int i = 0; i < frameCount; ++i) {
+            frames.add(new CallFrameImpl(getFrame(i), i, debugContextImpl, theToken));
+            hookupScriptToFrame(i);
+          }
+          callFramesCached = Collections.unmodifiableList(frames);
+        }
+        return callFramesCached;
+      }
+    }
+
+
+    /**
+     * @return count of frames in the current stack
+     */
+    public int getFrameCount() {
+      return frameMirrors.length;
+    }
+
+    /**
+     * @param index of the frame
+     * @return a FrameMirror instance for the specified frame index
+     */
+    public FrameMirror getFrame(int index) {
+      return frameMirrors[index];
+    }
+
+    /**
+     * Associates a script found in the ScriptManager with the given frame.
+     *
+     * @param frameIndex to associate a script with
+     */
+    public void hookupScriptToFrame(int frameIndex) {
+      FrameMirror frame = getFrame(frameIndex);
+      if (frame != null && frame.getScript() == null) {
+        Script script = debugContextImpl.getScriptManager().findById(frame.getScriptId());
+        if (script != null) {
+          frame.setScript(script);
+        }
+      }
+    }
+  }
+
+  private class ScriptLoader {
+
+    /** Whether the initial script loading has completed. */
+    private volatile boolean doneInitialScriptLoad = false;
+
+    /**
+     * Loads all scripts from the remote if necessary, and feeds them into the
+     * callback provided (if any).
+     *
+     * @param callback nullable callback to invoke when the scripts are ready
+     */
+    void loadAllScripts(final ScriptsCallback callback) {
+      if (!isDoneInitialScriptLoad()) {
+        setDoneInitialScriptLoad(true);
+        // Not loaded the scripts initially, do full load.
+        v8Helper.reloadAllScripts(new V8HandlerCallback() {
+          public void messageReceived(JSONObject response) {
+            if (callback != null) {
+              if (JsonUtil.isSuccessful(response)) {
+                callback.success(getScriptManager().allScripts());
+              } else {
+                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+              }
+            }
+          }
+
+          public void failure(String message) {
+            if (callback != null) {
+              callback.failure(message);
+            }
+          }
+        });
+      } else {
+        if (callback != null) {
+          callback.success(getScriptManager().allScripts());
+        }
+      }
+    }
+
+    private boolean isDoneInitialScriptLoad() {
+      return doneInitialScriptLoad;
+    }
+
+    private void setDoneInitialScriptLoad(boolean doneInitialScriptLoad) {
+      this.doneInitialScriptLoad = doneInitialScriptLoad;
+    }
   }
 }
