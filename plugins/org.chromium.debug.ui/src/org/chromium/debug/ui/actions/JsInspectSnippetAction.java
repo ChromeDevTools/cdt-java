@@ -152,7 +152,7 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
   }
 
   private void run() {
-    getStackFrameContext().getCallFrame().evaluate(getSelectedText(), false, this);
+    getStackFrameContext().getCallFrame().evaluateAsync(getSelectedText(), this, null);
   }
 
   protected String getSelectedText() {

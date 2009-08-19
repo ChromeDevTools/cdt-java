@@ -17,6 +17,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
@@ -32,21 +33,6 @@ import org.json.simple.JSONObject;
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
 public class DebugContextImpl implements DebugContext {
-
-  /**
-   * The enum constants specify how a request should be sent to the browser.
-   */
-  public enum SendingType {
-
-    /** Wait until the response has been received (evaluates javascript). */
-    SYNC,
-
-    /** Send and return immediately. */
-    ASYNC,
-
-    /** ASYNC + evaluate javascript. */
-    ASYNC_IMMEDIATE,
-  }
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
@@ -169,7 +155,7 @@ public class DebugContextImpl implements DebugContext {
           callback.failure(message);
         }
       };
-      sendMessage(SendingType.ASYNC_IMMEDIATE, message, commandCallback);
+      sendMessageAsync(message, true, commandCallback, null);
     }
   }
 
@@ -253,10 +239,10 @@ public class DebugContextImpl implements DebugContext {
     return v8Helper.computeLocals(frame);
   }
 
-  public Exception sendMessage(SendingType manner, DebuggerMessage message,
-      V8CommandProcessor.V8HandlerCallback commandCallback) {
-    return getSessionManager().getV8CommandProcessor().sendV8Command(manner, message,
-        commandCallback);
+  public void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+      V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback) {
+    getSessionManager().getV8CommandProcessor().sendV8CommandAsync(message, isImmediate,
+        commandCallback, syncCallback);
   }
 
   /**

@@ -1,31 +1,30 @@
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public class BreakpointManager {
   /**
    * This map shall contain only breakpoints with valid IDs.
    */
   private final Map<Long, Breakpoint> idToBreakpoint = new HashMap<Long, Breakpoint>();
-  
+
   private final DebugContextImpl context;
 
   /** The breakpoints hit before suspending. */
   private volatile Collection<Breakpoint> breakpointsHit;
-  
-  
+
+
   public BreakpointManager(DebugContextImpl context) {
     this.context = context;
   }
@@ -33,11 +32,11 @@ public class BreakpointManager {
   public void setBreakpoint(final Breakpoint.Type type, String target, int line, int position,
       final boolean enabled, final String condition, final int ignoreCount,
       final BrowserTab.BreakpointCallback callback) {
-    context.sendMessage(
-        SendingType.ASYNC_IMMEDIATE,
+    context.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(type, target, toNullableInteger(line),
             toNullableInteger(position), enabled, condition,
             toNullableInteger(ignoreCount)),
+        true,
         callback == null
             ? null
             : new V8CommandProcessor.V8HandlerCallback() {
@@ -61,9 +60,10 @@ public class BreakpointManager {
                   callback.failure(message);
                 }
               }
-            });
+            },
+            null);
   }
-  
+
   public Breakpoint getBreakpoint(Long id) {
     return idToBreakpoint.get(id);
   }
@@ -75,9 +75,9 @@ public class BreakpointManager {
       return;
     }
     idToBreakpoint.remove(id);
-    context.sendMessage(
-        SendingType.ASYNC_IMMEDIATE,
+    context.sendMessageAsync(
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
+        true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
@@ -95,14 +95,15 @@ public class BreakpointManager {
               callback.failure(message);
             }
           }
-        });
+        },
+        null);
   }
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback) {
-    context.sendMessage(
-        SendingType.ASYNC_IMMEDIATE,
+    context.sendMessageAsync(
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
+        true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (callback != null) {
@@ -118,7 +119,8 @@ public class BreakpointManager {
               callback.failure(message);
             }
           }
-        });
+        },
+        null);
   }
 
   /**

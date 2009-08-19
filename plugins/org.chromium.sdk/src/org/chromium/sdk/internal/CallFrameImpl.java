@@ -9,9 +9,10 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -98,10 +99,20 @@ public class CallFrameImpl implements CallFrame {
     return frameMirror.getScript();
   }
 
-  public void evaluate(
-      final String expression, boolean isSync, final CallFrame.EvaluateCallback callback) {
+  public void evaluateSync(String expression, EvaluateCallback evaluateCallback) {
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    evaluateAsync(expression, evaluateCallback, callbackSemaphore);
+    boolean res = callbackSemaphore.tryAcquireDefault();
+    if (!res) {
+      evaluateCallback.failure("Timeout");
+    }
+  }
+
+  public void evaluateAsync(final String expression, final EvaluateCallback callback,
+      SyncCallback syncCallback) {
     DebuggerMessage message =
-        DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
+      DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
+
     V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
         ? null
         : new V8CommandProcessor.V8HandlerCallback() {
@@ -124,12 +135,10 @@ public class CallFrameImpl implements CallFrame {
             callback.failure(message);
           }
         };
-    Exception ex = getDebugContext().sendMessage(
-        isSync ? SendingType.SYNC : SendingType.ASYNC_IMMEDIATE, message, commandCallback);
-    if (ex != null && callback != null) {
-      callback.failure(ex.getMessage());
-    }
+
+    getDebugContext().sendMessageAsync(message, true, commandCallback, syncCallback);
   }
+
 
   ContextToken getToken() {
     return token;

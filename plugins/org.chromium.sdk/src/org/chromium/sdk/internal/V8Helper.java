@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -60,9 +60,10 @@ class V8Helper {
         ? callback
         : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
     lock();
-    context.sendMessage(
-        SendingType.SYNC,
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    context.sendMessageAsync(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
+        true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void failure(String message) {
             unlock();
@@ -85,7 +86,11 @@ class V8Helper {
             unlock();
             finalCallback.messageReceived(response);
           }
-        });
+        },
+        callbackSemaphore);
+
+    // ignore timeout
+    callbackSemaphore.tryAcquireDefault();
   }
 
   protected void lock() {

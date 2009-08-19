@@ -57,15 +57,26 @@ public interface CallFrame {
   String getFunctionName();
 
   /**
-   * Evaluates an arbitrary JavaScript {@code expression} in the context of the
-   * call frame. The evaluation result is reported to the specified {@code
-   * callback}. The method will block until the evaluation result is available
-   * if {@code isSync == true}.
+   * Synchronously evaluates an arbitrary JavaScript {@code expression} in
+   * the context of the call frame. The evaluation result is reported to
+   * the specified {@code evaluateCallback}. The method will block until the evaluation
+   * result is available.
    *
    * @param expression to evaluate
-   * @param isSync whether to perform the request synchronously
    * @param evaluateCallback to report the evaluation result to
    */
-  void evaluate(String expression, boolean isSync, EvaluateCallback evaluateCallback);
+  void evaluateSync(String expression, EvaluateCallback evaluateCallback);
 
+  /**
+   * Asynchronously evaluates an arbitrary JavaScript {@code expression} in
+   * the context of the call frame. The evaluation result is reported to
+   * the specified {@code evaluateCallback} and right after this to syncCallback.
+   * The method doesn't block.
+   *
+   * @param expression to evaluate
+   * @param evaluateCallback to report the evaluation result to
+   * @param syncCallback to report the end of any processing
+   */
+  void evaluateAsync(String expression, EvaluateCallback evaluateCallback,
+      SyncCallback syncCallback);
 }
