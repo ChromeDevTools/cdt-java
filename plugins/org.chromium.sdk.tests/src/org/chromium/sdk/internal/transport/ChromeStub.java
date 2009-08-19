@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.transport;
 
-import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
 
 /**
@@ -29,4 +28,9 @@ public interface ChromeStub {
    * @param listener set for the host FakeConnection
    */
   void setNetListener(NetListener listener);
+
+  /**
+   * Creates and sends notification about VM being suspended.
+   */
+  void sendSuspendedEvent();
 }

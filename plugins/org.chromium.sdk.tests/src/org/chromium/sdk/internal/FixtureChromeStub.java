@@ -41,6 +41,8 @@ public class FixtureChromeStub implements ChromeStub {
     }
   };
 
+  private static final String secondTabId = "2";
+
   static {
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
@@ -275,7 +277,7 @@ public class FixtureChromeStub implements ChromeStub {
       response = "{\"command\":\"detach\",\"result\":0}";
     } else if (DevToolsServiceCommand.LIST_TABS.commandName.equals(protocolCommand)) {
       response =
-          "{\"command\":\"list_tabs\",\"data\":[[2,\"file:///C:/1.html\"],[4,\"file:///C:/1.html\"]],\"result\":0}";
+          "{\"command\":\"list_tabs\",\"data\":[[" + secondTabId + ",\"file:///C:/1.html\"],[4,\"file:///C:/1.html\"]],\"result\":0}";
     } else if (DevToolsServiceCommand.VERSION.commandName.equals(protocolCommand)) {
       response = "{\"command\":\"version\",\"data\":\"0.1\",\"result\":0}";
     }
@@ -287,6 +289,16 @@ public class FixtureChromeStub implements ChromeStub {
         requestMessage.getTool(),
         requestMessage.getDestination(),
         response);
+  }
+
+  public void sendSuspendedEvent() {
+    String response = "{\"seq\":" + nextSeq() + ",\"type\":\"event\",\"event\":\"break\","
+        + "\"body\":{\"invocationText\":\"wasteCpu();\",\"sourceLine\":25,\"sourceColumn\":4,"
+        + "\"sourceLineText\":\"    debugger;\",\"script\":{\"id\":11,\"name\":\"samples/test.js\","
+        + "\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":36}}}";
+    response = createDebuggerCommandResponse(response);
+    Message message = MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, secondTabId, response);
+    listener.messageReceived(message);
   }
 
   private <T> T putJsonValue(String name, T value, Map<String, Object> targetMap) {

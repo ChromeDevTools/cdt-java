@@ -16,10 +16,6 @@ import java.util.Set;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -30,12 +26,14 @@ import org.junit.Test;
 /**
  * A test for the JsVariable implementor.
  */
-public class JsObjectImplTest implements DebugEventListener, TabDebugEventListener {
+public class JsObjectImplTest {
 
   private ChromeStub messageResponder;
   private CallFrameImpl callFrame;
 
   private ValueMirror eventMirror;
+
+  private final StubListener listener = new StubListener();
 
   @Before
   public void setUpBefore() throws Exception {
@@ -45,7 +43,12 @@ public class JsObjectImplTest implements DebugEventListener, TabDebugEventListen
     browser.connect();
     BrowserTab[] tabs = browser.getTabs();
     BrowserTab browserTab = tabs[0];
-    browserTab.attach(this);
+    browserTab.attach(listener);
+
+    listener.expectSuspendedEvent();
+    messageResponder.sendSuspendedEvent();
+    DebugContextImpl debugContext = (DebugContextImpl) listener.getDebugContext();
+
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
@@ -54,7 +57,7 @@ public class JsObjectImplTest implements DebugEventListener, TabDebugEventListen
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
         }, null);
-    DebugContextImpl debugContext = ((BrowserTabImpl) browserTab).getDebugContext();
+
     FrameMirror frameMirror = new FrameMirror(
         debugContext,
         null,
@@ -88,27 +91,5 @@ public class JsObjectImplTest implements DebugEventListener, TabDebugEventListen
     assertEquals("3", secondVal.getValueString()); //$NON-NLS-1$
     assertNull(firstVal.asObject());
     assertNull(secondVal.asObject());
-  }
-
-  public DebugEventListener getDebugEventListener() {
-    return this;
-  }
-
-  public void navigated(String newUrl) {
-  }
-
-  public void closed() {
-  }
-
-  public void disconnected() {
-  }
-
-  public void resumed() {
-  }
-
-  public void suspended(DebugContext context) {
-  }
-
-  public void scriptLoaded(Script newScript) {
   }
 }
