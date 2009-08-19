@@ -4,21 +4,20 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext.State;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Handles the suspension-related V8 command replies and events.
@@ -43,10 +42,9 @@ public class BreakpointProcessor extends V8ResponseCallback {
         debugContext.getBreakpointManager().onBreakpointsHit(Collections.<Breakpoint> emptySet());
         debugContext.setException(response);
       }
-      debugContext.sendMessage(
-          SendingType.ASYNC,
+      debugContext.sendMessageAsync(
           DebuggerMessageFactory.backtrace(null, null, true, getDebugContext().getToken()),
-          null);
+          false, null, null);
     }
   }
 

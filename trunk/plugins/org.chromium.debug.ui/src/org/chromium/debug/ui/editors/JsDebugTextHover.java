@@ -40,7 +40,7 @@ public class JsDebugTextHover implements ITextHover {
     }
 
     final JsVariable[] result = new JsVariable[1];
-    frame.getCallFrame().evaluate(expression, true, new CallFrame.EvaluateCallback() {
+    frame.getCallFrame().evaluateSync(expression, new CallFrame.EvaluateCallback() {
       public void success(JsVariable var) {
         result[0] = var;
       }

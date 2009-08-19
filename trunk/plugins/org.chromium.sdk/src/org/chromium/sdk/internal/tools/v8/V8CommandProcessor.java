@@ -12,9 +12,9 @@ import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
@@ -96,29 +96,18 @@ public class V8CommandProcessor {
     return bpp;
   }
 
-  public Exception sendV8Command(SendingType manner, DebuggerMessage message,
-      V8CommandProcessor.V8HandlerCallback commandCallback) {
-    Exception result = null;
-    switch (manner) {
-      case SYNC:
-        result = sendV8CommandBlocking(message, commandCallback);
-        break;
-      case ASYNC:
-        this.sendV8Command(message, false, commandCallback);
-        break;
-      case ASYNC_IMMEDIATE:
-        this.sendV8Command(message, true, commandCallback);
-        break;
-    }
-    return result;
-  }
-
-  public void sendV8Command(DebuggerMessage message,
-      boolean isImmediate, V8CommandProcessor.V8HandlerCallback v8HandlerCallback) {
+  public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
+      V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
     synchronized (sendLock) {
       if (isMessageContextDependent(message) && !message.getToken().isValid()) {
-        if (v8HandlerCallback != null) {
-          v8HandlerCallback.failure("Invalid context");
+        try {
+          if (v8HandlerCallback != null) {
+            v8HandlerCallback.failure("Invalid context");
+          }
+        } finally {
+          if (syncCallback != null) {
+            syncCallback.callbackDone(null);
+          }
         }
         return;
       }
@@ -126,7 +115,7 @@ public class V8CommandProcessor {
         message.getToken().invalidate();
       }
       if (v8HandlerCallback != null) {
-        seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
+        seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback, syncCallback,
             getCurrentMillis()));
       }
       try {
@@ -159,10 +148,19 @@ public class V8CommandProcessor {
         Thread t = new Thread(new Runnable() {
           public void run() {
             try {
-              if (callbackEntry.v8HandlerCallback != null) {
-                LOGGER.log(
-                    Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
-                callbackEntry.v8HandlerCallback.messageReceived(v8Json);
+              RuntimeException callbackException = null;
+              try {
+                if (callbackEntry.v8HandlerCallback != null) {
+                  LOGGER.log(
+                      Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
+                  callbackEntry.v8HandlerCallback.messageReceived(v8Json);
+                }
+              } catch (RuntimeException e) {
+                callbackException = e;
+              } finally {
+                if (callbackEntry.syncCallback != null) {
+                  callbackEntry.syncCallback.callbackDone(callbackException);
+                }
               }
             } finally {
               // Note that the semaphore is released AFTER the handleResponse
@@ -209,14 +207,6 @@ public class V8CommandProcessor {
     }
   }
 
-  private Exception sendV8CommandBlocking(
-      DebuggerMessage message, V8CommandProcessor.V8HandlerCallback v8HandlerCallback) {
-    BlockingV8RequestCommand command =
-        new BlockingV8RequestCommand(this, message, true, v8HandlerCallback);
-    command.run();
-    return command.getException();
-  }
-
   private static boolean isMessageContextDependent(DebuggerMessage message) {
     DebuggerCommand command = DebuggerCommand.forString(message.getCommand());
     if (command == null) {
@@ -256,13 +246,17 @@ public class V8CommandProcessor {
 
     final Semaphore semaphore;
 
-    public CallbackEntry(V8HandlerCallback v8HandlerCallback, long commitMillis) {
-      this(v8HandlerCallback, commitMillis, null);
+    final SyncCallback syncCallback;
+
+    public CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback,
+        long commitMillis) {
+      this(v8HandlerCallback, syncCallback, commitMillis, null);
     }
 
-    public CallbackEntry(V8HandlerCallback v8HandlerCallback, long commitMillis,
-        Semaphore semaphore) {
+    public CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback,
+        long commitMillis, Semaphore semaphore) {
       this.v8HandlerCallback = v8HandlerCallback;
+      this.syncCallback = syncCallback;
       this.commitMillis = commitMillis;
       this.semaphore = semaphore;
     }

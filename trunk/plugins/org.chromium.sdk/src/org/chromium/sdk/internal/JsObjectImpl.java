@@ -13,9 +13,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -197,10 +197,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   private Exception resolveThisHandle(final DebugContextImpl debugContext,
       final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle) {
-    Exception ex = debugContext.sendMessage(
-        SendingType.SYNC,
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    debugContext.sendMessageAsync(
         DebuggerMessageFactory.lookup(
             Collections.singletonList(ref), true, callFrame.getToken()),
+        true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
           if (!JsonUtil.isSuccessful(response)) {
@@ -219,8 +220,13 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
           public void failure(String message) {
             setFailedResponse();
           }
-        });
-    return ex;
+        },
+        callbackSemaphore);
+    boolean res = callbackSemaphore.tryAcquireDefault();
+    if (!res) {
+      return new Exception("Timeout");
+    }
+    return null;
   }
 
   /**
@@ -290,8 +296,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     DebuggerMessage message =
         DebuggerMessageFactory.lookup(
         new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
-    Exception ex = callFrame.getDebugContext().sendMessage(
-        SendingType.SYNC, message,
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    callFrame.getDebugContext().sendMessageAsync(
+        message, true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
             if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
@@ -303,8 +310,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
           public void failure(String message) {
             setFailedResponse();
           }
-        });
-    if (ex != null) {
+        },
+        callbackSemaphore);
+
+    boolean res = callbackSemaphore.tryAcquireDefault();
+
+    if (!res) {
       setFailedResponse();
     }
   }

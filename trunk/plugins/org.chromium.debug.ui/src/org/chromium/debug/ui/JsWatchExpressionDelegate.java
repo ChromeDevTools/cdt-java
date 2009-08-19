@@ -142,20 +142,21 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
     }
     StackFrame stackFrame = (StackFrame) contextImpl;
     final CallFrame frame = stackFrame.getCallFrame();
-    frame.evaluate(expression, false, new CallFrame.EvaluateCallback() {
-      public void success(JsVariable variable) {
-        final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
-        listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
-      }
+    frame.evaluateAsync(expression, new CallFrame.EvaluateCallback() {
+        public void success(JsVariable variable) {
+          final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
+          listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
+        }
 
-      public void failure(String message) {
-        listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
-            createErrorStatus(message == null
-                ? Messages.JsWatchExpressionDelegate_ErrorEvaluatingExpression
-                : message, null)), expression));
-        return;
-      }
-    });
+        public void failure(String message) {
+          listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
+              createErrorStatus(message == null
+                  ? Messages.JsWatchExpressionDelegate_ErrorEvaluatingExpression
+                  : message, null)), expression));
+          return;
+        }
+      },
+      null);
   }
 
   private static Status createErrorStatus(String message, Exception e) {

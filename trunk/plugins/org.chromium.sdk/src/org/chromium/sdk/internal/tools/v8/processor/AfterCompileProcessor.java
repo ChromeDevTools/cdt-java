@@ -4,11 +4,12 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
+import java.util.Collections;
+
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.ProtocolOptions;
-import org.chromium.sdk.internal.DebugContextImpl.SendingType;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -16,8 +17,6 @@ import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import java.util.Collections;
 
 /**
  * Listens for scripts sent in the "afterCompile" events and requests their
@@ -39,10 +38,10 @@ public class AfterCompileProcessor extends V8ResponseCallback {
     if (script == null) {
       return;
     }
-    debugContext.sendMessage(
-        SendingType.ASYNC_IMMEDIATE,
+    debugContext.sendMessageAsync(
         DebuggerMessageFactory.scripts(
             Collections.singletonList(V8ProtocolUtil.getScriptIdFromResponse(script)), true),
+        true,
         new V8CommandProcessor.V8HandlerCallback(){
           public void messageReceived(JSONObject response) {
             if (!JsonUtil.isSuccessful(response)) {
@@ -64,7 +63,8 @@ public class AfterCompileProcessor extends V8ResponseCallback {
           public void failure(String message) {
             // The script is now missing.
           }
-        });
+        },
+        null);
   }
 
   private static JSONObject getScriptToLoad(JSONObject response, ProtocolOptions protocolOptions) {

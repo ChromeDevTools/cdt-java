@@ -4,6 +4,11 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.BrowserImpl;
@@ -20,11 +25,6 @@ import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Message;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
-
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Handles the interaction with the "V8Debugger" tool.
@@ -170,12 +170,6 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       return isAttached;
     }
-  }
-
-
-  public void sendV8Command(DebuggerMessage message,
-      boolean isImmediate, V8CommandProcessor.V8HandlerCallback v8HandlerCallback) {
-    v8CommandProcessor.sendV8Command(message, isImmediate, v8HandlerCallback);
   }
 
   /**
