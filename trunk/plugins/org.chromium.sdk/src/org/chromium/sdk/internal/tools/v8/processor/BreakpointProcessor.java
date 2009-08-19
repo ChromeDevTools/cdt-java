@@ -28,6 +28,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
     super(context);
   }
 
+  @Override
   public void messageReceived(JSONObject response) {
     V8MessageType type =
         V8MessageType.forString(JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
