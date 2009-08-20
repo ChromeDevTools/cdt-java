@@ -81,8 +81,6 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   private ResultAwareCallback detachCallback;
 
-  private final V8CommandProcessor v8CommandProcessor;
-
   /**
    * A no-op JavaScript to evaluate.
    */
@@ -91,8 +89,6 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, DebugContextImpl context) {
     this.browserTabImpl = browserTabImpl;
     this.context = context;
-    ChromeDevToolMessageOutput messageOutput = new ChromeDevToolMessageOutput(browserTabImpl);
-    this.v8CommandProcessor = new V8CommandProcessor(messageOutput, context);
   }
 
   public DebugEventListener getDebugEventListener() {
@@ -148,7 +144,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached = false;
     }
-    v8CommandProcessor.removeAllCallbacks();
+    context.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -324,7 +320,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private void processDebuggerCommand(JSONObject json) {
     JSONObject v8Json = JsonUtil.getAsJSON(json, ChromeDevToolsProtocol.DATA.key);
     V8CommandProcessor.checkNull(v8Json, "'data' field not found");
-    v8CommandProcessor.processIncomingJson(v8Json);
+    context.getV8CommandProcessor().processIncomingJson(v8Json);
   }
 
   private void processNavigated(JSONObject json) {
@@ -337,24 +333,22 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     return browserTabImpl.getBrowser().getConnection();
   }
 
-  public V8CommandProcessor getV8CommandProcessor() {
-    return v8CommandProcessor;
-  }
-
-  private class ChromeDevToolMessageOutput implements V8CommandOutput {
+  public static class ChromeDevToolMessageOutput implements V8CommandOutput {
     private final String destination;
+    private final Connection connection;
 
-    ChromeDevToolMessageOutput(BrowserTabImpl browserTabImpl) {
-      this.destination = String.valueOf(browserTabImpl.getId());
+    public ChromeDevToolMessageOutput(int tabId, Connection connection) {
+      this.destination = String.valueOf(tabId);
+      this.connection = connection;
     }
 
     public void send(DebuggerMessage debuggerMessage, boolean isImmediate) {
-      getConnection().send(
+      connection.send(
           MessageFactory.debuggerCommand(
               destination,
               JsonUtil.streamAwareToJson(debuggerMessage)));
       if (isImmediate) {
-        getConnection().send(
+        connection.send(
             MessageFactory.evaluateJavascript(destination, JAVASCRIPT_VOID));
       }
     }

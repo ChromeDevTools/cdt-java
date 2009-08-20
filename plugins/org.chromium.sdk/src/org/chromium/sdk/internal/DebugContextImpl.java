@@ -20,6 +20,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
+import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -48,6 +49,8 @@ public class DebugContextImpl implements DebugContext {
   /** The handle manager for the associated tab. */
   private final HandleManager handleManager;
 
+  private final V8CommandProcessor v8CommandProcessor;
+
   /** A helper for performing complex V8-related actions. */
   private final V8Helper v8Helper = new V8Helper(this, THIS_NAME);
 
@@ -73,12 +76,14 @@ public class DebugContextImpl implements DebugContext {
 
   private final Frames frames = new Frames(this);
 
-  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions) {
+  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions,
+      V8CommandOutput v8CommandOutput) {
     createNewToken();
     this.scriptManager = new ScriptManager(protocolOptions);
     this.handleManager = new HandleManager();
     this.javascriptVmImpl = javascriptVmImpl;
     this.breakpointManager = new BreakpointManager(this);
+    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, this);
   }
 
   public JavascriptVmImpl getJavascriptVm() {
@@ -196,6 +201,10 @@ public class DebugContextImpl implements DebugContext {
     return handleManager;
   }
 
+  public V8CommandProcessor getV8CommandProcessor() {
+    return v8CommandProcessor;
+  }
+
   DebugSessionManager getSessionManager() {
     return javascriptVmImpl.getSessionManager();
   }
@@ -241,7 +250,7 @@ public class DebugContextImpl implements DebugContext {
 
   public void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback) {
-    getSessionManager().getV8CommandProcessor().sendV8CommandAsync(message, isImmediate,
+    v8CommandProcessor.sendV8CommandAsync(message, isImmediate,
         commandCallback, syncCallback);
   }
 
