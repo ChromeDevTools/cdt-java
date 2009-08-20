@@ -14,6 +14,7 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.sdk.internal;
+package org.chromium.sdk.internal.tools.v8;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +10,12 @@ import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.JsDataTypeUtil;
+import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.ScriptManager;
+import org.chromium.sdk.internal.ValueMirror;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
-import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
@@ -23,7 +24,7 @@ import org.json.simple.JSONObject;
 /**
  * A helper class for performing complex V8-related operations.
  */
-class V8Helper {
+public class V8Helper {
 
   /**
    * The debug context in which the operations are performed.
@@ -55,7 +56,7 @@ class V8Helper {
    *
    * @param callback to invoke when the script reloading has completed
    */
-  void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback) {
+  public void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback) {
     final V8CommandProcessor.V8HandlerCallback finalCallback = callback != null
         ? callback
         : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
@@ -112,7 +113,7 @@ class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  ValueMirror[] computeLocals(JSONObject frame) {
+  public ValueMirror[] computeLocals(JSONObject frame) {
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
 
@@ -169,7 +170,7 @@ class V8Helper {
    * @return a ValueMirror instance with the specified name, containing data
    *         from handle, or {@code null} if {@code handle} is not a handle
    */
-  static ValueMirror createValueMirror(JSONObject handle, String name) {
+  public static ValueMirror createValueMirror(JSONObject handle, String name) {
     String value = JsonUtil.getAsString(handle, V8Protocol.REF_TEXT);
     if (value == null) { // try another format
       return createValueMirrorFromValue(handle, name);

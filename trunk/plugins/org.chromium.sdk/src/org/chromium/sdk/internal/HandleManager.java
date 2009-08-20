@@ -23,7 +23,7 @@ public class HandleManager {
     refToHandle.clear();
   }
 
-  void putAll(Map<Long, JSONObject> map) {
+  public void putAll(Map<Long, JSONObject> map) {
     refToHandle.putAll(map);
   }
 
@@ -35,7 +35,7 @@ public class HandleManager {
     refToHandle.put(JsonUtil.getAsLong(object, V8Protocol.REF), object);
   }
 
-  JSONObject getHandle(Long ref) {
+  public JSONObject getHandle(Long ref) {
     return refToHandle.get(ref);
   }
 }
