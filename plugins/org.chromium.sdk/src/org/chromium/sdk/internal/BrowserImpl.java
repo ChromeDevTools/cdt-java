@@ -110,7 +110,7 @@ public class BrowserImpl implements Browser, NetListener {
     // invoked through #onDebuggerDetached
     ArrayList<BrowserTabImpl> tabsCopy = new ArrayList<BrowserTabImpl>(tabUidToTabImpl.values());
     for (Iterator<BrowserTabImpl> it = tabsCopy.iterator(); it.hasNext();) {
-      it.next().getDebugContext().onDebuggerDetached();
+      it.next().getDebugSession().onDebuggerDetached();
     }
   }
 

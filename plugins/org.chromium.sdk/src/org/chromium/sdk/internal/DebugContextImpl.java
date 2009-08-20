@@ -30,7 +30,7 @@ import org.json.simple.JSONObject;
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
-public class DebugContextImpl implements DebugContext {
+public class DebugContextImpl implements DebugContext, InternalContext {
 
   private static final String DEBUGGER_RESERVED = "debugger";
 
@@ -69,6 +69,16 @@ public class DebugContextImpl implements DebugContext {
   private final ScriptLoader scriptLoader = new ScriptLoader();
 
   private final Frames frames = new Frames(this);
+
+  private final InternalContext.ContextMessageSender contextMessageSender =
+      new InternalContext.ContextMessageSender() {
+        public void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+            V8HandlerCallback commandCallback, SyncCallback syncCallback) {
+          // TODO(peter.rybin): check state of context
+          v8CommandProcessor.sendV8CommandAsync(message, isImmediate,
+              commandCallback, syncCallback);
+        }
+  };
 
   public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions,
       V8CommandOutput v8CommandOutput) {
@@ -265,6 +275,18 @@ public class DebugContextImpl implements DebugContext {
 
   public BreakpointManager getBreakpointManager() {
     return breakpointManager;
+  }
+
+  public DebugContextImpl getDebugSession() {
+    return this;
+  }
+
+  public ContextMessageSender getMessageSender() {
+    return contextMessageSender;
+  }
+
+  public boolean isValid() {
+    return getToken().isValid();
   }
 
   private static class Frames {

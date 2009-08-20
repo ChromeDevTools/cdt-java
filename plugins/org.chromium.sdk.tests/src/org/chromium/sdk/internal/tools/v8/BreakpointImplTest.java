@@ -109,7 +109,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test(timeout = 5000)
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, true, 0, null,
-        new TestBreakpointManager(browserTab.getDebugContext()));
+        new TestBreakpointManager(browserTab.getDebugSession()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -138,7 +138,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     int ignoreCount = 3;
     boolean enabled = true;
     BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, enabled, ignoreCount, condition,
-        new TestBreakpointManager(browserTab.getDebugContext()));
+        new TestBreakpointManager(browserTab.getDebugSession()));
 
     bp.setCondition(condition);
     bp.flush(null);

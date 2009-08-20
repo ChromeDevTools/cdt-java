@@ -17,13 +17,13 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   public void getScripts(ScriptsCallback callback) {
-    getDebugContext().loadAllScripts(callback);
+    getDebugSession().loadAllScripts(callback);
   }
 
   public void setBreakpoint(Breakpoint.Type type, String target, int line,
       int position, boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback) {
-    getDebugContext().getBreakpointManager()
+    getDebugSession().getBreakpointManager()
         .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);  
   }
   
@@ -31,5 +31,5 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   public abstract DebugSessionManager getSessionManager();
 
-  public abstract DebugContextImpl getDebugContext();
+  public abstract DebugContextImpl getDebugSession();
 }

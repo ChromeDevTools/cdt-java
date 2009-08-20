@@ -35,7 +35,7 @@ public class FrameMirror {
   /**
    * The debug context in which this mirror was created.
    */
-  private final DebugContextImpl context;
+  private final InternalContext context;
 
   /**
    * A script associated with the frame.
@@ -53,7 +53,7 @@ public class FrameMirror {
    */
   private JSONObject frameObject;
 
-  public FrameMirror(DebugContextImpl context, JSONObject frameObject,
+  public FrameMirror(InternalContext context, JSONObject frameObject,
       String scriptName, int line, long scriptId, String frameFunction) {
     this.context = context;
     this.frameObject = frameObject;

@@ -57,6 +57,7 @@ public class JsArrayImplTest {
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "[1]", valueObject),
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "[3]", valueObject),
         }, null);
+
     FrameMirror frameMirror = new FrameMirror(
         debugContext,
         null,
