@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.chromium.sdk.Breakpoint;
@@ -22,12 +20,11 @@ import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -39,9 +36,6 @@ public class DebugContextImpl implements DebugContext {
 
   /** The name of the "this" object to report as a variable name. */
   private static final String THIS_NAME = "this";
-
-  /** The name of the "exception" object to report as a variable name. */
-  private static final String EXCEPTION_NAME = "exception";
 
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
@@ -92,40 +86,19 @@ public class DebugContextImpl implements DebugContext {
 
   /**
    * Sets current frames for this break event.
-   * <p>
-   * WARNING. Performs debugger commands in a blocking way.
-   *
-   * @param response the "backtrace" V8 reply
    */
-  public void setFrames(JSONObject response) {
-    frames.setFrames(response);
+  public void setFrames(FrameMirror[] frameMirrors) {
+    frames.setFrames(frameMirrors);
   }
 
   /**
    * Remembers the current exception state.
-   *
-   * @param response the "exception" event V8 JSON message
    */
-  public void setException(JSONObject response) {
+  public void setException(ExceptionData exceptionData) {
     setState(State.EXCEPTION);
-    JSONObject body = JsonUtil.getBody(response);
     frames.setFramesToOneElementArray();
 
-    JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
-    JSONObject exception = JsonUtil.getAsJSON(body, V8Protocol.EXCEPTION);
-    Map<Long, JSONObject> refHandleMap = V8ProtocolUtil.getRefHandleMap(refs);
-    V8ProtocolUtil.putHandle(refHandleMap, exception);
-    handleManager.putAll(refHandleMap);
-
-    // source column is not exposed ("sourceColumn" in "body")
-    String sourceText = JsonUtil.getAsString(body, V8Protocol.BODY_FRAME_SRCLINE);
-
-    this.exceptionData =
-        new ExceptionDataImpl(this,
-            V8Helper.createValueMirror(exception, EXCEPTION_NAME),
-            JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
-            sourceText,
-            JsonUtil.getAsString(exception, V8Protocol.REF_TEXT));
+    this.exceptionData = exceptionData;
   }
 
   public State getState() {
@@ -315,55 +288,13 @@ public class DebugContextImpl implements DebugContext {
       this.debugContextImpl = debugContextImpl;
     }
 
-    void setFrames(JSONObject response) {
-      JSONObject body = JsonUtil.getBody(response);
-      JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
-      int frameCnt = jsonFrames.size();
-      this.frameMirrors = new FrameMirror[frameCnt];
+    void setFrames(FrameMirror[] frameMirrors) {
+      this.frameMirrors = frameMirrors;
       this.callFramesCached = null;
-
-      JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
-      debugContextImpl.handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
-      for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
-        JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
-        int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
-        JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
-        JSONObject func = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_FUNC);
-
-        String text = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT)
-            .replace('\r', ' ').replace('\n', ' ');
-        Matcher m = FRAME_TEXT_PATTERN.matcher(text);
-        m.matches();
-        String url = m.group(1);
-
-        int currentLine = JsonUtil.getAsLong(frame, V8Protocol.BODY_FRAME_LINE).intValue();
-
-        // If we stopped because of the debuggerword then we're on the next line.
-        // TODO(apavlov): Terry says: we need to use the [e.g. Rhino] AST to
-        // decide if line is debuggerword. If so, find the next sequential line.
-        // The below works for simple scripts but doesn't take into account
-        // comments, etc.
-        String srcLine = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_SRCLINE);
-        if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
-          currentLine++;
-        }
-        Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
-
-        Long scriptId = -1L;
-        if (scriptRef != null) {
-          JSONObject handle = debugContextImpl.handleManager.getHandle(scriptRef);
-          if (handle != null) {
-            scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
-          }
-        }
-        frameMirrors[index] = new FrameMirror(
-            debugContextImpl, frameObject, url, currentLine, scriptId,
-            V8ProtocolUtil.getFunctionName(func));
-      }
     }
     void setFramesToOneElementArray() {
-      frameMirrors = new FrameMirror[1];
-      callFramesCached = null;
+      this.frameMirrors = new FrameMirror[1];
+      this.callFramesCached = null;
     }
 
     public List<CallFrameImpl> getCallFrames() {
