@@ -9,7 +9,7 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 /**
  * Represents a "clearBreakpoint" V8 request message.
  */
-public class ClearBreakpointMessage extends DebuggerMessage {
+public class ClearBreakpointMessage extends ContextlessDebuggerMessage {
 
   /**
    * @param breakpoint id in V8 to clear

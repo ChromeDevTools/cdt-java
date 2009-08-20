@@ -34,29 +34,29 @@ public class DebuggerMessageFactory {
     return new FrameMessage(frameNumber, token);
   }
 
-  public static DebuggerMessage scripts(Integer types, Boolean includeScripts) {
+  public static ContextlessDebuggerMessage scripts(Integer types, Boolean includeScripts) {
     return new ScriptsMessage(types, includeScripts);
   }
 
-  public static DebuggerMessage scripts(List<Long> ids, Boolean includeScripts) {
+  public static ContextlessDebuggerMessage scripts(List<Long> ids, Boolean includeScripts) {
     return new ScriptsMessage(ids, includeScripts);
   }
 
-  public static DebuggerMessage source(Integer frame, Integer fromLine, Integer toLine) {
+  public static ContextlessDebuggerMessage source(Integer frame, Integer fromLine, Integer toLine) {
     return new SourceMessage(frame, fromLine, toLine);
   }
 
-  public static DebuggerMessage setBreakpoint(Breakpoint.Type type, String target,
+  public static ContextlessDebuggerMessage setBreakpoint(Breakpoint.Type type, String target,
       Integer line, Integer position, Boolean enabled, String condition, Integer ignoreCount) {
     return new SetBreakpointMessage(type, target, line, position, enabled, condition, ignoreCount);
   }
 
-  public static DebuggerMessage changeBreakpoint(Breakpoint breakpoint) {
+  public static ContextlessDebuggerMessage changeBreakpoint(Breakpoint breakpoint) {
     return new ChangeBreakpointMessage(breakpoint.getId(), breakpoint.isEnabled(),
         breakpoint.getCondition(), getV8IgnoreCount(breakpoint.getIgnoreCount()));
   }
 
-  public static DebuggerMessage clearBreakpoint(Breakpoint breakpoint) {
+  public static ContextlessDebuggerMessage clearBreakpoint(Breakpoint breakpoint) {
     return new ClearBreakpointMessage(breakpoint.getId());
   }
 

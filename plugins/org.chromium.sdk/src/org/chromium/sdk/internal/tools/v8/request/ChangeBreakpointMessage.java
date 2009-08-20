@@ -9,7 +9,7 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 /**
  * Represents a "changeBreakpoint" V8 request message.
  */
-public class ChangeBreakpointMessage extends DebuggerMessage {
+public class ChangeBreakpointMessage extends ContextlessDebuggerMessage {
 
   /**
    * @param breakpoint id in V8
