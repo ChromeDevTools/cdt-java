@@ -13,7 +13,7 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 /**
  * Represents a "setbreakpoint" V8 request message.
  */
-public class SetBreakpointMessage extends DebuggerMessage {
+public class SetBreakpointMessage extends ContextlessDebuggerMessage {
 
   private static final Map<Breakpoint.Type, String> typeToV8Type =
       new HashMap<Breakpoint.Type, String>();

@@ -11,7 +11,7 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 /**
  * Represents a "scripts" V8 request message.
  */
-public class ScriptsMessage extends DebuggerMessage {
+public class ScriptsMessage extends ContextlessDebuggerMessage {
 
   /**
    * Native scripts constant.

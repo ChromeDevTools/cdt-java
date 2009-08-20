@@ -9,7 +9,7 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 /**
  * Represents a "source" V8 request message.
  */
-public class SourceMessage extends DebuggerMessage {
+public class SourceMessage extends ContextlessDebuggerMessage {
 
   /**
    * @param frame number. Nullable, default is the selected frame
