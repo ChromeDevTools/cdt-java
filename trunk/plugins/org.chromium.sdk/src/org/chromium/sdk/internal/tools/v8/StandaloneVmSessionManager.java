@@ -47,7 +47,6 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
 
   private final SocketConnection connection;
   private final DebugContextImpl debugContextImpl;
-  private final V8CommandProcessor v8CommandProcessor;
   private final Handshaker.StandaloneV8 handshaker;
   private DebugEventListener debugEventListener = null;
   private final Object fieldAccessLock = new Object();
@@ -58,8 +57,8 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
       Handshaker.StandaloneV8 handshaker) {
     this.connection = connection;
     this.handshaker = handshaker;
-    this.debugContextImpl = new DebugContextImpl(javascriptVmImpl, PROTOCOL_OPTIONS);
-    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, debugContextImpl);
+    this.debugContextImpl = new DebugContextImpl(javascriptVmImpl, PROTOCOL_OPTIONS,
+        v8CommandOutput);
   }
 
   public boolean attach(DebugEventListener listener) {
@@ -90,7 +89,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
           LOGGER.log(Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
           return;
         }
-       v8CommandProcessor.processIncomingJson(json);
+        debugContextImpl.getV8CommandProcessor().processIncomingJson(json);
       }
     };
     connection.setNetListener(netListener);
@@ -131,7 +130,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached  = false;
     }
-    v8CommandProcessor.removeAllCallbacks();
+    debugContextImpl.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -154,7 +153,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached = false;
     }
-    v8CommandProcessor.removeAllCallbacks();
+    debugContextImpl.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -164,10 +163,6 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
 
   public DebugEventListener getDebugEventListener() {
     return debugEventListener;
-  }
-
-  public V8CommandProcessor getV8CommandProcessor() {
-    return v8CommandProcessor;
   }
 
   public void onDebuggerDetached() {

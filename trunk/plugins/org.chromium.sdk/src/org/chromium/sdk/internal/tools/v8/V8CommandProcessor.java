@@ -79,7 +79,7 @@ public class V8CommandProcessor {
 
   private final DebugContextImpl context;
 
-  V8CommandProcessor(V8CommandOutput messageOutput, DebugContextImpl context) {
+  public V8CommandProcessor(V8CommandOutput messageOutput, DebugContextImpl context) {
     this.messageOutput = messageOutput;
     this.context = context;
     this.bpp = new BreakpointProcessor(context);

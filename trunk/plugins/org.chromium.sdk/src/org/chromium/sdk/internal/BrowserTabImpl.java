@@ -46,7 +46,10 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.tabId = tabId;
     this.url = url;
     this.browserImpl = browserImpl;
-    this.context = new DebugContextImpl(this, protocolOptions);
+    ChromeDevToolSessionManager.ChromeDevToolMessageOutput messageOutput =
+        new ChromeDevToolSessionManager.ChromeDevToolMessageOutput(tabId,
+            browserImpl.getConnection());
+    this.context = new DebugContextImpl(this, protocolOptions, messageOutput);
     this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);
   }
 

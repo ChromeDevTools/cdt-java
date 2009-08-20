@@ -9,8 +9,8 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 /**
  * Abstract sink for DebuggerMessage v8 messages. It is responsible for sending them to a
  * particular instance of V8 VM. For this end actual message may get additional fields or
- * be reformatted.  
+ * be reformatted.
  */
-interface V8CommandOutput {
+public interface V8CommandOutput {
   void send(DebuggerMessage debuggerMessage, boolean immediate);
 }
