@@ -62,7 +62,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   @Override
-  public DebugContextImpl getDebugContext() {
+  public DebugContextImpl getDebugSession() {
     return context;
   }
 

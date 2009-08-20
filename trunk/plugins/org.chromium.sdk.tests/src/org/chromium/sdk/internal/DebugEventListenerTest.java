@@ -39,12 +39,12 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
       final CountDownLatch latch = new CountDownLatch(1);
       browserTab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, "file:///C:/1.js", 18, 3, true, null, 0,
           new BreakpointCallback() {
-  
+
             public void failure(String errorMessage) {
               failure[0] = errorMessage == null ? "" : errorMessage;
               latch.countDown();
             }
-  
+
             public void success(Breakpoint breakpoint) {
               bp[0] = breakpoint;
               latch.countDown();
@@ -60,9 +60,9 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
       messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
       latch.await();
     }
-    
+
     assertNotNull("suspended() not invoked after the break event", suspendContext);
-    Collection<Breakpoint> breakpointsHit = suspendContext.getBreakpointsHit();
+    Collection<? extends Breakpoint> breakpointsHit = suspendContext.getBreakpointsHit();
     assertEquals(1, breakpointsHit.size());
     Breakpoint bpHit = breakpointsHit.iterator().next();
     TestUtil.assertBreakpointsEqual(bp[0], bpHit);

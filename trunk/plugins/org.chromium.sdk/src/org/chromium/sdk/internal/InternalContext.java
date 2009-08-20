@@ -1,0 +1,48 @@
+// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package org.chromium.sdk.internal;
+
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
+import org.json.simple.JSONObject;
+
+/**
+ * Internal API to DebugContext implementation. The actual object might
+ * be hidden deep inside, so we need an interface. Do not try to cast
+ * DebugContext to this interface -- technically they might be different
+ * objects.
+ */
+public interface InternalContext {
+  /**
+   * Context belongs to a particular {@code DebugSession}.
+   * @return DebugSession this context belongs to
+   */
+  DebugContextImpl getDebugSession();
+
+  // TODO(peter.rybin): document this
+  boolean isValid();
+
+  /**
+   * Handle manager makes sense only for a particular context.
+   * @return HandleManager of this context
+   */
+  HandleManager getHandleManager();
+
+  ValueMirror[] computeLocals(JSONObject frame);
+
+  /**
+   * @return object, that sends context-specific commands
+   */
+  ContextMessageSender getMessageSender();
+
+  public interface ContextMessageSender {
+    /**
+     * Sends V8 command message provided this context is still valid.
+     */
+    void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+        V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback);
+  }
+}

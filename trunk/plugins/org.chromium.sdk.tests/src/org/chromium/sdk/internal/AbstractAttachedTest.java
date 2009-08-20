@@ -6,6 +6,9 @@ package org.chromium.sdk.internal;
 
 import static org.junit.Assert.assertNull;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
@@ -19,9 +22,6 @@ import org.chromium.sdk.internal.transport.Connection;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
 /**
  * A base class for all tests that require an attachment to a browser tab.
  */
@@ -34,7 +34,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   protected BrowserTabImpl browserTab;
 
-  protected DebugContextImpl suspendContext;
+  protected DebugContext suspendContext;
 
   protected Script loadedScript;
 
@@ -112,7 +112,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   }
 
   public void suspended(DebugContext context) {
-    this.suspendContext = (DebugContextImpl) context;
+    this.suspendContext = context;
     if (suspendCallback != null) {
       suspendCallback.run();
     }

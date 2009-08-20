@@ -29,7 +29,7 @@ public class CallFrameImpl implements CallFrame {
   private final int frameId;
 
   /** The debug context this call frame belongs in. */
-  private final DebugContextImpl context;
+  private final InternalContext context;
 
   /** The underlying frame data from the JavaScript VM. */
   private final FrameMirror frameMirror;
@@ -48,7 +48,7 @@ public class CallFrameImpl implements CallFrame {
    * @param context in which the call frame is created
    * @param contextToken
    */
-  public CallFrameImpl(FrameMirror mirror, int index, DebugContextImpl context,
+  public CallFrameImpl(FrameMirror mirror, int index, InternalContext context,
       ContextToken contextToken) {
     this.context = context;
     this.frameId = index;
@@ -56,7 +56,7 @@ public class CallFrameImpl implements CallFrame {
     this.token = contextToken;
   }
 
-  public DebugContextImpl getDebugContext() {
+  public InternalContext getDebugContext() {
     return context;
   }
 
@@ -137,7 +137,8 @@ public class CallFrameImpl implements CallFrame {
           }
         };
 
-    getDebugContext().sendMessageAsync(message, true, commandCallback, syncCallback);
+    getDebugContext().getMessageSender().sendMessageAsync(message, true, commandCallback,
+        syncCallback);
   }
 
 

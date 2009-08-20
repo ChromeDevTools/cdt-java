@@ -46,7 +46,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
   };
 
   private final SocketConnection connection;
-  private final DebugContextImpl debugContextImpl;
+  private final DebugContextImpl debugSession;
   private final Handshaker.StandaloneV8 handshaker;
   private DebugEventListener debugEventListener = null;
   private final Object fieldAccessLock = new Object();
@@ -57,7 +57,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
       Handshaker.StandaloneV8 handshaker) {
     this.connection = connection;
     this.handshaker = handshaker;
-    this.debugContextImpl = new DebugContextImpl(javascriptVmImpl, PROTOCOL_OPTIONS,
+    this.debugSession = new DebugContextImpl(javascriptVmImpl, PROTOCOL_OPTIONS,
         v8CommandOutput);
   }
 
@@ -89,7 +89,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
           LOGGER.log(Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
           return;
         }
-        debugContextImpl.getV8CommandProcessor().processIncomingJson(json);
+        debugSession.getV8CommandProcessor().processIncomingJson(json);
       }
     };
     connection.setNetListener(netListener);
@@ -130,7 +130,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached  = false;
     }
-    debugContextImpl.getV8CommandProcessor().removeAllCallbacks();
+    debugSession.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -153,7 +153,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached = false;
     }
-    debugContextImpl.getV8CommandProcessor().removeAllCallbacks();
+    debugSession.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -179,8 +179,8 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     }
   };
 
-  public DebugContextImpl getDebugContext() {
-    return debugContextImpl;
+  public DebugContextImpl getDebugSession() {
+    return debugSession;
   }
 
   public RemoteInfo getRemoteInfo() {

@@ -14,8 +14,9 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.DebugContext.StepAction;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -37,12 +38,12 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       final CountDownLatch latch = new CountDownLatch(1);
       browserTab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, "file:///C:/1.js", 18, 3, true, null, 0,
           new BreakpointCallback() {
-  
+
             public void failure(String errorMessage) {
               failure[0] = errorMessage == null ? "" : errorMessage;
               latch.countDown();
             }
-  
+
             public void success(Breakpoint breakpoint) {
               bp[0] = breakpoint;
               latch.countDown();
@@ -58,12 +59,13 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
       latch.await();
     }
-    Collection<JsVariableImpl> variables = suspendContext.getCallFrames().get(0).getVariables();
+    Collection<? extends JsVariable> variables =
+        suspendContext.getCallFrames().get(0).getVariables();
 
     // This call invalidates the debug context for the "lookup" operation that is invoked
     // inside "ensureProperties".
     suspendContext.continueVm(StepAction.CONTINUE, 1, null);
-    JsObjectImpl jsObject = variables.iterator().next().getValue().asObject();
+    JsObjectImpl jsObject = (JsObjectImpl) variables.iterator().next().getValue().asObject();
     jsObject.ensureProperties();
     assertTrue(jsObject.isFailedResponse());
   }
@@ -81,12 +83,12 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       final CountDownLatch latch = new CountDownLatch(1);
       browserTab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, "file:///C:/1.js", 18, 3, true, null, 0,
           new BreakpointCallback() {
-  
+
             public void failure(String errorMessage) {
               failure[0] = errorMessage == null ? "" : errorMessage;
               latch.countDown();
             }
-  
+
             public void success(Breakpoint breakpoint) {
               bp[0] = breakpoint;
               latch.countDown();
@@ -102,9 +104,10 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
       latch.await();
     }
-    Collection<JsVariableImpl> variables = suspendContext.getCallFrames().get(0).getVariables();
+    Collection<? extends JsVariable> variables =
+        suspendContext.getCallFrames().get(0).getVariables();
 
-    JsObjectImpl jsObject = variables.iterator().next().getValue().asObject();
+    JsObjectImpl jsObject = (JsObjectImpl) variables.iterator().next().getValue().asObject();
     jsObject.ensureProperties();
     assertFalse(jsObject.isFailedResponse());
   }

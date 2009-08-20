@@ -130,7 +130,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         properties = Collections.<JsVariableImpl> emptySet();
         return;
       }
-      DebugContextImpl debugContext = callFrame.getDebugContext();
+      InternalContext debugContext = callFrame.getDebugContext();
       final HandleManager handleManager = debugContext.getHandleManager();
       ValueMirror mirror = getMirror();
       PropertyReference[] mirrorProperties = mirror.getProperties();
@@ -196,10 +196,10 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     properties = Collections.unmodifiableCollection(propertyList);
   }
 
-  private Exception resolveThisHandle(final DebugContextImpl debugContext,
+  private Exception resolveThisHandle(final InternalContext debugContext,
       final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle) {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    debugContext.sendMessageAsync(
+    debugContext.getMessageSender().sendMessageAsync(
         DebuggerMessageFactory.lookup(
             Collections.singletonList(ref), true, callFrame.getToken()),
         true,
@@ -298,7 +298,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         DebuggerMessageFactory.lookup(
         new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    callFrame.getDebugContext().sendMessageAsync(
+    callFrame.getDebugContext().getMessageSender().sendMessageAsync(
         message, true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {

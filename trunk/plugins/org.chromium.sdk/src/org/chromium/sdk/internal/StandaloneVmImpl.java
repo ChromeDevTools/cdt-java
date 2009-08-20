@@ -22,8 +22,8 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
   }
 
   @Override
-  public DebugContextImpl getDebugContext() {
-    return sessionManager.getDebugContext();
+  public DebugContextImpl getDebugSession() {
+    return sessionManager.getDebugSession();
   }
 
   @Override
