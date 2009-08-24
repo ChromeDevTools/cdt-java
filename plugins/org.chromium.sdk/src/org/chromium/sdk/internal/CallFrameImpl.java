@@ -13,6 +13,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -100,7 +101,8 @@ public class CallFrameImpl implements CallFrame {
     return frameMirror.getScript();
   }
 
-  public void evaluateSync(String expression, EvaluateCallback evaluateCallback) {
+  public void evaluateSync(String expression, EvaluateCallback evaluateCallback)
+      throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     evaluateAsync(expression, evaluateCallback, callbackSemaphore);
     boolean res = callbackSemaphore.tryAcquireDefault();

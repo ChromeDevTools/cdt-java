@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+
 
 /**
  * An object that represents a browser JavaScript VM call frame.
@@ -64,8 +66,11 @@ public interface CallFrame {
    *
    * @param expression to evaluate
    * @param evaluateCallback to report the evaluation result to
+   * @throws MethodIsBlockingException if called from a callback because it blocks
+   *         until remote VM returns result
    */
-  void evaluateSync(String expression, EvaluateCallback evaluateCallback);
+  void evaluateSync(String expression, EvaluateCallback evaluateCallback)
+      throws MethodIsBlockingException;
 
   /**
    * Asynchronously evaluates an arbitrary JavaScript {@code expression} in

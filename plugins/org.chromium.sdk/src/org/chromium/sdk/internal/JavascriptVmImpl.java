@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
 /**
  * Base implementation of JavascriptVm.
@@ -16,7 +17,7 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   protected JavascriptVmImpl() {
   }
 
-  public void getScripts(ScriptsCallback callback) {
+  public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     getDebugSession().loadAllScripts(callback);
   }
 
@@ -24,9 +25,9 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
       int position, boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback) {
     getDebugSession().getBreakpointManager()
-        .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);  
+        .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);
   }
-  
+
   public abstract DebugEventListener getDebugEventListener();
 
   public abstract DebugSessionManager getSessionManager();

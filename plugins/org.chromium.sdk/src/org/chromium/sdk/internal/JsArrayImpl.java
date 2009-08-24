@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
 /**
  * A generic implementation of the JsArray interface.
@@ -41,7 +42,7 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     super(callFrame, valueState, properties);
   }
 
-  private synchronized void ensureElementsMap() {
+  private synchronized void ensureElementsMap() throws MethodIsBlockingException {
     if (indexToElementMap != null) {
       return;
     }
@@ -65,12 +66,12 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     indexToElementMap = Collections.unmodifiableSortedMap(map);
   }
 
-  public JsVariable get(int index) {
+  public JsVariable get(int index) throws MethodIsBlockingException {
     ensureElementsMap();
     return indexToElementMap.get(index);
   }
 
-  public SortedMap<Integer, ? extends JsVariable> toSparseArray() {
+  public SortedMap<Integer, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException {
     ensureElementsMap();
     return indexToElementMap;
   }
@@ -97,7 +98,12 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
 
   @Override
   public String toString() {
-    SortedMap<Integer, ? extends JsVariable> elements = toSparseArray();
+    SortedMap<Integer, ? extends JsVariable> elements;
+    try {
+      elements = toSparseArray();
+    } catch (MethodIsBlockingException e) {
+      return "[JsArray: Exception in retrieving data]";
+    }
     StringBuilder result = new StringBuilder();
     result.append("[JsArray: length=").append(elements.size());
     for (Map.Entry<Integer, ? extends JsVariable> entry : elements.entrySet()) {

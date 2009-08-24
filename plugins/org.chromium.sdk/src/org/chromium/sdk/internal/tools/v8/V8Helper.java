@@ -55,8 +55,11 @@ public class V8Helper {
    * are re-requested together with their sources.
    *
    * @param callback to invoke when the script reloading has completed
+   * @throws MethodIsBlockingException if called from a callback because the
+   *         method may need to wait for scripts from remote VM
    */
-  public void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback) {
+  public void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback)
+      throws MethodIsBlockingException {
     final V8CommandProcessor.V8HandlerCallback finalCallback = callback != null
         ? callback
         : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;

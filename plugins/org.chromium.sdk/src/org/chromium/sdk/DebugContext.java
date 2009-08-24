@@ -7,6 +7,8 @@ package org.chromium.sdk;
 import java.util.Collection;
 import java.util.List;
 
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+
 /**
  * An object that matches the execution state of the browser JavaScript VM while
  * suspended. It reconstructs and provides access to the current state of the
@@ -77,8 +79,10 @@ public interface DebugContext {
 
   /**
    * @return a list of call frames for the current JavaScript suspended state
+   * @throws MethodIsBlockingException if called from a callback because it may
+   *         need to load necessary scripts
    */
-  List<? extends CallFrame> getCallFrames();
+  List<? extends CallFrame> getCallFrames() throws MethodIsBlockingException;
 
   /**
    * @return a set of the breakpoints hit on VM suspension with which this
