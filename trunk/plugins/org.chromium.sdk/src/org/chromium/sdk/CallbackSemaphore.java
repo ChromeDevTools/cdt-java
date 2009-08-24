@@ -7,6 +7,8 @@ package org.chromium.sdk;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+
 /**
  * Convenient implementation of {@code SyncCallback}. Client may create one,
  * then call asynchronous command, and finally wait on blocking method
@@ -21,16 +23,27 @@ public class CallbackSemaphore implements SyncCallback {
   /**
    * Tries to acquire semaphore with some reasonable default timeout.
    * @return false if {@code #OPERATION_TIMEOUT_MS} was exceeded and we gave up
+   * @throws MethodIsBlockingException if called from a callback
    */
-  public boolean tryAcquireDefault() {
+  public boolean tryAcquireDefault() throws MethodIsBlockingException {
     return tryAcquire(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   /**
-   * Tries to acquire semaphore.
+   * Tries to acquire the semaphore. This method blocks until the semaphore is
+   * released; typically release call comes from a worker thread of
+   * org.chromium.sdk, the same thread that may call all other callbacks.
+   * It is vital not to call this method from any callback of org.chromium.sdk,
+   * because it's a sure deadlock.
+   * To prevent, this the method declares throwing
+   * {@code MethodIsBlockingException} which is symbolically thrown whenever
+   * someone violates this rule (i.e. invokes this method from a callback).
+   * Though currently nobody actually throws it, such declarations help to
+   * track blocking methods.
    * @return false if {@code timeout} was exceeded and we gave up
+   * @throws MethodIsBlockingException if called from a callback
    */
-  public boolean tryAcquire(long timeout, TimeUnit unit) {
+  public boolean tryAcquire(long timeout, TimeUnit unit) throws MethodIsBlockingException {
     boolean res;
     try {
       res = sem.tryAcquire(timeout, unit);

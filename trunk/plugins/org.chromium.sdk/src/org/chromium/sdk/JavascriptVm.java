@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to
  * conduct debugging process. This interface does not specify attach method,
@@ -32,7 +34,7 @@ public interface JavascriptVm {
 
     void failure(String errorMessage);
   }
-  
+
   /**
    * Detaches from the related tab debugger.
    *
@@ -51,8 +53,10 @@ public interface JavascriptVm {
    *
    * @param callback to invoke once the operation result is available,
    *        may be {@code null}
+   * @throws MethodIsBlockingException if called from a callback because it
+   *         blocks until scripts are received
    */
-  void getScripts(ScriptsCallback callback);
+  void getScripts(ScriptsCallback callback) throws MethodIsBlockingException;
 
   /**
    * Sets a breakpoint with the specified parameters.

@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+
 /**
  * A compound JsValue that has zero or more properties.
  */
@@ -18,8 +20,10 @@ public interface JsObject extends JsValue {
 
   /**
    * @return the properties of this compound value
+   * @throws MethodIsBlockingException if called from a callback because it may
+   *         need to load value from remote
    */
-  Collection<? extends JsVariable> getProperties();
+  Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException;
 
   /**
    * @param name of the property to get

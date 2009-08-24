@@ -17,6 +17,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
@@ -109,7 +110,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     propertyMap = Collections.unmodifiableMap(map);
   }
 
-  public Collection<JsVariableImpl> getProperties() {
+  public Collection<JsVariableImpl> getProperties() throws MethodIsBlockingException {
     ensureProperties();
     synchronized (propertyLock) {
       return (properties != null && !isFailedResponse())
@@ -118,7 +119,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
   }
 
-  protected void ensureProperties() {
+  protected void ensureProperties() throws MethodIsBlockingException {
     synchronized (propertyLock) {
       if (properties != null) {
         return;
@@ -165,7 +166,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * Calls to this method must be synchronized on propertyLock.
    */
   private void fillPropertiesFromMirror(final HandleManager handleManager,
-      PropertyReference[] mirrorProperties) {
+      PropertyReference[] mirrorProperties) throws MethodIsBlockingException {
     if (!isTokenValid()) {
       properties = Collections.<JsVariableImpl> emptySet();
       return;
@@ -197,7 +198,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   private Exception resolveThisHandle(final InternalContext debugContext,
-      final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle) {
+      final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle)
+      throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     debugContext.getMessageSender().sendMessageAsync(
         DebuggerMessageFactory.lookup(
@@ -233,8 +235,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   /**
    * The method must be called only when the token is valid.
    */
-  private void processOriginalFormatPropertyRefs(
-      HandleManager handleManager, PropertyReference[] mirrorProperties) {
+  private void processOriginalFormatPropertyRefs(HandleManager handleManager,
+      PropertyReference[] mirrorProperties) throws MethodIsBlockingException {
     Map<JsVariableImpl, Long> variableToRefMap = new LinkedHashMap<JsVariableImpl, Long>();
     Collection<Long> handlesToRequest = new HashSet<Long>(mirrorProperties.length);
     prepareLookupData(handleManager, mirrorProperties, variableToRefMap, handlesToRequest);
@@ -261,8 +263,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   public String toString() {
     StringBuilder result = new StringBuilder();
     result.append("[JsObject: type=").append(getType());
-    for (JsVariable prop : getProperties()) {
-      result.append(',').append(prop);
+    try {
+      for (JsVariable prop : getProperties()) {
+        result.append(',').append(prop);
+      }
+    } catch (MethodIsBlockingException e) {
+      return "[JsObject: Exception in retrieving data]";
     }
     result.append(']');
     return result.toString();
@@ -287,9 +293,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
   /**
    * The method must be called only when the token is valid.
+   * @throws MethodIsBlockingException if called from a callback because the method
+   *         is blocking
    */
   private void fillPropertiesFromLookup(final HandleManager handleManager,
-      final Map<JsVariableImpl, Long> variableToRef, final Collection<Long> handlesToRequest) {
+      final Map<JsVariableImpl, Long> variableToRef, final Collection<Long> handlesToRequest)
+      throws MethodIsBlockingException {
     if (handlesToRequest.isEmpty()) {
       // All handles are known, nothing to look up
       return;

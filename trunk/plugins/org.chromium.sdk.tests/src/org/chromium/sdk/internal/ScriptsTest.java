@@ -4,13 +4,16 @@
 
 package org.chromium.sdk.internal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -43,7 +46,7 @@ public class ScriptsTest extends AbstractAttachedTest<FakeConnection> {
   }
 
   @SuppressWarnings("unchecked")
-  private Collection<Script> getScripts() {
+  private Collection<Script> getScripts() throws MethodIsBlockingException {
     final CountDownLatch latch = new CountDownLatch(1);
     final Collection<Script>[] loadedScripts = new Collection[1];
     browserTab.getScripts(new ScriptsCallback() {

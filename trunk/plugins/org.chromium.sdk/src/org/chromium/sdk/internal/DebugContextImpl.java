@@ -18,6 +18,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
@@ -202,7 +203,7 @@ public class DebugContextImpl implements DebugContext, InternalContext {
   }
 
 
-  public void loadAllScripts(ScriptsCallback callback) {
+  public void loadAllScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     scriptLoader.loadAllScripts(callback);
   }
 
@@ -381,7 +382,7 @@ public class DebugContextImpl implements DebugContext, InternalContext {
      *
      * @param callback nullable callback to invoke when the scripts are ready
      */
-    void loadAllScripts(final ScriptsCallback callback) {
+    void loadAllScripts(final ScriptsCallback callback) throws MethodIsBlockingException {
       if (!isDoneInitialScriptLoad()) {
         setDoneInitialScriptLoad(true);
         // Not loaded the scripts initially, do full load.
