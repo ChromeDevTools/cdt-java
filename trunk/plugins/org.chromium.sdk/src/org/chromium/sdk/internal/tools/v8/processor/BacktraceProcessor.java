@@ -4,9 +4,14 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.ContextBuilder;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.HandleManager;
@@ -21,47 +26,50 @@ import org.json.simple.JSONObject;
 /**
  * Handles the "backtrace" V8 command replies.
  */
-public class BacktraceProcessor extends V8ResponseCallback {
+class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback {
 
-  public BacktraceProcessor(DebugContextImpl context) {
-    super(context);
-  }
+  private final ContextBuilder.ExpectingBacktraceStep step2;
 
-  @Override
+  BacktraceProcessor(ContextBuilder.ExpectingBacktraceStep step2) {
+    this.step2 = step2;
+ }
+
   public void messageReceived(final JSONObject response) {
     V8MessageType type = V8MessageType.forString(
         JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
-    String commandString = JsonUtil.getAsString(response, V8MessageType.RESPONSE == type
-        ? V8Protocol.KEY_COMMAND
-        : V8Protocol.KEY_EVENT);
-    DebuggerCommand command = DebuggerCommand.forString(commandString);
-
-    switch (command) {
-      case BACKTRACE: {
-        Thread t = new Thread(new Runnable() {
-          public void run() {
-            setFrames(getDebugContext(), response);
-            suspend();
-          }
-        });
-        t.setDaemon(true);
-        t.start();
-        break;
-      }
+    if (type != V8MessageType.RESPONSE) {
+      handleWrongStacktrace();
     }
+    String commandString = JsonUtil.getAsString(response, V8Protocol.KEY_COMMAND);
+
+    DebuggerCommand command = DebuggerCommand.forString(commandString);
+    if (command != DebuggerCommand.BACKTRACE) {
+      handleWrongStacktrace();
+    }
+
+    final DebugContext debugContext = setFrames(response);
+    final DebugContextImpl debugSession = step2.getInternalContext().getDebugSession();
+
+    JavascriptVm.ScriptsCallback afterScriptsAreLoaded = new JavascriptVm.ScriptsCallback() {
+      public void failure(String errorMessage) {
+        handleWrongStacktrace();
+      }
+
+      public void success(Collection<Script> scripts) {
+        debugSession.getDebugEventListener().suspended(debugContext);
+      }
+    };
+
+    debugSession.getScriptLoader().loadAllScripts(afterScriptsAreLoaded, null);
   }
 
-  protected void suspend() {
-    getDebugContext().getDebugEventListener().suspended(getDebugContext());
-  }
-
-  private void setFrames(DebugContextImpl debugContextImpl, JSONObject response) {
+  private DebugContext setFrames(JSONObject response) {
     JSONObject body = JsonUtil.getBody(response);
     JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
     int frameCnt = jsonFrames.size();
     FrameMirror[] frameMirrors = new FrameMirror[frameCnt];
 
-    HandleManager handleManager = debugContextImpl.getHandleManager();
+    HandleManager handleManager = step2.getInternalContext().getHandleManager();
 
     JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
     handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
@@ -100,12 +108,20 @@ public class BacktraceProcessor extends V8ResponseCallback {
         }
       }
       frameMirrors[index] =
-          new FrameMirror(debugContextImpl, frameObject, url, currentLine, scriptId, V8ProtocolUtil
+          new FrameMirror(step2.getInternalContext(), frameObject, url, currentLine, scriptId, V8ProtocolUtil
               .getFunctionName(func));
     }
 
 
-    debugContextImpl.setFrames(frameMirrors);
+    return step2.setFrames(frameMirrors);
+  }
+
+  public void failure(String message) {
+    handleWrongStacktrace();
+  }
+
+  private void handleWrongStacktrace() {
+    step2.getInternalContext().getContextBuilder().buildSequenceFailure();
   }
 
   private static final String DEBUGGER_RESERVED = "debugger";

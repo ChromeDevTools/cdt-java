@@ -16,6 +16,7 @@ import java.util.Map;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
@@ -75,7 +76,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     if (mirror.getProperties() == null && isTokenValid()) {
       // "this" is an object with PropertyReferences. Resolve them.
       final Long ref = Long.valueOf(mirror.getRef());
-      final JSONObject handle = callFrame.getDebugContext().getHandleManager().getHandle(ref);
+      final JSONObject handle = callFrame.getInternalContext().getHandleManager().getHandle(ref);
       if (handle != null) {
         mirror.setProperties(
             JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME),
@@ -88,7 +89,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * @return whether the context token is valid
    */
   private boolean isTokenValid() {
-    return callFrame != null && callFrame.getToken().isValid();
+    return callFrame != null && callFrame.getInternalContext().isValid();
   }
 
   /**
@@ -125,13 +126,12 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         return;
       }
 
-      final ContextToken token = callFrame.getToken();
-      if (!token.isValid()) {
+      if (!callFrame.getInternalContext().isValid()) {
         setFailedResponse();
         properties = Collections.<JsVariableImpl> emptySet();
         return;
       }
-      InternalContext debugContext = callFrame.getDebugContext();
+      InternalContext debugContext = callFrame.getInternalContext();
       final HandleManager handleManager = debugContext.getHandleManager();
       ValueMirror mirror = getMirror();
       PropertyReference[] mirrorProperties = mirror.getProperties();
@@ -201,30 +201,34 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       final HandleManager handleManager, final Long ref, final JSONObject[] targetHandle)
       throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    debugContext.getMessageSender().sendMessageAsync(
-        DebuggerMessageFactory.lookup(
-            Collections.singletonList(ref), true, callFrame.getToken()),
-        true,
-        new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-          if (!JsonUtil.isSuccessful(response)) {
-            setFailedResponse();
-            return;
-          }
-          JSONObject body = JsonUtil.getBody(response);
-          targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
-          if (targetHandle[0] != null) {
-            handleManager.put(ref, targetHandle[0]);
-          }
-          handleManager.putAll(V8ProtocolUtil.getRefHandleMap(JsonUtil.getAsJSONArray(
-              response, V8Protocol.FRAME_REFS)));
-          }
+    DebuggerMessage message = DebuggerMessageFactory.lookup(
+        Collections.singletonList(ref), true, callFrame.getToken());
+    V8CommandProcessor.V8HandlerCallback callback = new V8CommandProcessor.V8HandlerCallback() {
+      public void messageReceived(JSONObject response) {
+      if (!JsonUtil.isSuccessful(response)) {
+        setFailedResponse();
+        return;
+      }
+      JSONObject body = JsonUtil.getBody(response);
+      targetHandle[0] = JsonUtil.getAsJSON(body, String.valueOf(ref));
+      if (targetHandle[0] != null) {
+        handleManager.put(ref, targetHandle[0]);
+      }
+      handleManager.putAll(V8ProtocolUtil.getRefHandleMap(JsonUtil.getAsJSONArray(
+          response, V8Protocol.FRAME_REFS)));
+      }
 
-          public void failure(String message) {
-            setFailedResponse();
-          }
-        },
-        callbackSemaphore);
+      public void failure(String message) {
+        setFailedResponse();
+      }
+    };
+    try {
+      debugContext.sendMessageAsync(message, true, callback, callbackSemaphore);
+    } catch (ContextDismissedCheckedException e) {
+      debugContext.getDebugSession().maybeRethrowContextException(e);
+      // or
+      setFailedResponse();
+    }
     boolean res = callbackSemaphore.tryAcquireDefault();
     if (!res) {
       return new Exception("Timeout");
@@ -307,21 +311,27 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         DebuggerMessageFactory.lookup(
         new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    callFrame.getDebugContext().getMessageSender().sendMessageAsync(
-        message, true,
-        new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
-                response)) {
-              setFailedResponse();
-            }
-          }
+    V8CommandProcessor.V8HandlerCallback commandCallback = new V8CommandProcessor.V8HandlerCallback() {
+      public void messageReceived(JSONObject response) {
+        if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
+            response)) {
+          setFailedResponse();
+        }
+      }
 
-          public void failure(String message) {
-            setFailedResponse();
-          }
-        },
-        callbackSemaphore);
+      public void failure(String message) {
+        setFailedResponse();
+      }
+    };
+    InternalContext internalContext = callFrame.getInternalContext();
+    try {
+      internalContext.sendMessageAsync(message, true, commandCallback,
+          callbackSemaphore);
+    } catch (ContextDismissedCheckedException e) {
+      internalContext.getDebugSession().maybeRethrowContextException(e);
+      // or
+      setFailedResponse();
+    }
 
     boolean res = callbackSemaphore.tryAcquireDefault();
 

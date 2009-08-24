@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.HandleManager;
+import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.ScriptManager;
@@ -55,16 +57,13 @@ public class V8Helper {
    * are re-requested together with their sources.
    *
    * @param callback to invoke when the script reloading has completed
-   * @throws MethodIsBlockingException if called from a callback because the
-   *         method may need to wait for scripts from remote VM
    */
-  public void reloadAllScripts(V8CommandProcessor.V8HandlerCallback callback)
-      throws MethodIsBlockingException {
+  public void reloadAllScriptsAsync(V8CommandProcessor.V8HandlerCallback callback,
+      SyncCallback syncCallback) {
     final V8CommandProcessor.V8HandlerCallback finalCallback = callback != null
         ? callback
         : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
     lock();
-    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     context.sendMessageAsync(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         true,
@@ -91,10 +90,7 @@ public class V8Helper {
             finalCallback.messageReceived(response);
           }
         },
-        callbackSemaphore);
-
-    // ignore timeout
-    callbackSemaphore.tryAcquireDefault();
+        syncCallback);
   }
 
   protected void lock() {
@@ -116,7 +112,8 @@ public class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  public ValueMirror[] computeLocals(JSONObject frame) {
+  public ValueMirror[] computeLocals(JSONObject frame, InternalContext internalContext) {
+    HandleManager handleManager = internalContext.getHandleManager();
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
 
@@ -126,7 +123,7 @@ public class V8Helper {
 
     // Receiver ("this")
     JSONObject receiver = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
-    putMirror(values, thisName, receiver);
+    putMirror(values, thisName, receiver, handleManager);
 
     // Arguments
     for (int i = 0; i < args.size(); i++) {
@@ -137,7 +134,7 @@ public class V8Helper {
         // method signature) that will be available in the "arguments" object
         continue;
       }
-      putMirror(values, name, JsonUtil.getAsJSON(arg, V8Protocol.ARGUMENT_VALUE));
+      putMirror(values, name, JsonUtil.getAsJSON(arg, V8Protocol.ARGUMENT_VALUE), handleManager);
     }
 
     // Locals
@@ -146,7 +143,8 @@ public class V8Helper {
       String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
 
       if (!V8ProtocolUtil.isInternalProperty(localName)) {
-        putMirror(values, localName, JsonUtil.getAsJSON(local, V8Protocol.LOCAL_VALUE));
+        putMirror(values, localName, JsonUtil.getAsJSON(local, V8Protocol.LOCAL_VALUE),
+            handleManager);
       }
     }
 
@@ -154,9 +152,9 @@ public class V8Helper {
   }
 
   private void putMirror(final List<ValueMirror> values,
-      String name, JSONObject valueObject) {
+      String name, JSONObject valueObject, HandleManager handleManager) {
     Long objectRef = JsonUtil.getAsLong(valueObject, V8Protocol.REF);
-    JSONObject object = context.getHandleManager().getHandle(objectRef);
+    JSONObject object = handleManager.getHandle(objectRef);
     if (object != null) {
       values.add(createValueMirror(object, name));
     } else {

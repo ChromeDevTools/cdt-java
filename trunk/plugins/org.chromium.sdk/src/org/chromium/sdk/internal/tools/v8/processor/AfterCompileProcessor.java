@@ -33,7 +33,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
     if (!JsonUtil.isSuccessful(response)) {
       return;
     }
-    final DebugContextImpl debugContext = getDebugContext();
+    final DebugContextImpl debugContext = getDebugSession();
     JSONObject script = getScriptToLoad(response,
         debugContext.getScriptManager().getProtocolOptions());
     if (script == null) {
@@ -57,7 +57,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
                 (JSONObject) body.get(0),
                 JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
             if (newScript != null) {
-              getDebugContext().scriptLoaded(newScript);
+              getDebugSession().getJavascriptVm().getDebugEventListener().scriptLoaded(newScript);
             }
           }
 

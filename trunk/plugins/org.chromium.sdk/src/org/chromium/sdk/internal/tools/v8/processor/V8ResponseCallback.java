@@ -16,15 +16,15 @@ import org.json.simple.JSONObject;
  */
 public abstract class V8ResponseCallback {
 
-  private final DebugContextImpl context;
+  private final DebugContextImpl debugSession;
 
-  public V8ResponseCallback(DebugContextImpl context) {
-    this.context = context;
+  public V8ResponseCallback(DebugContextImpl debugSession) {
+    this.debugSession = debugSession;
   }
 
   public abstract void messageReceived(JSONObject response);
 
-  protected DebugContextImpl getDebugContext() {
-    return context;
+  protected DebugContextImpl getDebugSession() {
+    return debugSession;
   }
 }

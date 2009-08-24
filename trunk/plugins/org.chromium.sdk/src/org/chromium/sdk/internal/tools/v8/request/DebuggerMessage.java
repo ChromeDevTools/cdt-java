@@ -20,12 +20,7 @@ import org.json.simple.JSONValue;
  */
 public class DebuggerMessage implements JSONStreamAware {
 
-  private static final ContextToken VALID_TOKEN = new ContextToken() {
-    @Override
-    public boolean isValid() {
-      return true;
-    }
-  };
+  private static final ContextToken VALID_TOKEN = null;
 
   private final int sequence;
 
