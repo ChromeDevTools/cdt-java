@@ -39,5 +39,5 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   public abstract DebugSessionManager getSessionManager();
 
-  public abstract DebugContextImpl getDebugSession();
+  public abstract DebugSession getDebugSession();
 }

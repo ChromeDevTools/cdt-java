@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JavascriptVmImpl;
 import org.chromium.sdk.internal.JsonUtil;
@@ -46,7 +46,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
   };
 
   private final SocketConnection connection;
-  private final DebugContextImpl debugSession;
+  private final DebugSession debugSession;
   private final Handshaker.StandaloneV8 handshaker;
   private DebugEventListener debugEventListener = null;
   private final Object fieldAccessLock = new Object();
@@ -57,7 +57,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
       Handshaker.StandaloneV8 handshaker) {
     this.connection = connection;
     this.handshaker = handshaker;
-    this.debugSession = new DebugContextImpl(javascriptVmImpl, PROTOCOL_OPTIONS,
+    this.debugSession = new DebugSession(javascriptVmImpl, PROTOCOL_OPTIONS,
         v8CommandOutput);
   }
 
@@ -179,7 +179,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     }
   };
 
-  public DebugContextImpl getDebugSession() {
+  public DebugSession getDebugSession() {
     return debugSession;
   }
 

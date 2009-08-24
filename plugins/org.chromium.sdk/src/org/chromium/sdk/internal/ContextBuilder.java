@@ -23,7 +23,7 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
 
 public class ContextBuilder {
-  private final DebugContextImpl debugSession;
+  private final DebugSession debugSession;
 
   /**
    * Context building process comes though sequence of steps. No one should
@@ -31,7 +31,7 @@ public class ContextBuilder {
    */
   private Object currentStep = null;
 
-  ContextBuilder(DebugContextImpl debugSession) {
+  ContextBuilder(DebugSession debugSession) {
     this.debugSession = debugSession;
   }
 
@@ -150,7 +150,7 @@ public class ContextBuilder {
       return isValid;
     }
 
-    public DebugContextImpl getDebugSession() {
+    public DebugSession getDebugSession() {
       return debugSession;
     }
 

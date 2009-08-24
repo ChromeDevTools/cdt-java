@@ -6,7 +6,7 @@ import java.util.Map;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
@@ -17,16 +17,16 @@ public class BreakpointManager {
    */
   private final Map<Long, Breakpoint> idToBreakpoint = new HashMap<Long, Breakpoint>();
 
-  private final DebugContextImpl context;
+  private final DebugSession debugSession;
 
-  public BreakpointManager(DebugContextImpl context) {
-    this.context = context;
+  public BreakpointManager(DebugSession debugSession) {
+    this.debugSession = debugSession;
   }
 
   public void setBreakpoint(final Breakpoint.Type type, String target, int line, int position,
       final boolean enabled, final String condition, final int ignoreCount,
       final BrowserTab.BreakpointCallback callback) {
-    context.sendMessageAsync(
+    debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(type, target, toNullableInteger(line),
             toNullableInteger(position), enabled, condition,
             toNullableInteger(ignoreCount)),
@@ -69,7 +69,7 @@ public class BreakpointManager {
       return;
     }
     idToBreakpoint.remove(id);
-    context.sendMessageAsync(
+    debugSession.sendMessageAsync(
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
         true,
         new V8CommandProcessor.V8HandlerCallback() {
@@ -95,7 +95,7 @@ public class BreakpointManager {
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback) {
-    context.sendMessageAsync(
+    debugSession.sendMessageAsync(
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
         true,
         new V8CommandProcessor.V8HandlerCallback() {

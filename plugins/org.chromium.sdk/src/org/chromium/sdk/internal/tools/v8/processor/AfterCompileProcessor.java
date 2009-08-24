@@ -7,7 +7,7 @@ package org.chromium.sdk.internal.tools.v8.processor;
 import java.util.Collections;
 
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
@@ -24,8 +24,8 @@ import org.json.simple.JSONObject;
  */
 public class AfterCompileProcessor extends V8ResponseCallback {
 
-  public AfterCompileProcessor(DebugContextImpl context) {
-    super(context);
+  public AfterCompileProcessor(DebugSession debugSession) {
+    super(debugSession);
   }
 
   @Override
@@ -33,13 +33,13 @@ public class AfterCompileProcessor extends V8ResponseCallback {
     if (!JsonUtil.isSuccessful(response)) {
       return;
     }
-    final DebugContextImpl debugContext = getDebugSession();
+    final DebugSession debugSession = getDebugSession();
     JSONObject script = getScriptToLoad(response,
-        debugContext.getScriptManager().getProtocolOptions());
+        debugSession.getScriptManager().getProtocolOptions());
     if (script == null) {
       return;
     }
-    debugContext.sendMessageAsync(
+    debugSession.sendMessageAsync(
         DebuggerMessageFactory.scripts(
             Collections.singletonList(V8ProtocolUtil.getScriptIdFromResponse(script)), true),
         true,
@@ -53,7 +53,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
             if (body.size() == 0) {
               return; // The script did not arrive (bad id?)
             }
-            Script newScript = debugContext.getScriptManager().addScript(
+            Script newScript = debugSession.getScriptManager().addScript(
                 (JSONObject) body.get(0),
                 JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
             if (newScript != null) {

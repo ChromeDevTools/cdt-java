@@ -20,7 +20,7 @@ public interface InternalContext {
    * Context belongs to a particular {@code DebugSession}.
    * @return DebugSession this context belongs to
    */
-  DebugContextImpl getDebugSession();
+  DebugSession getDebugSession();
 
   ContextBuilder getContextBuilder();
 

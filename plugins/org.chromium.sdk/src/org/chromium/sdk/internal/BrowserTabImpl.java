@@ -31,8 +31,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   /** The host BrowserImpl instance. */
   private final BrowserImpl browserImpl;
 
-  /** The debug context instance for this tab. */
-  private final DebugContextImpl context;
+  /** The debug session instance for this tab. */
+  private final DebugSession debugSession;
 
   private final ChromeDevToolSessionManager devToolSessionManager;
 
@@ -49,8 +49,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     ChromeDevToolSessionManager.ChromeDevToolMessageOutput messageOutput =
         new ChromeDevToolSessionManager.ChromeDevToolMessageOutput(tabId,
             browserImpl.getConnection());
-    this.context = new DebugContextImpl(this, protocolOptions, messageOutput);
-    this.devToolSessionManager = new ChromeDevToolSessionManager(this, context);
+    this.debugSession = new DebugSession(this, protocolOptions, messageOutput);
+    this.devToolSessionManager = new ChromeDevToolSessionManager(this, debugSession);
   }
 
   public String getUrl() {
@@ -62,8 +62,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   @Override
-  public DebugContextImpl getDebugSession() {
-    return context;
+  public DebugSession getDebugSession() {
+    return debugSession;
   }
 
   @Override

@@ -14,7 +14,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.TestUtil;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
@@ -31,8 +31,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
 
   private class TestBreakpointManager extends BreakpointManager {
 
-    public TestBreakpointManager(DebugContextImpl context) {
-      super(context);
+    public TestBreakpointManager(DebugSession debugSession) {
+      super(debugSession);
     }
 
     @Override

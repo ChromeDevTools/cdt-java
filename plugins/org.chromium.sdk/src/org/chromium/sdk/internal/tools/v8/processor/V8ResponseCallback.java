@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.json.simple.JSONObject;
 
 /**
@@ -16,15 +16,15 @@ import org.json.simple.JSONObject;
  */
 public abstract class V8ResponseCallback {
 
-  private final DebugContextImpl debugSession;
+  private final DebugSession debugSession;
 
-  public V8ResponseCallback(DebugContextImpl debugSession) {
+  public V8ResponseCallback(DebugSession debugSession) {
     this.debugSession = debugSession;
   }
 
   public abstract void messageReceived(JSONObject response);
 
-  protected DebugContextImpl getDebugSession() {
+  protected DebugSession getDebugSession() {
     return debugSession;
   }
 }

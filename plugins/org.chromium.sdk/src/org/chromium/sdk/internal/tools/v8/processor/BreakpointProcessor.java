@@ -12,7 +12,7 @@ import java.util.Map;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.internal.ContextBuilder;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.ExceptionDataImpl;
 import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsonUtil;
@@ -35,8 +35,8 @@ public class BreakpointProcessor extends V8ResponseCallback {
   /** The name of the "exception" object to report as a variable name. */
   private static final String EXCEPTION_NAME = "exception";
 
-  public BreakpointProcessor(DebugContextImpl context) {
-    super(context);
+  public BreakpointProcessor(DebugSession debugSession) {
+    super(debugSession);
   }
 
   @Override
@@ -45,7 +45,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
         V8MessageType.forString(JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
     if (V8MessageType.EVENT == type) {
       String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
-      DebugContextImpl debugSession = getDebugSession();
+      DebugSession debugSession = getDebugSession();
 
       ContextBuilder contextBuilder = debugSession.getContextBuilder();
 
