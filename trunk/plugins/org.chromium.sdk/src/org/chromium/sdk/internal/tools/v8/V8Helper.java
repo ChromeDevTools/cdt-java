@@ -10,7 +10,7 @@ import java.util.concurrent.Semaphore;
 
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.HandleManager;
 import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsDataTypeUtil;
@@ -31,7 +31,7 @@ public class V8Helper {
   /**
    * The debug context in which the operations are performed.
    */
-  private final DebugContextImpl context;
+  private final DebugSession debugSession;
 
   /**
    * The "receiver" variable name (usually "this").
@@ -44,8 +44,8 @@ public class V8Helper {
    */
   private final Semaphore scriptsReloadSemaphore = new Semaphore(1);
 
-  public V8Helper(DebugContextImpl context, String thisName) {
-    this.context = context;
+  public V8Helper(DebugSession debugSession, String thisName) {
+    this.debugSession = debugSession;
     this.thisName = thisName;
   }
 
@@ -64,7 +64,7 @@ public class V8Helper {
         ? callback
         : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
     lock();
-    context.sendMessageAsync(
+    debugSession.sendMessageAsync(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         true,
         new V8CommandProcessor.V8HandlerCallback() {
@@ -75,7 +75,7 @@ public class V8Helper {
 
           public void messageReceived(JSONObject response) {
             JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
-            ScriptManager scriptManager = context.getScriptManager();
+            ScriptManager scriptManager = debugSession.getScriptManager();
             for (int i = 0; i < body.size(); ++i) {
               JSONObject scriptJson = (JSONObject) body.get(i);
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);

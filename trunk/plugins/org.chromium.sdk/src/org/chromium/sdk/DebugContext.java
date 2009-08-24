@@ -82,7 +82,7 @@ public interface DebugContext {
    * @throws MethodIsBlockingException if called from a callback because it may
    *         need to load necessary scripts
    */
-  List<? extends CallFrame> getCallFrames() throws MethodIsBlockingException;
+  List<? extends CallFrame> getCallFrames();
 
   /**
    * @return a set of the breakpoints hit on VM suspension with which this

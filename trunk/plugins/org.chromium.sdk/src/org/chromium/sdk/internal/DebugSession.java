@@ -21,7 +21,7 @@ import org.json.simple.JSONObject;
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
  */
-public class DebugContextImpl {
+public class DebugSession {
 
   /** The name of the "this" object to report as a variable name. */
   private static final String THIS_NAME = "this";
@@ -44,7 +44,7 @@ public class DebugContextImpl {
 
   private final ScriptLoader scriptLoader = new ScriptLoader();
 
-  public DebugContextImpl(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions,
+  public DebugSession(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions,
       V8CommandOutput v8CommandOutput) {
     this.scriptManager = new ScriptManager(protocolOptions);
     this.javascriptVmImpl = javascriptVmImpl;

@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
@@ -73,19 +73,11 @@ public class V8CommandProcessor {
 
   private final ContinueProcessor continueProcessor;
 
-  private final DebugContextImpl context;
-
-  public V8CommandProcessor(V8CommandOutput messageOutput, DebugContextImpl context) {
+  public V8CommandProcessor(V8CommandOutput messageOutput, DebugSession debugSession) {
     this.messageOutput = messageOutput;
-    this.context = context;
-    this.bpp = new BreakpointProcessor(context);
-    this.afterCompileProcessor = new AfterCompileProcessor(context);
-    this.continueProcessor = new ContinueProcessor(context);
-  }
-
-
-  public DebugContextImpl getContext() {
-    return context;
+    this.bpp = new BreakpointProcessor(debugSession);
+    this.afterCompileProcessor = new AfterCompileProcessor(debugSession);
+    this.continueProcessor = new ContinueProcessor(debugSession);
   }
 
   public BreakpointProcessor getBreakpointProcessor() {

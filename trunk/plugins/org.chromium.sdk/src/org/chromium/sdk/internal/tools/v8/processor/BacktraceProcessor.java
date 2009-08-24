@@ -12,7 +12,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.ContextBuilder;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.HandleManager;
 import org.chromium.sdk.internal.JsonUtil;
@@ -48,7 +48,7 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
     }
 
     final DebugContext debugContext = setFrames(response);
-    final DebugContextImpl debugSession = step2.getInternalContext().getDebugSession();
+    final DebugSession debugSession = step2.getInternalContext().getDebugSession();
 
     JavascriptVm.ScriptsCallback afterScriptsAreLoaded = new JavascriptVm.ScriptsCallback() {
       public void failure(String errorMessage) {

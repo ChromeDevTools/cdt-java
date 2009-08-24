@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8.processor;
 
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.json.simple.JSONObject;
@@ -14,8 +14,8 @@ import org.json.simple.JSONObject;
  */
 public class ContinueProcessor extends V8ResponseCallback {
 
-  public ContinueProcessor(DebugContextImpl context) {
-    super(context);
+  public ContinueProcessor(DebugSession debugSession) {
+    super(debugSession);
   }
 
   @Override

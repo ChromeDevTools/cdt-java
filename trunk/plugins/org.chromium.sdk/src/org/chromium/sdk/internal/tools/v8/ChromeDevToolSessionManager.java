@@ -13,7 +13,7 @@ import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.BrowserImpl;
 import org.chromium.sdk.internal.BrowserTabImpl;
-import org.chromium.sdk.internal.DebugContextImpl;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.MessageFactory;
@@ -69,7 +69,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private final BrowserTabImpl browserTabImpl;
 
   /** The debug context for this handler. */
-  private final DebugContextImpl context;
+  private final DebugSession debugSession;
 
   /** A synchronization object for the field access/modification. */
   private final Object fieldAccessLock = new Object();
@@ -86,9 +86,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    */
   public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
-  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, DebugContextImpl context) {
+  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, DebugSession debugSession) {
     this.browserTabImpl = browserTabImpl;
-    this.context = context;
+    this.debugSession = debugSession;
   }
 
   public DebugEventListener getDebugEventListener() {
@@ -144,7 +144,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       isAttached = false;
     }
-    context.getV8CommandProcessor().removeAllCallbacks();
+    debugSession.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
@@ -320,12 +320,12 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private void processDebuggerCommand(JSONObject json) {
     JSONObject v8Json = JsonUtil.getAsJSON(json, ChromeDevToolsProtocol.DATA.key);
     V8CommandProcessor.checkNull(v8Json, "'data' field not found");
-    context.getV8CommandProcessor().processIncomingJson(v8Json);
+    debugSession.getV8CommandProcessor().processIncomingJson(v8Json);
   }
 
   private void processNavigated(JSONObject json) {
     String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
-    context.navigated();
+    debugSession.navigated();
     getTabDebugEventListener().navigated(newUrl);
   }
 
