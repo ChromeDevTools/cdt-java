@@ -5,7 +5,6 @@
 package org.chromium.debug.core.model;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
@@ -25,6 +24,9 @@ import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -124,8 +126,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
           }
         } finally {
           fireCreationEvent();
-          debugEventListener.resumedByDefault();
         }
+        Job job = new Job("Update debugger state") {
+          @Override
+          protected IStatus run(IProgressMonitor monitor) {
+            debugEventListener.resumedByDefault();
+            return Status.OK_STATUS;
+          }
+        };
+        job.schedule();
       }
     });
   }
@@ -498,7 +507,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private final DebugEventListenerImpl debugEventListener = new DebugEventListenerImpl();
 
   class DebugEventListenerImpl implements DebugEventListener {
-    private final AtomicBoolean stateAlreadySet = new AtomicBoolean(false);
+    // Synchronizes calls from ReaderThread of Connection and one call from some worker thread
+    private final Object suspendResumeMonitor = new Object();
+    private boolean alreadyResumedOrSuspended = false;
 
     public void disconnected() {
       if (!isDisconnected()) {
@@ -509,18 +520,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       }
     }
 
-    // This method is called asynchronously. Probably it's a problem, we should
-    // make it synchronous.
     public void resumedByDefault() {
-      if (stateAlreadySet.get()) {
-        return;
+      synchronized (suspendResumeMonitor) {
+        if (!alreadyResumedOrSuspended) {
+          resumed();
+        }
       }
-      resumed();
     }
 
     public void resumed() {
-      stateAlreadySet.set(true);
-      DebugTargetImpl.this.resumed(DebugEvent.CLIENT_REQUEST);
+      synchronized (suspendResumeMonitor) {
+        DebugTargetImpl.this.resumed(DebugEvent.CLIENT_REQUEST);
+        alreadyResumedOrSuspended = true;
+      }
     }
 
     public void scriptLoaded(Script newScript) {
@@ -528,30 +540,37 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
 
     public void suspended(DebugContext context) {
-      stateAlreadySet.set(true);
-      DebugTargetImpl.this.debugContext = context;
-      breakpointsHit(context.getBreakpointsHit());
-      if (context.getState() == State.EXCEPTION) {
-        ExceptionData exceptionData = context.getExceptionData();
-        CallFrame topFrame = context.getCallFrames().get(0);
-        Script script = topFrame.getScript();
-        ChromiumDebugPlugin.logError(
-            Messages.DebugTargetImpl_LogExceptionFormat,
-            exceptionData.isUncaught()
-                ? Messages.DebugTargetImpl_Uncaught
-                : Messages.DebugTargetImpl_Caught,
-            exceptionData.getExceptionMessage(),
-            script != null ? script.getName() : "<unknown>", //$NON-NLS-1$
-            topFrame.getLineNumber(),
-            trim(exceptionData.getSourceText(), 80));
-        DebugTargetImpl.this.suspended(DebugEvent.BREAKPOINT);
-        return;
+      synchronized (suspendResumeMonitor) {
+        DebugTargetImpl.this.debugContext = context;
+        breakpointsHit(context.getBreakpointsHit());
+        if (context.getState() == State.EXCEPTION) {
+          logExceptionFromContext(context);
+          DebugTargetImpl.this.suspended(DebugEvent.BREAKPOINT);
+        } else {
+          boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
+          DebugTargetImpl.this.suspended(hasBreakpointsHit
+              ? DebugEvent.BREAKPOINT
+              : DebugEvent.STEP_END);
+        }
+
+        alreadyResumedOrSuspended = true;
       }
-      boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
-      DebugTargetImpl.this.suspended(hasBreakpointsHit
-          ? DebugEvent.BREAKPOINT
-          : DebugEvent.STEP_END);
     }
+  }
+
+  private void logExceptionFromContext(DebugContext context) {
+    ExceptionData exceptionData = context.getExceptionData();
+    CallFrame topFrame = context.getCallFrames().get(0);
+    Script script = topFrame.getScript();
+    ChromiumDebugPlugin.logError(
+        Messages.DebugTargetImpl_LogExceptionFormat,
+        exceptionData.isUncaught()
+            ? Messages.DebugTargetImpl_Uncaught
+            : Messages.DebugTargetImpl_Caught,
+        exceptionData.getExceptionMessage(),
+        script != null ? script.getName() : "<unknown>", //$NON-NLS-1$
+        topFrame.getLineNumber(),
+        trim(exceptionData.getSourceText(), 80));
   }
 
   private final JavascriptVmEmbedder.Listener embedderListener =
