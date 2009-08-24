@@ -16,6 +16,7 @@ import java.util.Set;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.json.simple.JSONObject;
@@ -47,7 +48,7 @@ public class JsObjectImplTest {
 
     listener.expectSuspendedEvent();
     messageResponder.sendSuspendedEvent();
-    DebugContextImpl debugContext = (DebugContextImpl) listener.getDebugContext();
+    DebugContext debugContext = listener.getDebugContext();
 
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
@@ -58,12 +59,14 @@ public class JsObjectImplTest {
             ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
         }, null);
 
+    InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
+
     FrameMirror frameMirror = new FrameMirror(
-        debugContext,
+        internalContext,
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.callFrame = new CallFrameImpl(frameMirror, 0, debugContext, debugContext.getToken());
+    this.callFrame = new CallFrameImpl(frameMirror, 0, internalContext, null);
   }
 
   @Test

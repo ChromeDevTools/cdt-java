@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
@@ -18,7 +19,13 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
-    getDebugSession().loadAllScripts(callback);
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    getDebugSession().getScriptLoader().loadAllScripts(callback, callbackSemaphore);
+
+    boolean res = callbackSemaphore.tryAcquireDefault();
+    if (!res) {
+      callback.failure("Timeout");
+    }
   }
 
   public void setBreakpoint(Breakpoint.Type type, String target, int line,

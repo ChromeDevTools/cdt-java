@@ -1,7 +1,5 @@
 package org.chromium.sdk.internal.tools.v8;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,10 +18,6 @@ public class BreakpointManager {
   private final Map<Long, Breakpoint> idToBreakpoint = new HashMap<Long, Breakpoint>();
 
   private final DebugContextImpl context;
-
-  /** The breakpoints hit before suspending. */
-  private volatile Collection<Breakpoint> breakpointsHit;
-
 
   public BreakpointManager(DebugContextImpl context) {
     this.context = context;
@@ -121,22 +115,6 @@ public class BreakpointManager {
           }
         },
         null);
-  }
-
-  /**
-   * Stores the breakpoints associated with V8 suspension event (empty if an
-   * exception or a step end).
-   *
-   * @param breakpointsHit the breakpoints that were hit
-   */
-  public void onBreakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
-    this.breakpointsHit = Collections.unmodifiableCollection(breakpointsHit);
-  }
-
-  public Collection<Breakpoint> getBreakpointsHit() {
-    return breakpointsHit != null
-        ? breakpointsHit
-        : Collections.<Breakpoint> emptySet();
   }
 
   private static Integer toNullableInteger(int value) {

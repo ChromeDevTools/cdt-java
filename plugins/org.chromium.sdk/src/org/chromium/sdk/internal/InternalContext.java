@@ -22,6 +22,8 @@ public interface InternalContext {
    */
   DebugContextImpl getDebugSession();
 
+  ContextBuilder getContextBuilder();
+
   // TODO(peter.rybin): document this
   boolean isValid();
 
@@ -33,16 +35,17 @@ public interface InternalContext {
 
   ValueMirror[] computeLocals(JSONObject frame);
 
-  /**
-   * @return object, that sends context-specific commands
-   */
-  ContextMessageSender getMessageSender();
+  CallFrameImpl getTopFrameImpl();
 
-  public interface ContextMessageSender {
-    /**
-     * Sends V8 command message provided this context is still valid.
-     */
-    void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
-        V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback);
+  /**
+   * Sends V8 command message provided this context is still valid. There is no
+   * way of making sure context will be valid via this API.
+   * @throws ContextDismissedCheckedException if context is not valid anymore
+   */
+  void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+      V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback)
+      throws ContextDismissedCheckedException;
+
+  class ContextDismissedCheckedException extends Exception {
   }
 }

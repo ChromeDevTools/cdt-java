@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -16,7 +15,6 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DebugContextImpl;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.V8ResponseCallback;
@@ -73,8 +71,6 @@ public class V8CommandProcessor {
 
   private final V8CommandOutput messageOutput;
 
-  private final BacktraceProcessor backtraceProcessor;
-
   private final ContinueProcessor continueProcessor;
 
   private final DebugContextImpl context;
@@ -84,7 +80,6 @@ public class V8CommandProcessor {
     this.context = context;
     this.bpp = new BreakpointProcessor(context);
     this.afterCompileProcessor = new AfterCompileProcessor(context);
-    this.backtraceProcessor = new BacktraceProcessor(context);
     this.continueProcessor = new ContinueProcessor(context);
   }
 
@@ -100,21 +95,6 @@ public class V8CommandProcessor {
   public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
     synchronized (sendLock) {
-      if (isMessageContextDependent(message) && !message.getToken().isValid()) {
-        try {
-          if (v8HandlerCallback != null) {
-            v8HandlerCallback.failure("Invalid context");
-          }
-        } finally {
-          if (syncCallback != null) {
-            syncCallback.callbackDone(null);
-          }
-        }
-        return;
-      }
-      if (DebuggerCommand.CONTINUE.value.equals(message.getCommand())) {
-        message.getToken().invalidate();
-      }
       if (v8HandlerCallback != null) {
         seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback, syncCallback,
             getCurrentMillis()));
@@ -131,48 +111,50 @@ public class V8CommandProcessor {
     }
   }
 
-  public void processIncomingJson(final JSONObject v8Json) {
+  public void processIncomingJson(JSONObject v8Json) {
     V8MessageType type = V8MessageType.forString(JsonUtil.getAsString(v8Json, V8Protocol.KEY_TYPE));
     handleResponseWithHandler(type, v8Json);
 
     if (V8MessageType.RESPONSE == type) {
-      final int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
+      int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
-      final CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
+      CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
       if (callbackEntry != null) {
         LOGGER.log(
             Level.INFO,
             "Request-response roundtrip: {0}ms",
             getCurrentMillis() - callbackEntry.commitMillis);
 
-        // TODO(prybin): a new thread each time?
-        Thread t = new Thread(new Runnable() {
-          public void run() {
-            try {
-              RuntimeException callbackException = null;
-              try {
-                if (callbackEntry.v8HandlerCallback != null) {
-                  LOGGER.log(
-                      Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
-                  callbackEntry.v8HandlerCallback.messageReceived(v8Json);
-                }
-              } catch (RuntimeException e) {
-                callbackException = e;
-              } finally {
-                if (callbackEntry.syncCallback != null) {
-                  callbackEntry.syncCallback.callbackDone(callbackException);
-                }
-              }
-            } finally {
-              // Note that the semaphore is released AFTER the handleResponse
-              // call.
-              if (callbackEntry.semaphore != null) {
-                callbackEntry.semaphore.release();
-              }
-            }
-          }
-        });
-        t.start();
+        try {
+          callThemBack(callbackEntry, v8Json, requestSeq);
+        } catch (RuntimeException e) {
+          LOGGER.log(Level.SEVERE, "Failed to dispatch response to callback", e);
+        }
+      }
+    }
+  }
+
+  private void callThemBack(CallbackEntry callbackEntry, JSONObject v8Json, int requestSeq) {
+    try {
+      RuntimeException callbackException = null;
+      try {
+        if (callbackEntry.v8HandlerCallback != null) {
+          LOGGER.log(
+              Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
+          callbackEntry.v8HandlerCallback.messageReceived(v8Json);
+        }
+      } catch (RuntimeException e) {
+        callbackException = e;
+      } finally {
+        if (callbackEntry.syncCallback != null) {
+          callbackEntry.syncCallback.callbackDone(callbackException);
+        }
+      }
+    } finally {
+      // Note that the semaphore is released AFTER the handleResponse
+      // call.
+      if (callbackEntry.semaphore != null) {
+        callbackEntry.semaphore.release();
       }
     }
   }
@@ -208,14 +190,6 @@ public class V8CommandProcessor {
     }
   }
 
-  private static boolean isMessageContextDependent(DebuggerMessage message) {
-    DebuggerCommand command = DebuggerCommand.forString(message.getCommand());
-    if (command == null) {
-      return false;
-    }
-    return CONTEXT_DEPENDENT_COMMANDS.contains(command);
-  }
-
   /**
    * @return milliseconds since the epoch
    */
@@ -228,11 +202,6 @@ public class V8CommandProcessor {
       throw new IllegalArgumentException(message);
     }
   }
-
-  private static final EnumSet<DebuggerCommand> CONTEXT_DEPENDENT_COMMANDS = EnumSet.of(
-      DebuggerCommand.LOOKUP,
-      DebuggerCommand.EVALUATE,
-      DebuggerCommand.FRAME);
 
   /**
    * The callbacks to invoke when the responses arrive.
@@ -290,14 +259,6 @@ public class V8CommandProcessor {
       @Override
       AfterCompileProcessor get(V8CommandProcessor instance) {
         return instance.afterCompileProcessor;
-      }
-    });
-
-    command2HandlerGetter.put(DebuggerCommand.BACKTRACE,
-        new HandlerGetter() {
-      @Override
-      BacktraceProcessor get(V8CommandProcessor instance) {
-        return instance.backtraceProcessor;
       }
     });
 

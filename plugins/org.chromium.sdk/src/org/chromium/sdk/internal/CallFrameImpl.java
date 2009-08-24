@@ -13,6 +13,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
@@ -57,7 +58,7 @@ public class CallFrameImpl implements CallFrame {
     this.token = contextToken;
   }
 
-  public InternalContext getDebugContext() {
+  public InternalContext getInternalContext() {
     return context;
   }
 
@@ -113,6 +114,20 @@ public class CallFrameImpl implements CallFrame {
 
   public void evaluateAsync(final String expression, final EvaluateCallback callback,
       SyncCallback syncCallback) {
+    try {
+      evaluateAsyncImpl(expression, callback, syncCallback);
+    } catch (ContextDismissedCheckedException e) {
+      getInternalContext().getDebugSession().maybeRethrowContextException(e);
+      // or
+      try {
+        callback.failure(e.getMessage());
+      } finally {
+        syncCallback.callbackDone(null);
+      }
+    }
+  }
+  public void evaluateAsyncImpl(final String expression, final EvaluateCallback callback,
+      SyncCallback syncCallback) throws ContextDismissedCheckedException {
     DebuggerMessage message =
       DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
 
@@ -139,7 +154,7 @@ public class CallFrameImpl implements CallFrame {
           }
         };
 
-    getDebugContext().getMessageSender().sendMessageAsync(message, true, commandCallback,
+    getInternalContext().sendMessageAsync(message, true, commandCallback,
         syncCallback);
   }
 

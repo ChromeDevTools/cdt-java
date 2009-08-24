@@ -12,14 +12,14 @@ import org.chromium.sdk.JsObject;
  */
 public class ExceptionDataImpl implements ExceptionData {
 
-  private final DebugContextImpl context;
+  private final InternalContext context;
   private final String sourceText;
   private final ValueMirror mirror;
   private final boolean isUncaught;
   private final String exceptionText;
   private JsObject cachedException;
 
-  public ExceptionDataImpl(DebugContextImpl context, ValueMirror mirror, boolean isUncaught,
+  public ExceptionDataImpl(InternalContext context, ValueMirror mirror, boolean isUncaught,
       String sourceText, String exceptionText) {
     this.context = context;
     this.mirror = mirror;
@@ -30,7 +30,7 @@ public class ExceptionDataImpl implements ExceptionData {
 
   public JsObject getExceptionObject() {
     if (cachedException == null) {
-      cachedException = new JsObjectImpl(context.getCallFrames().get(0), mirror.getName(), mirror);
+      cachedException = new JsObjectImpl(context.getTopFrameImpl(), mirror.getName(), mirror);
     }
     return cachedException;
   }
