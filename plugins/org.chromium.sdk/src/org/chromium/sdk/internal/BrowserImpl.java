@@ -30,7 +30,7 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
 /**
  * A thread-safe implementation of the Browser interface.
  */
-public class BrowserImpl implements Browser, NetListener {
+public class BrowserImpl implements Browser {
 
   private static final Logger LOGGER = Logger.getLogger(BrowserImpl.class.getName());
 
@@ -104,47 +104,6 @@ public class BrowserImpl implements Browser, NetListener {
     getConnection().close();
   }
 
-  public void connectionClosed() {
-    devToolsHandler.onDebuggerDetached();
-    // Use a copy to avoid the underlying map modification in #sessionTerminated
-    // invoked through #onDebuggerDetached
-    ArrayList<BrowserTabImpl> tabsCopy = new ArrayList<BrowserTabImpl>(tabUidToTabImpl.values());
-    for (Iterator<BrowserTabImpl> it = tabsCopy.iterator(); it.hasNext();) {
-      it.next().getDebugSession().onDebuggerDetached();
-    }
-  }
-
-  public void messageReceived(Message message) {
-    ToolName toolName = ToolName.forString(message.getTool());
-    if (toolName == null) {
-      LOGGER.log(Level.SEVERE, "Bad 'Tool' header received: {0}", message.getTool());
-      return;
-    }
-    ToolHandler handler = null;
-    switch (toolName) {
-      case DEVTOOLS_SERVICE:
-        handler = devToolsHandler;
-        break;
-      case V8_DEBUGGER:
-        BrowserTabImpl tab = getBrowserTab(Integer.valueOf(message.getDestination()));
-        if (tab != null) {
-          handler = tab.getV8ToolHandler();
-        }
-        break;
-      default:
-        LOGGER.log(Level.SEVERE, "Unregistered handler for tool: {0}", message.getTool());
-        return;
-    }
-    if (handler != null) {
-      handler.handleMessage(message);
-    } else {
-      LOGGER.log(
-          Level.SEVERE,
-          "null handler for tool: {0}, destination: {1}",
-          new Object[] {message.getTool(), message.getDestination()});
-    }
-  }
-
   public void sessionTerminated(int tabId) {
     tabUidToTabImpl.remove(tabId);
     if (!hasAttachedTabs() && getConnection().isConnected()) {
@@ -182,7 +141,7 @@ public class BrowserImpl implements Browser, NetListener {
   private boolean ensureService() throws IOException {
     if (!isNetworkSetUp) {
       devToolsHandler = new DevToolsServiceHandler(connection);
-      connection.setNetListener(this);
+      connection.setNetListener(netListener);
       this.isNetworkSetUp = true;
     }
     boolean wasConnected = connection.isConnected();
@@ -203,4 +162,46 @@ public class BrowserImpl implements Browser, NetListener {
     }
   }
 
+  private final NetListener netListener = new NetListener() {
+    public void connectionClosed() {
+      devToolsHandler.onDebuggerDetached();
+      // Use a copy to avoid the underlying map modification in #sessionTerminated
+      // invoked through #onDebuggerDetached
+      ArrayList<BrowserTabImpl> tabsCopy = new ArrayList<BrowserTabImpl>(tabUidToTabImpl.values());
+      for (Iterator<BrowserTabImpl> it = tabsCopy.iterator(); it.hasNext();) {
+        it.next().getDebugSession().onDebuggerDetached();
+      }
+    }
+
+    public void messageReceived(Message message) {
+      ToolName toolName = ToolName.forString(message.getTool());
+      if (toolName == null) {
+        LOGGER.log(Level.SEVERE, "Bad 'Tool' header received: {0}", message.getTool());
+        return;
+      }
+      ToolHandler handler = null;
+      switch (toolName) {
+        case DEVTOOLS_SERVICE:
+          handler = devToolsHandler;
+          break;
+        case V8_DEBUGGER:
+          BrowserTabImpl tab = getBrowserTab(Integer.valueOf(message.getDestination()));
+          if (tab != null) {
+            handler = tab.getV8ToolHandler();
+          }
+          break;
+        default:
+          LOGGER.log(Level.SEVERE, "Unregistered handler for tool: {0}", message.getTool());
+          return;
+      }
+      if (handler != null) {
+        handler.handleMessage(message);
+      } else {
+        LOGGER.log(
+            Level.SEVERE,
+            "null handler for tool: {0}, destination: {1}",
+            new Object[] {message.getTool(), message.getDestination()});
+      }
+    }
+  };
 }
