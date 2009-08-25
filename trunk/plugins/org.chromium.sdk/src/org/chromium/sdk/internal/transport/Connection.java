@@ -20,14 +20,22 @@ public interface Connection {
 
     /**
      * Gets invoked whenever a message from the browser arrives.
-     *
+     * Invoked from DispatchThread.
      * @param message from the browser instance the connection is associated
      *        with
      */
     void messageReceived(Message message);
 
     /**
+     * Gets invoked from DispatchThread whenever EOS message arrives. This method
+     * must not be called more than once. Method {@link #messageReceived} must
+     * not be called after it.
+     */
+    void eosReceived();
+
+    /**
      * Gets invoked when the physical connection has been terminated.
+     * Called from whatever thread that connection is terminated from.
      */
     void connectionClosed();
   }
