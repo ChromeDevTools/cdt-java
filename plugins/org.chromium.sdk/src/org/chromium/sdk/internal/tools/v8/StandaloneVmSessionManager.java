@@ -91,6 +91,8 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
         }
         debugSession.getV8CommandProcessor().processIncomingJson(json);
       }
+      public void eosReceived() {
+      }
     };
     connection.setNetListener(netListener);
 

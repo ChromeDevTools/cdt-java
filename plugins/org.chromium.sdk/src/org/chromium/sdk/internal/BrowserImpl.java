@@ -203,5 +203,7 @@ public class BrowserImpl implements Browser {
             new Object[] {message.getTool(), message.getDestination()});
       }
     }
+    public void eosReceived() {
+    }
   };
 }

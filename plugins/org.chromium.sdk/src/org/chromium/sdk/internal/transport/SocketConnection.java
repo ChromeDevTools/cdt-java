@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -76,7 +77,7 @@ public class SocketConnection implements Connection {
 
     @Override
     public void run() {
-      while (!isTerminated && isAttached) {
+      while (!isTerminated && isAttached.get()) {
         try {
           handleOutboundMessage(outboundQueue.take());
         } catch (InterruptedException e) {
@@ -92,6 +93,37 @@ public class SocketConnection implements Connection {
       } catch (IOException e) {
         SocketConnection.this.shutdown(e, false);
       }
+    }
+  }
+
+  private static abstract class MessageItem {
+    abstract void report(NetListener listener);
+    abstract boolean isEos();
+  }
+  private static final MessageItem EOS = new MessageItem() {
+    @Override
+    void report(NetListener listener) {
+      LOGGER.log(Level.FINER, "<--EOS");
+      listener.eosReceived();
+    }
+    @Override
+    boolean isEos() {
+      return true;
+    }
+  };
+  private static class RegularMessageItem extends MessageItem {
+    private final Message message;
+    RegularMessageItem(Message message) {
+      this.message = message;
+    }
+    @Override
+    void report(NetListener listener) {
+      LOGGER.log(Level.FINER, "<--{0}", message);
+      listener.messageReceived(message);
+    }
+    @Override
+    boolean isEos() {
+      return false;
     }
   }
 
@@ -113,11 +145,14 @@ public class SocketConnection implements Connection {
     public void run() {
       Exception breakException;
       try {
+        /** The thread that dispatches the inbound messages (to avoid queue growth.) */
+        startResponseDispatcherThread();
+
         handshaker.perform(reader, handshakeWriter);
 
         startWriterThread();
 
-        while (!isTerminated && isAttached) {
+        while (!isTerminated && isAttached.get()) {
           Message message;
           try {
             message = Message.fromBufferedReader(reader);
@@ -129,11 +164,13 @@ public class SocketConnection implements Connection {
             LOGGER.fine("End of stream");
             break;
           }
-          inboundQueue.add(message);
+          inboundQueue.add(new RegularMessageItem(message));
         }
         breakException = null;
       } catch (IOException e) {
         breakException = e;
+      } finally {
+        inboundQueue.add(EOS);
       }
       if (!isInterrupted()) {
         SocketConnection.this.shutdown(breakException, false);
@@ -144,7 +181,7 @@ public class SocketConnection implements Connection {
   /**
    * A thread dispatching V8 responses (to avoid locking the ReaderThread.)
    */
-  private class ResponseDispatcherThread extends InterruptibleThread {
+  private class ResponseDispatcherThread extends Thread {
 
     public ResponseDispatcherThread() {
       super("ResponseDispatcherThread");
@@ -152,29 +189,27 @@ public class SocketConnection implements Connection {
 
     @Override
     public void run() {
-      Message message;
+      MessageItem messageItem;
       try {
-        while (!isTerminated && isAttached) {
-          message = inboundQueue.take();
+        while (true) {
+          messageItem = inboundQueue.take();
           try {
-            handleInboundMessage(message);
+            messageItem.report(listener);
           } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Exception in message listener", e);
+          }
+          if (messageItem.isEos()) {
+            break;
           }
         }
       } catch (InterruptedException e) {
         // terminate thread
       }
     }
-
-    private void handleInboundMessage(Message message) {
-      LOGGER.log(Level.FINER, "<--{0}", message);
-      listener.messageReceived(message);
-    }
   }
 
   /** The class logger. */
-  protected static final Logger LOGGER = Logger.getLogger(SocketConnection.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(SocketConnection.class.getName());
 
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
@@ -186,12 +221,15 @@ public class SocketConnection implements Connection {
     public void connectionClosed() {
     }
 
+    public void eosReceived() {
+    }
+
     public void messageReceived(Message message) {
     }
   };
 
   /** Whether the agent is currently attached to a remote browser. */
-  protected volatile boolean isAttached = false;
+  private AtomicBoolean isAttached = new AtomicBoolean(false);
 
   /** The communication socket. */
   protected Socket socket;
@@ -211,7 +249,7 @@ public class SocketConnection implements Connection {
   protected volatile NetListener listener;
 
   /** The inbound message queue. */
-  protected final BlockingQueue<Message> inboundQueue = new LinkedBlockingQueue<Message>();
+  protected final BlockingQueue<MessageItem> inboundQueue = new LinkedBlockingQueue<MessageItem>();
 
   /** The outbound message queue. */
   protected final BlockingQueue<Message> outboundQueue = new LinkedBlockingQueue<Message>();
@@ -224,9 +262,6 @@ public class SocketConnection implements Connection {
 
   /** The thread that processes the inbound queue. */
   private ReaderThread readerThread;
-
-  /** The thread that dispatches the inbound messages (to avoid queue growth.) */
-  private ResponseDispatcherThread dispatcherThread;
 
   /** Connection attempt timeout in ms. */
   private final int connectionTimeoutMs;
@@ -260,16 +295,13 @@ public class SocketConnection implements Connection {
 
     this.writer = new BufferedWriter(streamWriter);
     this.reader = new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
-    isAttached = true;
+    isAttached.set(true);
 
     this.readerThread = new ReaderThread(reader, writer);
     // We do not start WriterThread until handshake is done (see ReaderThread)
     this.writerThread = null;
-    this.dispatcherThread = new ResponseDispatcherThread();
     readerThread.setDaemon(true);
     readerThread.start();
-    dispatcherThread.setDaemon(true);
-    dispatcherThread.start();
   }
 
   void detach(boolean lameduckMode) {
@@ -281,7 +313,7 @@ public class SocketConnection implements Connection {
   }
 
   private boolean isAttached() {
-    return isAttached;
+    return isAttached.get();
   }
 
   /**
@@ -289,11 +321,11 @@ public class SocketConnection implements Connection {
    * from the {Reader,Writer}Thread when the underlying socket is
    * closed in another invocation of this method.
    */
-  private synchronized void shutdown(Exception cause, boolean lameduckMode) {
-    if (!isAttached) {
+  private void shutdown(Exception cause, boolean lameduckMode) {
+    if (!isAttached.compareAndSet(true, false)) {
+      // already shut down
       return;
     }
-    isAttached = false;
     LOGGER.log(Level.INFO, "Shutdown requested", cause);
 
     if (lameduckMode) {
@@ -336,7 +368,6 @@ public class SocketConnection implements Connection {
   private void interruptServiceThreads() {
     interruptThread(writerThread);
     interruptThread(readerThread);
-    interruptThread(dispatcherThread);
   }
 
   private void startWriterThread() {
@@ -346,6 +377,14 @@ public class SocketConnection implements Connection {
     writerThread = new WriterThread(writer);
     writerThread.setDaemon(true);
     writerThread.start();
+  }
+
+  private ResponseDispatcherThread startResponseDispatcherThread() {
+    ResponseDispatcherThread dispatcherThread;
+    dispatcherThread = new ResponseDispatcherThread();
+    dispatcherThread.setDaemon(true);
+    dispatcherThread.start();
+    return dispatcherThread;
   }
 
   private void interruptThread(Thread thread) {
