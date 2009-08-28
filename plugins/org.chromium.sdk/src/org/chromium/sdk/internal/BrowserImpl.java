@@ -46,7 +46,7 @@ public class BrowserImpl implements Browser {
   public static final Version PROTOCOL_VERSION = new Version(0, 1);
 
   /**
-   * One single session supported by browser..
+   * One single session supported by browser.
    * TODO(peter.rybin): make session replaceable
    */
   private final Session permanentSession;

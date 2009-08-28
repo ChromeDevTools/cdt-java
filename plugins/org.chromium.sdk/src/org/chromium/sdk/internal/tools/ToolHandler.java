@@ -22,7 +22,7 @@ public interface ToolHandler {
 
   /**
    * Handles EOS (end-of-stream) message. Should not be called twice. Implementation
-   * may rely on this in it's clean-up work.
+   * may rely on this in its clean-up work.
    * Invoked from Dispatch thread (connection-driven).
    */
   void handleEos();
