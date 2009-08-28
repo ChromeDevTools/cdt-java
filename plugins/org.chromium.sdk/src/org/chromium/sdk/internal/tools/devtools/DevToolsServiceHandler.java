@@ -121,6 +121,10 @@ public class DevToolsServiceHandler implements ToolHandler {
     }
   }
 
+  public void handleEos() {
+    // ignore this event
+  }
+
   private void handleVersion(JSONObject json) {
     VersionCallback callback;
     synchronized (lock) {
