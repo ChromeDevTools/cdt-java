@@ -192,6 +192,10 @@ public class JsonUtil {
     return JsonUtil.getAsBoolean(response, V8Protocol.KEY_SUCCESS);
   }
 
+  public static String quoteString(String string) {
+    return "\"" + string + "\"";
+  }
+
   private JsonUtil() {
     // not instantiable
   }
