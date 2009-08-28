@@ -1,7 +1,11 @@
 package org.chromium.debug.core.model;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.JavascriptVmEmbedder.Attachable;
@@ -19,10 +23,14 @@ import org.eclipse.core.runtime.Status;
 
 
 public class JavascriptVmEmbedderFactory {
+
+  public static final String LOCALHOST = "127.0.0.1"; //$NON-NLS-1$
+
   public static JavascriptVmEmbedder.Attachable connectToChromeDevTools(int port,
       ConnectionLogger logger, final TabSelector tabSelector) throws CoreException {
 
-    final Browser browser = BrowserFactory.getInstance().create(port, logger);
+    SocketAddress address = new InetSocketAddress(LOCALHOST, port);
+    final Browser browser = browserCache.getOrCreateBrowser(address, logger);
     try {
       browser.connect();
     } catch (UnsupportedVersionException e) {
@@ -96,7 +104,8 @@ public class JavascriptVmEmbedderFactory {
 
   public static Attachable connectToStandalone(int port,
       ConnectionLogger connectionLogger) {
-    final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(port,
+    SocketAddress address = new InetSocketAddress(LOCALHOST, port);
+    final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(address,
         connectionLogger);
 
     return new Attachable() {
@@ -130,5 +139,55 @@ public class JavascriptVmEmbedderFactory {
     return new CoreException(
         new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
             "Failed to connect to the remote browser", e)); //$NON-NLS-1$
+  }
+
+  private static final BrowserCache browserCache = new BrowserCache();
+  /**
+   * Cache of browser instances.
+   */
+  private static class BrowserCache {
+
+    /**
+     * Tries to return already created instance of Browser connected to {@code address}
+     * or create new instance.
+     * However, it creates a new instance each time that {@code ConnectionLogger} is not null
+     * (because you cannot add connection logger to existing connection).
+     * @throws CoreException if browser can't be created because of conflict with connectionLogger
+     */
+    synchronized Browser getOrCreateBrowser(SocketAddress address,
+        ConnectionLogger connectionLogger) throws CoreException {
+      if (connectionLogger == null) {
+        Browser result = address2Browser.get(address);
+        if (result == null) {
+          result = createBrowserImpl(address, connectionLogger);
+          address2Browser.put(address, result);
+        }
+        return result;
+      } else {
+        Browser oldBrowser = address2BrowserWithLogger.get(address);
+        if (oldBrowser != null) {
+          // TODO(peter.rybin): get the actual value here.
+          boolean isBrowserConnected = false;
+          if (isBrowserConnected) {
+            throw newCoreException(
+                "Can't create second debug target to the same browser" //$NON-NLS-1$
+                + " when network console is on", //$NON-NLS-1$
+                null);
+          }
+        }
+        Browser result = createBrowserImpl(address, connectionLogger);
+        address2BrowserWithLogger.put(address, result);
+        return result;
+      }
+    }
+    private Browser createBrowserImpl(SocketAddress address, ConnectionLogger connectionLogger) {
+      return BrowserFactory.getInstance().create(address, connectionLogger);
+    }
+
+    private final Map<SocketAddress, Browser> address2Browser =
+        new HashMap<SocketAddress, Browser>();
+
+    private final Map<SocketAddress, Browser> address2BrowserWithLogger =
+        new HashMap<SocketAddress, Browser>();
   }
 }
