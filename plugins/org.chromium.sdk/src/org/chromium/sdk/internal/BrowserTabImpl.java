@@ -8,8 +8,12 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.tools.ToolHandler;
+import org.chromium.sdk.internal.tools.ToolName;
+import org.chromium.sdk.internal.tools.ToolOutput;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager.AttachmentFailureException;
+import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.Message;
 
 /**
  * A default, thread-safe implementation of the BrowserTab interface.
@@ -46,11 +50,14 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.tabId = tabId;
     this.url = url;
     this.browserImpl = browserImpl;
-    ChromeDevToolSessionManager.ChromeDevToolMessageOutput messageOutput =
-        new ChromeDevToolSessionManager.ChromeDevToolMessageOutput(tabId,
-            browserImpl.getConnection());
-    this.debugSession = new DebugSession(this, protocolOptions, messageOutput);
-    this.devToolSessionManager = new ChromeDevToolSessionManager(this, debugSession);
+    String tabIdString = String.valueOf(tabId);
+    ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString,
+        browserImpl.getConnection());
+    ChromeDevToolSessionManager.V8CommandOutputImpl v8MessageOutput =
+        new ChromeDevToolSessionManager.V8CommandOutputImpl(chromeDevToolOutput);
+    this.debugSession = new DebugSession(this, protocolOptions, v8MessageOutput);
+    this.devToolSessionManager = new ChromeDevToolSessionManager(this, chromeDevToolOutput,
+        debugSession);
   }
 
   public String getUrl() {
@@ -111,5 +118,22 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   @Override
   public ChromeDevToolSessionManager getSessionManager() {
     return devToolSessionManager;
+  }
+
+  private static class ChromeDevToolOutput implements ToolOutput {
+    private final String destination;
+    private final Connection connection;
+
+    ChromeDevToolOutput(String destination, Connection connection) {
+      this.destination = destination;
+      this.connection = connection;
+    }
+
+
+    public void send(String content) {
+      Message message =
+          MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, destination, content);
+      connection.send(message);
+    }
   }
 }

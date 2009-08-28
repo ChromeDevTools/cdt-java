@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.tools.v8;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,12 +17,11 @@ import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.MessageFactory;
 import org.chromium.sdk.internal.Result;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
+import org.chromium.sdk.internal.tools.ToolOutput;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Message;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -68,6 +68,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   /** The host BrowserTabImpl instance. */
   private final BrowserTabImpl browserTabImpl;
 
+  private final ToolOutput toolOutput;
+
   /** The debug context for this handler. */
   private final DebugSession debugSession;
 
@@ -77,17 +79,20 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   // The fields access is synchronized
   private boolean isAttached;
 
-  private ResultAwareCallback attachCallback;
+  private final AtomicReference<ResultAwareCallback> attachCallback =
+      new AtomicReference<ResultAwareCallback>(null);
 
-  private ResultAwareCallback detachCallback;
+  private final AtomicReference<ResultAwareCallback> detachCallback =
+      new AtomicReference<ResultAwareCallback>(null);
 
   /**
    * A no-op JavaScript to evaluate.
    */
   public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
-  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, DebugSession debugSession) {
+  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, ToolOutput toolOutput, DebugSession debugSession) {
     this.browserTabImpl = browserTabImpl;
+    this.toolOutput = toolOutput;
     this.debugSession = debugSession;
   }
 
@@ -179,30 +184,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     if (isAttached()) {
       return Result.ILLEGAL_TAB_STATE;
     }
-    final Semaphore sem = new Semaphore(0);
-    final Result[] output = new Result[1];
-    synchronized (fieldAccessLock) {
-      this.attachCallback = new ResultAwareCallback() {
-        public void resultReceived(Result result) {
-          output[0] = result;
-          sem.release();
-        }
-      };
-    }
-    // No guarding against invocation while an "attach" command is in flight.
-    getConnection().send(MessageFactory.attach(String.valueOf(browserTabImpl.getId())));
 
-    // If the attachment fails, notify the listener disconnected() method.
-    try {
-      boolean attached = sem.tryAcquire(BrowserImpl.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-      if (!attached) {
-        throw new AttachmentFailureException("Timed out", null);
-      }
-    } catch (InterruptedException e) {
-      throw new AttachmentFailureException(null, e);
-    }
-
-    return output[0];
+    String command = V8DebuggerToolMessageFactory.attach();
+    return sendSimpleCommandSync(attachCallback, command);
   }
 
   /**
@@ -215,24 +199,51 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       toolHandler.onDebuggerDetached();
       return Result.ILLEGAL_TAB_STATE;
     }
+
+    String command = V8DebuggerToolMessageFactory.detach();
+    Result result;
+    try {
+      result = sendSimpleCommandSync(detachCallback, command);
+    } catch (AttachmentFailureException e) {
+      result = null;
+    }
+    return result;
+  }
+
+  private Result sendSimpleCommandSync(AtomicReference<ResultAwareCallback> callbackReference, String command) throws AttachmentFailureException {
     final Semaphore sem = new Semaphore(0);
     final Result[] output = new Result[1];
-    synchronized (fieldAccessLock) {
-      detachCallback = new ResultAwareCallback() {
-        public void resultReceived(Result result) {
-          output[0] = result;
-          sem.release();
-        }
-      };
-    }
-    // No guarding against invocation while a "detach" command is in flight.
-    getConnection().send(MessageFactory.detach(String.valueOf(browserTabImpl.getId())));
+    ResultAwareCallback callback = new ResultAwareCallback() {
+      public void resultReceived(Result result) {
+        output[0] = result;
+        sem.release();
+      }
+    };
 
-    try {
-      sem.tryAcquire(BrowserImpl.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      // Fall through
+    boolean res = callbackReference.compareAndSet(null, callback);
+    if (!res) {
+      throw new IllegalStateException("Callback is already set");
     }
+
+    boolean completed;
+    try {
+      toolOutput.send(command);
+
+      try {
+        completed = sem.tryAcquire(BrowserImpl.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    } finally {
+      // Make sure we do not leave our callback behind us.
+      callbackReference.compareAndSet(callback, null);
+    }
+
+    // If the command fails, notify the caller.
+    if (!completed) {
+      throw new AttachmentFailureException("Timed out", null);
+    }
+
     return output[0];
   }
 
@@ -254,7 +265,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     synchronized (fieldAccessLock) {
       if (detachCallback != null) {
         // A detach request might be in flight. It should succeed in this case.
-        notifyDetachCallback(Result.OK);
+        notifyCallback(detachCallback, Result.OK);
       }
     }
     browserTabImpl.getTabDebugEventListener().closed();
@@ -262,17 +273,20 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   }
 
   /**
-   * This method is invoked from synchronized code sections.
+   * This method is invoked from synchronized code sections. It checks if there is a callback
+   * provided in {@code callbackReference}. Sets callback to null.
    *
+   * @param callbackReference reference which may hold callback
    * @param result to notify the callback with
    */
-  private void notifyDetachCallback(Result result) {
-    try {
-      detachCallback.resultReceived(result);
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Exception in the detach callback", e);
-    } finally {
-      detachCallback = null;
+  private void notifyCallback(AtomicReference<ResultAwareCallback> callbackReference, Result result) {
+    ResultAwareCallback callback = callbackReference.getAndSet(null);
+    if (callback != null) {
+      try {
+        callback.resultReceived(result);
+      } catch (Exception e) {
+        LOGGER.log(Level.WARNING, "Exception in the callback", e);
+      }
     }
   }
 
@@ -288,16 +302,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
           result = Result.DEBUGGER_ERROR;
         }
       }
-      if (attachCallback != null) {
-        try {
-          attachCallback.resultReceived(result);
-        } catch (Exception e) {
-          LOGGER.log(Level.WARNING, "Exception in the attach callback", e);
-        } finally {
-          attachCallback = null;
-        }
-      }
     }
+    notifyCallback(attachCallback, result);
   }
 
   private void processDetach(JSONObject json) {
@@ -310,11 +316,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
         result = Result.DEBUGGER_ERROR;
       }
     }
-    synchronized (fieldAccessLock) {
-      if (detachCallback != null) {
-        notifyDetachCallback(result);
-      }
-    }
+    notifyCallback(detachCallback, result);
   }
 
   private void processDebuggerCommand(JSONObject json) {
@@ -329,28 +331,52 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     getTabDebugEventListener().navigated(newUrl);
   }
 
-  private Connection getConnection() {
-    return browserTabImpl.getBrowser().getConnection();
-  }
+  public static class V8CommandOutputImpl implements V8CommandOutput {
+    private final ToolOutput toolOutput;
 
-  public static class ChromeDevToolMessageOutput implements V8CommandOutput {
-    private final String destination;
-    private final Connection connection;
-
-    public ChromeDevToolMessageOutput(int tabId, Connection connection) {
-      this.destination = String.valueOf(tabId);
-      this.connection = connection;
+    public V8CommandOutputImpl(ToolOutput toolOutput) {
+      this.toolOutput = toolOutput;
     }
 
     public void send(DebuggerMessage debuggerMessage, boolean isImmediate) {
-      connection.send(
-          MessageFactory.debuggerCommand(
-              destination,
+      toolOutput.send(
+          V8DebuggerToolMessageFactory.debuggerCommand(
               JsonUtil.streamAwareToJson(debuggerMessage)));
       if (isImmediate) {
-        connection.send(
-            MessageFactory.evaluateJavascript(destination, JAVASCRIPT_VOID));
+        toolOutput.send(
+            V8DebuggerToolMessageFactory.evaluateJavascript(JAVASCRIPT_VOID));
       }
+    }
+  }
+
+  private static class V8DebuggerToolMessageFactory {
+
+    static String attach() {
+      return createDebuggerMessage(DebuggerToolCommand.ATTACH, null);
+    }
+
+    static String detach() {
+      return createDebuggerMessage(DebuggerToolCommand.DETACH, null);
+    }
+
+    public static String debuggerCommand(String json) {
+      return createDebuggerMessage(DebuggerToolCommand.DEBUGGER_COMMAND, json);
+    }
+
+    public static String evaluateJavascript(String javascript) {
+      return createDebuggerMessage(DebuggerToolCommand.EVALUATE_JAVASCRIPT,
+          JsonUtil.quoteString(javascript));
+    }
+
+    private static String createDebuggerMessage(
+        DebuggerToolCommand command, String dataField) {
+      StringBuilder sb = new StringBuilder("{\"command\":\"");
+      sb.append(command.commandName).append('"');
+      if (dataField != null) {
+        sb.append(",\"data\":").append(dataField);
+      }
+      sb.append('}');
+      return sb.toString();
     }
   }
 }
