@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -266,17 +265,9 @@ public class SocketConnection implements Connection {
   /** Connection attempt timeout in ms. */
   private final int connectionTimeoutMs;
 
-  /** Browser server socket host. */
-  private final String host;
-
-  /** Browser server socket host. */
-  private final int port;
-
-  public SocketConnection(String host, int port, int connectionTimeoutMs,
+  public SocketConnection(SocketAddress endpoint, int connectionTimeoutMs,
       ConnectionLogger connectionLogger, Handshaker handshaker) {
-    this.host = host;
-    this.port = port;
-    this.socketEndpoint = new InetSocketAddress(host, port);
+    this.socketEndpoint = endpoint;
     this.connectionTimeoutMs = connectionTimeoutMs;
     this.connectionLogger = connectionLogger;
     this.handshaker = handshaker;
@@ -436,19 +427,5 @@ public class SocketConnection implements Connection {
     if (!isAttached()) {
       throw new IllegalStateException("Connection not attached");
     }
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof SocketConnection)) {
-      return false;
-    }
-    SocketConnection that = (SocketConnection) obj;
-    return (this.host.equals(that.host) && this.port == that.port);
-  }
-
-  @Override
-  public int hashCode() {
-    return host.hashCode() + port;
   }
 }
