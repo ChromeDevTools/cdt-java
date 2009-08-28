@@ -126,6 +126,10 @@ public class V8CommandProcessor {
     }
   }
 
+  public void processEos() {
+    // TODO(peter.rybin): move removeAllCallbacks here
+  }
+
   private void callThemBack(CallbackEntry callbackEntry, JSONObject v8Json, int requestSeq) {
     try {
       RuntimeException callbackException = null;

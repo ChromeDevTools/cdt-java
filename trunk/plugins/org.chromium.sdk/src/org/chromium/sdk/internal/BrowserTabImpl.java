@@ -117,7 +117,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public ToolHandler getV8ToolHandler() {
-      return devToolSessionManager.getToolHandler();
+    return devToolSessionManager.getToolHandler();
   }
 
   @Override

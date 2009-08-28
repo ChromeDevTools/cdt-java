@@ -14,10 +14,18 @@ public interface ToolHandler {
 
   /**
    * Handles message from a certain tool.
+   * Invoked from Dispatch thread (connection-driven).
    *
    * @param message to handle. Never null
    */
   void handleMessage(Message message);
+
+  /**
+   * Handles EOS (end-of-stream) message. Should not be called twice. Implementation
+   * may rely on this in it's clean-up work.
+   * Invoked from Dispatch thread (connection-driven).
+   */
+  void handleEos();
 
   /**
    * Gets invoked when the debugger has detached from a browser instance (due to

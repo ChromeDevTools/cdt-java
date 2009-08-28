@@ -256,6 +256,10 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       handleChromeDevToolMessage(message);
     }
 
+    public void handleEos() {
+      debugSession.getV8CommandProcessor().processEos();
+    }
+
     public void onDebuggerDetached() {
       onDebuggerDetachedImpl();
     }
