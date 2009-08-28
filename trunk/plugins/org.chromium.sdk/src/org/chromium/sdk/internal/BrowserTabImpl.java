@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.TabDebugEventListener;
@@ -33,7 +34,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   private final String url;
 
   /** The host BrowserImpl instance. */
-  private final BrowserImpl browserImpl;
+  private final BrowserImpl.Session browserSession;
 
   /** The debug session instance for this tab. */
   private final DebugSession debugSession;
@@ -46,13 +47,13 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   /** The listener to report browser-related debug events to. */
   private TabDebugEventListener tabDebugEventListener = null;
 
-  public BrowserTabImpl(int tabId, String url, BrowserImpl browserImpl) {
+  public BrowserTabImpl(int tabId, String url, BrowserImpl.Session browserSession) {
     this.tabId = tabId;
     this.url = url;
-    this.browserImpl = browserImpl;
+    this.browserSession = browserSession;
     String tabIdString = String.valueOf(tabId);
     ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString,
-        browserImpl.getConnection());
+        browserSession.getConnection());
     ChromeDevToolSessionManager.V8CommandOutputImpl v8MessageOutput =
         new ChromeDevToolSessionManager.V8CommandOutputImpl(chromeDevToolOutput);
     this.debugSession = new DebugSession(this, protocolOptions, v8MessageOutput);
@@ -82,8 +83,12 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return tabDebugEventListener;
   }
 
-  public BrowserImpl getBrowser() {
-    return browserImpl;
+  public Browser getBrowser() {
+    return browserSession.getBrowser();
+  }
+
+  public BrowserImpl.Session getBrowserSession() {
+    return browserSession;
   }
 
   public synchronized boolean attach(TabDebugEventListener listener) {
@@ -108,7 +113,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public void sessionTerminated() {
-    browserImpl.sessionTerminated(this.tabId);
+    browserSession.sessionTerminated(this.tabId);
   }
 
   public ToolHandler getV8ToolHandler() {
