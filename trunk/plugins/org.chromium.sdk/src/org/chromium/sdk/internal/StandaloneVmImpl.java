@@ -49,10 +49,14 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
   }
 
   public String getEmbedderName() {
-    return sessionManager.getRemoteInfo().getEmbeddingHostName();
+    return sessionManager.getEmbedderName();
   }
 
   public String getVmVersion() {
-    return sessionManager.getRemoteInfo().getV8VmVersion();
+    return sessionManager.getVmVersion();
+  }
+
+  public String getDisconnectReason() {
+    return sessionManager.getDisconnectReason();
   }
 }

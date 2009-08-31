@@ -24,7 +24,6 @@ import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.SocketConnection;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
-import org.chromium.sdk.internal.transport.Handshaker.StandaloneV8.RemoteInfo;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -49,9 +48,12 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
   private final DebugSession debugSession;
   private final Handshaker.StandaloneV8 handshaker;
   private DebugEventListener debugEventListener = null;
-  private final Object fieldAccessLock = new Object();
-  private boolean isAttached = false;
-  private RemoteInfo remoteInfo = null;
+  private volatile AbstractConnectionState connectionState = INIT_STATE;
+
+  private volatile Exception disconnectReason = null;
+  private volatile Handshaker.StandaloneV8.RemoteInfo savedRemoteInfo = NULL_REMOTE_INFO;
+
+  private final Object disconnectMonitor = new Object();
 
   public StandaloneVmSessionManager(JavascriptVmImpl javascriptVmImpl, SocketConnection connection,
       Handshaker.StandaloneV8 handshaker) {
@@ -62,23 +64,36 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
   }
 
   public boolean attach(DebugEventListener listener) {
+    Exception errorCause = null;
     try {
       attachImpl(listener);
-      return true;
     } catch (IOException e) {
+      errorCause = e;
       LOGGER.log(Level.SEVERE, "Failed to attach to VM", e);
-      return false;
     } catch (UnsupportedVersionException e) {
+      errorCause = e;
       LOGGER.log(Level.SEVERE, "Failed to attach to VM", e);
+    }
+    if (errorCause != null) {
+      disconnectReason = errorCause;
+      connectionState = DETACHED_STATE;
+      connection.close();
       return false;
     }
+    return true;
   }
 
   private void attachImpl(DebugEventListener listener) throws IOException,
       UnsupportedVersionException {
+    connectionState = CONNECTING_STATE;
+
     NetListener netListener = new NetListener() {
       public void connectionClosed() {
-        onDebuggerDetachedImpl();
+        onDebuggerDetachedImpl(null);
+      }
+
+      public void eosReceived() {
+        debugSession.getV8CommandProcessor().processEos();
       }
 
       public void messageReceived(Message message) {
@@ -91,16 +106,16 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
         }
         debugSession.getV8CommandProcessor().processIncomingJson(json);
       }
-      public void eosReceived() {
-      }
     };
     connection.setNetListener(netListener);
 
     connection.start();
 
-    RemoteInfo remoteInfo0;
+    connectionState = EXPECTING_HANDSHAKE_STATE;
+
+    Handshaker.StandaloneV8.RemoteInfo remoteInfo;
     try {
-      remoteInfo0 = handshaker.getRemoteInfo().get(WAIT_FOR_HANDSHAKE_TIMEOUT_MS,
+      remoteInfo = handshaker.getRemoteInfo().get(WAIT_FOR_HANDSHAKE_TIMEOUT_MS,
           TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
@@ -110,56 +125,46 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
       throw new IOException("Timeout in waiting for version", e);
     }
 
-    String versionString = remoteInfo0.getProtocolVersion();
+    String versionString = remoteInfo.getProtocolVersion();
     // TODO(peter.rybin): check version here
     if (versionString == null) {
       throw new UnsupportedVersionException(null, null);
     }
 
-    synchronized (fieldAccessLock) {
-      isAttached  = true;
-      this.remoteInfo = remoteInfo0;
-    }
+    this.savedRemoteInfo = remoteInfo;
 
     this.debugEventListener = listener;
+
+    connectionState = CONNECTED_STATE;
   }
 
   public boolean detach() {
-    if (!isAttached()) {
-      // We've already been notified.
+    boolean res = onDebuggerDetachedImpl(null);
+    if (!res) {
       return false;
-    }
-    synchronized (fieldAccessLock) {
-      isAttached  = false;
-    }
-    debugSession.getV8CommandProcessor().removeAllCallbacks();
-    DebugEventListener debugEventListener = getDebugEventListener();
-    if (debugEventListener != null) {
-      debugEventListener.disconnected();
     }
     connection.close();
     return true;
   }
 
   public boolean isAttached() {
-    synchronized (fieldAccessLock) {
-      return isAttached;
-    }
+    return connectionState.isAttached();
   }
 
-  private void onDebuggerDetachedImpl() {
-    if (!isAttached()) {
-      // We've already been notified.
-      return;
+  private boolean onDebuggerDetachedImpl(Exception cause) {
+    synchronized (disconnectMonitor) {
+      if (!connectionState.isAttached()) {
+        // We've already been notified.
+        return false;
+      }
+      connectionState = DETACHED_STATE;
+      disconnectReason = cause;
     }
-    synchronized (fieldAccessLock) {
-      isAttached = false;
-    }
-    debugSession.getV8CommandProcessor().removeAllCallbacks();
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
     }
+    return true;
   }
 
 
@@ -168,7 +173,7 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
   }
 
   public void onDebuggerDetached() {
-    onDebuggerDetachedImpl();
+    onDebuggerDetachedImpl(null);
   }
 
   private final V8CommandOutput v8CommandOutput = new V8CommandOutput() {
@@ -185,12 +190,82 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
     return debugSession;
   }
 
-  public RemoteInfo getRemoteInfo() {
-    synchronized (fieldAccessLock) {
-      if (remoteInfo == null) {
-        throw new IllegalStateException();
-      }
-      return remoteInfo;
-    }
+  /**
+   * @return name of embedding application as it wished to name itself; might be null
+   */
+  public String getEmbedderName() {
+    return savedRemoteInfo.getEmbeddingHostName();
   }
+
+  /**
+   * @return version of V8 implementation, format is unspecified; not null
+   */
+  public String getVmVersion() {
+    return savedRemoteInfo.getV8VmVersion();
+  }
+
+  public String getDisconnectReason() {
+    // Save volatile field in local variable.
+    Exception cause = disconnectReason;
+    if (cause == null) {
+      return null;
+    }
+    return cause.getMessage();
+  }
+
+
+  // TODO(peter.rybin): add data fields to this type or convert it to enum
+  private static abstract class AbstractConnectionState {
+    abstract boolean isAttached();
+  }
+
+  private static final AbstractConnectionState INIT_STATE = new AbstractConnectionState() {
+    @Override
+    boolean isAttached() {
+      return false;
+    }
+  };
+
+  private static final AbstractConnectionState CONNECTING_STATE = new AbstractConnectionState() {
+    @Override
+    boolean isAttached() {
+      return false;
+    }
+  };
+
+  private static final AbstractConnectionState EXPECTING_HANDSHAKE_STATE =
+      new AbstractConnectionState() {
+    @Override
+    boolean isAttached() {
+      return false;
+    }
+  };
+
+  private static final AbstractConnectionState CONNECTED_STATE = new AbstractConnectionState() {
+    @Override
+    boolean isAttached() {
+      return true;
+    }
+  };
+
+  private static final AbstractConnectionState DETACHED_STATE = new AbstractConnectionState() {
+    @Override
+    boolean isAttached() {
+      return false;
+    }
+  };
+
+  private final static Handshaker.StandaloneV8.RemoteInfo NULL_REMOTE_INFO =
+      new Handshaker.StandaloneV8.RemoteInfo() {
+    public String getEmbeddingHostName() {
+      return null;
+    }
+    public String getProtocolVersion() {
+      return null;
+    }
+    public String getV8VmVersion() {
+      return null;
+    }
+  };
+
 }
