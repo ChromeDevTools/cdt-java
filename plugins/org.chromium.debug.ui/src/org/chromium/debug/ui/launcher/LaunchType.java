@@ -57,10 +57,6 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
       int port =
           config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
               PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
-      String projectName =
-          config.getAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-              PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME));
-
 
       boolean addNetworkConsole = config.getAttribute(LaunchType.ADD_NETWORK_CONSOLE, false);
 
@@ -89,10 +85,12 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
         consolePart.startFlushing();
       }
 
+      String projectNameBase = config.getName();
+
       DebugTargetImpl target = new DebugTargetImpl(launch, consolePseudoProcess);
       try {
         boolean attached = target.attach(
-            projectName,
+            projectNameBase,
             attachable,
             new Runnable() {
               public void run() {

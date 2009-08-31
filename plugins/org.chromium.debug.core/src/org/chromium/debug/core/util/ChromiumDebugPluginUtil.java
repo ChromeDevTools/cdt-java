@@ -20,7 +20,11 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -65,21 +69,34 @@ public class ChromiumDebugPluginUtil {
   }
 
   /**
-   * Creates an empty workspace project with the given projectName. Deletes an
-   * existing project beforehand if necessary, and removes all the default
-   * contents of the newly created project.
-   *
-   * @param projectName to create
+   * Creates an empty workspace project with the name starting with the given projectNameBase.
+   * Created project is guaranteed to be new in EFS, but workspace may happen to
+   * alreay have project with such url (left uncleaned from previous runs). Such project
+   * silently gets deleted.
+   * @param projectNameBase project name template
    * @return the newly created project, or {@code null} if the creation failed
    */
-  public static IProject createEmptyProject(String projectName) {
-    URI projectUri = ChromiumScriptFileSystem.getFileStoreUri(
-        new Path(null, "/" + projectName)); //$NON-NLS-1$
-    IFileStore projectStore;
+  public static IProject createEmptyProject(String projectNameBase) {
+    URI projectUri;
+    String projectName;
     try {
-      projectStore = EFS.getStore(projectUri);
-      if (projectStore.fetchInfo().exists()) {
-        projectStore.delete(EFS.NONE, null);
+      for (int uniqueNumber = 0; ; uniqueNumber++) {
+        String projectNameTry;
+        if (uniqueNumber == 0) {
+          projectNameTry = projectNameBase;
+        } else {
+          projectNameTry = projectNameBase + " (" + uniqueNumber + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+        }
+        URI projectUriTry = ChromiumScriptFileSystem.getFileStoreUri(
+            new Path(null, "/" + projectNameTry)); //$NON-NLS-1$
+        IFileStore projectStore = EFS.getStore(projectUriTry);
+        if (projectStore.fetchInfo().exists()) {
+          continue;
+        } else {
+          projectUri = projectUriTry;
+          projectName = projectNameTry;
+          break;
+        }
       }
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
@@ -104,6 +121,34 @@ public class ChromiumDebugPluginUtil {
     }
 
     return null;
+  }
+
+
+  /**
+   * Removes virtual project which was created for debug session. Does its job
+   * asynchronously.
+   */
+  public static void deleteVirtualProjectAsync(final IProject debugProject) {
+    Job job = new Job("Remove virtual project") {
+      @Override
+      protected IStatus run(IProgressMonitor monitor) {
+        URI projectUri = debugProject.getLocationURI();
+        try {
+          IFileStore projectStore = EFS.getStore(projectUri);
+          if (projectStore.fetchInfo().exists()) {
+            projectStore.delete(EFS.NONE, null);
+          }
+          debugProject.delete(true, null);
+        } catch (CoreException e) {
+          ChromiumDebugPlugin.log(e);
+          return new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+              "Failed to delete virtual project");
+        }
+        return Status.OK_STATUS;
+      }
+    };
+
+    job.schedule();
   }
 
   /**
