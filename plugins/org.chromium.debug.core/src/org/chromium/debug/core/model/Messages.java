@@ -41,6 +41,10 @@ public class Messages extends NLS {
 
   public static String JavascriptVmEmbedderFactory_TargetName0;
 
+  public static String JavascriptVmEmbedderFactory_Terminated;
+
+  public static String JavascriptVmEmbedderFactory_TerminatedWithReason;
+
   public static String JsLineBreakpoint_MessageMarkerFormat;
 
   public static String JsThread_ThreadLabelFormat;

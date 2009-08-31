@@ -119,9 +119,28 @@ public class JavascriptVmEmbedderFactory {
             return standaloneVm;
           }
           public String getTargetName() {
-
-            return MessageFormat.format(Messages.JavascriptVmEmbedderFactory_TargetName0,
-                standaloneVm.getEmbedderName(), standaloneVm.getVmVersion());
+            String embedderName = standaloneVm.getEmbedderName();
+            String vmVersion = standaloneVm.getVmVersion();
+            String disconnectReason = standaloneVm.getDisconnectReason();
+            String targetTitle;
+            if (embedderName == null) {
+              targetTitle = ""; //$NON-NLS-1$
+            } else {
+              targetTitle = MessageFormat.format(Messages.JavascriptVmEmbedderFactory_TargetName0,
+                  embedderName, vmVersion);
+            }
+            boolean isAttached = standaloneVm.isAttached();
+            if (!isAttached) {
+              String disconnectMessage;
+              if (disconnectReason == null) {
+                disconnectMessage = Messages.JavascriptVmEmbedderFactory_Terminated;
+              } else {
+                disconnectMessage = MessageFormat.format(
+                    Messages.JavascriptVmEmbedderFactory_TerminatedWithReason, disconnectReason);
+              }
+              targetTitle = "<" + disconnectMessage + "> " + targetTitle; //$NON-NLS-1$//$NON-NLS-2$
+            }
+            return targetTitle;
           }
           public String getThreadName() {
             return ""; //$NON-NLS-1$

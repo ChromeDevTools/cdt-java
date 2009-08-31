@@ -24,7 +24,13 @@ public interface StandaloneVm extends JavascriptVm {
   String getEmbedderName();
 
   /**
-   * @return version of V8 implementation, format is unspecified; not null
+   * @return version of V8 implementation, format is unspecified; must not be null if
+   *         {@link StandaloneVm} has been attached
    */
   String getVmVersion();
+
+  /**
+   * @return message explaining why VM is detached; may be null
+   */
+  String getDisconnectReason();
 }
