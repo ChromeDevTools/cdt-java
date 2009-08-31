@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.MessageFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -42,19 +43,21 @@ public class JavascriptVmEmbedderFactory {
     return new JavascriptVmEmbedder.Attachable() {
 
       public JavascriptVmEmbedder selectVm() throws CoreException {
-        BrowserTab[] tabs = getBrowserTabs(browser);
-        final BrowserTab targetTab = tabSelector.selectTab(tabs);
-        if (targetTab == null) {
+        List<? extends Browser.TabConnector> tabs = getBrowserTabs(browser);
+        // TODO(peter.rybin): call TabFetcher#dismiss here to release connection properly.
+        final Browser.TabConnector targetTabConnector = tabSelector.selectTab(tabs);
+        if (targetTabConnector == null) {
           return null;
         }
 
-        return new EmbeddingTab(targetTab);
+        return new EmbeddingTab(targetTabConnector);
       }
 
-      private BrowserTab[] getBrowserTabs(Browser browser) throws CoreException {
-        BrowserTab[] tabs;
+      private List<? extends Browser.TabConnector> getBrowserTabs(Browser browser)
+          throws CoreException {
+        List<? extends Browser.TabConnector> tabs;
         try {
-          tabs = browser.getTabs();
+          tabs = browser.createTabFetcher().getTabs();
         } catch (IOException e) {
           throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
         } catch (IllegalStateException e) {
@@ -67,10 +70,11 @@ public class JavascriptVmEmbedderFactory {
   }
 
   private static final class EmbeddingTab implements JavascriptVmEmbedder {
-    private final BrowserTab targetTab;
+    private final Browser.TabConnector targetTabConnector;
+    private BrowserTab targetTab = null;
 
-    EmbeddingTab(BrowserTab targetTab) {
-      this.targetTab = targetTab;
+    EmbeddingTab(Browser.TabConnector targetTabConnector) {
+      this.targetTabConnector = targetTabConnector;
     }
 
     public boolean attach(final Listener embedderListener,
@@ -86,10 +90,14 @@ public class JavascriptVmEmbedderFactory {
           embedderListener.reset();
         }
       };
-      return targetTab.attach(tabDebugEventListener);
+      targetTab = targetTabConnector.attach(tabDebugEventListener);
+      return targetTab != null;
     }
 
     public JavascriptVm getJavascriptVm() {
+      if (targetTab == null) {
+        throw new IllegalStateException("Tab not attached yet"); //$NON-NLS-1$
+      }
       return targetTab;
     }
 

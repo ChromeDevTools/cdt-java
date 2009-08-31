@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.tools.ToolHandler;
@@ -37,8 +38,6 @@ public class BrowserImpl implements Browser {
   public static final int OPERATION_TIMEOUT_MS = 3000;
 
   public static final Version INVALID_VERSION = new Version(0, 0);
-
-  private static final BrowserTab[] EMPTY_TABS = new BrowserTab[0];
 
   /**
    * The protocol version supported by this SDK implementation.
@@ -63,8 +62,8 @@ public class BrowserImpl implements Browser {
     permanentSession.disconnect();
   }
 
-  public BrowserTab[] getTabs() throws IOException, IllegalStateException {
-    return permanentSession.getTabs();
+  public TabFetcher createTabFetcher() {
+    return permanentSession.getTabFetcher();
   }
 
   /**
@@ -91,25 +90,8 @@ public class BrowserImpl implements Browser {
       this.connection = connection;
     }
 
-
-    public BrowserTab[] getTabs() throws IOException {
-      checkConnection();
-      removeDetachedTabs();
-      List<TabIdAndUrl> entries = devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
-      if (entries.isEmpty()) {
-        return EMPTY_TABS;
-      }
-
-      List<BrowserTab> browserTabs = new ArrayList<BrowserTab>(entries.size());
-      for (TabIdAndUrl entry : entries) {
-        BrowserTabImpl tab = tabUidToTabImpl.get(entry.id);
-        if (tab == null || !tab.isAttached()) {
-          tab = new BrowserTabImpl(entry.id, entry.url, this);
-          tabUidToTabImpl.put(entry.id, tab);
-        }
-        browserTabs.add(tab);
-      }
-      return browserTabs.toArray(new BrowserTab[browserTabs.size()]);
+    public TabFetcher getTabFetcher() {
+      return new TabFetcherImpl();
     }
 
     private void removeDetachedTabs() {
@@ -240,6 +222,49 @@ public class BrowserImpl implements Browser {
 
     public BrowserImpl getBrowser() {
       return BrowserImpl.this;
+    }
+
+    /**
+     * Not fully working implementation of {@link TabFetcher}: it doesn't release connection.
+     * TODO(peter.rybin): implement connection use accounting and {@link #dismiss()} method.
+     */
+    private class TabFetcherImpl implements TabFetcher {
+      public List<? extends TabConnector> getTabs() {
+        checkConnection();
+        removeDetachedTabs();
+        List<TabIdAndUrl> entries = devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
+        List<TabConnectorImpl> browserTabs = new ArrayList<TabConnectorImpl>(entries.size());
+        for (TabIdAndUrl entry : entries) {
+          BrowserTabImpl tab = tabUidToTabImpl.get(entry.id);
+          if (tab == null || !tab.isAttached()) {
+            tab = new BrowserTabImpl(entry.id, entry.url, Session.this);
+            tabUidToTabImpl.put(entry.id, tab);
+          }
+          browserTabs.add(new TabConnectorImpl(tab));
+        }
+        return browserTabs;
+      }
+
+      public void dismiss() {
+        // TODO(peter.rybin): implement this when we count clients.
+      }
+    }
+  }
+
+  private static class TabConnectorImpl implements TabConnector {
+    private final BrowserTabImpl browserTab;
+
+    TabConnectorImpl(BrowserTabImpl browserTab) {
+      this.browserTab = browserTab;
+    }
+
+    public String getUrl() {
+      return browserTab.getUrl();
+    }
+
+    public BrowserTab attach(TabDebugEventListener listener) {
+      browserTab.attach(listener);
+      return browserTab;
     }
   }
 

@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
@@ -69,9 +68,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   protected void attachToBrowserTab() throws IOException, UnsupportedVersionException {
     browser = (BrowserImpl) ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
     browser.connect();
-    BrowserTab[] tabs = browser.getTabs();
-    browserTab = (BrowserTabImpl) tabs[0];
-    browserTab.attach(this);
+    browserTab = (BrowserTabImpl) browser.createTabFetcher().getTabs().get(0).attach(this);
   }
 
   protected abstract T createConnection();

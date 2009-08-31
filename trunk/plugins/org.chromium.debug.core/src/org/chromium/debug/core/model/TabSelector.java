@@ -4,7 +4,9 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.sdk.BrowserTab;
+import java.util.List;
+
+import org.chromium.sdk.Browser;
 
 /**
  * This interface allows clients to provide various strategies
@@ -17,6 +19,6 @@ public interface TabSelector {
    * @return a tab to debug, or null if the launch configuration should not
    *         proceed attaching to a Chromium tab
    */
-  BrowserTab selectTab(BrowserTab[] tabs);
+  Browser.TabConnector selectTab(List<? extends Browser.TabConnector> tabs);
 
 }
