@@ -4,20 +4,14 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.V8ResponseCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
@@ -61,128 +55,109 @@ public class V8CommandProcessor {
   /** The class logger. */
   static final Logger LOGGER = Logger.getLogger(V8CommandProcessor.class.getName());
 
-  /** The breakpoint processor. */
-  private final BreakpointProcessor bpp;
-
-  /** The "afterCompile" event processor. */
-  private final AfterCompileProcessor afterCompileProcessor;
-
-  private final Object sendLock = new Object();
+  private final CallbackMap callbackMap = new CallbackMap();
 
   private final V8CommandOutput messageOutput;
 
-  private final ContinueProcessor continueProcessor;
+  private final DefaultResponseHandler defaultResponseHandler;
 
-  public V8CommandProcessor(V8CommandOutput messageOutput, DebugSession debugSession) {
+
+  public V8CommandProcessor(V8CommandOutput messageOutput,
+      DefaultResponseHandler defaultResponseHandler) {
     this.messageOutput = messageOutput;
-    this.bpp = new BreakpointProcessor(debugSession);
-    this.afterCompileProcessor = new AfterCompileProcessor(debugSession);
-    this.continueProcessor = new ContinueProcessor(debugSession);
-  }
-
-  public BreakpointProcessor getBreakpointProcessor() {
-    return bpp;
+    this.defaultResponseHandler = defaultResponseHandler;
   }
 
   public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
-    synchronized (sendLock) {
-      if (v8HandlerCallback != null) {
-        seqToV8Callbacks.put(message.getSeq(), new CallbackEntry(v8HandlerCallback, syncCallback,
-            getCurrentMillis()));
-      }
-      try {
-        messageOutput.send(message, isImmediate);
-      } catch (RuntimeException e) {
-        if (v8HandlerCallback != null) {
-          v8HandlerCallback.failure(e.getMessage());
-          seqToV8Callbacks.remove(message.getSeq());
+
+    if (v8HandlerCallback != null) {
+      boolean res = callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
+          syncCallback));
+      if (!res) {
+        try {
+          v8HandlerCallback.failure("Connection closed");
+        } finally {
+          syncCallback.callbackDone(null);
         }
-        throw e;
+        return;
       }
+    }
+    try {
+      messageOutput.send(message, isImmediate);
+    } catch (RuntimeException e) {
+      if (v8HandlerCallback != null) {
+        callbackMap.remove(message.getSeq());
+      }
+      throw e;
     }
   }
 
-  public void processIncomingJson(JSONObject v8Json) {
+  public void processIncomingJson(final JSONObject v8Json) {
     V8MessageType type = V8MessageType.forString(JsonUtil.getAsString(v8Json, V8Protocol.KEY_TYPE));
-    handleResponseWithHandler(type, v8Json);
 
     if (V8MessageType.RESPONSE == type) {
       int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
-      CallbackEntry callbackEntry = seqToV8Callbacks.remove(requestSeq);
+      CallbackEntry callbackEntry = callbackMap.remove(requestSeq);
       if (callbackEntry != null) {
         LOGGER.log(
             Level.INFO,
             "Request-response roundtrip: {0}ms",
             getCurrentMillis() - callbackEntry.commitMillis);
 
+        CallbackCaller caller = new CallbackCaller() {
+          @Override
+          void call(V8HandlerCallback handlerCallback) {
+            handlerCallback.messageReceived(v8Json);
+          }
+        };
         try {
-          callThemBack(callbackEntry, v8Json, requestSeq);
+          callThemBack(callbackEntry, caller, requestSeq);
         } catch (RuntimeException e) {
           LOGGER.log(Level.SEVERE, "Failed to dispatch response to callback", e);
         }
       }
     }
+
+    defaultResponseHandler.handleResponseWithHandler(type, v8Json);
   }
 
   public void processEos() {
-    // TODO(peter.rybin): move removeAllCallbacks here
+    // We should call them in the order they have been submitted.
+    Collection<CallbackEntry> entries = callbackMap.close();
+    for (CallbackEntry entry : entries) {
+      callThemBack(entry, failureCaller, -1);
+    }
   }
 
-  private void callThemBack(CallbackEntry callbackEntry, JSONObject v8Json, int requestSeq) {
+  private static abstract class CallbackCaller {
+    abstract void call(V8HandlerCallback handlerCallback);
+  }
+
+  private final static CallbackCaller failureCaller = new CallbackCaller() {
+    @Override
+    void call(V8HandlerCallback handlerCallback) {
+      handlerCallback.failure("Detach");
+    }
+  };
+
+
+  private void callThemBack(CallbackEntry callbackEntry, CallbackCaller callbackCaller,
+      int requestSeq) {
+    RuntimeException callbackException = null;
     try {
-      RuntimeException callbackException = null;
-      try {
-        if (callbackEntry.v8HandlerCallback != null) {
-          LOGGER.log(
-              Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
-          callbackEntry.v8HandlerCallback.messageReceived(v8Json);
-        }
-      } catch (RuntimeException e) {
-        callbackException = e;
-      } finally {
-        if (callbackEntry.syncCallback != null) {
-          callbackEntry.syncCallback.callbackDone(callbackException);
-        }
+      if (callbackEntry.v8HandlerCallback != null) {
+        LOGGER.log(
+            Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
+        callbackCaller.call(callbackEntry.v8HandlerCallback);
       }
+    } catch (RuntimeException e) {
+      callbackException = e;
     } finally {
-      // Note that the semaphore is released AFTER the handleResponse
-      // call.
-      if (callbackEntry.semaphore != null) {
-        callbackEntry.semaphore.release();
+      if (callbackEntry.syncCallback != null) {
+        callbackEntry.syncCallback.callbackDone(callbackException);
       }
-    }
-  }
-
-  /**
-   * @param type response type ("response" or "event")
-   * @param response from the V8 VM debugger
-   */
-  private void handleResponseWithHandler(V8MessageType type, final JSONObject response) {
-    String commandString = JsonUtil.getAsString(response, V8MessageType.RESPONSE == type
-        ? V8Protocol.KEY_COMMAND
-        : V8Protocol.KEY_EVENT);
-    DebuggerCommand command = DebuggerCommand.forString(commandString);
-    if (command == null) {
-      LOGGER.log(Level.WARNING,
-          "Unknown command in V8 debugger reply JSON: {0}", commandString);
-      return;
-    }
-    final HandlerGetter handlerGetter = command2HandlerGetter.get(command);
-    if (handlerGetter == null) {
-      return;
-    }
-    handlerGetter.get(this).messageReceived(response);
-  }
-
-  void removeAllCallbacks() {
-    for (Iterator<CallbackEntry> it = seqToV8Callbacks.values().iterator(); it.hasNext();) {
-      CallbackEntry entry = it.next();
-      if (entry.semaphore != null) {
-        entry.semaphore.release();
-      }
-      it.remove();
     }
   }
 
@@ -199,71 +174,78 @@ public class V8CommandProcessor {
     }
   }
 
-  /**
-   * The callbacks to invoke when the responses arrive.
-   */
-  private final Map<Integer, CallbackEntry> seqToV8Callbacks =
-      new HashMap<Integer, CallbackEntry>();
+  private static class CallbackMap {
+    /**
+     * The callbacks to invoke when the responses arrive. We keep them ordered for
+     * {@link #close()} method.
+     */
+    private Map<Integer, CallbackEntry> seqToV8Callbacks =
+        new LinkedHashMap<Integer, CallbackEntry>();
+
+    /**
+     * Method may be called from any thread.
+     * @return false iff map has been closed (because connection is closed)
+     */
+    public synchronized boolean put(Integer seq, CallbackEntry callbackEntry) {
+      if (seqToV8Callbacks == null) {
+        return false;
+      }
+      if (seqToV8Callbacks.containsKey(seq)) {
+        throw new IllegalArgumentException("Already have such seq: " + seq);
+      }
+      seqToV8Callbacks.put(seq, callbackEntry);
+      return true;
+    }
+
+    /**
+     * Method may be called from any thread.
+     */
+    public synchronized void cancel(Integer seq) {
+      if (seqToV8Callbacks == null) {
+        return;
+      }
+      seqToV8Callbacks.remove(seq);
+    }
+
+    /**
+     * Method should be called from ReaderThread
+     */
+    public synchronized CallbackEntry remove(Integer seq) {
+      if (seqToV8Callbacks == null) {
+        throw new IllegalStateException();
+      }
+      return seqToV8Callbacks.remove(seq);
+    }
+
+    /**
+     * Method should be called from ReaderThread, we do not expect any remove call after this.
+     */
+    public Collection<CallbackEntry> close() {
+      if (seqToV8Callbacks == null) {
+        throw new IllegalStateException();
+      }
+      Collection<CallbackEntry> result = seqToV8Callbacks.values();
+      seqToV8Callbacks = null;
+      return result;
+    }
+  }
+
 
   private static class CallbackEntry {
     final V8HandlerCallback v8HandlerCallback;
 
-    final long commitMillis;
-
-    final Semaphore semaphore;
-
     final SyncCallback syncCallback;
 
-    public CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback,
-        long commitMillis) {
-      this(v8HandlerCallback, syncCallback, commitMillis, null);
-    }
+    final long commitMillis;
 
-    public CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback,
-        long commitMillis, Semaphore semaphore) {
+    CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
       this.v8HandlerCallback = v8HandlerCallback;
+      this.commitMillis = getCurrentMillis();
       this.syncCallback = syncCallback;
-      this.commitMillis = commitMillis;
-      this.semaphore = semaphore;
     }
   }
 
-  private static abstract class HandlerGetter {
-    abstract V8ResponseCallback get(V8CommandProcessor instance);
-  }
-
-  /**
-   * The handlers that should be invoked when certain command responses arrive.
-   */
-  private static final Map<DebuggerCommand, HandlerGetter> command2HandlerGetter;
-  static {
-    command2HandlerGetter = new HashMap<DebuggerCommand, HandlerGetter>();
-    HandlerGetter bppGetter = new HandlerGetter() {
-      @Override
-      BreakpointProcessor get(V8CommandProcessor instance) {
-        return instance.bpp;
-      }
-    };
-    command2HandlerGetter.put(DebuggerCommand.CHANGEBREAKPOINT, bppGetter);
-    command2HandlerGetter.put(DebuggerCommand.SETBREAKPOINT, bppGetter);
-    command2HandlerGetter.put(DebuggerCommand.CLEARBREAKPOINT, bppGetter);
-    command2HandlerGetter.put(DebuggerCommand.BREAK /* event */, bppGetter);
-    command2HandlerGetter.put(DebuggerCommand.EXCEPTION /* event */, bppGetter);
-
-    command2HandlerGetter.put(DebuggerCommand.AFTER_COMPILE /* event */,
-        new HandlerGetter() {
-      @Override
-      AfterCompileProcessor get(V8CommandProcessor instance) {
-        return instance.afterCompileProcessor;
-      }
-    });
-
-    command2HandlerGetter.put(DebuggerCommand.CONTINUE,
-        new HandlerGetter() {
-      @Override
-      ContinueProcessor get(V8CommandProcessor instance) {
-        return instance.continueProcessor;
-      }
-    });
+  public void removeAllCallbacks() {
+    // TODO(peter.rybin): get rid of this method
   }
 }

@@ -10,6 +10,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
+import org.chromium.sdk.internal.tools.v8.DefaultResponseHandler;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
@@ -49,7 +50,9 @@ public class DebugSession {
     this.scriptManager = new ScriptManager(protocolOptions);
     this.javascriptVmImpl = javascriptVmImpl;
     this.breakpointManager = new BreakpointManager(this);
-    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, this);
+
+    DefaultResponseHandler defaultResponseHandler = new DefaultResponseHandler(this);
+    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, defaultResponseHandler);
     this.contextBuilder = new ContextBuilder(this);
   }
 
