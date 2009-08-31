@@ -42,9 +42,7 @@ public class JsArrayImplTest {
     Browser browser = ((BrowserFactoryImpl) BrowserFactory.getInstance())
         .create(new FakeConnection(messageResponder));
     browser.connect();
-    BrowserTab[] tabs = browser.getTabs();
-    BrowserTab browserTab = tabs[0];
-    browserTab.attach(listener);
+    BrowserTab browserTab = browser.createTabFetcher().getTabs().get(0).attach(listener);
 
     listener.expectSuspendedEvent();
     messageResponder.sendSuspendedEvent();

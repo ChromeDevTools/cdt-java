@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.model.TabSelector;
-import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.Browser;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -21,21 +21,21 @@ import org.eclipse.ui.PlatformUI;
  */
 public class DialogBasedTabSelector implements TabSelector {
 
-  public BrowserTab selectTab(final BrowserTab[] tabs) {
+  public Browser.TabConnector selectTab(List<? extends Browser.TabConnector> tabs) {
     if (autoSelectSingleTab()) {
-      if (tabs.length == 1) {
-        return tabs[0];
+      if (tabs.size() == 1) {
+        return tabs.get(0);
       }
     }
-    
-    final Map<Integer, BrowserTab> map = new HashMap<Integer, BrowserTab>();
-    final List<String> urls = new ArrayList<String>(tabs.length);
-    for (int i = 0; i < tabs.length; ++i) {
-      BrowserTab browserTab = tabs[i];
-      map.put(i, browserTab);
-      urls.add(browserTab.getUrl());
+
+    final Map<Integer, Browser.TabConnector> map = new HashMap<Integer, Browser.TabConnector>();
+    final List<String> urls = new ArrayList<String>(tabs.size());
+    for (int i = 0; i < tabs.size(); ++i) {
+      Browser.TabConnector connector = tabs.get(i);
+      map.put(i, connector);
+      urls.add(connector.getUrl());
     }
-    final BrowserTab[] result = new BrowserTab[1];
+    final Browser.TabConnector[] result = { null };
     Display.getDefault().syncExec(new Runnable() {
       public void run() {
         final Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -50,7 +50,7 @@ public class DialogBasedTabSelector implements TabSelector {
     });
     return result[0];
   }
-  
+
   private boolean autoSelectSingleTab() {
     return true;
   }

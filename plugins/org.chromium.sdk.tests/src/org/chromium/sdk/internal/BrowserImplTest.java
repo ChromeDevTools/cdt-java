@@ -22,13 +22,13 @@ public class BrowserImplTest extends AbstractAttachedTest<FakeConnection> {
 
   @Test
   public void checkGetTabsDoesNotResetTabImpls() throws Exception {
-    browser.getTabs();
+    browser.createTabFetcher().getTabs();
     assertTrue(browser.getPermanentSessionForTest().getBrowserTab(browserTab.getId()).isAttached());
   }
 
   @Test
   public void checkBrowserIsDisconnectedWhenAllTabsDetached() throws Exception {
-    browser.getTabs();
+    browser.createTabFetcher().getTabs();
     browserTab.detach();
     assertFalse(browser.getPermanentSessionForTest().getConnection().isConnected());
   }

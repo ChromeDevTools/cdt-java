@@ -91,7 +91,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return browserSession;
   }
 
-  public synchronized boolean attach(TabDebugEventListener listener) {
+  synchronized boolean attach(TabDebugEventListener listener) {
     Result result = null;
     try {
       result = devToolSessionManager.attachToTab();

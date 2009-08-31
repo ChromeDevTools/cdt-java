@@ -21,12 +21,4 @@ public interface BrowserTab extends JavascriptVm {
    */
   String getUrl();
 
-  /**
-   * Attaches to the related tab debugger.
-   *
-   * @param listener to report the debug events to
-   * @return whether the operation succeeded
-   */
-  boolean attach(TabDebugEventListener listener);
-
 }
