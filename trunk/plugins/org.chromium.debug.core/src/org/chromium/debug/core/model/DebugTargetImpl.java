@@ -32,6 +32,7 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
@@ -60,7 +61,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private BreakpointRegistry breakpointRegistry;
 
-  private IProject debugProject;
+  private IProject debugProject = null;
 
   private DebugContext debugContext;
 
@@ -88,7 +89,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
    * @return whether the target has attached to a tab
    * @throws CoreException
    */
-  public boolean attach(String projectName, JavascriptVmEmbedder.Attachable attachable,
+  public boolean attach(String projectNameBase, JavascriptVmEmbedder.Attachable attachable,
       Runnable attachCallback, IProgressMonitor monitor) throws CoreException {
     monitor.beginTask("", 2); //$NON-NLS-1$
     this.vmEmbedder = attachable.selectVm();
@@ -96,11 +97,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       return false;
     }
     monitor.worked(1);
-    return performAttach(projectName, attachCallback);
+    return performAttach(projectNameBase, attachCallback);
   }
 
-  private boolean performAttach(String projectName, Runnable attachCallback) {
+  private boolean performAttach(String projectNameBase, Runnable attachCallback) {
     if (vmEmbedder.attach(embedderListener, debugEventListener)) {
+      String projectName;
+      // We might want to add some url-specific suffix here
+      projectName = projectNameBase;
+      // We'd like to know when launch is removed to remove our project.
+      DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
       this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
       this.breakpointRegistry = new BreakpointRegistry();
       this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
@@ -581,6 +587,23 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
     public void closed() {
       fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+    }
+  };
+
+  private final ILaunchListener launchListener = new ILaunchListener() {
+    public void launchAdded(ILaunch launch) {
+    }
+    public void launchChanged(ILaunch launch) {
+    }
+    // TODO(peter.rybin): maybe have one instance of listener for all targets?
+    public void launchRemoved(ILaunch launch) {
+      if (launch != DebugTargetImpl.this.launch) {
+        return;
+      }
+      DebugPlugin.getDefault().getLaunchManager().removeLaunchListener(this);
+      if (debugProject != null) {
+        ChromiumDebugPluginUtil.deleteVirtualProjectAsync(debugProject);
+      }
     }
   };
 }
