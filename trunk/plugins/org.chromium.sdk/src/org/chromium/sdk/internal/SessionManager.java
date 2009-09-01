@@ -144,7 +144,7 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
     protected void closeSession() {
       synchronized (manager) {
         isConnectionStopped = true;
-        if (tickets.isEmpty()) {
+        if (!tickets.isEmpty()) {
           throw new IllegalStateException("Some tickets are still valid");
         }
         if (manager.currentSession != null) {
