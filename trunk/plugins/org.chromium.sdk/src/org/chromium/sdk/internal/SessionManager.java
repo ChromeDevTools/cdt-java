@@ -147,7 +147,7 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
         if (!tickets.isEmpty()) {
           throw new IllegalStateException("Some tickets are still valid");
         }
-        if (manager.currentSession != null) {
+        if (manager.currentSession != this) {
           throw new IllegalStateException("Session is not active");
         }
         manager.currentSession = null;
