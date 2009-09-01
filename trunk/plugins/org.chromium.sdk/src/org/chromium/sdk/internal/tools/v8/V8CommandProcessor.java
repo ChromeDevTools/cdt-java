@@ -5,12 +5,11 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.CloseableMap;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
@@ -55,7 +54,7 @@ public class V8CommandProcessor {
   /** The class logger. */
   static final Logger LOGGER = Logger.getLogger(V8CommandProcessor.class.getName());
 
-  private final CallbackMap callbackMap = new CallbackMap();
+  private final CloseableMap<Integer, CallbackEntry> callbackMap = CloseableMap.newLinkedMap();
 
   private final V8CommandOutput messageOutput;
 
@@ -72,16 +71,9 @@ public class V8CommandProcessor {
       V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
 
     if (v8HandlerCallback != null) {
-      boolean res = callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
+      // TODO(peter.rybin): should we handle IllegalStateException here if map is closed?
+      callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
           syncCallback));
-      if (!res) {
-        try {
-          v8HandlerCallback.failure("Connection closed");
-        } finally {
-          syncCallback.callbackDone(null);
-        }
-        return;
-      }
     }
     try {
       messageOutput.send(message, isImmediate);
@@ -125,7 +117,7 @@ public class V8CommandProcessor {
 
   public void processEos() {
     // We should call them in the order they have been submitted.
-    Collection<CallbackEntry> entries = callbackMap.close();
+    Collection<CallbackEntry> entries = callbackMap.close().values();
     for (CallbackEntry entry : entries) {
       callThemBack(entry, failureCaller, -1);
     }
@@ -171,62 +163,6 @@ public class V8CommandProcessor {
   static void checkNull(Object object, String message) {
     if (object == null) {
       throw new IllegalArgumentException(message);
-    }
-  }
-
-  private static class CallbackMap {
-    /**
-     * The callbacks to invoke when the responses arrive. We keep them ordered for
-     * {@link #close()} method.
-     */
-    private Map<Integer, CallbackEntry> seqToV8Callbacks =
-        new LinkedHashMap<Integer, CallbackEntry>();
-
-    /**
-     * Method may be called from any thread.
-     * @return false iff map has been closed (because connection is closed)
-     */
-    public synchronized boolean put(Integer seq, CallbackEntry callbackEntry) {
-      if (seqToV8Callbacks == null) {
-        return false;
-      }
-      if (seqToV8Callbacks.containsKey(seq)) {
-        throw new IllegalArgumentException("Already have such seq: " + seq);
-      }
-      seqToV8Callbacks.put(seq, callbackEntry);
-      return true;
-    }
-
-    /**
-     * Method may be called from any thread.
-     */
-    public synchronized void cancel(Integer seq) {
-      if (seqToV8Callbacks == null) {
-        return;
-      }
-      seqToV8Callbacks.remove(seq);
-    }
-
-    /**
-     * Method should be called from ReaderThread
-     */
-    public synchronized CallbackEntry remove(Integer seq) {
-      if (seqToV8Callbacks == null) {
-        throw new IllegalStateException();
-      }
-      return seqToV8Callbacks.remove(seq);
-    }
-
-    /**
-     * Method should be called from ReaderThread, we do not expect any remove call after this.
-     */
-    public Collection<CallbackEntry> close() {
-      if (seqToV8Callbacks == null) {
-        throw new IllegalStateException();
-      }
-      Collection<CallbackEntry> result = seqToV8Callbacks.values();
-      seqToV8Callbacks = null;
-      return result;
     }
   }
 
