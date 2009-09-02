@@ -15,10 +15,9 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.MessageFactory;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
-import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.tools.ToolOutput;
 import org.chromium.sdk.internal.transport.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -32,7 +31,7 @@ public class DevToolsServiceHandler implements ToolHandler {
   /**
    * The debugger connection to use.
    */
-  private final Connection connection;
+  private final ToolOutput toolOutput;
 
   /**
    * A "list_tabs" command callback. Is accessed in a synchronized way.
@@ -89,8 +88,8 @@ public class DevToolsServiceHandler implements ToolHandler {
     void failure(int result);
   }
 
-  public DevToolsServiceHandler(Connection connection) {
-    this.connection = connection;
+  public DevToolsServiceHandler(ToolOutput toolOutput) {
+    this.toolOutput = toolOutput;
   }
 
   public void onDebuggerDetached() {
@@ -122,7 +121,8 @@ public class DevToolsServiceHandler implements ToolHandler {
   }
 
   public void handleEos() {
-    // ignore this event
+    // ignore this event, we do not close browser in any way; but clients should dismiss
+    // all tickets
   }
 
   private void handleVersion(JSONObject json) {
@@ -187,7 +187,7 @@ public class DevToolsServiceHandler implements ToolHandler {
         }
       };
     }
-    connection.send(MessageFactory.listTabs());
+    toolOutput.send(CommandFactory.listTabs());
     try {
       if (!sem.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
         resetListTabsHandler();
@@ -217,7 +217,7 @@ public class DevToolsServiceHandler implements ToolHandler {
         }
       };
     }
-    connection.send(MessageFactory.version());
+    toolOutput.send(CommandFactory.version());
     boolean res;
     try {
       res = sem.tryAcquire(timeout, TimeUnit.MILLISECONDS);
@@ -236,6 +236,24 @@ public class DevToolsServiceHandler implements ToolHandler {
   public void resetListTabsHandler() {
     synchronized (lock) {
       listTabsCallback = null;
+    }
+  }
+
+  private static class CommandFactory {
+
+    public static String ping() {
+      return createDevToolsMessage(DevToolsServiceCommand.PING);
+    }
+
+    public static String version() {
+      return createDevToolsMessage(DevToolsServiceCommand.VERSION);
+    }
+    public static String listTabs() {
+      return createDevToolsMessage(DevToolsServiceCommand.LIST_TABS);
+    }
+
+    private static String createDevToolsMessage(DevToolsServiceCommand command) {
+      return "{\"command\":" + JsonUtil.quoteString(command.commandName) + "}";
     }
   }
 }

@@ -22,6 +22,7 @@ import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.tools.ToolHandler;
 import org.chromium.sdk.internal.tools.ToolName;
+import org.chromium.sdk.internal.tools.ToolOutput;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandler;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandler.TabIdAndUrl;
 import org.chromium.sdk.internal.transport.Connection;
@@ -153,7 +154,7 @@ public class BrowserImpl implements Browser {
 
     private boolean ensureService() throws IOException {
       if (!isNetworkSetUp) {
-        devToolsHandler = new DevToolsServiceHandler(connection);
+        devToolsHandler = new DevToolsServiceHandler(devToolsToolOutput);
         connection.setNetListener(netListener);
         this.isNetworkSetUp = true;
       }
@@ -217,6 +218,14 @@ public class BrowserImpl implements Browser {
         }
       }
       public void eosReceived() {
+      }
+    };
+
+    private final ToolOutput devToolsToolOutput = new ToolOutput() {
+      public void send(String content) {
+        Message message =
+            MessageFactory.createMessage(ToolName.DEVTOOLS_SERVICE.value, null, content);
+        connection.send(message);
       }
     };
 
