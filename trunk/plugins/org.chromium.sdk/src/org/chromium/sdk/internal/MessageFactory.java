@@ -7,8 +7,6 @@ package org.chromium.sdk.internal;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.chromium.sdk.internal.tools.ToolName;
-import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Message.Header;
 
@@ -17,19 +15,6 @@ import org.chromium.sdk.internal.transport.Message.Header;
  * Chromium using the available ChromeDevTools Protocol commands.
  */
 public class MessageFactory {
-
-  public static Message ping() {
-    return createDevToolsMessage(DevToolsServiceCommand.PING);
-  }
-
-  public static Message version() {
-    return createDevToolsMessage(DevToolsServiceCommand.VERSION);
-  }
-
-  public static Message listTabs() {
-    return createDevToolsMessage(DevToolsServiceCommand.LIST_TABS);
-  }
-
   public static Message createMessage(String tool, String destination, String content) {
     Map<String, String> headers = new HashMap<String, String>();
     if (tool != null) {
@@ -39,11 +24,6 @@ public class MessageFactory {
       headers.put(Header.DESTINATION.name, destination);
     }
     return new Message(headers, content);
-  }
-
-  private static Message createDevToolsMessage(DevToolsServiceCommand command) {
-    final String content = "{\"command\":" + JsonUtil.quoteString(command.commandName) + "}";
-    return createMessage(ToolName.DEVTOOLS_SERVICE.value, null, content);
   }
 
   private MessageFactory() {
