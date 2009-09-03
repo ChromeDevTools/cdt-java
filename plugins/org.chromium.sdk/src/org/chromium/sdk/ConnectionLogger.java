@@ -14,19 +14,33 @@ import java.io.Writer;
  * only visible at start-up time. This approach has its disadvantages, because
  * it works with raw data streams, which are not perfectly formatted for human
  * reading. E.g. adjacent  requests or responses are not separated even
- * by EOL.  
+ * by EOL.
  */
 public interface ConnectionLogger {
   /**
    * @return new writer that should pass all data to {@code streamWriter} and
-   * silently copy it elsewhere (without additional exceptions). 
+   * silently copy it elsewhere (without additional exceptions).
    */
   Writer wrapWriter(Writer streamWriter);
 
   /**
    * @return new reader that should give access to all data
    * from {@code streamReader} and silently copy it elsewhere (without
-   * additional exceptions). 
+   * additional exceptions).
    */
   Reader wrapReader(Reader streamReader);
+
+  /**
+   * Connection may allow the logger to close it. It is nice for UI, where
+   * user sees logger and the corresponding stop button.
+   * TODO(peter.rybin): consider removing it out of logging.
+   */
+  void setConnectionCloser(ConnectionCloser connectionCloser);
+
+  /**
+   * Interface that gives you control over underlying connection.
+   */
+  interface ConnectionCloser {
+    void closeConnection();
+  }
 }

@@ -4,6 +4,13 @@
 
 package org.chromium.debug.core.model;
 
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.PlatformObject;
@@ -17,26 +24,20 @@ import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.IStreamsProxy;
-
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.eclipse.debug.core.model.ITerminate;
 
 /**
  * This process corresponds to a Debugger-Chrome connection and its main
- * purpose is to expose connection log (see process console in UI). 
+ * purpose is to expose connection log (see process console in UI).
  */
 public class ConsolePseudoProcess extends PlatformObject implements IProcess {
-  
+
   private final ILaunch launch;
   private final WritableStreamMonitor outputMonitor;
+  private final ITerminate connectionTerminate;
   private final String name;
-  private volatile boolean terminated;
   private Map<String, String> attributes = null;
-  
+
   private final IStreamsProxy streamsProxy = new IStreamsProxy() {
     public IStreamMonitor getErrorStreamMonitor() {
       return NullStreamMonitor.INSTANCE;
@@ -48,59 +49,52 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
       // ignore
     }
   };
-  
+
   /**
    * Constructs a ConsolePseudoProcess, adding this process to the given launch.
-   * 
+   *
    * @param launch the parent launch of this process
    * @param name the label used for this process
    */
-  public ConsolePseudoProcess(ILaunch launch, String name, WritableStreamMonitor outputMonitor) {
-      this.launch = launch;
-      this.name = name;
-      this.terminated = false;
-      this.outputMonitor = outputMonitor;
+  public ConsolePseudoProcess(ILaunch launch, String name, WritableStreamMonitor outputMonitor,
+      ITerminate connectionTerminate) {
+    this.launch = launch;
+    this.name = name;
+    this.outputMonitor = outputMonitor;
+    outputMonitor.consolePseudoProcess = this;
+    this.connectionTerminate = connectionTerminate;
 
-      this.launch.addProcess(this);
-      fireCreationEvent();
+    this.launch.addProcess(this);
+    fireCreationEvent();
   }
 
   /**
-   * @return writer which directs its contents to process console 
+   * @return writer which directs its contents to process console
    */
   public Writer getOutputWriter() {
     return outputMonitor;
   }
 
-  public boolean canTerminate() {
-      return false;
-  }
-
   public String getLabel() {
       return name;
   }
-  
+
   public ILaunch getLaunch() {
       return launch;
   }
 
   public boolean isTerminated() {
-      return terminated;
+      return connectionTerminate.isTerminated();
   }
 
-  public void terminate() {
-    throw new UnsupportedOperationException();
+  public void terminate() throws DebugException {
+    connectionTerminate.terminate();
   }
 
-  /**
-   * Owner should call this when debug session is terminated.
-   */
-  void terminated() {
-    outputMonitor.flush();
-    terminated = true;
-    fireTerminateEvent();
+  public boolean canTerminate() {
+    return connectionTerminate.canTerminate();
   }
-      
+
   public IStreamsProxy getStreamsProxy() {
     return streamsProxy;
   }
@@ -117,11 +111,11 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
     if (origVal != null && origVal.equals(value)) {
       return;
     }
-    
+
     attributes.put(key, value);
     fireChangeEvent();
   }
-  
+
   /*
    * We do not expect intensive usage of attributes for this class. In fact, other option was to
    * put a stub here.
@@ -132,15 +126,15 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
     }
     return attributes.get(key);
   }
-  
+
   public int getExitValue() throws DebugException {
     if (isTerminated()) {
       return 0;
-    } 
+    }
     throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
         "Process hasn't been terminated yet"));  //$NON-NLS-1$
   }
-  
+
   private void fireCreationEvent() {
     fireEvent(new DebugEvent(this, DebugEvent.CREATE));
   }
@@ -153,6 +147,7 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
   }
 
   private void fireTerminateEvent() {
+    outputMonitor.flush();
     fireEvent(new DebugEvent(this, DebugEvent.TERMINATE));
   }
 
@@ -186,10 +181,16 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
     static final NullStreamMonitor INSTANCE = new NullStreamMonitor();
   }
 
-  public static class WritableStreamMonitor extends Writer implements IStreamMonitor {
+  public interface CloseListener {
+    void processClosed();
+  }
+
+  public static class WritableStreamMonitor extends Writer implements IStreamMonitor,
+      CloseListener {
     private StringWriter writer = new StringWriter();
     private boolean isFlushing = false;
     private final List<IStreamListener> listeners = new ArrayList<IStreamListener>(2);
+    private volatile ConsolePseudoProcess consolePseudoProcess = null;
 
     public synchronized void addListener(IStreamListener listener) {
       listeners.add(listener);
@@ -224,10 +225,17 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
     public synchronized void write(char[] cbuf, int off, int len) {
       writer.write(cbuf, off, len);
     }
-    
+
     public synchronized void startFlushing() {
       isFlushing = true;
       flush();
+    }
+
+    public void processClosed() {
+      ConsolePseudoProcess consolePseudoProcess0 = this.consolePseudoProcess;
+      if (consolePseudoProcess0 != null) {
+        consolePseudoProcess0.fireTerminateEvent();
+      }
     }
   }
 }

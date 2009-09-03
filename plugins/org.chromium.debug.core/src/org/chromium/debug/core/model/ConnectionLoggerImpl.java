@@ -4,20 +4,24 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.sdk.ConnectionLogger;
-import org.eclipse.debug.core.DebugPlugin;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.chromium.sdk.ConnectionLogger;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.model.ITerminate;
 
 /**
  * Connection logger that writes both incoming and outgoing streams into
  * logWriter with simple annotations.
  */
 public class ConnectionLoggerImpl implements ConnectionLogger {
-  public ConnectionLoggerImpl(Writer logWriter) {
+  public ConnectionLoggerImpl(Writer logWriter,
+      ConsolePseudoProcess.CloseListener closeListener) {
     this.logWriter = logWriter;
+    this.closeListener = closeListener;
   }
 
   public Writer wrapWriter(final Writer streamWriter) {
@@ -35,7 +39,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       @Override
       public void write(char[] cbuf, int off, int len) throws IOException {
         streamWriter.write(cbuf, off, len);
-        
+
         writeToLog(cbuf, off, len, this,
             Messages.ConnectionLoggerImpl_SentToChrome);
       }
@@ -47,6 +51,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       public void close() throws IOException {
         streamReader.close();
         flushLogWriter();
+        fireClosed();
       }
 
       @Override
@@ -56,12 +61,22 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
           writeToLog(cbuf, off, res, this,
               Messages.ConnectionLoggerImpl_ReceivedFromChrome);
           flushLogWriter();
+        } else if (res == -1) {
+          fireClosed();
         }
         return res;
       }
     };
   }
-  
+
+  public ITerminate getConnectionTerminate() {
+    return connectionTerminate;
+  }
+
+  public void setConnectionCloser(ConnectionCloser connectionCloser) {
+    this.connectionCloser = connectionCloser;
+  }
+
   private synchronized void writeToLog(char[] cbuf, int off, int len, Object source,
       String sourceName) {
     try {
@@ -84,7 +99,35 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       DebugPlugin.log(e);
     }
   }
-  
+
+  private void fireClosed() {
+    boolean res = isClosed.compareAndSet(false, true);
+    if (res) {
+      closeListener.processClosed();
+    }
+  }
+
   private final Writer logWriter;
+  private final ConsolePseudoProcess.CloseListener closeListener;
   private Object lastSource = null;
+  private volatile ConnectionCloser connectionCloser = null;
+  private final AtomicBoolean isClosed = new AtomicBoolean(false);
+
+  private final ITerminate connectionTerminate = new ITerminate() {
+    public boolean canTerminate() {
+      return !isClosed.get() && connectionCloser != null;
+    }
+
+    public boolean isTerminated() {
+      return isClosed.get();
+    }
+
+    public void terminate() {
+      ConnectionCloser connectionCloser0 = ConnectionLoggerImpl.this.connectionCloser;
+      if (connectionCloser0 == null) {
+        throw new IllegalStateException();
+      }
+      connectionCloser0.closeConnection();
+    }
+  };
 }
