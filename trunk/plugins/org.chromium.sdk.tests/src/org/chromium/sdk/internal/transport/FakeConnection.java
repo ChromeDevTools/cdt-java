@@ -39,8 +39,12 @@ public class FakeConnection implements Connection {
   }
 
   public void close() {
+    boolean sendEos = isRunning;
     isRunning = false;
     if (netListener != null) {
+      if (sendEos) {
+        netListener.eosReceived();
+      }
       netListener.connectionClosed();
     }
   }
