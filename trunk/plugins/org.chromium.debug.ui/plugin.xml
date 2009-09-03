@@ -48,6 +48,12 @@
         delegateName="Debug Standalone V8 JavaScript"
         delegateDescription="JavaScript debugger for Standalone V8">
     </launchConfigurationType>
+    <launchConfigurationType
+        id="org.chromium.debug.ui.ConsolePseudoConfigurationType"
+        delegate="org.chromium.debug.ui.launcher.LaunchType$StandaloneV8"
+        modes="org.chromium.debug.pseudotype"
+        name="%consolePseudoLaunchName">
+    </launchConfigurationType>
   </extension>
 
   <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
@@ -60,6 +66,11 @@
         id="org.chromium.debug.ui.LaunchConfigTypeImage$StandaloneV8"
         configTypeID="org.chromium.debug.ui.LaunchType$StandaloneV8"
         icon="res/standalone_v8_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImageConsolePseudoConfiguration"
+        configTypeID="org.chromium.debug.ui.ConsolePseudoConfigurationType"
+        icon="res/chromium_16.png">
     </launchConfigurationTypeImage>
   </extension>
 

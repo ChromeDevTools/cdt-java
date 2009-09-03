@@ -53,8 +53,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private final JavascriptThread[] threads;
 
-  private final ConsolePseudoProcess consolePseudoProcess;
-
   private JavascriptVmEmbedder vmEmbedder = null;
 
   private ResourceManager resourceManager;
@@ -70,11 +68,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private boolean isDisconnected = false;
 
 
-  public DebugTargetImpl(ILaunch launch, ConsolePseudoProcess consolePseudoProcess) {
+  public DebugTargetImpl(ILaunch launch) {
     super(null);
     this.launch = launch;
     this.threads = new JavascriptThread[] { new JavascriptThread(this) };
-    this.consolePseudoProcess = consolePseudoProcess;
   }
 
 
@@ -340,9 +337,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public synchronized void setDisconnected(boolean disconnected) {
     isDisconnected = disconnected;
-    if (disconnected && consolePseudoProcess != null) {
-      consolePseudoProcess.terminated();
-    }
   }
 
   public void fireResumeEvent(int detail) {

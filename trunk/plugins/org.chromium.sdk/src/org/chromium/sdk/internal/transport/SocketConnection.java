@@ -282,6 +282,11 @@ public class SocketConnection implements Connection {
     if (connectionLogger != null) {
       streamWriter = connectionLogger.wrapWriter(streamWriter);
       streamReader = connectionLogger.wrapReader(streamReader);
+      connectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
+        public void closeConnection() {
+          close();
+        }
+      });
     }
 
     this.writer = new BufferedWriter(streamWriter);

@@ -25,7 +25,7 @@ public class Messages extends NLS {
   
   public static String ChromiumRemoteTab_InvalidProjectNameError;
 
-  public static String LaunchType_DebuggerChromeConnection;
+  public static String LaunchType_LogConsoleLaunchName;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
