@@ -6,12 +6,12 @@ package org.chromium.sdk.internal;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,22 +49,31 @@ public class BrowserImpl implements Browser {
    * One single session supported by browser.
    * TODO(peter.rybin): make session replaceable
    */
-  private final Session permanentSession;
+  private final ConnectionSessionManager sessionManager = new ConnectionSessionManager();
 
-  BrowserImpl(Connection connection) {
-    permanentSession = new Session(connection);
+  /** The browser connection (gets opened in session). */
+  private final ConnectionFactory connectionFactory;
+
+  private final AtomicBoolean alreadyClosingSession = new AtomicBoolean(false);
+
+  BrowserImpl(ConnectionFactory connectionFactory) {
+    this.connectionFactory = connectionFactory;
   }
 
-  public void connect() throws IOException, UnsupportedVersionException {
-    permanentSession.connect();
+  public TabFetcher createTabFetcher() throws IOException, UnsupportedVersionException {
+    SessionManager.Ticket<Session> ticket = connectInternal();
+    return new TabFetcherImpl(ticket);
   }
 
-  public void disconnect() {
-    permanentSession.disconnect();
-  }
-
-  public TabFetcher createTabFetcher() {
-    return permanentSession.getTabFetcher();
+  private SessionManager.Ticket<Session> connectInternal() throws IOException,
+      UnsupportedVersionException {
+    try {
+      return sessionManager.connect();
+    } catch (ExceptionWrapper eWrapper) {
+      eWrapper.rethrow();
+      // Not reachable.
+      throw new RuntimeException();
+    }
   }
 
   /**
@@ -73,72 +82,28 @@ public class BrowserImpl implements Browser {
    * reconnect new session should be created. Each browser tab should be linked
    * to a particular session.
    */
-  public class Session {
+  public class Session extends SessionManager.SessionBase<Session> {
 
-    /** A mapping of tab IDs to BrowserTabImpls. */
-    private final Map<Integer, BrowserTabImpl> tabUidToTabImpl =
-        Collections.synchronizedMap(new HashMap<Integer, BrowserTabImpl>());
+    private final CloseableMap<Integer, ToolHandler> tabId2ToolHandler = CloseableMap.newMap();
+
+    // TODO(peter.rybin): get rid of this structure (if we can get rid
+    // of corresponding notification)
+    private final Map<Integer, DebugSession> tabId2DebugSession =
+        new ConcurrentHashMap<Integer, DebugSession>();
 
     /** The DevTools service handler for the browser. */
     private volatile DevToolsServiceHandler devToolsHandler;
 
-    /** The browser connection (gets opened in the connect() call). */
-    private final Connection connection;
+    /** Open connection which is used by the session. */
+    private final Connection sessionConnection;
 
-    private boolean isNetworkSetUp;
+    Session() throws IOException, UnsupportedVersionException {
+      super(sessionManager);
 
-    Session(Connection connection) {
-      this.connection = connection;
-    }
+      devToolsHandler = new DevToolsServiceHandler(devToolsToolOutput);
 
-    public TabFetcher getTabFetcher() {
-      return new TabFetcherImpl();
-    }
+      sessionConnection = connectionFactory.newOpenConnection(netListener);
 
-    private void removeDetachedTabs() {
-      for (Iterator<Map.Entry<Integer, BrowserTabImpl>> it = tabUidToTabImpl.entrySet().iterator();
-           it.hasNext(); ) {
-        Map.Entry<Integer, BrowserTabImpl> entry = it.next();
-        if (!entry.getValue().isAttached()) {
-          it.remove();
-        }
-      }
-    }
-
-    BrowserTabImpl getBrowserTab(int tabUid) {
-      return tabUidToTabImpl.get(tabUid);
-    }
-
-    public Connection getConnection() {
-      return connection;
-    }
-
-    public void disconnect() {
-      getConnection().close();
-    }
-
-    public void sessionTerminated(int tabId) {
-      tabUidToTabImpl.remove(tabId);
-      if (!hasAttachedTabs() && getConnection().isConnected()) {
-        disconnect();
-      }
-    }
-
-    private boolean hasAttachedTabs() {
-      for (BrowserTabImpl tab : tabUidToTabImpl.values()) {
-        if (tab.isAttached()) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    // TODO(peter.rybin): make sure the connection is closed if we fail here.
-    public void connect() throws UnsupportedVersionException, IOException {
-      if (ensureService()) {
-        // No need to check the version for an already established connection.
-        return;
-      }
       Version serverVersion;
       try {
         serverVersion = devToolsHandler.version(OPERATION_TIMEOUT_MS);
@@ -147,31 +112,47 @@ public class BrowserImpl implements Browser {
       }
       if (serverVersion == null ||
           !BrowserImpl.PROTOCOL_VERSION.isCompatibleWithServer(serverVersion)) {
-        isNetworkSetUp = false;
         throw new UnsupportedVersionException(BrowserImpl.PROTOCOL_VERSION, serverVersion);
       }
     }
 
-    private boolean ensureService() throws IOException {
-      if (!isNetworkSetUp) {
-        devToolsHandler = new DevToolsServiceHandler(devToolsToolOutput);
-        connection.setNetListener(netListener);
-        this.isNetworkSetUp = true;
-      }
-      boolean wasConnected = connection.isConnected();
-      if (!wasConnected) {
-        connection.start();
-      }
-      return wasConnected;
+    @Override
+    protected Session getThisAsSession() {
+      return this;
     }
 
-    // exposed for testing
-    /* package private */ DevToolsServiceHandler getDevToolsServiceHandler() {
+    @Override
+    protected void lastTicketDismissed() {
+      boolean res = alreadyClosingSession.compareAndSet(false, true);
+      if (!res) {
+        // already closing
+        return;
+      }
+      closeSession();
+      sessionConnection.close();
+    }
+
+    void registerTab(int destinationTabId, ToolHandler toolHandler, DebugSession debugSession)
+        throws IOException {
+      try {
+        tabId2ToolHandler.put(destinationTabId, toolHandler);
+      } catch (IllegalStateException e) {
+        throw new IOException("Tab id=" + destinationTabId + " cannot be attached");
+      }
+      tabId2DebugSession.put(destinationTabId, debugSession);
+    }
+
+    void unregisterTab(int destinationTabId) {
+      tabId2DebugSession.remove(destinationTabId);
+      tabId2ToolHandler.remove(destinationTabId);
+    }
+
+    private DevToolsServiceHandler getDevToolsServiceHandler() {
       return devToolsHandler;
     }
 
     private void checkConnection() {
-      if (connection == null || !connection.isConnected()) {
+      if (!sessionConnection.isConnected()) {
         throw new IllegalStateException("connection is not started");
       }
     }
@@ -181,9 +162,9 @@ public class BrowserImpl implements Browser {
         devToolsHandler.onDebuggerDetached();
         // Use a copy to avoid the underlying map modification in #sessionTerminated
         // invoked through #onDebuggerDetached
-        ArrayList<BrowserTabImpl> tabsCopy = new ArrayList<BrowserTabImpl>(tabUidToTabImpl.values());
-        for (Iterator<BrowserTabImpl> it = tabsCopy.iterator(); it.hasNext();) {
-          it.next().getDebugSession().onDebuggerDetached();
+        Collection<DebugSession> copy = new ArrayList<DebugSession>(tabId2DebugSession.values());
+        for (DebugSession session : copy) {
+          session.onDebuggerDetached();
         }
       }
 
@@ -199,10 +180,7 @@ public class BrowserImpl implements Browser {
             handler = devToolsHandler;
             break;
           case V8_DEBUGGER:
-            BrowserTabImpl tab = getBrowserTab(Integer.valueOf(message.getDestination()));
-            if (tab != null) {
-              handler = tab.getV8ToolHandler();
-            }
+            handler = tabId2ToolHandler.get(Integer.valueOf(message.getDestination()));
             break;
           default:
             LOGGER.log(Level.SEVERE, "Unregistered handler for tool: {0}", message.getTool());
@@ -218,6 +196,23 @@ public class BrowserImpl implements Browser {
         }
       }
       public void eosReceived() {
+        boolean res = alreadyClosingSession.compareAndSet(false, true);
+        if (!res) {
+          // already closing
+          return;
+        }
+
+        Collection<ToolHandler> allHandlers = tabId2ToolHandler.close().values();
+        for (ToolHandler handler : allHandlers) {
+          handler.handleEos();
+        }
+
+        devToolsHandler.handleEos();
+        Collection<? extends RuntimeException> problems = stopNewConnectionsAndCancelOld();
+        for (RuntimeException ex : problems) {
+          LOGGER.log(Level.SEVERE, "Failure in closing connections", ex);
+        }
+        closeSession();
       }
     };
 
@@ -225,59 +220,131 @@ public class BrowserImpl implements Browser {
       public void send(String content) {
         Message message =
             MessageFactory.createMessage(ToolName.DEVTOOLS_SERVICE.value, null, content);
-        connection.send(message);
+        sessionConnection.send(message);
       }
     };
 
     public BrowserImpl getBrowser() {
       return BrowserImpl.this;
     }
+  }
 
-    /**
-     * Not fully working implementation of {@link TabFetcher}: it doesn't release connection.
-     * TODO(peter.rybin): implement connection use accounting and {@link #dismiss()} method.
-     */
-    private class TabFetcherImpl implements TabFetcher {
-      public List<? extends TabConnector> getTabs() {
-        checkConnection();
-        removeDetachedTabs();
-        List<TabIdAndUrl> entries = devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
-        List<TabConnectorImpl> browserTabs = new ArrayList<TabConnectorImpl>(entries.size());
-        for (TabIdAndUrl entry : entries) {
-          BrowserTabImpl tab = tabUidToTabImpl.get(entry.id);
-          if (tab == null || !tab.isAttached()) {
-            tab = new BrowserTabImpl(entry.id, entry.url, Session.this);
-            tabUidToTabImpl.put(entry.id, tab);
-          }
-          browserTabs.add(new TabConnectorImpl(tab));
+  private class TabFetcherImpl implements TabFetcher {
+    private final SessionManager.Ticket<Session> ticket;
+
+    TabFetcherImpl(SessionManager.Ticket<Session> ticket) {
+      this.ticket = ticket;
+    }
+
+    public List<? extends TabConnector> getTabs() {
+      Session session = ticket.getSession();
+      session.checkConnection();
+      List<TabIdAndUrl> entries = session.devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
+      List<TabConnectorImpl> tabConnectors = new ArrayList<TabConnectorImpl>(entries.size());
+      for (TabIdAndUrl entry : entries) {
+        if (session.tabId2ToolHandler.get(entry.id) == null) {
+          tabConnectors.add(new TabConnectorImpl(entry.id, entry.url));
         }
-        return browserTabs;
       }
+      return tabConnectors;
+    }
 
-      public void dismiss() {
-        // TODO(peter.rybin): implement this when we count clients.
-      }
+    public void dismiss() {
+      ticket.dismiss();
     }
   }
 
-  private static class TabConnectorImpl implements TabConnector {
-    private final BrowserTabImpl browserTab;
+  private class TabConnectorImpl implements TabConnector {
+    private final int tabId;
+    private final String url;
 
-    TabConnectorImpl(BrowserTabImpl browserTab) {
-      this.browserTab = browserTab;
+    TabConnectorImpl(int tabId, String url) {
+      this.tabId = tabId;
+      this.url = url;
     }
 
     public String getUrl() {
-      return browserTab.getUrl();
+      return url;
     }
 
-    public BrowserTab attach(TabDebugEventListener listener) {
+    public BrowserTab attach(TabDebugEventListener listener) throws IOException {
+      SessionManager.Ticket<Session> ticket;
+      try {
+        ticket = connectInternal();
+      } catch (UnsupportedVersionException e) {
+        // This exception should have happened on tab fetcher creation.
+        throw new IOException("Unexpected version problem", e);
+      }
+
+      Session session = ticket.getSession();
+
+      BrowserTabImpl browserTab = null;
+      try {
+        browserTab = new BrowserTabImpl(tabId, url, session.sessionConnection, ticket);
+      } finally {
+        if (browserTab == null) {
+          ticket.dismiss();
+        }
+      }
+      // From now on browserTab is responsible for the ticket.
       browserTab.attach(listener);
       return browserTab;
     }
   }
 
-  Session getPermanentSessionForTest() {
-    return permanentSession;
+  /**
+   * With this session manager we expect all ticket owners to call dismiss in any
+   * circumstances.
+   */
+  private class ConnectionSessionManager extends
+      SessionManager<BrowserImpl.Session, ExceptionWrapper>  {
+    @Override
+    protected Session newSessionObject() throws ExceptionWrapper {
+      try {
+        return new Session();
+      } catch (IOException e) {
+        throw ExceptionWrapper.wrap(e);
+      } catch (UnsupportedVersionException e) {
+        throw ExceptionWrapper.wrap(e);
+      }
+    }
+  }
+
+  private static abstract class ExceptionWrapper extends Exception {
+    abstract void rethrow() throws IOException, UnsupportedVersionException;
+
+    static ExceptionWrapper wrap(final IOException e) {
+      return new ExceptionWrapper() {
+        @Override
+        void rethrow() throws IOException {
+          throw e;
+        }
+      };
+    }
+
+    static ExceptionWrapper wrap(final UnsupportedVersionException e) {
+      return new ExceptionWrapper() {
+        @Override
+        void rethrow() throws UnsupportedVersionException {
+          throw e;
+        }
+      };
+    }
+  }
+
+  public boolean isTabConnectedForTest(int tabId) {
+    Session session = sessionManager.getCurrentSessionForTest();
+    if (session == null) {
+      return false;
+    }
+    return session.tabId2ToolHandler.get(tabId) != null;
+  }
+
+  public DevToolsServiceHandler getDevToolsServiceHandlerForTests() {
+    return sessionManager.getCurrentSessionForTest().getDevToolsServiceHandler();
+  }
+
+  public boolean isConnectedForTests() {
+    return sessionManager.getCurrentSessionForTest() != null;
   }
 }

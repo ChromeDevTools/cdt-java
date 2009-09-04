@@ -15,9 +15,11 @@ import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.junit.After;
 import org.junit.Before;
 
@@ -62,13 +64,15 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   @After
   public void tearDownAfter() {
-    browser.disconnect();
   }
 
   protected void attachToBrowserTab() throws IOException, UnsupportedVersionException {
-    browser = (BrowserImpl) ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connection);
-    browser.connect();
-    browserTab = (BrowserTabImpl) browser.createTabFetcher().getTabs().get(0).attach(this);
+    FakeConnectionFactory connectionFactory = new FakeConnectionFactory(connection);
+    browser =
+        (BrowserImpl) ((BrowserFactoryImpl) BrowserFactory.getInstance()).create(connectionFactory);
+    TabFetcher tabFetcher = browser.createTabFetcher();
+    browserTab = (BrowserTabImpl) tabFetcher.getTabs().get(0).attach(this);
+    tabFetcher.dismiss();
   }
 
   protected abstract T createConnection();

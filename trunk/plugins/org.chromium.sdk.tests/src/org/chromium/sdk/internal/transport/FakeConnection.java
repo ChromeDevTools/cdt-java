@@ -9,9 +9,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
-import org.chromium.sdk.internal.transport.Connection;
-import org.chromium.sdk.internal.transport.Message;
-
 /**
  * A fake Connection that allows specifying a message responder (aka ChromeStub).
  */

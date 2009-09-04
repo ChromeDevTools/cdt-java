@@ -10,7 +10,6 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.StandaloneVm;
-import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
 
@@ -23,8 +22,14 @@ public class BrowserFactoryImpl extends BrowserFactory {
 
   @Override
   public Browser create(SocketAddress socketAddress, ConnectionLogger connectionLogger) {
-    Connection connection = createConnection(socketAddress, connectionLogger);
-    return new BrowserImpl(connection);
+    SocketConnectionFactory socketConnectionFactory = new SocketConnectionFactory(socketAddress,
+        getTimeout(), connectionLogger, Handshaker.CHROMIUM);
+    return new BrowserImpl(socketConnectionFactory);
+  }
+
+  // Debug entry (no logger by definition)
+  Browser create(ConnectionFactory connectionFactory) {
+    return new BrowserImpl(connectionFactory);
   }
 
   @Override
@@ -34,15 +39,6 @@ public class BrowserFactoryImpl extends BrowserFactory {
     SocketConnection connection =
         new SocketConnection(socketAddress, getTimeout(), connectionLogger, handshaker);
     return new StandaloneVmImpl(connection, handshaker);
-  }
-
-  // Debug entry (no logger by definition)
-  public Browser create(Connection connection) {
-    return new BrowserImpl(connection);
-  }
-
-  protected Connection createConnection(SocketAddress socketAddress, ConnectionLogger connectionLogger) {
-    return new SocketConnection(socketAddress, getTimeout(), connectionLogger, Handshaker.CHROMIUM);
   }
 
   private int getTimeout() {

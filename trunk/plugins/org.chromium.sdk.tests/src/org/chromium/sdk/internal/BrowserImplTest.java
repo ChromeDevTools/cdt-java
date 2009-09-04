@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -23,13 +24,26 @@ public class BrowserImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test
   public void checkGetTabsDoesNotResetTabImpls() throws Exception {
     browser.createTabFetcher().getTabs();
-    assertTrue(browser.getPermanentSessionForTest().getBrowserTab(browserTab.getId()).isAttached());
+    assertTrue(browser.isTabConnectedForTest(browserTab.getId()));
   }
 
   @Test
-  public void checkBrowserIsDisconnectedWhenAllTabsDetached() throws Exception {
-    browser.createTabFetcher().getTabs();
+  public void checkBrowserIsTabDisconnectedWhenAllTabsDetached() throws Exception {
+    TabFetcher fetcher = browser.createTabFetcher();
+    fetcher.getTabs();
+    fetcher.dismiss();
+
     browserTab.detach();
-    assertFalse(browser.getPermanentSessionForTest().getConnection().isConnected());
+    assertFalse(browser.isTabConnectedForTest(browserTab.getId()));
+  }
+
+  @Test
+  public void checkBrowserIsBrowserDisconnectedWhenAllTabsDetached() throws Exception {
+    TabFetcher fetcher = browser.createTabFetcher();
+    fetcher.getTabs();
+    fetcher.dismiss();
+
+    browserTab.detach();
+    assertFalse(browser.isConnectedForTests());
   }
 }

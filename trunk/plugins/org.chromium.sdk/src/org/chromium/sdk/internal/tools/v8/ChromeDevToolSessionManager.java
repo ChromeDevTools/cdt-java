@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,11 +75,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   /** The debug context for this handler. */
   private final DebugSession debugSession;
 
-  /** A synchronization object for the field access/modification. */
-  private final Object fieldAccessLock = new Object();
-
-  // The fields access is synchronized
-  private boolean isAttached;
+  private final AtomicReference<AttachState> attachState =
+    new AtomicReference<AttachState>(null);
 
   private final AtomicReference<ResultAwareCallback> attachCallback =
       new AtomicReference<ResultAwareCallback>(null);
@@ -90,7 +89,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    */
   public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
-  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, ToolOutput toolOutput, DebugSession debugSession) {
+  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, ToolOutput toolOutput,
+      DebugSession debugSession) {
     this.browserTabImpl = browserTabImpl;
     this.toolOutput = toolOutput;
     this.debugSession = debugSession;
@@ -138,39 +138,44 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   }
 
   public void onDebuggerDetached() {
-    onDebuggerDetachedImpl();
+    // ignore
   }
 
-  private void onDebuggerDetachedImpl() {
-    if (!isAttached()) {
-      // We've already been notified.
-      return;
-    }
-    synchronized (fieldAccessLock) {
-      isAttached = false;
-    }
-    debugSession.getV8CommandProcessor().removeAllCallbacks();
+  /**
+   * Disconnects tab from connections. Can safely be called several times. This sends EOS
+   * message and unregisters tab from browser.
+   * Should be called from UI, may block.
+   */
+  public void cutTheLine() {
+    toolHandler.cutTheLine();
+  }
+
+  /**
+   * This method is sure to be called only once.
+   */
+  private void handleEos() {
+    // We overwrite other values; nobody else should become unhappy, all expecters
+    // are in handle* methods and they are not going to get their results
+    attachState.set(AttachState.DISCONNECTED);
+    browserTabImpl.handleEosFromToolService();
+    debugSession.getV8CommandProcessor().processEos();
+
     DebugEventListener debugEventListener = getDebugEventListener();
     if (debugEventListener != null) {
       debugEventListener.disconnected();
     }
-    browserTabImpl.sessionTerminated();
   }
 
-  public int getAttachedTab() {
-    if (!isAttached()) {
-      throw new IllegalStateException("Debugger is not attached to any tab");
-    }
-    return browserTabImpl.getId();
+  private AttachState getAttachState() {
+    return attachState.get();
   }
 
   /**
+   * This method is for UI -- pretty low precision of result type.
    * @return whether the handler is attached to a tab
    */
-  public boolean isAttached() {
-    synchronized (fieldAccessLock) {
-      return isAttached;
-    }
+  public boolean isAttachedForUi() {
+    return STATES_CALLED_ATTACHED.contains(getAttachState());
   }
 
   /**
@@ -181,8 +186,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    *         to the browser
    */
   public Result attachToTab() throws AttachmentFailureException {
-    if (isAttached()) {
-      return Result.ILLEGAL_TAB_STATE;
+    boolean res = attachState.compareAndSet(null, AttachState.ATTACHING);
+    if (!res) {
+      throw new AttachmentFailureException("Illegal state", null);
     }
 
     String command = V8DebuggerToolMessageFactory.attach();
@@ -191,11 +197,11 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   /**
    * Detaches the remote debugger from the associated browser tab.
-   *
+   * Should be called from UI thread.
    * @return the detachment result
    */
   public Result detachFromTab() {
-    if (!isAttached()) {
+    if (attachState.get() != AttachState.NORMAL) {
       toolHandler.onDebuggerDetached();
       return Result.ILLEGAL_TAB_STATE;
     }
@@ -207,10 +213,15 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     } catch (AttachmentFailureException e) {
       result = null;
     }
+
+    // Make sure line is cut
+    cutTheLine();
+
     return result;
   }
 
-  private Result sendSimpleCommandSync(AtomicReference<ResultAwareCallback> callbackReference, String command) throws AttachmentFailureException {
+  private Result sendSimpleCommandSync(AtomicReference<ResultAwareCallback> callbackReference,
+      String command) throws AttachmentFailureException {
     final Semaphore sem = new Semaphore(0);
     final Result[] output = new Result[1];
     ResultAwareCallback callback = new ResultAwareCallback() {
@@ -251,29 +262,55 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     return toolHandler;
   }
 
-  private final ToolHandler toolHandler = new ToolHandler() {
-    public void handleMessage(Message message) {
+  private final ToolHandlerImpl toolHandler = new ToolHandlerImpl();
+
+  private class ToolHandlerImpl implements ToolHandler {
+    private volatile boolean isLineCut = false;
+    private boolean alreadyHasEos = false;
+
+    /**
+     * We should be in UI thread, because this method synchronizes and may be waiting for
+     * Connection thread.
+     */
+    void cutTheLine() {
+      // First mark ourselves as "cut off" to stop other threads,
+      // then start waiting on synchronized.
+      isLineCut = true;
+      synchronized (this) {
+        sendEos();
+      }
+    }
+
+    public synchronized void handleMessage(Message message) {
+      if (isLineCut) {
+        return;
+      }
       handleChromeDevToolMessage(message);
     }
 
-    public void handleEos() {
-      debugSession.getV8CommandProcessor().processEos();
+    public synchronized void handleEos() {
+      if (isLineCut) {
+        return;
+      }
+      sendEos();
+    }
+    private void sendEos() {
+      if (alreadyHasEos) {
+        return;
+      }
+      alreadyHasEos = true;
+      ChromeDevToolSessionManager.this.handleEos();
     }
 
     public void onDebuggerDetached() {
-      onDebuggerDetachedImpl();
+      // ignore
     }
-  };
+  }
 
   private void processClosed(JSONObject json) {
-    synchronized (fieldAccessLock) {
-      if (detachCallback != null) {
-        // A detach request might be in flight. It should succeed in this case.
-        notifyCallback(detachCallback, Result.OK);
-      }
-    }
+    notifyCallback(detachCallback, Result.OK);
+
     browserTabImpl.getTabDebugEventListener().closed();
-    onDebuggerDetachedImpl();
   }
 
   /**
@@ -283,7 +320,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    * @param callbackReference reference which may hold callback
    * @param result to notify the callback with
    */
-  private void notifyCallback(AtomicReference<ResultAwareCallback> callbackReference, Result result) {
+  private void notifyCallback(AtomicReference<ResultAwareCallback> callbackReference,
+      Result result) {
     ResultAwareCallback callback = callbackReference.getAndSet(null);
     if (callback != null) {
       try {
@@ -298,13 +336,14 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
     Result result = Result.forCode(resultValue.intValue());
     // Message destination equals context.getTabId()
-    synchronized (fieldAccessLock) {
-      if (result != null && result == Result.OK) {
-        isAttached = true;
-      } else {
-        if (result == null) {
-          result = Result.DEBUGGER_ERROR;
-        }
+    if (result == Result.OK) {
+      boolean res = attachState.compareAndSet(AttachState.ATTACHING, AttachState.NORMAL);
+      if (!res) {
+        throw new IllegalStateException();
+      }
+    } else {
+      if (result == null) {
+        result = Result.DEBUGGER_ERROR;
       }
     }
     notifyCallback(attachCallback, result);
@@ -313,8 +352,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private void processDetach(JSONObject json) {
     Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
     Result result = Result.forCode(resultValue.intValue());
-    if (result != null && result == Result.OK) {
-      onDebuggerDetachedImpl();
+    if (result == Result.OK) {
+      // ignore result, we may already be in DISCONNECTED state
+      attachState.compareAndSet(AttachState.DETACHING, AttachState.DETACHED);
     } else {
       if (result == null) {
         result = Result.DEBUGGER_ERROR;
@@ -383,4 +423,10 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       return sb.toString();
     }
   }
+
+  private enum AttachState {
+    ATTACHING, NORMAL, DETACHING, DETACHED, DISCONNECTED
+  }
+
+  private static final Set<AttachState> STATES_CALLED_ATTACHED = EnumSet.of(AttachState.NORMAL);
 }
