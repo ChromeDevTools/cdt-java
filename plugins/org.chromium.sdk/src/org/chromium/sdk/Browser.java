@@ -15,36 +15,20 @@ public interface Browser {
 
   /**
    * Establishes the browser connection and checks for the protocol version
-   * supported by the remote.
-   * <p>
-   * Does nothing if the Browser instance is already connected.
+   * supported by the remote, then creates object that downloads list of tabs.
    *
+   * @return new instance of TabFetcher that must be dismissed after use to control
+   *         connection use
    * @throws IOException if there was a transport layer error
    * @throws UnsupportedVersionException if the SDK protocol version is not
    *         compatible with that supported by the browser
    */
-  void connect() throws IOException, UnsupportedVersionException;
-
-  /**
-   * Immediately disconnects from the Browser instance and closes the
-   * connection. No method invocations relying on the Browser connection will
-   * succeed after this call. This method SHOULD be called at the end of a
-   * debugging session (once there are no more attached tabs.)
-   * <p>
-   * Does nothing if the Browser instance is not connected.
-   */
-  void disconnect();
-
-  /**
-   * @return new instance of TabFetcher which must be dismissed after use to control
-   * connection use
-   */
-  TabFetcher createTabFetcher();
+  TabFetcher createTabFetcher() throws IOException, UnsupportedVersionException;
 
 
   /**
    * Helps to fetch currently opened browser tabs. It also holds open connection to
-   * browser. After instance was used {@code #dissmiss} should be called to release
+   * browser. After instance was used {@code #dismiss} should be called to release
    * connection.
    */
   interface TabFetcher {
@@ -84,6 +68,6 @@ public interface Browser {
      * @param listener to report the debug events to
      * @return null if operation failed
      */
-    BrowserTab attach(TabDebugEventListener listener);
+    BrowserTab attach(TabDebugEventListener listener) throws IOException;
   }
 }

@@ -5,6 +5,8 @@
 package org.chromium.sdk.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -99,6 +101,7 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
   public static abstract class SessionBase<SESSION extends SessionBase<SESSION>> {
     private final SessionManager<?, ?> manager;
     private boolean isConnectionStopped = false;
+    private boolean isCancelled = false;
 
     SessionBase(SessionManager<SESSION, ?> manager) {
       this.manager = manager;
@@ -137,6 +140,21 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
         isConnectionStopped = true;
       }
     }
+
+    /**
+     * Don't forget to call {@link #closeSession()} manually.
+     * @return collection of exceptions we gathered from tickets
+     */
+    protected Collection<? extends RuntimeException> stopNewConnectionsAndCancelOld() {
+      synchronized (manager) {
+        isConnectionStopped = true;
+        isCancelled = true;
+        tickets.clear();
+      }
+
+      return Collections.emptyList();
+    }
+
     /**
      * See {@link #lastTicketDismissed()}. This method is supposed to be called
      * from there, but not necessarily.
@@ -173,14 +191,17 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
 
     private class TicketImpl implements Ticket<SESSION> {
       private volatile boolean isDismissed = false;
+
       public void dismiss() {
         synchronized (manager) {
-          boolean res = tickets.remove(this);
-          if (!res) {
-            throw new IllegalStateException("Ticket is already dismissed");
-          }
-          if (tickets.isEmpty()) {
-            lastTicketDismissed();
+          if (!isCancelled) {
+            boolean res = tickets.remove(this);
+            if (!res) {
+              throw new IllegalStateException("Ticket is already dismissed");
+            }
+            if (tickets.isEmpty()) {
+              lastTicketDismissed();
+            }
           }
           isDismissed = true;
         }

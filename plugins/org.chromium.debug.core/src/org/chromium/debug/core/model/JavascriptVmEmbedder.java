@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import java.io.IOException;
+
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.eclipse.core.runtime.CoreException;
@@ -43,7 +45,8 @@ public interface JavascriptVmEmbedder {
   /**
    * @return true if successfully attached
    */
-  boolean attach(Listener embedderListener, DebugEventListener debugEventListener);
+  boolean attach(Listener embedderListener, DebugEventListener debugEventListener)
+      throws IOException;
 
   String getTargetName();
 

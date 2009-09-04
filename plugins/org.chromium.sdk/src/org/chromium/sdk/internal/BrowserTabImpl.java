@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal;
 
+import java.io.IOException;
+
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugEventListener;
@@ -33,8 +35,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   /** The primary tab URL. */
   private final String url;
 
-  /** The host BrowserImpl instance. */
-  private final BrowserImpl.Session browserSession;
+  private final SessionManager.Ticket<BrowserImpl.Session> connectionTicket;
 
   /** The debug session instance for this tab. */
   private final DebugSession debugSession;
@@ -47,18 +48,22 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   /** The listener to report browser-related debug events to. */
   private TabDebugEventListener tabDebugEventListener = null;
 
-  public BrowserTabImpl(int tabId, String url, BrowserImpl.Session browserSession) {
+  public BrowserTabImpl(int tabId, String url, Connection connection,
+      SessionManager.Ticket<BrowserImpl.Session> ticket) throws IOException {
     this.tabId = tabId;
     this.url = url;
-    this.browserSession = browserSession;
+    this.connectionTicket = ticket;
     String tabIdString = String.valueOf(tabId);
-    ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString,
-        browserSession.getConnection());
+    ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString, connection);
     ChromeDevToolSessionManager.V8CommandOutputImpl v8MessageOutput =
         new ChromeDevToolSessionManager.V8CommandOutputImpl(chromeDevToolOutput);
     this.debugSession = new DebugSession(this, protocolOptions, v8MessageOutput);
     this.devToolSessionManager = new ChromeDevToolSessionManager(this, chromeDevToolOutput,
         debugSession);
+
+    ToolHandler toolHandler = devToolSessionManager.getToolHandler();
+    // After this statement we are responsible for dismissing our ticket (we do it via eos message).
+    getBrowserSession().registerTab(tabId, toolHandler, debugSession);
   }
 
   public String getUrl() {
@@ -84,36 +89,47 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public Browser getBrowser() {
-    return browserSession.getBrowser();
+    return getBrowserSession().getBrowser();
   }
 
   public BrowserImpl.Session getBrowserSession() {
-    return browserSession;
+    return connectionTicket.getSession();
   }
 
-  synchronized boolean attach(TabDebugEventListener listener) {
-    Result result = null;
-    try {
-      result = devToolSessionManager.attachToTab();
-    } catch (AttachmentFailureException e) {
-      // fall through and return false
-    }
+  synchronized void attach(TabDebugEventListener listener) throws IOException {
     this.tabDebugEventListener = listener;
     this.debugEventListener = listener.getDebugEventListener();
-    return Result.OK == result;
+
+    boolean normalExit = false;
+    try {
+      Result result;
+      try {
+        result = devToolSessionManager.attachToTab();
+      } catch (AttachmentFailureException e) {
+        throw new IOException(e);
+      }
+      if (Result.OK != result) {
+        throw new IOException("Failed to attach with result: " + result);
+      }
+      normalExit = true;
+    } finally {
+      if (!normalExit) {
+        devToolSessionManager.cutTheLine();
+      }
+    }
   }
 
   public boolean detach() {
-    final Result result = devToolSessionManager.detachFromTab();
+    Result result = devToolSessionManager.detachFromTab();
     return Result.OK == result;
   }
 
   public boolean isAttached() {
-    return devToolSessionManager.isAttached();
+    return devToolSessionManager.isAttachedForUi();
   }
 
   public void sessionTerminated() {
-    browserSession.sessionTerminated(this.tabId);
+    //browserSession.sessionTerminated(this.tabId);
   }
 
   public ToolHandler getV8ToolHandler() {
@@ -123,6 +139,11 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   @Override
   public ChromeDevToolSessionManager getSessionManager() {
     return devToolSessionManager;
+  }
+
+  public void handleEosFromToolService() {
+    getBrowserSession().unregisterTab(tabId);
+    connectionTicket.dismiss();
   }
 
   private static class ChromeDevToolOutput implements ToolOutput {

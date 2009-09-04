@@ -23,7 +23,7 @@ public class TestUtil {
   }
 
   public static DevToolsServiceHandler getDevToolsServiceHandler(BrowserImpl browserImpl) {
-    return browserImpl.getPermanentSessionForTest().getDevToolsServiceHandler();
+    return browserImpl.getDevToolsServiceHandlerForTests();
   }
 
   public static ChromeDevToolSessionManager getV8DebuggerToolHandler(BrowserTabImpl browserTabImpl) {

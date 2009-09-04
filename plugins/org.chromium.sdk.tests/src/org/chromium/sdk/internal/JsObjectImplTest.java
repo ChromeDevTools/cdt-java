@@ -18,7 +18,7 @@ import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.internal.transport.ChromeStub;
-import org.chromium.sdk.internal.transport.FakeConnection;
+import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.junit.Before;
@@ -40,8 +40,7 @@ public class JsObjectImplTest {
   public void setUpBefore() throws Exception {
     this.messageResponder = new FixtureChromeStub();
     Browser browser = ((BrowserFactoryImpl) BrowserFactory.getInstance())
-        .create(new FakeConnection(messageResponder));
-    browser.connect();
+        .create(new FakeConnectionFactory(messageResponder));
     BrowserTab browserTab = browser.createTabFetcher().getTabs().get(0).attach(listener);
 
     listener.expectSuspendedEvent();

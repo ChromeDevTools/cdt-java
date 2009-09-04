@@ -19,6 +19,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.Browser.TabFetcher;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 
@@ -33,8 +34,9 @@ public class JavascriptVmEmbedderFactory {
 
     SocketAddress address = new InetSocketAddress(LOCALHOST, port);
     final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
+    final TabFetcher tabFetcher;
     try {
-      browser.connect();
+      tabFetcher = browser.createTabFetcher();
     } catch (UnsupportedVersionException e) {
       throw newCoreException(e);
     } catch (IOException e) {
@@ -44,8 +46,8 @@ public class JavascriptVmEmbedderFactory {
     return new JavascriptVmEmbedder.Attachable() {
 
       public JavascriptVmEmbedder selectVm() throws CoreException {
-        List<? extends Browser.TabConnector> tabs = getBrowserTabs(browser);
         // TODO(peter.rybin): call TabFetcher#dismiss here to release connection properly.
+        List<? extends Browser.TabConnector> tabs = getBrowserTabs();
         final Browser.TabConnector targetTabConnector = tabSelector.selectTab(tabs);
         if (targetTabConnector == null) {
           return null;
@@ -54,11 +56,11 @@ public class JavascriptVmEmbedderFactory {
         return new EmbeddingTab(targetTabConnector);
       }
 
-      private List<? extends Browser.TabConnector> getBrowserTabs(Browser browser)
+      private List<? extends Browser.TabConnector> getBrowserTabs()
           throws CoreException {
         List<? extends Browser.TabConnector> tabs;
         try {
-          tabs = browser.createTabFetcher().getTabs();
+          tabs = tabFetcher.getTabs();
         } catch (IOException e) {
           throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
         } catch (IllegalStateException e) {
@@ -79,7 +81,7 @@ public class JavascriptVmEmbedderFactory {
     }
 
     public boolean attach(final Listener embedderListener,
-        final DebugEventListener debugEventListener) {
+        final DebugEventListener debugEventListener) throws IOException {
       TabDebugEventListener tabDebugEventListener = new TabDebugEventListener() {
         public DebugEventListener getDebugEventListener() {
           return debugEventListener;

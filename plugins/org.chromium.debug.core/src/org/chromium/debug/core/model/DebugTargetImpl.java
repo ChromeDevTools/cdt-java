@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -98,21 +99,28 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   private boolean performAttach(String projectNameBase, Runnable attachCallback) {
-    if (vmEmbedder.attach(embedderListener, debugEventListener)) {
-      String projectName;
-      // We might want to add some url-specific suffix here
-      projectName = projectNameBase;
-      // We'd like to know when launch is removed to remove our project.
-      DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
-      this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
-      this.breakpointRegistry = new BreakpointRegistry();
-      this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
-      onAttach(projectName, attachCallback);
-      return true;
+    boolean attachResult;
+    try {
+      attachResult = vmEmbedder.attach(embedderListener, debugEventListener);
+    } catch (IOException e) {
+      ChromiumDebugPlugin.logWarning("Could not attach to a browser tab", e); //$NON-NLS-1$
+      return false;
     }
-    // Could not attach. Log a warning...
-    ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
-    return false;
+    if (!attachResult) {
+      // Could not attach. Log a warning...
+      ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
+      return false;
+    }
+
+    // We might want to add some url-specific suffix here
+    String projectName = projectNameBase;
+    // We'd like to know when launch is removed to remove our project.
+    DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
+    this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
+    this.breakpointRegistry = new BreakpointRegistry();
+    this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
+    onAttach(projectName, attachCallback);
+    return true;
   }
 
   private void onAttach(String projectName, Runnable attachCallback) {
@@ -180,6 +188,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public String getName() throws DebugException {
+    if (vmEmbedder == null) {
+      return ""; //$NON-NLS-1$
+    }
     return vmEmbedder.getTargetName();
   }
 
