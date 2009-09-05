@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.chromium.debug.core.model.Messages;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -48,6 +49,13 @@ class ChromiumTabSelectionDialog extends Dialog {
   public int open() {
     return super.open();
   }
+
+  @Override
+  public void create() {
+    super.create();
+    updateOkButton();
+  }
+
 
   @Override
   protected Control createDialogArea(Composite parent) {
@@ -93,11 +101,15 @@ class ChromiumTabSelectionDialog extends Dialog {
       public void widgetSelected(SelectionEvent e) {
       }
     });
-    
+
     table.setItemCount(urls.size());
     table.clearAll();
 
     return composite;
+  }
+
+  private void updateOkButton() {
+    this.getButton(IDialogConstants.OK_ID).setEnabled(urls.size() != 0);
   }
 
   @Override

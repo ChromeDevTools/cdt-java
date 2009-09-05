@@ -4,7 +4,7 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.List;
+import java.io.IOException;
 
 import org.chromium.sdk.Browser;
 
@@ -15,10 +15,11 @@ import org.chromium.sdk.Browser;
 public interface TabSelector {
 
   /**
-   * @param tabs to choose from
+   * @param tabFetcher that is used to download list of tabs; list of tabs
+   *        may be reloaded if needed
    * @return a tab to debug, or null if the launch configuration should not
    *         proceed attaching to a Chromium tab
+   * @throws IOException if tabFetcher got network problems downloading tabs
    */
-  Browser.TabConnector selectTab(List<? extends Browser.TabConnector> tabs);
-
+  Browser.TabConnector selectTab(Browser.TabFetcher tabFetcher) throws IOException;
 }

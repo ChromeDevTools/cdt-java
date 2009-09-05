@@ -4,6 +4,7 @@
 
 package org.chromium.debug.ui;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.Map;
 
 import org.chromium.debug.core.model.TabSelector;
 import org.chromium.sdk.Browser;
+import org.chromium.sdk.Browser.TabConnector;
+import org.chromium.sdk.Browser.TabFetcher;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -21,17 +24,31 @@ import org.eclipse.ui.PlatformUI;
  */
 public class DialogBasedTabSelector implements TabSelector {
 
-  public Browser.TabConnector selectTab(List<? extends Browser.TabConnector> tabs) {
+  public TabConnector selectTab(TabFetcher tabFetcher) throws IOException {
+    List<? extends Browser.TabConnector> allTabs = tabFetcher.getTabs();
+
+    List<Browser.TabConnector> filteredTabs = new ArrayList<TabConnector>(allTabs.size());
+
+    for (Browser.TabConnector tab : allTabs) {
+      if (!tab.isAlreadyAttached()) {
+        filteredTabs.add(tab);
+      }
+    }
+
     if (autoSelectSingleTab()) {
-      if (tabs.size() == 1) {
-        return tabs.get(0);
+      if (allTabs.size() == 1 && filteredTabs.size() == 1) {
+        // if all crystal clear -- choose by default
+        // disable auto-select if there are some already attached tabs:
+        //  user has already seen this dialog and might have got used to it
+        //  he might not understand why it didn't show up this time
+        return allTabs.get(0);
       }
     }
 
     final Map<Integer, Browser.TabConnector> map = new HashMap<Integer, Browser.TabConnector>();
-    final List<String> urls = new ArrayList<String>(tabs.size());
-    for (int i = 0; i < tabs.size(); ++i) {
-      Browser.TabConnector connector = tabs.get(i);
+    final List<String> urls = new ArrayList<String>(filteredTabs.size());
+    for (int i = 0; i < filteredTabs.size(); ++i) {
+      Browser.TabConnector connector = filteredTabs.get(i);
       map.put(i, connector);
       urls.add(connector.getUrl());
     }
