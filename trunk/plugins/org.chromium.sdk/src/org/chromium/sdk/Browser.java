@@ -29,12 +29,13 @@ public interface Browser {
   /**
    * Helps to fetch currently opened browser tabs. It also holds open connection to
    * browser. After instance was used {@code #dismiss} should be called to release
-   * connection.
+   * connection. {@link TabConnector#isAlreadyAttached()} helps to tell which
+   * tabs are available for connection.
    */
   interface TabFetcher {
     /**
-     * Retrieves all browser tabs currently opened. Can only be invoked after the
-     * browser connection has been successfully established.
+     * Retrieves all browser tabs currently opened. It lists all tabs, including
+     * those already attached.
      *
      * @return tabs that can be debugged in the associated Browser instance. An
      *         empty list is returned if no tabs are available.
@@ -53,14 +54,19 @@ public interface Browser {
   }
 
   /**
-   * Tab list item that is fetched from browser. Actual tab debugger may be
-   * attached via this object.
+   * Tab list item that is fetched from browser. Connector may correspond to a tab,
+   * which is already be attached. Connector is used to attach to tab.
    */
   interface TabConnector {
     /**
      * @return tab url that should be shown to user to let him select one tab from list
      */
     String getUrl();
+
+    /**
+     * @return true if the tab is already attached at this moment
+     */
+    boolean isAlreadyAttached();
 
     /**
      * Attaches to the related tab debugger.

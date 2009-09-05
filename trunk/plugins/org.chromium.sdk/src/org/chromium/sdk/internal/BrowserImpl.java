@@ -242,9 +242,7 @@ public class BrowserImpl implements Browser {
       List<TabIdAndUrl> entries = session.devToolsHandler.listTabs(OPERATION_TIMEOUT_MS);
       List<TabConnectorImpl> tabConnectors = new ArrayList<TabConnectorImpl>(entries.size());
       for (TabIdAndUrl entry : entries) {
-        if (session.tabId2ToolHandler.get(entry.id) == null) {
-          tabConnectors.add(new TabConnectorImpl(entry.id, entry.url));
-        }
+        tabConnectors.add(new TabConnectorImpl(entry.id, entry.url, ticket));
       }
       return tabConnectors;
     }
@@ -257,14 +255,21 @@ public class BrowserImpl implements Browser {
   private class TabConnectorImpl implements TabConnector {
     private final int tabId;
     private final String url;
+    // Ticket that we inherit from TabFetcher.
+    private final SessionManager.Ticket<Session> ticket;
 
-    TabConnectorImpl(int tabId, String url) {
+    TabConnectorImpl(int tabId, String url, SessionManager.Ticket<Session> ticket) {
       this.tabId = tabId;
       this.url = url;
+      this.ticket = ticket;
     }
 
     public String getUrl() {
       return url;
+    }
+
+    public boolean isAlreadyAttached() {
+      return ticket.getSession().tabId2ToolHandler.get(tabId) != null;
     }
 
     public BrowserTab attach(TabDebugEventListener listener) throws IOException {

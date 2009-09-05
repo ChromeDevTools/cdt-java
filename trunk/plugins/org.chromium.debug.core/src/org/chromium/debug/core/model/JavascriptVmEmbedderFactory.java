@@ -5,7 +5,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.MessageFormat;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -47,27 +46,17 @@ public class JavascriptVmEmbedderFactory {
 
       public JavascriptVmEmbedder selectVm() throws CoreException {
         // TODO(peter.rybin): call TabFetcher#dismiss here to release connection properly.
-        List<? extends Browser.TabConnector> tabs = getBrowserTabs();
-        final Browser.TabConnector targetTabConnector = tabSelector.selectTab(tabs);
+        Browser.TabConnector targetTabConnector;
+        try {
+          targetTabConnector = tabSelector.selectTab(tabFetcher);
+        } catch (IOException e) {
+          throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
+        }
         if (targetTabConnector == null) {
           return null;
         }
 
         return new EmbeddingTab(targetTabConnector);
-      }
-
-      private List<? extends Browser.TabConnector> getBrowserTabs()
-          throws CoreException {
-        List<? extends Browser.TabConnector> tabs;
-        try {
-          tabs = tabFetcher.getTabs();
-        } catch (IOException e) {
-          throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
-        } catch (IllegalStateException e) {
-          throw newCoreException(
-              "Another Chromium JavaScript Debug Launch is in progress", e); //$NON-NLS-1$
-        }
-        return tabs;
       }
     };
   }
