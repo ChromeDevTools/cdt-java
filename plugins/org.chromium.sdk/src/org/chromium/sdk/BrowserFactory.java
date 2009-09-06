@@ -39,7 +39,8 @@ public abstract class BrowserFactory {
    *        traffic; may be null
    * @return a Browser instance for the {@code socketAddress}
    */
-  public abstract Browser create(SocketAddress socketAddress, ConnectionLogger connectionLogger);
+  public abstract Browser create(SocketAddress socketAddress,
+      ConnectionLogger.Factory connectionLoggerFactory);
 
   /**
    * Constructs StandaloneVm instance that talks to a V8 JavaScript VM via

@@ -198,6 +198,9 @@ public class SocketConnection implements Connection {
             LOGGER.log(Level.SEVERE, "Exception in message listener", e);
           }
           if (messageItem.isEos()) {
+            if (connectionLogger != null) {
+              connectionLogger.handleEos();
+            }
             break;
           }
         }

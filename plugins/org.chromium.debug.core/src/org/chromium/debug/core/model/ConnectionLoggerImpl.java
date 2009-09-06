@@ -51,7 +51,6 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       public void close() throws IOException {
         streamReader.close();
         flushLogWriter();
-        fireClosed();
       }
 
       @Override
@@ -61,12 +60,14 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
           writeToLog(cbuf, off, res, this,
               Messages.ConnectionLoggerImpl_ReceivedFromChrome);
           flushLogWriter();
-        } else if (res == -1) {
-          fireClosed();
         }
         return res;
       }
     };
+  }
+
+  public void handleEos() {
+    fireClosed();
   }
 
   public ITerminate getConnectionTerminate() {

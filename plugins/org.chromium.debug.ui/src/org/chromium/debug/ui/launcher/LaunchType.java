@@ -11,8 +11,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.ConnectionLoggerFactory;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
+import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
@@ -41,8 +41,8 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
     @Override
     protected Attachable createAttachable(int port, ILaunch launch, boolean addConsoleLogger)
         throws CoreException {
-      ConnectionLoggerFactory consoleFactory =
-        addConsoleLogger ? CONNECTION_LOGGER_FACTORY : NO_CONNECTION_LOGGER_FACTORY;
+      NamedConnectionLoggerFactory consoleFactory =
+          addConsoleLogger ? CONNECTION_LOGGER_FACTORY : NO_CONNECTION_LOGGER_FACTORY;
       return JavascriptVmEmbedderFactory.connectToChromeDevTools(port, null,
           new DialogBasedTabSelector(), consoleFactory);
     }
@@ -52,8 +52,8 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
      * logger console pseudo-projects.
      * TODO(peter.rybin): these projects stay as zombies under the launch; fix it
      */
-    private final static ConnectionLoggerFactory CONNECTION_LOGGER_FACTORY =
-        new ConnectionLoggerFactory() {
+    private final static NamedConnectionLoggerFactory CONNECTION_LOGGER_FACTORY =
+        new NamedConnectionLoggerFactory() {
       private final ILaunch commonLaunch;
 
       {
@@ -107,9 +107,9 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
     @Override
     protected Attachable createAttachable(int port, final ILaunch launch,
         boolean addConsoleLogger) {
-      ConnectionLoggerFactory consoleFactory;
+      NamedConnectionLoggerFactory consoleFactory;
       if (addConsoleLogger) {
-        consoleFactory = new ConnectionLoggerFactory() {
+        consoleFactory = new NamedConnectionLoggerFactory() {
           public ConnectionLogger createLogger(String title) {
             return LaunchType.createConsoleAndLogger(launch, title);
           }
@@ -191,8 +191,8 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
     return logger;
   }
 
-  private static final ConnectionLoggerFactory NO_CONNECTION_LOGGER_FACTORY =
-      new ConnectionLoggerFactory() {
+  private static final NamedConnectionLoggerFactory NO_CONNECTION_LOGGER_FACTORY =
+      new NamedConnectionLoggerFactory() {
     public ConnectionLogger createLogger(String title) {
       return null;
     }

@@ -21,9 +21,10 @@ public class BrowserFactoryImpl extends BrowserFactory {
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
   @Override
-  public Browser create(SocketAddress socketAddress, ConnectionLogger connectionLogger) {
+  public Browser create(SocketAddress socketAddress,
+      ConnectionLogger.Factory connectionLoggerFactory) {
     SocketConnectionFactory socketConnectionFactory = new SocketConnectionFactory(socketAddress,
-        getTimeout(), connectionLogger, Handshaker.CHROMIUM);
+        getTimeout(), connectionLoggerFactory, Handshaker.CHROMIUM);
     return new BrowserImpl(socketConnectionFactory);
   }
 

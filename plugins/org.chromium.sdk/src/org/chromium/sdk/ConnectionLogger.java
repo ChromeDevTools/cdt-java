@@ -43,4 +43,20 @@ public interface ConnectionLogger {
   interface ConnectionCloser {
     void closeConnection();
   }
+
+  /**
+   * Notifies logger that EOS has been received from remote. Technically some
+   * traffic still may go through writer (i.e. be sent to remote) after this.
+   */
+  void handleEos();
+
+  /**
+   * Factory for connection logger. ConnectionLogger is NOT reconnectable.
+   */
+  interface Factory {
+    /**
+     * Creates new instance of {@link ConnectionLogger}.
+     */
+    ConnectionLogger newConnectionLogger();
+  }
 }
