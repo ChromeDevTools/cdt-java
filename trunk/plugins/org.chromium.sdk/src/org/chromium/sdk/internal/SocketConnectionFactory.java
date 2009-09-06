@@ -20,20 +20,20 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
 public class SocketConnectionFactory implements ConnectionFactory {
   private final SocketAddress endpoint;
   private final int connectionTimeoutMs;
-  private final ConnectionLogger connectionLogger;
+  private final ConnectionLogger.Factory connectionLoggerFactory;
   private final Handshaker handshaker;
 
   public SocketConnectionFactory(SocketAddress endpoint, int connectionTimeoutMs,
-      ConnectionLogger connectionLogger, Handshaker handshaker) {
+      ConnectionLogger.Factory connectionLoggerFactory, Handshaker handshaker) {
     this.endpoint = endpoint;
     this.connectionTimeoutMs = connectionTimeoutMs;
-    this.connectionLogger = connectionLogger;
+    this.connectionLoggerFactory = connectionLoggerFactory;
     this.handshaker = handshaker;
   }
 
   public SocketConnection newOpenConnection(NetListener netListener) throws IOException {
-    SocketConnection connection =
-        new SocketConnection(endpoint, connectionTimeoutMs, connectionLogger, handshaker);
+    SocketConnection connection = new SocketConnection(endpoint, connectionTimeoutMs,
+        connectionLoggerFactory.newConnectionLogger(), handshaker);
     connection.setNetListener(netListener);
     connection.start();
     return connection;

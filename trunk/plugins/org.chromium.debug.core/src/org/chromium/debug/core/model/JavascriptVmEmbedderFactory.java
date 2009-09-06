@@ -29,7 +29,7 @@ public class JavascriptVmEmbedderFactory {
 
   public static JavascriptVmEmbedder.Attachable connectToChromeDevTools(int port,
       ConnectionLogger logger, final TabSelector tabSelector,
-      ConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
+      NamedConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
 
     SocketAddress address = new InetSocketAddress(LOCALHOST, port);
     final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
@@ -103,7 +103,7 @@ public class JavascriptVmEmbedderFactory {
   }
 
   public static Attachable connectToStandalone(int port,
-      ConnectionLoggerFactory connectionLoggerFactory) {
+      NamedConnectionLoggerFactory connectionLoggerFactory) {
     SocketAddress address = new InetSocketAddress(LOCALHOST, port);
     ConnectionLogger connectionLogger =
       connectionLoggerFactory.createLogger(address.toString());
@@ -175,19 +175,25 @@ public class JavascriptVmEmbedderFactory {
      * (because you cannot add connection logger to existing connection).
      * @throws CoreException if browser can't be created because of conflict with connectionLogger
      */
-    synchronized Browser getOrCreateBrowser(SocketAddress address,
-        ConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
+    synchronized Browser getOrCreateBrowser(final SocketAddress address,
+        final NamedConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
       Browser result = address2Browser.get(address);
       if (result == null) {
-        ConnectionLogger connectionLogger =
-            connectionLoggerFactory.createLogger(address.toString());
-        result = createBrowserImpl(address, connectionLogger);
+
+        ConnectionLogger.Factory wrappedFactory = new ConnectionLogger.Factory() {
+          public ConnectionLogger newConnectionLogger() {
+            return connectionLoggerFactory.createLogger(address.toString());
+          }
+        };
+        result = createBrowserImpl(address, wrappedFactory);
+
         address2Browser.put(address, result);
       }
       return result;
     }
-    private Browser createBrowserImpl(SocketAddress address, ConnectionLogger connectionLogger) {
-      return BrowserFactory.getInstance().create(address, connectionLogger);
+    private Browser createBrowserImpl(SocketAddress address,
+        ConnectionLogger.Factory connectionLoggerFactory) {
+      return BrowserFactory.getInstance().create(address, connectionLoggerFactory);
     }
 
     private final Map<SocketAddress, Browser> address2Browser =
