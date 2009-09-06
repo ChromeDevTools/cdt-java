@@ -151,6 +151,13 @@ public class BrowserImpl implements Browser {
       return devToolsHandler;
     }
 
+    @Override
+    protected void checkHealth() {
+      // We do not actually interrupt here. It's more an assert for now: we throw an exception,
+      // if connection is unexpectedly closed.
+      checkConnection();
+    }
+
     private void checkConnection() {
       if (!sessionConnection.isConnected()) {
         throw new IllegalStateException("connection is not started");
@@ -208,7 +215,7 @@ public class BrowserImpl implements Browser {
         }
 
         devToolsHandler.handleEos();
-        Collection<? extends RuntimeException> problems = stopNewConnectionsAndCancelOld();
+        Collection<? extends RuntimeException> problems = interruptSession();
         for (RuntimeException ex : problems) {
           LOGGER.log(Level.SEVERE, "Failure in closing connections", ex);
         }
