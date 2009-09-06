@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.JavascriptVmEmbedder.Attachable;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
@@ -27,12 +26,13 @@ public class JavascriptVmEmbedderFactory {
 
   private static final String LOCALHOST = "127.0.0.1"; //$NON-NLS-1$
 
-  public static JavascriptVmEmbedder.Attachable connectToChromeDevTools(int port,
-      ConnectionLogger logger, final TabSelector tabSelector,
-      NamedConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToChromeDevTools(int port,
+      NamedConnectionLoggerFactory connectionLoggerFactory, final TabSelector tabSelector)
+      throws CoreException {
 
     SocketAddress address = new InetSocketAddress(LOCALHOST, port);
     final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
+
     final TabFetcher tabFetcher;
     try {
       tabFetcher = browser.createTabFetcher();
@@ -42,34 +42,35 @@ public class JavascriptVmEmbedderFactory {
       throw newCoreException(e);
     }
 
-    return new JavascriptVmEmbedder.Attachable() {
-
-      public JavascriptVmEmbedder selectVm() throws CoreException {
-        // TODO(peter.rybin): call TabFetcher#dismiss here to release connection properly.
+    return new JavascriptVmEmbedder.ConnectionToRemote() {
+      public JavascriptVmEmbedder.VmConnector selectVm() throws CoreException {
         Browser.TabConnector targetTabConnector;
         try {
           targetTabConnector = tabSelector.selectTab(tabFetcher);
         } catch (IOException e) {
-          throw newCoreException("Failed to get tabs for debugging", e); //$NON-NLS-1$
+          throw newCoreException("Failed to get tabs for debugging", e);
         }
         if (targetTabConnector == null) {
           return null;
         }
 
-        return new EmbeddingTab(targetTabConnector);
+        return new EmbeddingTabConnector(targetTabConnector);
+      }
+
+      public void disposeConnection() {
+        tabFetcher.dismiss();
       }
     };
   }
 
-  private static final class EmbeddingTab implements JavascriptVmEmbedder {
+  private static final class EmbeddingTabConnector implements JavascriptVmEmbedder.VmConnector {
     private final Browser.TabConnector targetTabConnector;
-    private BrowserTab targetTab = null;
 
-    EmbeddingTab(Browser.TabConnector targetTabConnector) {
+    EmbeddingTabConnector(Browser.TabConnector targetTabConnector) {
       this.targetTabConnector = targetTabConnector;
     }
 
-    public boolean attach(final Listener embedderListener,
+    public JavascriptVmEmbedder attach(final JavascriptVmEmbedder.Listener embedderListener,
         final DebugEventListener debugEventListener) throws IOException {
       TabDebugEventListener tabDebugEventListener = new TabDebugEventListener() {
         public DebugEventListener getDebugEventListener() {
@@ -82,27 +83,24 @@ public class JavascriptVmEmbedderFactory {
           embedderListener.reset();
         }
       };
-      targetTab = targetTabConnector.attach(tabDebugEventListener);
-      return targetTab != null;
-    }
+      final BrowserTab browserTab = targetTabConnector.attach(tabDebugEventListener);
+      return new JavascriptVmEmbedder() {
+        public JavascriptVm getJavascriptVm() {
+          return browserTab;
+        }
 
-    public JavascriptVm getJavascriptVm() {
-      if (targetTab == null) {
-        throw new IllegalStateException("Tab not attached yet"); //$NON-NLS-1$
-      }
-      return targetTab;
-    }
+        public String getTargetName() {
+          return Messages.DebugTargetImpl_TargetName;
+        }
 
-    public String getTargetName() {
-      return Messages.DebugTargetImpl_TargetName;
-    }
-
-    public String getThreadName() {
-      return targetTab.getUrl();
+        public String getThreadName() {
+          return browserTab.getUrl();
+        }
+      };
     }
   }
 
-  public static Attachable connectToStandalone(int port,
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToStandalone(int port,
       NamedConnectionLoggerFactory connectionLoggerFactory) {
     SocketAddress address = new InetSocketAddress(LOCALHOST, port);
     ConnectionLogger connectionLogger =
@@ -110,44 +108,55 @@ public class JavascriptVmEmbedderFactory {
     final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(address,
         connectionLogger);
 
-    return new Attachable() {
-      public JavascriptVmEmbedder selectVm() {
-        return new JavascriptVmEmbedder() {
-          public boolean attach(Listener embedderListener, DebugEventListener debugEventListener) {
+    return new JavascriptVmEmbedder.ConnectionToRemote() {
+      public JavascriptVmEmbedder.VmConnector selectVm() {
+        return new JavascriptVmEmbedder.VmConnector() {
+          public JavascriptVmEmbedder attach(JavascriptVmEmbedder.Listener embedderListener,
+              DebugEventListener debugEventListener) throws IOException {
             embedderListener = null;
-            return standaloneVm.attach(debugEventListener);
-          }
-          public JavascriptVm getJavascriptVm() {
-            return standaloneVm;
-          }
-          public String getTargetName() {
-            String embedderName = standaloneVm.getEmbedderName();
-            String vmVersion = standaloneVm.getVmVersion();
-            String disconnectReason = standaloneVm.getDisconnectReason();
-            String targetTitle;
-            if (embedderName == null) {
-              targetTitle = ""; //$NON-NLS-1$
-            } else {
-              targetTitle = MessageFormat.format(Messages.JavascriptVmEmbedderFactory_TargetName0,
-                  embedderName, vmVersion);
+            boolean attached = standaloneVm.attach(debugEventListener);
+            if (!attached) {
+              throw new IOException("Failed to attach to V8 VM");
             }
-            boolean isAttached = standaloneVm.isAttached();
-            if (!isAttached) {
-              String disconnectMessage;
-              if (disconnectReason == null) {
-                disconnectMessage = Messages.JavascriptVmEmbedderFactory_Terminated;
-              } else {
-                disconnectMessage = MessageFormat.format(
-                    Messages.JavascriptVmEmbedderFactory_TerminatedWithReason, disconnectReason);
+            return new JavascriptVmEmbedder() {
+              public JavascriptVm getJavascriptVm() {
+                return standaloneVm;
               }
-              targetTitle = "<" + disconnectMessage + "> " + targetTitle; //$NON-NLS-1$//$NON-NLS-2$
-            }
-            return targetTitle;
-          }
-          public String getThreadName() {
-            return ""; //$NON-NLS-1$
+              public String getTargetName() {
+                String embedderName = standaloneVm.getEmbedderName();
+                String vmVersion = standaloneVm.getVmVersion();
+                String disconnectReason = standaloneVm.getDisconnectReason();
+                String targetTitle;
+                if (embedderName == null) {
+                  targetTitle = ""; //$NON-NLS-1$
+                } else {
+                  targetTitle = MessageFormat.format(
+                      Messages.JavascriptVmEmbedderFactory_TargetName0, embedderName, vmVersion);
+                }
+                boolean isAttached = standaloneVm.isAttached();
+                if (!isAttached) {
+                  String disconnectMessage;
+                  if (disconnectReason == null) {
+                    disconnectMessage = Messages.JavascriptVmEmbedderFactory_Terminated;
+                  } else {
+                    disconnectMessage = MessageFormat.format(
+                        Messages.JavascriptVmEmbedderFactory_TerminatedWithReason,
+                        disconnectReason);
+                  }
+                  targetTitle = "<" + disconnectMessage + "> " + targetTitle;
+                }
+                return targetTitle;
+              }
+              public String getThreadName() {
+                return "";
+              }
+            };
           }
         };
+      }
+
+      public void disposeConnection() {
+        standaloneVm.detach();
       }
     };
   }
@@ -159,7 +168,7 @@ public class JavascriptVmEmbedderFactory {
   private static CoreException newCoreException(Exception e) {
     return new CoreException(
         new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-            "Failed to connect to the remote browser", e)); //$NON-NLS-1$
+            "Failed to connect to the remote browser", e));
   }
 
   private static final BrowserCache browserCache = new BrowserCache();

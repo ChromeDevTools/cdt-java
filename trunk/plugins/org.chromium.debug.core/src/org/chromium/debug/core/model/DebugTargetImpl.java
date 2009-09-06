@@ -54,7 +54,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private final JavascriptThread[] threads;
 
-  private JavascriptVmEmbedder vmEmbedder = null;
+  private JavascriptVmEmbedder vmEmbedder = STUB_VM_EMBEDDER;
 
   private ResourceManager resourceManager;
 
@@ -80,37 +80,36 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
    * Loads browser tabs, consults the {@code selector} which of the tabs to
    * attach to, and if any has been selected, requests an attachment to the tab.
    *
-   * @param projectName to create for the browser scripts
-   * @param attachable target embedding application
+   * @param projectNameBase to create for the browser scripts
+   * @param remoteServer embedding application we are connected with
    * @param attachCallback to invoke on successful attachment
    * @param monitor to report the progress to
    * @return whether the target has attached to a tab
    * @throws CoreException
    */
-  public boolean attach(String projectNameBase, JavascriptVmEmbedder.Attachable attachable,
-      Runnable attachCallback, IProgressMonitor monitor) throws CoreException {
+  public boolean attach(String projectNameBase,
+      JavascriptVmEmbedder.ConnectionToRemote remoteServer, Runnable attachCallback,
+      IProgressMonitor monitor) throws CoreException {
     monitor.beginTask("", 2); //$NON-NLS-1$
-    this.vmEmbedder = attachable.selectVm();
-    if (vmEmbedder == null) {
+    JavascriptVmEmbedder.VmConnector connector = remoteServer.selectVm();
+    if (connector == null) {
       return false;
     }
     monitor.worked(1);
-    return performAttach(projectNameBase, attachCallback);
+    return performAttach(projectNameBase, connector, attachCallback);
   }
 
-  private boolean performAttach(String projectNameBase, Runnable attachCallback) {
-    boolean attachResult;
+  private boolean performAttach(String projectNameBase, JavascriptVmEmbedder.VmConnector connector,
+      Runnable attachCallback) {
+    final JavascriptVmEmbedder embedder;
     try {
-      attachResult = vmEmbedder.attach(embedderListener, debugEventListener);
+      embedder = connector.attach(embedderListener, debugEventListener);
     } catch (IOException e) {
       ChromiumDebugPlugin.logWarning("Could not attach to a browser tab", e); //$NON-NLS-1$
       return false;
     }
-    if (!attachResult) {
-      // Could not attach. Log a warning...
-      ChromiumDebugPlugin.logWarning("Could not attach to a browser tab"); //$NON-NLS-1$
-      return false;
-    }
+
+    vmEmbedder = embedder;
 
     // We might want to add some url-specific suffix here
     String projectName = projectNameBase;
@@ -609,6 +608,23 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       if (debugProject != null) {
         ChromiumDebugPluginUtil.deleteVirtualProjectAsync(debugProject);
       }
+    }
+  };
+
+  private final static JavascriptVmEmbedder STUB_VM_EMBEDDER = new JavascriptVmEmbedder() {
+    public JavascriptVm getJavascriptVm() {
+      //TODO(peter.rybin): decide and redo this exception
+      throw new UnsupportedOperationException();
+    }
+
+    public String getTargetName() {
+      //TODO(peter.rybin): decide and redo this exception
+      throw new UnsupportedOperationException();
+    }
+
+    public String getThreadName() {
+      //TODO(peter.rybin): decide and redo this exception
+      throw new UnsupportedOperationException();
     }
   };
 }

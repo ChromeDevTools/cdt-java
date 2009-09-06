@@ -22,31 +22,35 @@ import org.eclipse.core.runtime.CoreException;
 public interface JavascriptVmEmbedder {
 
   /**
-   * Intermediate object that works as a factory for
-   * {@code JavascriptVmEmbedder}. When working it can interact with user
-   * via UI.
+   * First intermediate object that corresponds to already connected server.
+   * This does not refer to a particular Javascript VM though:
+   * the server may contain several VMs to choose from.
    */
-  interface Attachable {
+  interface ConnectionToRemote {
     /**
-     * This method may open a dialog window; e.g. suggesting choosing
-     * a particular tab.
-     * @return null if user chose to cancel operation
+     * This method performs selecting a particular Javascript VM. This is
+     * likely to be a user-assisted activity, so this method may block
+     * indefinitely.
+     * @return null if no VM has been chosen and we should cancel the operation
      */
-    JavascriptVmEmbedder selectVm() throws CoreException;
+    VmConnector selectVm() throws CoreException;
+
+    void disposeConnection();
   }
 
   /**
-   * Note that this method returns {@code JavascriptVm} event before attach
-   * is called.
+   * Intermediate object that works as an intermediate factory
+   * for {@code JavascriptVmEmbedder}.
+   */
+  interface VmConnector {
+    JavascriptVmEmbedder attach(Listener embedderListener, DebugEventListener debugEventListener)
+        throws IOException;
+  }
+
+  /**
    * @return not null
    */
   JavascriptVm getJavascriptVm();
-
-  /**
-   * @return true if successfully attached
-   */
-  boolean attach(Listener embedderListener, DebugEventListener debugEventListener)
-      throws IOException;
 
   String getTargetName();
 

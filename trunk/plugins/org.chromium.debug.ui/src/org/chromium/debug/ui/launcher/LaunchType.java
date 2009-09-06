@@ -12,12 +12,11 @@ import java.io.Writer;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
-import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
-import org.chromium.debug.core.model.JavascriptVmEmbedder.Attachable;
+import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
 import org.chromium.debug.ui.DialogBasedTabSelector;
 import org.chromium.debug.ui.PluginUtil;
 import org.chromium.sdk.ConnectionLogger;
@@ -39,12 +38,12 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
   public static class Chromium extends LaunchType {
     @Override
-    protected Attachable createAttachable(int port, ILaunch launch, boolean addConsoleLogger)
-        throws CoreException {
+    protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
+        ILaunch launch, boolean addConsoleLogger) throws CoreException {
       NamedConnectionLoggerFactory consoleFactory =
-          addConsoleLogger ? CONNECTION_LOGGER_FACTORY : NO_CONNECTION_LOGGER_FACTORY;
-      return JavascriptVmEmbedderFactory.connectToChromeDevTools(port, null,
-          new DialogBasedTabSelector(), consoleFactory);
+        addConsoleLogger ? CONNECTION_LOGGER_FACTORY : NO_CONNECTION_LOGGER_FACTORY;
+      return JavascriptVmEmbedderFactory.connectToChromeDevTools(port, consoleFactory,
+          new DialogBasedTabSelector());
     }
 
     /**
@@ -105,8 +104,8 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
   public static class StandaloneV8 extends LaunchType {
     @Override
-    protected Attachable createAttachable(int port, final ILaunch launch,
-        boolean addConsoleLogger) {
+    protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
+        final ILaunch launch, boolean addConsoleLogger) {
       NamedConnectionLoggerFactory consoleFactory;
       if (addConsoleLogger) {
         consoleFactory = new NamedConnectionLoggerFactory() {
@@ -129,7 +128,7 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
   public static final String ADD_NETWORK_CONSOLE = "add_network_console"; //$NON-NLS-1$
 
-  public void launch(ILaunchConfiguration config, String mode, ILaunch launch,
+  public void launch(ILaunchConfiguration config, String mode, final ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
     // Chromium JavaScript launch is only supported for debugging.
     if (mode.equals(ILaunchManager.DEBUG_MODE)) {
@@ -139,45 +138,41 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
       boolean addNetworkConsole = config.getAttribute(LaunchType.ADD_NETWORK_CONSOLE, false);
 
-      JavascriptVmEmbedder.Attachable attachable =
-          createAttachable(port, launch, addNetworkConsole);
-
-      String projectNameBase = config.getName();
-
-      DebugTargetImpl target = new DebugTargetImpl(launch);
+      JavascriptVmEmbedder.ConnectionToRemote remoteServer =
+          createConnectionToRemote(port, launch, addNetworkConsole);
       try {
-        boolean attached = target.attach(
-            projectNameBase,
-            attachable,
-            new Runnable() {
-              public void run() {
-                PluginUtil.openProjectExplorerView();
-              }
-            },
-            monitor);
-        if (!attached) {
-          terminateTarget(target);
+
+        String projectNameBase = config.getName();
+
+        try {
+          final DebugTargetImpl target = new DebugTargetImpl(launch);
+          boolean attached = target.attach(
+              projectNameBase, remoteServer,
+              new Runnable() {
+                public void run() {
+                  PluginUtil.openProjectExplorerView();
+                }
+              },
+              monitor);
+          if (!attached) {
+            // Error
+            return;
+          }
+
+          launch.addDebugTarget(target);
+          monitor.done();
+        } finally {
+          // handle failures here with some utility class
         }
-      } catch (CoreException e) {
-        terminateTarget(target);
-        throw e;
-      } catch (RuntimeException e) {
-        terminateTarget(target);
-        throw e;
+
       } finally {
-        launch.addDebugTarget(target);
-        monitor.done();
+        remoteServer.disposeConnection();
       }
     }
   }
 
-  protected abstract JavascriptVmEmbedder.Attachable createAttachable(int port, ILaunch launch,
-      boolean addConsoleLogger) throws CoreException;
-
-  private static void terminateTarget(DebugTargetImpl target) {
-    target.setDisconnected(true);
-    target.fireTerminateEvent();
-  }
+  protected abstract JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
+      ILaunch launch, boolean addConsoleLogger) throws CoreException;
 
   public static ConnectionLogger createConsoleAndLogger(ILaunch launch, String title) {
     ConsolePseudoProcess.WritableStreamMonitor consolePart =
