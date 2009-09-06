@@ -92,9 +92,9 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
         synchronized (this) {
           Writer writer = new OutputStreamWriter(new FileOutputStream(file));
           writer.write(
-              "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" //$NON-NLS-1$
-              + "<launchConfiguration " //$NON-NLS-1$
-              + "type=\"org.chromium.debug.ui.ConsolePseudoConfigurationType\"/>"); //$NON-NLS-1$
+              "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" + //$NON-NLS-1$
+              "<launchConfiguration " + //$NON-NLS-1$
+              "type=\"org.chromium.debug.ui.ConsolePseudoConfigurationType\"/>"); //$NON-NLS-1$
           writer.close();
         }
         return configurationPath;

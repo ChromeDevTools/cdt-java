@@ -55,7 +55,7 @@ public interface Browser {
 
   /**
    * Tab list item that is fetched from browser. Connector may correspond to a tab,
-   * which is already be attached. Connector is used to attach to tab.
+   * which is already attached. Connector is used to attach to tab.
    */
   interface TabConnector {
     /**
