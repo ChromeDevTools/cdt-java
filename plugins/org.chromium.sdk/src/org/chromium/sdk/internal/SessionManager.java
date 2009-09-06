@@ -66,10 +66,15 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
    * Registers user request for resource and switches the resource on if required.
    * @return new ticket which symbolize use of resource until
    *             {@link Ticket#dismiss()} is called
-   * @throws EX if new session was being created and failed
+   * @throws EX if connect required creating a new session and if the new session creation
+   *         has failed
    */
   public Ticket<SESSION> connect() throws EX {
     synchronized (this) {
+      if (currentSession != null) {
+        // this may reset currentSession
+        currentSession.checkHealth();
+      }
       if (currentSession == null) {
         currentSession = newSessionObject();
         if (currentSession.manager != this) {
@@ -113,6 +118,15 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
     protected abstract SESSION getThisAsSession();
 
     /**
+     * Session may check its health here. This check is made on
+     * every new connection. If it appears that the session is no longer alive
+     * the method should call {@link #interruptSession()}. However, this is a highly
+     * unwanted scenario: session should interrupt itself synchronously, no
+     * on-demand from this method.
+     */
+    protected abstract void checkHealth();
+
+    /**
      * User-provided behavior when no more valid tickets left. Resource should
      * be switched off whatever it actually means and the session closed.
      * There are 3 options here:
@@ -142,10 +156,11 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
     }
 
     /**
-     * Don't forget to call {@link #closeSession()} manually.
+     * Stops all new connections and cancels all existing tickets. Don't forget
+     * to call {@link #closeSession()} manually.
      * @return collection of exceptions we gathered from tickets
      */
-    protected Collection<? extends RuntimeException> stopNewConnectionsAndCancelOld() {
+    protected Collection<? extends RuntimeException> interruptSession() {
       synchronized (manager) {
         isConnectionStopped = true;
         isCancelled = true;
