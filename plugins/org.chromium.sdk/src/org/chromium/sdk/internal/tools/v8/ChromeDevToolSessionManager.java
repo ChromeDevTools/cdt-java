@@ -212,10 +212,11 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       result = sendSimpleCommandSync(detachCallback, command);
     } catch (AttachmentFailureException e) {
       result = null;
-    }
+    } finally {
 
-    // Make sure line is cut
-    cutTheLine();
+      // Make sure line is cut
+      cutTheLine();
+    }
 
     return result;
   }
