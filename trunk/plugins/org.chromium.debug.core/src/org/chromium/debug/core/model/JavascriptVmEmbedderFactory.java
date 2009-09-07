@@ -148,7 +148,7 @@ public class JavascriptVmEmbedderFactory {
                 return targetTitle;
               }
               public String getThreadName() {
-                return "";
+                return ""; //$NON-NLS-1$
               }
             };
           }
@@ -156,7 +156,7 @@ public class JavascriptVmEmbedderFactory {
       }
 
       public void disposeConnection() {
-        standaloneVm.detach();
+        // Nothing to do. We do not take connection for ConnectionToRemote.
       }
     };
   }

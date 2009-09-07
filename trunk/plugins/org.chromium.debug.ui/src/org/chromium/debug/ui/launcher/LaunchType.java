@@ -14,6 +14,8 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.Destructable;
+import org.chromium.debug.core.model.DestructingGuard;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
@@ -144,10 +146,28 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
         String projectNameBase = config.getName();
 
+        DestructingGuard destructingGuard = new DestructingGuard();
         try {
+          Destructable lauchDestructor = new Destructable() {
+            public void destruct() {
+              if (!launch.hasChildren()) {
+                DebugPlugin.getDefault().getLaunchManager().removeLaunch(launch);
+              }
+            }
+          };
+
+          destructingGuard.addValue(lauchDestructor);
+
           final DebugTargetImpl target = new DebugTargetImpl(launch);
+
+          Destructable targetDestructor = new Destructable() {
+            public void destruct() {
+              terminateTarget(target);
+            }
+          };
+          destructingGuard.addValue(targetDestructor);
           boolean attached = target.attach(
-              projectNameBase, remoteServer,
+              projectNameBase, remoteServer, destructingGuard,
               new Runnable() {
                 public void run() {
                   PluginUtil.openProjectExplorerView();
@@ -161,8 +181,11 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
           launch.addDebugTarget(target);
           monitor.done();
+
+          // All OK
+          destructingGuard.discharge();
         } finally {
-          // handle failures here with some utility class
+          destructingGuard.doFinally();
         }
 
       } finally {
@@ -173,6 +196,11 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
 
   protected abstract JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
       ILaunch launch, boolean addConsoleLogger) throws CoreException;
+
+  private static void terminateTarget(DebugTargetImpl target) {
+    target.setDisconnected(true);
+    target.fireTerminateEvent();
+  }
 
   public static ConnectionLogger createConsoleAndLogger(ILaunch launch, String title) {
     ConsolePseudoProcess.WritableStreamMonitor consolePart =

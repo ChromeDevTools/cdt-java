@@ -71,9 +71,13 @@ public class V8CommandProcessor {
       V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
 
     if (v8HandlerCallback != null) {
-      // TODO(peter.rybin): should we handle IllegalStateException here if map is closed?
-      callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
-          syncCallback));
+      // TODO(peter.rybin): should we handle IllegalStateException better than rethrowing it?
+      try {
+        callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
+            syncCallback));
+      } catch (IllegalStateException e) {
+        throw new IllegalStateException("Connection is closed", e);
+      }
     }
     try {
       messageOutput.send(message, isImmediate);
