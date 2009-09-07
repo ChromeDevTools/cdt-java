@@ -88,19 +88,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
    * @throws CoreException
    */
   public boolean attach(String projectNameBase,
-      JavascriptVmEmbedder.ConnectionToRemote remoteServer, Runnable attachCallback,
-      IProgressMonitor monitor) throws CoreException {
+      JavascriptVmEmbedder.ConnectionToRemote remoteServer, DestructingGuard destructingGuard,
+      Runnable attachCallback, IProgressMonitor monitor) throws CoreException {
     monitor.beginTask("", 2); //$NON-NLS-1$
     JavascriptVmEmbedder.VmConnector connector = remoteServer.selectVm();
     if (connector == null) {
       return false;
     }
     monitor.worked(1);
-    return performAttach(projectNameBase, connector, attachCallback);
+    return performAttach(projectNameBase, connector, destructingGuard, attachCallback);
   }
 
   private boolean performAttach(String projectNameBase, JavascriptVmEmbedder.VmConnector connector,
-      Runnable attachCallback) {
+      DestructingGuard destructingGuard, Runnable attachCallback) {
     final JavascriptVmEmbedder embedder;
     try {
       embedder = connector.attach(embedderListener, debugEventListener);
@@ -108,6 +108,14 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       ChromiumDebugPlugin.logWarning("Could not attach to a browser tab", e); //$NON-NLS-1$
       return false;
     }
+
+    Destructable embedderDestructor = new Destructable() {
+      public void destruct() {
+        embedder.getJavascriptVm().detach();
+      }
+    };
+
+    destructingGuard.addValue(embedderDestructor);
 
     vmEmbedder = embedder;
 
