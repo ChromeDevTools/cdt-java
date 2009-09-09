@@ -147,6 +147,8 @@ public class SocketConnection implements Connection {
         /** The thread that dispatches the inbound messages (to avoid queue growth.) */
         startResponseDispatcherThread();
 
+        connectionLogger.start();
+
         handshaker.perform(reader, handshakeWriter);
 
         startWriterThread();

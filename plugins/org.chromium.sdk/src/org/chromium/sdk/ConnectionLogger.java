@@ -45,6 +45,12 @@ public interface ConnectionLogger {
   }
 
   /**
+   * Notifies logger that actual transmission is starting. After this {@link #handleEos()}
+   * is guaranteed to be called.
+   */
+  void start();
+
+  /**
    * Notifies logger that EOS has been received from remote. Technically some
    * traffic still may go through writer (i.e. be sent to remote) after this.
    */

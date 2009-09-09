@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
@@ -76,10 +77,7 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
       }
 
       public ConnectionLogger createLogger(String title) {
-        ConnectionLogger logger = LaunchType.createConsoleAndLogger(commonLaunch, title);
-        // Active the launch (again if it already has been removed)
-        DebugPlugin.getDefault().getLaunchManager().addLaunch(commonLaunch);
-        return logger;
+        return LaunchType.createConsoleAndLogger(commonLaunch, true, title);
       }
 
       /**
@@ -112,7 +110,7 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
       if (addConsoleLogger) {
         consoleFactory = new NamedConnectionLoggerFactory() {
           public ConnectionLogger createLogger(String title) {
-            return LaunchType.createConsoleAndLogger(launch, title);
+            return LaunchType.createConsoleAndLogger(launch, false, title);
           }
         };
       } else {
@@ -201,16 +199,38 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
     target.fireTerminateEvent();
   }
 
-  public static ConnectionLogger createConsoleAndLogger(ILaunch launch, String title) {
-    ConsolePseudoProcess.WritableStreamMonitor consolePart =
-        new ConsolePseudoProcess.WritableStreamMonitor();
-    ConnectionLoggerImpl logger = new ConnectionLoggerImpl(consolePart, consolePart);
+  public static ConnectionLogger createConsoleAndLogger(final ILaunch launch,
+      final boolean addLaunchToManager, final String title) {
+    final ConsolePseudoProcess.Retransmitter consoleRetransmitter =
+        new ConsolePseudoProcess.Retransmitter();
 
-    ConsolePseudoProcess consolePseudoProcess = new ConsolePseudoProcess(launch, title, consolePart,
-        logger.getConnectionTerminate());
+    // This controller is responsible for creating ConsolePseudoProcess only on
+    // logStarted call. Before this ConnectionLoggerImpl with all it fields should stay
+    // garbage-collectible, because connection may not even start.
+    ConnectionLoggerImpl.LogLifecycleListener consoleController =
+        new ConnectionLoggerImpl.LogLifecycleListener() {
+      private final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
 
-    consolePart.startFlushing();
-    return logger;
+      public void logClosed() {
+        consoleRetransmitter.processClosed();
+      }
+
+      public void logStarted(ConnectionLoggerImpl connectionLogger) {
+        boolean res = alreadyStarted.compareAndSet(false, true);
+        if (!res) {
+          throw new IllegalStateException();
+        }
+        ConsolePseudoProcess consolePseudoProcess = new ConsolePseudoProcess(launch, title,
+            consoleRetransmitter, connectionLogger.getConnectionTerminate());
+        consoleRetransmitter.startFlushing();
+        if (addLaunchToManager) {
+          // Active the launch (again if it already has been removed)
+          DebugPlugin.getDefault().getLaunchManager().addLaunch(launch);
+       }
+      }
+    };
+
+    return new ConnectionLoggerImpl(consoleRetransmitter, consoleController);
   }
 
   private static final NamedConnectionLoggerFactory NO_CONNECTION_LOGGER_FACTORY =
