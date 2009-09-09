@@ -4,8 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import java.io.IOException;
-
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.eclipse.core.runtime.CoreException;
@@ -44,7 +42,7 @@ public interface JavascriptVmEmbedder {
    */
   interface VmConnector {
     JavascriptVmEmbedder attach(Listener embedderListener, DebugEventListener debugEventListener)
-        throws IOException;
+        throws CoreException;
   }
 
   /**

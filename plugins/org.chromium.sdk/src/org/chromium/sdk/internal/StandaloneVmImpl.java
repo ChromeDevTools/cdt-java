@@ -4,8 +4,11 @@
 
 package org.chromium.sdk.internal;
 
+import java.io.IOException;
+
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.StandaloneVm;
+import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.internal.tools.v8.StandaloneVmSessionManager;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
@@ -36,8 +39,8 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     return sessionManager;
   }
 
-  public boolean attach(DebugEventListener listener) {
-    return sessionManager.attach(listener);
+  public void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException {
+    sessionManager.attach(listener);
   }
 
   public boolean detach() {

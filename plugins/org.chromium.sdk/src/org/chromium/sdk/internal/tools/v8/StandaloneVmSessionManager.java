@@ -63,24 +63,23 @@ public class StandaloneVmSessionManager implements DebugSessionManager {
         v8CommandOutput);
   }
 
-  public boolean attach(DebugEventListener listener) {
+  public void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException {
     Exception errorCause = null;
     try {
       attachImpl(listener);
     } catch (IOException e) {
       errorCause = e;
-      LOGGER.log(Level.SEVERE, "Failed to attach to VM", e);
+      throw e;
     } catch (UnsupportedVersionException e) {
       errorCause = e;
-      LOGGER.log(Level.SEVERE, "Failed to attach to VM", e);
+      throw e;
+    } finally {
+      if (errorCause != null) {
+        disconnectReason = errorCause;
+        connectionState = DETACHED_STATE;
+        connection.close();
+      }
     }
-    if (errorCause != null) {
-      disconnectReason = errorCause;
-      connectionState = DETACHED_STATE;
-      connection.close();
-      return false;
-    }
-    return true;
   }
 
   private void attachImpl(DebugEventListener listener) throws IOException,

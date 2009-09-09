@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import java.io.IOException;
 import java.util.Collection;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -100,14 +99,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   private boolean performAttach(String projectNameBase, JavascriptVmEmbedder.VmConnector connector,
-      DestructingGuard destructingGuard, Runnable attachCallback) {
-    final JavascriptVmEmbedder embedder;
-    try {
-      embedder = connector.attach(embedderListener, debugEventListener);
-    } catch (IOException e) {
-      ChromiumDebugPlugin.logWarning("Could not attach to a browser tab", e); //$NON-NLS-1$
-      return false;
-    }
+      DestructingGuard destructingGuard, Runnable attachCallback) throws CoreException {
+    final JavascriptVmEmbedder embedder = connector.attach(embedderListener, debugEventListener);
 
     Destructable embedderDestructor = new Destructable() {
       public void destruct() {
