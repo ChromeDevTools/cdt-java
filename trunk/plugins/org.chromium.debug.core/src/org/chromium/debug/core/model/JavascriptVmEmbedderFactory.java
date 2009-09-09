@@ -71,7 +71,7 @@ public class JavascriptVmEmbedderFactory {
     }
 
     public JavascriptVmEmbedder attach(final JavascriptVmEmbedder.Listener embedderListener,
-        final DebugEventListener debugEventListener) throws IOException {
+        final DebugEventListener debugEventListener) throws CoreException {
       TabDebugEventListener tabDebugEventListener = new TabDebugEventListener() {
         public DebugEventListener getDebugEventListener() {
           return debugEventListener;
@@ -83,7 +83,12 @@ public class JavascriptVmEmbedderFactory {
           embedderListener.reset();
         }
       };
-      final BrowserTab browserTab = targetTabConnector.attach(tabDebugEventListener);
+      final BrowserTab browserTab;
+      try {
+        browserTab = targetTabConnector.attach(tabDebugEventListener);
+      } catch (IOException e) {
+        throw newCoreException("Failed to connect to browser tab", e);
+      }
       return new JavascriptVmEmbedder() {
         public JavascriptVm getJavascriptVm() {
           return browserTab;
@@ -112,11 +117,15 @@ public class JavascriptVmEmbedderFactory {
       public JavascriptVmEmbedder.VmConnector selectVm() {
         return new JavascriptVmEmbedder.VmConnector() {
           public JavascriptVmEmbedder attach(JavascriptVmEmbedder.Listener embedderListener,
-              DebugEventListener debugEventListener) throws IOException {
+              DebugEventListener debugEventListener)
+              throws CoreException {
             embedderListener = null;
-            boolean attached = standaloneVm.attach(debugEventListener);
-            if (!attached) {
-              throw new IOException("Failed to attach to V8 VM");
+            try {
+              standaloneVm.attach(debugEventListener);
+            } catch (IOException e) {
+              throw newCoreException("Failed to connect to V8 VM", e);
+            } catch (UnsupportedVersionException e) {
+              throw newCoreException("Failed to connect to V8 VM", e);
             }
             return new JavascriptVmEmbedder() {
               public JavascriptVm getJavascriptVm() {
