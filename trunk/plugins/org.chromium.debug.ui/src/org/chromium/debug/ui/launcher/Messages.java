@@ -17,13 +17,9 @@ public class Messages extends NLS {
 
   public static String ChromiumRemoteTab_PortLabel;
 
-  public static String ChromiumRemoteTab_ProjectNameLabel;
-
   public static String ChromiumRemoteTab_RemoteTabName;
-  
+
   public static String ChromiumRemoteTab_InvalidPortNumberError;
-  
-  public static String ChromiumRemoteTab_InvalidProjectNameError;
 
   public static String LaunchType_LogConsoleLaunchName;
   static {

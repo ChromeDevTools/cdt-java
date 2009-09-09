@@ -125,9 +125,6 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
   /** Launch configuration attribute (debug port). */
   public static final String CHROMIUM_DEBUG_PORT = "debug_port"; //$NON-NLS-1$
 
-  /** Launch configuration attribute (target project name). */
-  public static final String CHROMIUM_DEBUG_PROJECT_NAME = "debug_project_name"; //$NON-NLS-1$
-
   public static final String ADD_NETWORK_CONSOLE = "add_network_console"; //$NON-NLS-1$
 
   public void launch(ILaunchConfiguration config, String mode, final ILaunch launch,
@@ -178,6 +175,8 @@ public abstract class LaunchType implements ILaunchConfigurationDelegate {
             // Error
             return;
           }
+
+          launch.setSourceLocator(target.getSourceLocator());
 
           launch.addDebugTarget(target);
           monitor.done();

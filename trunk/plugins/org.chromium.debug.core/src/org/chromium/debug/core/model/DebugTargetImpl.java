@@ -37,6 +37,8 @@ import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
 
 /**
@@ -497,6 +499,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return debugContext;
   }
 
+  public ISourceLocator getSourceLocator() {
+    return sourceLocator;
+  }
+
   private void removeAllBreakpoints() {
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
     IBreakpoint[] breakpoints =
@@ -626,6 +632,26 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     public String getThreadName() {
       //TODO(peter.rybin): decide and redo this exception
       throw new UnsupportedOperationException();
+    }
+  };
+
+  /**
+   * This very simple source locator works because we provide our own source files.
+   * We'll have to try harder, one we link with resource js files.
+   */
+  private final ISourceLocator sourceLocator = new ISourceLocator() {
+    public Object getSourceElement(IStackFrame stackFrame) {
+      if (stackFrame instanceof StackFrame == false) {
+        return null;
+      }
+      StackFrame jsStackFrame = (StackFrame) stackFrame;
+
+      Script script = jsStackFrame.getCallFrame().getScript();
+      if (script == null) {
+        return null;
+      }
+
+      return resourceManager.getResource(script);
     }
   };
 }
