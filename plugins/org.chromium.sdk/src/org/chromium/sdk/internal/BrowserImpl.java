@@ -54,8 +54,6 @@ public class BrowserImpl implements Browser {
   /** The browser connection (gets opened in session). */
   private final ConnectionFactory connectionFactory;
 
-  private final AtomicBoolean alreadyClosingSession = new AtomicBoolean(false);
-
   BrowserImpl(ConnectionFactory connectionFactory) {
     this.connectionFactory = connectionFactory;
   }
@@ -83,6 +81,8 @@ public class BrowserImpl implements Browser {
    * to a particular session.
    */
   public class Session extends SessionManager.SessionBase<Session> {
+
+    private final AtomicBoolean alreadyClosingSession = new AtomicBoolean(false);
 
     private final CloseableMap<Integer, ToolHandler> tabId2ToolHandler = CloseableMap.newMap();
 
@@ -155,7 +155,15 @@ public class BrowserImpl implements Browser {
     protected void checkHealth() {
       // We do not actually interrupt here. It's more an assert for now: we throw an exception,
       // if connection is unexpectedly closed.
-      checkConnection();
+      if (sessionConnection.isConnected()) {
+        // All OK
+        return;
+      }
+      // We should not be here
+      LOGGER.severe("checkHealth in BrowserImpl found a consistnecy problem; " +
+          "current session is broken and therefore terminated");
+      interruptSession();
+      closeSession();
     }
 
     private void checkConnection() {

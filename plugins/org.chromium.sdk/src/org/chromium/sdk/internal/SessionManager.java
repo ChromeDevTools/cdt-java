@@ -164,6 +164,7 @@ public abstract class SessionManager<SESSION extends SessionManager.SessionBase<
       synchronized (manager) {
         isConnectionStopped = true;
         isCancelled = true;
+        // TODO(peter.rybin): notify listeners here in case they are interested
         tickets.clear();
       }
 
