@@ -33,7 +33,7 @@ import org.eclipse.debug.core.model.ITerminate;
 public class ConsolePseudoProcess extends PlatformObject implements IProcess {
 
   private final ILaunch launch;
-  private final WritableStreamMonitor outputMonitor;
+  private final Retransmitter outputMonitor;
   private final ITerminate connectionTerminate;
   private final String name;
   private Map<String, String> attributes = null;
@@ -56,11 +56,11 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
    * @param launch the parent launch of this process
    * @param name the label used for this process
    */
-  public ConsolePseudoProcess(ILaunch launch, String name, WritableStreamMonitor outputMonitor,
+  public ConsolePseudoProcess(ILaunch launch, String name, Retransmitter retransmitter,
       ITerminate connectionTerminate) {
     this.launch = launch;
     this.name = name;
-    this.outputMonitor = outputMonitor;
+    this.outputMonitor = retransmitter;
     outputMonitor.consolePseudoProcess = this;
     this.connectionTerminate = connectionTerminate;
 
@@ -181,12 +181,14 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
     static final NullStreamMonitor INSTANCE = new NullStreamMonitor();
   }
 
-  public interface CloseListener {
-    void processClosed();
-  }
-
-  public static class WritableStreamMonitor extends Writer implements IStreamMonitor,
-      CloseListener {
+  /**
+   * Responsible for getting text as {@link Writer} and retransmitting it
+   * as {@link IStreamMonitor} to whoever is interested.
+   * However in its initial state it only receives signal (the text) and saves it in a buffer.
+   * For {@link Retransmitter} to start giving the signal away one should
+   * call {@link #startFlushing} method.
+   */
+  public static class Retransmitter extends Writer implements IStreamMonitor {
     private StringWriter writer = new StringWriter();
     private boolean isFlushing = false;
     private final List<IStreamListener> listeners = new ArrayList<IStreamListener>(2);

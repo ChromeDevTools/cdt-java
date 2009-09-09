@@ -7,7 +7,6 @@ package org.chromium.debug.core.model;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.sdk.ConnectionLogger;
 import org.eclipse.debug.core.DebugPlugin;
@@ -18,10 +17,33 @@ import org.eclipse.debug.core.model.ITerminate;
  * logWriter with simple annotations.
  */
 public class ConnectionLoggerImpl implements ConnectionLogger {
-  public ConnectionLoggerImpl(Writer logWriter,
-      ConsolePseudoProcess.CloseListener closeListener) {
+  /**
+   * Additional interface logger sends its output to.
+   */
+  public interface LogLifecycleListener {
+    /**
+     * Notifies about logging start. Before this call {@link ConnectionLoggerImpl}
+     * is considered to be simply garbage-collectible. After this call
+     * {@link ConnectionLoggerImpl} must call {@link #logClosed()}.
+     *
+     * @param connectionLogger instance of host {@link ConnectionLoggerImpl}, which is nice
+     *        to have because theoretically we may receive this call before constructor of
+     *        {@link ConnectionLoggerImpl} returned
+     */
+    void logStarted(ConnectionLoggerImpl connectionLogger);
+
+    /**
+     * Notifies about log stream being closed. Technically, last messages may arrive
+     * even after this. It is supposed that log representation may be closed on this call
+     * because we are not 100% accurate.
+     */
+    void logClosed();
+  }
+
+
+  public ConnectionLoggerImpl(Writer logWriter, LogLifecycleListener lifecycleListener) {
     this.logWriter = logWriter;
-    this.closeListener = closeListener;
+    this.lifecycleListener = lifecycleListener;
   }
 
   public Writer wrapWriter(final Writer streamWriter) {
@@ -66,8 +88,13 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     };
   }
 
+  public void start() {
+    lifecycleListener.logStarted(this);
+  }
+
   public void handleEos() {
-    fireClosed();
+    isClosed = true;
+    lifecycleListener.logClosed();
   }
 
   public ITerminate getConnectionTerminate() {
@@ -101,26 +128,19 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     }
   }
 
-  private void fireClosed() {
-    boolean res = isClosed.compareAndSet(false, true);
-    if (res) {
-      closeListener.processClosed();
-    }
-  }
-
   private final Writer logWriter;
-  private final ConsolePseudoProcess.CloseListener closeListener;
+  private final LogLifecycleListener lifecycleListener;
   private Object lastSource = null;
   private volatile ConnectionCloser connectionCloser = null;
-  private final AtomicBoolean isClosed = new AtomicBoolean(false);
+  private volatile boolean isClosed = false;
 
   private final ITerminate connectionTerminate = new ITerminate() {
     public boolean canTerminate() {
-      return !isClosed.get() && connectionCloser != null;
+      return !isClosed && connectionCloser != null;
     }
 
     public boolean isTerminated() {
-      return isClosed.get();
+      return isClosed;
     }
 
     public void terminate() {
