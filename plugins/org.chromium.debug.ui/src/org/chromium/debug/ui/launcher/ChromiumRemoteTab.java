@@ -5,9 +5,6 @@
 package org.chromium.debug.ui.launcher;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
@@ -18,7 +15,6 @@ import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceStore;
-import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
@@ -33,16 +29,14 @@ import org.eclipse.swt.widgets.Composite;
 public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private static final String PORT_FIELD_NAME = "port_field"; //$NON-NLS-1$
-  private static final String PROJECT_NAME_FIELD_NAME = "project_name_field"; //$NON-NLS-1$
   private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
       "add_network_console_field"; //$NON-NLS-1$
-  
+
    // However, recommended range is [1024, 32767].
   private static final int minimumPortValue = 0;
   private static final int maximumPortValue = 65535;
-  
+
   private IntegerFieldEditor debugPort;
-  private StringFieldEditor projectName;
   private BooleanFieldEditor addNetworkConsole;
   private final PreferenceStore store = new PreferenceStore();
 
@@ -62,13 +56,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     debugPort.setPropertyChangeListener(modifyListener);
     debugPort.setPreferenceStore(store);
 
-    // Project name text field
-    projectName = new StringFieldEditor(PROJECT_NAME_FIELD_NAME,
-        Messages.ChromiumRemoteTab_ProjectNameLabel, propertiesComp);
-    projectName.setPropertyChangeListener(modifyListener);
-    projectName.setPreferenceStore(store);
-    projectName.setTextLimit(50);
-    
     addNetworkConsole = new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
         Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication,
         propertiesComp);
@@ -82,40 +69,31 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   public void initializeFrom(ILaunchConfiguration config) {
     int debugPortDefault = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
-    String projectNameDefault =
-        PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME);
-    
+
     try {
       store.setDefault(PORT_FIELD_NAME, config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
           debugPortDefault));
-      store.setDefault(PROJECT_NAME_FIELD_NAME, config.getAttribute(
-          LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, projectNameDefault));
       store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, config.getAttribute(
           LaunchType.ADD_NETWORK_CONSOLE, false));
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
       store.setDefault(PORT_FIELD_NAME, debugPortDefault);
-      store.setDefault(PROJECT_NAME_FIELD_NAME, projectNameDefault);
       store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, false);
     }
 
     debugPort.loadDefault();
-    projectName.loadDefault();
     addNetworkConsole.loadDefault();
   }
 
   public void performApply(ILaunchConfigurationWorkingCopy config) {
     storeEditor(debugPort, "-1"); //$NON-NLS-1$
-    storeEditor(projectName, ""); //$NON-NLS-1$
     storeEditor(addNetworkConsole, ""); //$NON-NLS-1$
 
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
-    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-        store.getString(PROJECT_NAME_FIELD_NAME).trim());
     config.setAttribute(LaunchType.ADD_NETWORK_CONSOLE,
         store.getBoolean(ADD_NETWORK_CONSOLE_FIELD_NAME));
   }
-  
+
   @Override
   public boolean isValid(ILaunchConfiguration config) {
     try {
@@ -124,17 +102,11 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         setErrorMessage(Messages.ChromiumRemoteTab_InvalidPortNumberError);
         return false;
       }
-      String projectName = config.getAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME,
-          ""); //$NON-NLS-1$
-      if (!ResourcesPlugin.getWorkspace().validateName(projectName, IResource.PROJECT).isOK()) {
-        setErrorMessage(Messages.ChromiumRemoteTab_InvalidProjectNameError); 
-        return false;
-      }
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
     }
-    
-    setErrorMessage(null); 
+
+    setErrorMessage(null);
     return true;
   }
 
@@ -142,12 +114,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
     int port = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
     config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, port);
-
-    String projectName = PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_PROJECT_NAME);
-    projectName = getNewProjectName(projectName);
-    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PROJECT_NAME, projectName);
   }
-  
+
   @Override
   public Image getImage() {
     return DebugUITools.getImage(IDebugUIConstants.IMG_LCL_DISCONNECT);
@@ -177,27 +145,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     return composite;
   }
 
-  /**
-   * Guarantees that the project name is unique for this workspace.
-   *
-   * @param baseProjectName the base project name
-   * @return the {@code baseProjectName}, or that with a unique suffix appended
-   */
-  private String getNewProjectName(String baseProjectName) {
-    String projName = baseProjectName;
-    int counter = 1;
-
-    while (!isProjectUnique(projName)) {
-      projName = baseProjectName + "_" + (counter++); //$NON-NLS-1$
-    }
-
-    return projName;
-  }
-
-  private static boolean isProjectUnique(String projName) {
-    return !ChromiumDebugPluginUtil.projectExists(projName);
-  }
-  
   private static void storeEditor(FieldEditor editor, String errorValue) {
     if (editor.isValid()) {
       editor.store();

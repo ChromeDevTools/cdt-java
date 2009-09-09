@@ -20,11 +20,6 @@
         name="org.chromium.debug.ui.chromium_debug_port"
         description="ChromeDevTools Protocol connection port">
     </variable>
-    <variable
-        initialValue="Debug JavaScript"
-        name="org.chromium.debug.ui.chromium_project_name"
-        description="Default JavaScript source project name">
-    </variable>
   </extension>
 
   <extension point="org.eclipse.debug.core.launchConfigurationTypes">
@@ -33,8 +28,6 @@
         delegate="org.chromium.debug.ui.launcher.LaunchType$Chromium"
         modes="debug"
         name="%chromiumLaunchName"
-        sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
-        sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
         delegateName="Debug Chromium JavaScript"
         delegateDescription="JavaScript debugger for Chromium">
     </launchConfigurationType>
@@ -43,8 +36,6 @@
         delegate="org.chromium.debug.ui.launcher.LaunchType$StandaloneV8"
         modes="debug"
         name="%standaloneV8LaunchName"
-        sourceLocatorId="org.chromium.debug.ui.sourceLookupDirector"
-        sourcePathComputerId="org.chromium.debug.ui.sourcePathComputer"
         delegateName="Debug Standalone V8 JavaScript"
         delegateDescription="JavaScript debugger for Standalone V8">
     </launchConfigurationType>
@@ -85,18 +76,6 @@
         class="org.chromium.debug.ui.launcher.LaunchTabGroup$StandaloneV8"
         id="org.chromium.debug.ui.LaunchTabGroup$StandaloneV8">
     </launchConfigurationTabGroup>
-  </extension>
-
-  <extension point="org.eclipse.debug.core.sourceLocators">
-    <sourceLocator name="JavaScript Source Lookup Director"
-        class="org.chromium.debug.ui.editors.SourceLookupDirector"
-        id="org.chromium.debug.ui.sourceLookupDirector" /> 
-  </extension>
-
-  <extension point="org.eclipse.debug.core.sourcePathComputers">
-    <sourcePathComputer
-        class="org.chromium.debug.ui.editors.SourcePathComputerDelegate"
-        id="org.chromium.debug.ui.sourcePathComputer" /> 
   </extension>
 
   <extension point="org.eclipse.debug.core.watchExpressionDelegates">

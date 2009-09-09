@@ -17,10 +17,6 @@ class PluginVariablesUtil {
   public static final String DEFAULT_PORT =
       ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_debug_port"; //$NON-NLS-1$
 
-  /** The default project name variable id. */
-  public static final String DEFAULT_PROJECT_NAME =
-      ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_project_name"; //$NON-NLS-1$
-
   /**
    * @param variableName to get the value for
    * @return the variable value parsed as an integer

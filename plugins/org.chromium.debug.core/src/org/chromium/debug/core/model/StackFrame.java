@@ -11,7 +11,6 @@ import java.util.List;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
@@ -177,20 +176,6 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       return Messages.StackFrame_UnknownScriptName;
     }
     return script.getName();
-  }
-
-  // Returns the external file name of script on local machine.
-  public String getExternalFileName() {
-    Script script = stackFrame.getScript();
-    if (script != null) {
-      IResource resource =
-          getDebugTarget().getResourceManager().getResource(script);
-      if (resource != null) {
-        return resource.getName();
-      }
-    }
-
-    return null;
   }
 
   @Override
