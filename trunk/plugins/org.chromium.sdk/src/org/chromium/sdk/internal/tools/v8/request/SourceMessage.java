@@ -18,7 +18,7 @@ public class SourceMessage extends ContextlessDebuggerMessage {
    *        result). Default is the number of lines in the script
    */
   public SourceMessage(Integer frame, Integer fromLine, Integer toLine) {
-    super(DebuggerCommand.SOURCE.value, null);
+    super(DebuggerCommand.SOURCE.value);
     putArgument("frame", frame);
     putArgument("fromLine", fromLine);
     putArgument("toLine", toLine);

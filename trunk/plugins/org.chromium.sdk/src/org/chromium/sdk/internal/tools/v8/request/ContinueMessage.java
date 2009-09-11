@@ -8,7 +8,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import org.chromium.sdk.DebugContext.StepAction;
-import org.chromium.sdk.internal.ContextToken;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
@@ -30,10 +29,9 @@ public class ContinueMessage extends DebuggerMessage {
    * @param stepAction the kind of step to perform
    * @param stepCount nullable number of steps to perform (positive if not null).
    *        Default is 1 step. Not used when {@code stepAction == CONTINUE}
-   * @param token the context validity token
    */
-  public ContinueMessage(StepAction stepAction, Integer stepCount, ContextToken token) {
-    super(DebuggerCommand.CONTINUE.value, token);
+  public ContinueMessage(StepAction stepAction, Integer stepCount) {
+    super(DebuggerCommand.CONTINUE.value);
     String stepActionString = stepActionToV8.get(stepAction);
     if (stepActionString != null) {
       putArgument("stepaction", stepActionString);

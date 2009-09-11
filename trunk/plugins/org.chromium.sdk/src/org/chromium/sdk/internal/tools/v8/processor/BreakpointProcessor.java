@@ -68,7 +68,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
       BacktraceProcessor backtraceProcessor = new BacktraceProcessor(step2);
       // no need for immediate -- we are known to be on break
       boolean isImmediate = false;
-      DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true, null);
+      DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true);
       try {
         internalContext.sendMessageAsync(message, isImmediate, backtraceProcessor, null);
       } catch (ContextDismissedCheckedException e) {

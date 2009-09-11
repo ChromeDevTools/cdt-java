@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext.StepAction;
-import org.chromium.sdk.internal.ContextToken;
 
 /**
  * A factory for {@link DebuggerMessage}s. Static methods are used to construct
@@ -16,22 +15,22 @@ import org.chromium.sdk.internal.ContextToken;
  */
 public class DebuggerMessageFactory {
 
-  public static DebuggerMessage backtrace(Integer fromFrame, Integer toFrame, boolean compactFormat,
-      ContextToken token) {
-    return new BacktraceMessage(fromFrame, toFrame, compactFormat, token);
+  public static DebuggerMessage backtrace(Integer fromFrame, Integer toFrame,
+      boolean compactFormat) {
+    return new BacktraceMessage(fromFrame, toFrame, compactFormat);
   }
 
-  public static DebuggerMessage goOn(StepAction stepAction, Integer stepCount, ContextToken token) {
-    return new ContinueMessage(stepAction, stepCount, token);
+  public static DebuggerMessage goOn(StepAction stepAction, Integer stepCount) {
+    return new ContinueMessage(stepAction, stepCount);
   }
 
   public static DebuggerMessage evaluate(String expression, Integer frame, Boolean global,
-      Boolean disableBreak, ContextToken token) {
-    return new EvaluateMessage(expression, frame, global, disableBreak, token);
+      Boolean disableBreak) {
+    return new EvaluateMessage(expression, frame, global, disableBreak);
   }
 
-  public static DebuggerMessage frame(Integer frameNumber, ContextToken token) {
-    return new FrameMessage(frameNumber, token);
+  public static DebuggerMessage frame(Integer frameNumber) {
+    return new FrameMessage(frameNumber);
   }
 
   public static ContextlessDebuggerMessage scripts(Integer types, Boolean includeScripts) {
@@ -60,8 +59,8 @@ public class DebuggerMessageFactory {
     return new ClearBreakpointMessage(breakpoint.getId());
   }
 
-  public static DebuggerMessage lookup(List<Long> refs, Boolean inlineRefs, ContextToken token) {
-    return new LookupMessage(refs, inlineRefs, token);
+  public static DebuggerMessage lookup(List<Long> refs, Boolean inlineRefs) {
+    return new LookupMessage(refs, inlineRefs);
   }
 
   private static Integer getV8IgnoreCount(int count) {

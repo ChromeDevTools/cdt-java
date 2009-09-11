@@ -202,7 +202,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     DebuggerMessage message = DebuggerMessageFactory.lookup(
-        Collections.singletonList(ref), true, callFrame.getToken());
+        Collections.singletonList(ref), true);
     V8CommandProcessor.V8HandlerCallback callback = new V8CommandProcessor.V8HandlerCallback() {
       public void messageReceived(JSONObject response) {
       if (!JsonUtil.isSuccessful(response)) {
@@ -309,9 +309,10 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
     DebuggerMessage message =
         DebuggerMessageFactory.lookup(
-        new ArrayList<Long>(handlesToRequest), true, callFrame.getToken());
+        new ArrayList<Long>(handlesToRequest), true);
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    V8CommandProcessor.V8HandlerCallback commandCallback = new V8CommandProcessor.V8HandlerCallback() {
+    V8CommandProcessor.V8HandlerCallback commandCallback =
+        new V8CommandProcessor.V8HandlerCallback() {
       public void messageReceived(JSONObject response) {
         if (!fillVariablesFromLookupReply(handleManager, properties, variableToRef,
             response)) {

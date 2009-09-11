@@ -99,7 +99,7 @@ public class ContextBuilder {
           public DebugContext setFrames(FrameMirror[] frameMirrors) {
             assertStep(this);
 
-            contextData.frames = new Frames(frameMirrors, preContext, null);
+            contextData.frames = new Frames(frameMirrors, preContext);
 
             preContext.createContext(contextData);
 
@@ -271,7 +271,7 @@ public class ContextBuilder {
           throw new NullPointerException();
         }
 
-        DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount, null);
+        DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
         V8CommandProcessor.V8HandlerCallback commandCallback
             = new V8CommandProcessor.V8HandlerCallback() {
           public void messageReceived(JSONObject response) {
@@ -326,14 +326,14 @@ public class ContextBuilder {
     private final List<CallFrameImpl> unmodifableFrames;
     private boolean scriptsLinkedToFrames;
 
-    Frames(FrameMirror[] frameMirrors0, InternalContext internalContext, ContextToken theToken) {
+    Frames(FrameMirror[] frameMirrors0, InternalContext internalContext) {
       this.frameMirrors = frameMirrors0;
       this.scriptsLinkedToFrames = false;
 
       int frameCount = frameMirrors.length;
       List<CallFrameImpl> frameList = new ArrayList<CallFrameImpl>(frameCount);
       for (int i = 0; i < frameCount; ++i) {
-        frameList.add(new CallFrameImpl(frameMirrors[i], i, internalContext, theToken));
+        frameList.add(new CallFrameImpl(frameMirrors[i], i, internalContext));
       }
       this.unmodifableFrames = Collections.unmodifiableList(frameList);
     }
