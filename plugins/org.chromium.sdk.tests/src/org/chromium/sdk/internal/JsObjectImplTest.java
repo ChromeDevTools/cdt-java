@@ -63,7 +63,7 @@ public class JsObjectImplTest {
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");
-    this.callFrame = new CallFrameImpl(frameMirror, 0, internalContext, null);
+    this.callFrame = new CallFrameImpl(frameMirror, 0, internalContext);
   }
 
   @Test

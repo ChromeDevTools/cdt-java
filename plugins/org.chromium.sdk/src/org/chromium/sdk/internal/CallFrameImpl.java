@@ -39,8 +39,6 @@ public class CallFrameImpl implements CallFrame {
   /** The variables known in this call frame. */
   private Collection<JsVariableImpl> variables;
 
-  private final ContextToken token;
-
   /**
    * Constructs a call frame for the given handler using the FrameMirror data
    * from the remote JavaScript VM.
@@ -48,14 +46,11 @@ public class CallFrameImpl implements CallFrame {
    * @param mirror frame in the VM
    * @param index call frame id (0 is the stack top)
    * @param context in which the call frame is created
-   * @param contextToken
    */
-  public CallFrameImpl(FrameMirror mirror, int index, InternalContext context,
-      ContextToken contextToken) {
+  public CallFrameImpl(FrameMirror mirror, int index, InternalContext context) {
     this.context = context;
     this.frameId = index;
     this.frameMirror = mirror;
-    this.token = contextToken;
   }
 
   public InternalContext getInternalContext() {
@@ -129,7 +124,7 @@ public class CallFrameImpl implements CallFrame {
   public void evaluateAsyncImpl(final String expression, final EvaluateCallback callback,
       SyncCallback syncCallback) throws ContextDismissedCheckedException {
     DebuggerMessage message =
-      DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null, getToken());
+      DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null);
 
     V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
         ? null
@@ -156,11 +151,6 @@ public class CallFrameImpl implements CallFrame {
 
     getInternalContext().sendMessageAsync(message, true, commandCallback,
         syncCallback);
-  }
-
-
-  ContextToken getToken() {
-    return token;
   }
 
   /**

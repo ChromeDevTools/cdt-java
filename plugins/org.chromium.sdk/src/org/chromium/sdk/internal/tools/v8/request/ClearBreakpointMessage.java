@@ -15,7 +15,7 @@ public class ClearBreakpointMessage extends ContextlessDebuggerMessage {
    * @param breakpoint id in V8 to clear
    */
   public ClearBreakpointMessage(Long breakpoint) {
-    super(DebuggerCommand.CLEARBREAKPOINT.value, null);
+    super(DebuggerCommand.CLEARBREAKPOINT.value);
     putArgument("breakpoint", breakpoint);
   }
 }
