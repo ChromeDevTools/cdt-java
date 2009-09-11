@@ -23,12 +23,6 @@ import org.chromium.sdk.internal.transport.Message;
  */
 public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
-  private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
-    public boolean requireDataField() {
-      return true;
-    }
-  };
-
   /** Tab ID as reported by the DevTools server. */
   private final int tabId;
 
@@ -36,9 +30,6 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   private final String url;
 
   private final SessionManager.Ticket<BrowserImpl.Session> connectionTicket;
-
-  /** The debug session instance for this tab. */
-  private final DebugSession debugSession;
 
   private final ChromeDevToolSessionManager devToolSessionManager;
 
@@ -55,15 +46,12 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     this.connectionTicket = ticket;
     String tabIdString = String.valueOf(tabId);
     ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString, connection);
-    ChromeDevToolSessionManager.V8CommandOutputImpl v8MessageOutput =
-        new ChromeDevToolSessionManager.V8CommandOutputImpl(chromeDevToolOutput);
-    this.debugSession = new DebugSession(this, protocolOptions, v8MessageOutput);
-    this.devToolSessionManager = new ChromeDevToolSessionManager(this, chromeDevToolOutput,
-        debugSession);
+    this.devToolSessionManager = new ChromeDevToolSessionManager(this, chromeDevToolOutput);
 
     ToolHandler toolHandler = devToolSessionManager.getToolHandler();
     // After this statement we are responsible for dismissing our ticket (we do it via eos message).
-    getBrowserSession().registerTab(tabId, toolHandler, debugSession);
+    getBrowserConnectionSession().registerTab(tabId, toolHandler,
+        this.devToolSessionManager.getDebugSession());
   }
 
   public String getUrl() {
@@ -76,12 +64,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   @Override
   public DebugSession getDebugSession() {
-    return debugSession;
-  }
-
-  @Override
-  public synchronized DebugEventListener getDebugEventListener() {
-    return debugEventListener;
+    return devToolSessionManager.getDebugSession();
   }
 
   public synchronized TabDebugEventListener getTabDebugEventListener() {
@@ -89,10 +72,10 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   }
 
   public Browser getBrowser() {
-    return getBrowserSession().getBrowser();
+    return getBrowserConnectionSession().getBrowser();
   }
 
-  public BrowserImpl.Session getBrowserSession() {
+  public BrowserImpl.Session getBrowserConnectionSession() {
     return connectionTicket.getSession();
   }
 
@@ -136,13 +119,12 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return devToolSessionManager.getToolHandler();
   }
 
-  @Override
   public ChromeDevToolSessionManager getSessionManager() {
     return devToolSessionManager;
   }
 
   public void handleEosFromToolService() {
-    getBrowserSession().unregisterTab(tabId);
+    getBrowserConnectionSession().unregisterTab(tabId);
     connectionTicket.dismiss();
   }
 
@@ -161,5 +143,9 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
           MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, destination, content);
       connection.send(message);
     }
+  }
+
+  public DebugEventListener getDebugEventListener() {
+    return debugEventListener;
   }
 }

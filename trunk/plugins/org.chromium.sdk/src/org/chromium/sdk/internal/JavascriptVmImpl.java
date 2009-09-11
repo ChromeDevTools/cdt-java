@@ -6,7 +6,6 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
@@ -35,9 +34,5 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
         .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback);
   }
 
-  public abstract DebugEventListener getDebugEventListener();
-
-  public abstract DebugSessionManager getSessionManager();
-
-  public abstract DebugSession getDebugSession();
+  protected abstract DebugSession getDebugSession();
 }

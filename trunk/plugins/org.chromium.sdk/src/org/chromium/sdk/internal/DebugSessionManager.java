@@ -7,8 +7,8 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.DebugEventListener;
 
 /**
- * Object that manages debug session as it's represented to V8 core debugging
- * classes.
+ * Type that manages debug session as it's represented to V8 core debugging
+ * classes. Basically it's an internal interface of JavascriptVm object.
  */
 public interface DebugSessionManager {
 
