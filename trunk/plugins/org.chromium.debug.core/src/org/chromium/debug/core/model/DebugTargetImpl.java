@@ -235,24 +235,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public boolean canTerminate() {
-    return false;
+    return !isTerminated();
   }
 
   public boolean isTerminated() {
-    return false;
+    return isDisconnected();
   }
 
   public void terminate() throws DebugException {
+    disconnect();
   }
 
   public boolean canResume() {
     return !isDisconnected() && isSuspended();
-  }
-
-  public boolean canSuspend() {
-    // Immediate thread suspension is not supported by V8
-    // (as it does not make sense.)
-    return false;
   }
 
   public synchronized boolean isSuspended() {
@@ -277,6 +272,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public void resumed(int detail) {
     fireResumeEvent(detail);
+  }
+
+  public boolean canSuspend() {
+    // Immediate thread suspension is not supported by V8
+    // (as it does not make sense.)
+    return false;
   }
 
   public void suspend() throws DebugException {

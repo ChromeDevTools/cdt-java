@@ -115,7 +115,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public boolean canSuspend() {
-    return false;
+    return getDebugTarget().canSuspend();
   }
 
   public boolean isSuspended() {
@@ -168,15 +168,15 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public boolean canTerminate() {
-    return !isTerminated();
+    return getDebugTarget().canTerminate();
   }
 
   public boolean isTerminated() {
-    return getDebugTarget().isDisconnected();
+    return getDebugTarget().isTerminated();
   }
 
   public void terminate() throws DebugException {
-    getDebugTarget().disconnect();
+    getDebugTarget().terminate();
   }
 
   /**
