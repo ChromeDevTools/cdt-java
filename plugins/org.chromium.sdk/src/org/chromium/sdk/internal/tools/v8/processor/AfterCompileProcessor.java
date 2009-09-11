@@ -57,7 +57,7 @@ public class AfterCompileProcessor extends V8ResponseCallback {
                 (JSONObject) body.get(0),
                 JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
             if (newScript != null) {
-              getDebugSession().getJavascriptVm().getDebugEventListener().scriptLoaded(newScript);
+              getDebugSession().getSessionManager().getDebugEventListener().scriptLoaded(newScript);
             }
           }
 

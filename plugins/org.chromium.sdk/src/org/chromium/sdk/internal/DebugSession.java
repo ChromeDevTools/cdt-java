@@ -37,27 +37,23 @@ public class DebugSession {
 
   private final ContextBuilder contextBuilder;
 
-  /** The parent JavascriptVm instance. */
-  private final JavascriptVmImpl javascriptVmImpl;
+  /** Our manager. */
+  private DebugSessionManager sessionManager;
 
-  /** Context owns breakpoint manager */
+  /** Context owns breakpoint manager. */
   private final BreakpointManager breakpointManager;
 
   private final ScriptLoader scriptLoader = new ScriptLoader();
 
-  public DebugSession(JavascriptVmImpl javascriptVmImpl, ProtocolOptions protocolOptions,
+  public DebugSession(DebugSessionManager sessionManager, ProtocolOptions protocolOptions,
       V8CommandOutput v8CommandOutput) {
     this.scriptManager = new ScriptManager(protocolOptions);
-    this.javascriptVmImpl = javascriptVmImpl;
+    this.sessionManager = sessionManager;
     this.breakpointManager = new BreakpointManager(this);
 
     DefaultResponseHandler defaultResponseHandler = new DefaultResponseHandler(this);
     this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, defaultResponseHandler);
     this.contextBuilder = new ContextBuilder(this);
-  }
-
-  public JavascriptVmImpl getJavascriptVm() {
-    return javascriptVmImpl;
   }
 
   public ScriptManager getScriptManager() {
@@ -68,8 +64,8 @@ public class DebugSession {
     return v8CommandProcessor;
   }
 
-  DebugSessionManager getSessionManager() {
-    return javascriptVmImpl.getSessionManager();
+  public DebugSessionManager getSessionManager() {
+    return sessionManager;
   }
 
   public void onDebuggerDetached() {

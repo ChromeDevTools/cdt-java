@@ -19,6 +19,7 @@ import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.Result;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
@@ -67,6 +68,12 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private static final Logger LOGGER =
       Logger.getLogger(ChromeDevToolSessionManager.class.getName());
 
+  private static final ProtocolOptions PROTOCOL_OPTIONS = new ProtocolOptions() {
+    public boolean requireDataField() {
+      return true;
+    }
+  };
+
   /** The host BrowserTabImpl instance. */
   private final BrowserTabImpl browserTabImpl;
 
@@ -89,11 +96,15 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    */
   public static final String JAVASCRIPT_VOID = "javascript:void(0);";
 
-  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, ToolOutput toolOutput,
-      DebugSession debugSession) {
+  public ChromeDevToolSessionManager(BrowserTabImpl browserTabImpl, ToolOutput toolOutput) {
     this.browserTabImpl = browserTabImpl;
     this.toolOutput = toolOutput;
-    this.debugSession = debugSession;
+    V8CommandOutputImpl v8MessageOutput = new V8CommandOutputImpl(toolOutput);
+    this.debugSession = new DebugSession(this, PROTOCOL_OPTIONS, v8MessageOutput);
+  }
+
+  public DebugSession getDebugSession() {
+    return debugSession;
   }
 
   public DebugEventListener getDebugEventListener() {
