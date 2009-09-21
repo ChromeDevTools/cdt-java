@@ -190,7 +190,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       propertyList.add(
           new JsVariableImpl(
               callFrame,
-              V8Helper.createValueMirror(handleObject, ref.getName()),
+              V8Helper.createValueMirror(handleObject),
+              ref.getName(),
               fqn,
               true));
     }
@@ -361,7 +362,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         // Do not provide a synthetic "hidden properties" property.
         continue;
       }
-      ValueMirror mirror = new ValueMirror(propName, prop.getRef());
+      ValueMirror mirror = new ValueMirror(prop.getRef());
       String fqn;
 
       if (JsonUtil.isInteger(propName)) {
@@ -374,7 +375,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
         fqn = parentFqn + '.' + propName;
       }
 
-      JsVariableImpl variable = new JsVariableImpl(callFrame, mirror, fqn, true);
+      JsVariableImpl variable = new JsVariableImpl(callFrame, mirror, propName, fqn, true);
       Long ref = Long.valueOf(prop.getRef());
       JSONObject handle = handleManager.getHandle(ref);
       if (handle != null) {

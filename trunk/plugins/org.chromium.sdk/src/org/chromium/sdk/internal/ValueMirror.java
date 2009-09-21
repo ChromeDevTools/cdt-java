@@ -46,8 +46,6 @@ public class ValueMirror {
     }
   }
 
-  private final String name;
-
   private final int ref;
 
   private Type type;
@@ -71,35 +69,24 @@ public class ValueMirror {
     return new PropertyReference(refId, propertyName, valueObject);
   }
 
-  public ValueMirror(String varName, String value) {
-    this(varName, value, Type.TYPE_STRING, null);
-  }
-
-  public ValueMirror(String varName, String value, Type type, String className) {
+  public ValueMirror(String value, Type type, String className) {
     this.type = type;
-    this.name = varName;
     this.value = value;
     this.ref = -1;
     this.className = className;
   }
 
-  public ValueMirror(String varName, int refID) {
+  public ValueMirror(int refID) {
     this.type = Type.TYPE_OBJECT;
-    this.name = varName;
     this.ref = refID;
     this.className = OBJECT_CLASSNAME;
   }
 
-  public ValueMirror(String varName, int refID, PropertyReference[] props, String className) {
+  public ValueMirror(int refID, PropertyReference[] props, String className) {
     this.type = getObjectJsType(className);
     this.className = className;
-    this.name = varName;
     this.ref = refID;
     this.properties = props;
-  }
-
-  public String getName() {
-    return name;
   }
 
   public Type getType() {

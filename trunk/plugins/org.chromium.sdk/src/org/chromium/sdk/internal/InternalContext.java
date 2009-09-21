@@ -33,7 +33,7 @@ public interface InternalContext {
    */
   HandleManager getHandleManager();
 
-  ValueMirror[] computeLocals(JSONObject frame);
+  FrameMirror.Locals computeLocals(JSONObject frame);
 
   CallFrameImpl getTopFrameImpl();
 

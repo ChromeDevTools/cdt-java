@@ -109,7 +109,8 @@ public class BreakpointProcessor extends V8ResponseCallback {
     String sourceText = JsonUtil.getAsString(body, V8Protocol.BODY_FRAME_SRCLINE);
 
     return new ExceptionDataImpl(internalContext,
-            V8Helper.createValueMirror(exception, EXCEPTION_NAME),
+            V8Helper.createValueMirror(exception),
+            EXCEPTION_NAME,
             JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
             sourceText,
             JsonUtil.getAsString(exception, V8Protocol.REF_TEXT));

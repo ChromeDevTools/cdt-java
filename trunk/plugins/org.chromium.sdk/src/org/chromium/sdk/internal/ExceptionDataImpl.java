@@ -15,14 +15,16 @@ public class ExceptionDataImpl implements ExceptionData {
   private final InternalContext context;
   private final String sourceText;
   private final ValueMirror mirror;
+  private final String name;
   private final boolean isUncaught;
   private final String exceptionText;
   private JsObject cachedException;
 
-  public ExceptionDataImpl(InternalContext context, ValueMirror mirror, boolean isUncaught,
-      String sourceText, String exceptionText) {
+  public ExceptionDataImpl(InternalContext context, ValueMirror mirror, String name,
+      boolean isUncaught, String sourceText, String exceptionText) {
     this.context = context;
     this.mirror = mirror;
+    this.name = name;
     this.isUncaught = isUncaught;
     this.sourceText = sourceText;
     this.exceptionText = exceptionText;
@@ -30,7 +32,7 @@ public class ExceptionDataImpl implements ExceptionData {
 
   public JsObject getExceptionObject() {
     if (cachedException == null) {
-      cachedException = new JsObjectImpl(context.getTopFrameImpl(), mirror.getName(), mirror);
+      cachedException = new JsObjectImpl(context.getTopFrameImpl(), name, mirror);
     }
     return cachedException;
   }

@@ -11,6 +11,7 @@ import java.util.concurrent.Semaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugSession;
+import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.HandleManager;
 import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsDataTypeUtil;
@@ -112,7 +113,7 @@ public class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  public ValueMirror[] computeLocals(JSONObject frame, InternalContext internalContext) {
+  public FrameMirror.Locals computeLocals(JSONObject frame, InternalContext internalContext) {
     HandleManager handleManager = internalContext.getHandleManager();
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
@@ -120,10 +121,11 @@ public class V8Helper {
     int maxLookups = args.size() + locals.size() + 1 /* "this" */;
 
     final List<ValueMirror> values = new ArrayList<ValueMirror>(maxLookups);
+    final List<String> names = new ArrayList<String>(maxLookups);
 
     // Receiver ("this")
     JSONObject receiver = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
-    putMirror(values, thisName, receiver, handleManager);
+    putMirror(values, names, thisName, receiver, handleManager);
 
     // Arguments
     for (int i = 0; i < args.size(); i++) {
@@ -134,7 +136,8 @@ public class V8Helper {
         // method signature) that will be available in the "arguments" object
         continue;
       }
-      putMirror(values, name, JsonUtil.getAsJSON(arg, V8Protocol.ARGUMENT_VALUE), handleManager);
+      putMirror(values, names, name, JsonUtil.getAsJSON(arg, V8Protocol.ARGUMENT_VALUE),
+          handleManager);
     }
 
     // Locals
@@ -143,23 +146,32 @@ public class V8Helper {
       String localName = JsonUtil.getAsString(local, V8Protocol.LOCAL_NAME);
 
       if (!V8ProtocolUtil.isInternalProperty(localName)) {
-        putMirror(values, localName, JsonUtil.getAsJSON(local, V8Protocol.LOCAL_VALUE),
+        putMirror(values, names, localName, JsonUtil.getAsJSON(local, V8Protocol.LOCAL_VALUE),
             handleManager);
       }
     }
 
-    return values.toArray(new ValueMirror[values.size()]);
+    return new FrameMirror.Locals() {
+      public List<String> getNames() {
+        return names;
+      }
+
+      public List<ValueMirror> getValues() {
+        return values;
+      }
+    };
   }
 
-  private void putMirror(final List<ValueMirror> values,
+  private void putMirror(List<ValueMirror> values, List<String> names,
       String name, JSONObject valueObject, HandleManager handleManager) {
     Long objectRef = JsonUtil.getAsLong(valueObject, V8Protocol.REF);
     JSONObject object = handleManager.getHandle(objectRef);
     if (object != null) {
-      values.add(createValueMirror(object, name));
+      values.add(createValueMirror(object));
     } else {
-      values.add(createValueMirrorFromValue(valueObject, name));
+      values.add(createValueMirrorFromValue(valueObject));
     }
+    names.add(name);
   }
 
   /**
@@ -167,14 +179,13 @@ public class V8Helper {
    * value name.
    *
    * @param handle containing the object specification from the V8 debugger
-   * @param name of the value to construct
    * @return a ValueMirror instance with the specified name, containing data
    *         from handle, or {@code null} if {@code handle} is not a handle
    */
-  public static ValueMirror createValueMirror(JSONObject handle, String name) {
+  public static ValueMirror createValueMirror(JSONObject handle) {
     String value = JsonUtil.getAsString(handle, V8Protocol.REF_TEXT);
     if (value == null) { // try another format
-      return createValueMirrorFromValue(handle, name);
+      return createValueMirrorFromValue(handle);
     }
     String typeString = JsonUtil.getAsString(handle, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(handle, V8Protocol.REF_CLASSNAME);
@@ -183,9 +194,9 @@ public class V8Helper {
       JSONObject protoObj = JsonUtil.getAsJSON(handle, V8Protocol.REF_PROTOOBJECT);
       int parentRef = JsonUtil.getAsLong(protoObj, V8Protocol.REF).intValue();
       PropertyReference[] propertyRefs = V8ProtocolUtil.extractObjectProperties(handle);
-      return new ValueMirror(name, parentRef, propertyRefs, className);
+      return new ValueMirror(parentRef, propertyRefs, className);
     } else {
-      return new ValueMirror(name, value, type, className);
+      return new ValueMirror(value, type, className);
     }
   }
 
@@ -194,12 +205,11 @@ public class V8Helper {
    * "inlineRefs" or "compactFormat" argument).
    *
    * @param valueObject the value object
-   * @param name of the ValueMirror to construct
    * @return a ValueMirror instance with the specified name, containing data
    *         from valueObject, or {@code null} if the valueObject format is
    *         not valid
    */
-  private static ValueMirror createValueMirrorFromValue(JSONObject valueObject, String name) {
+  private static ValueMirror createValueMirrorFromValue(JSONObject valueObject) {
     String typeString = JsonUtil.getAsString(valueObject, V8Protocol.REF_TYPE);
     String className = JsonUtil.getAsString(valueObject, V8Protocol.REF_CLASSNAME);
     Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
@@ -208,13 +218,13 @@ public class V8Helper {
     }
     if (Type.isObjectType(type)) {
       return new ValueMirror(
-          name, JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue(), null, className);
+          JsonUtil.getAsLong(valueObject, V8Protocol.REF).intValue(), null, className);
     } else {
       String value = JsonUtil.getAsString(valueObject, V8Protocol.REF_VALUE);
       if (value == null) {
         value = typeString; // e.g. "undefined"
       }
-      return new ValueMirror(name, value, type, className);
+      return new ValueMirror(value, type, className);
     }
   }
 

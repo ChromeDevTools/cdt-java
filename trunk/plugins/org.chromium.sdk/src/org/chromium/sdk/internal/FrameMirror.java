@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.List;
+
 import org.chromium.sdk.Script;
 import org.json.simple.JSONObject;
 
@@ -45,7 +47,7 @@ public class FrameMirror {
   /**
    * The frame locals.
    */
-  private ValueMirror[] locals;
+  private Locals locals = null;
 
   /**
    * The JSON descriptor of the frame.
@@ -82,11 +84,9 @@ public class FrameMirror {
     return frameFunction;
   }
 
-  public int getLocalsCount() {
+  public Locals getLocals() {
     ensureLocals();
-    return locals == null
-        ? 0
-        : locals.length;
+    return locals;
   }
 
   private void ensureLocals() {
@@ -104,12 +104,12 @@ public class FrameMirror {
     return script;
   }
 
-  public ValueMirror getLocal(int idx) {
-    ensureLocals();
-    return locals[idx];
-  }
-
   JSONObject getFrameObject() {
     return frameObject;
+  }
+
+  public interface Locals {
+    List<String> getNames();
+    List<ValueMirror> getValues();
   }
 }

@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
@@ -133,7 +134,7 @@ public class CallFrameImpl implements CallFrame {
             if (JsonUtil.isSuccessful(response)) {
               JsVariable variable =
                   new JsVariableImpl(CallFrameImpl.this, V8Helper.createValueMirror(
-                      JsonUtil.getBody(response), expression));
+                      JsonUtil.getBody(response)), expression);
               if (variable != null) {
                 callback.success(variable);
               } else {
@@ -165,10 +166,12 @@ public class CallFrameImpl implements CallFrame {
    * Initializes this frame with variables based on the frameMirror locals.
    */
   private Collection<JsVariableImpl> createVariables() {
-    int numVars = frameMirror.getLocalsCount();
-    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(numVars);
-    for (int i = 0; i < numVars; i++) {
-      result.add(new JsVariableImpl(this, frameMirror.getLocal(i)));
+    FrameMirror.Locals locals = frameMirror.getLocals();
+    List<String> names = locals.getNames();
+    List<ValueMirror> values = locals.getValues();
+    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(names.size());
+    for (int i = 0; i < names.size(); i++) {
+      result.add(new JsVariableImpl(this, values.get(i), names.get(i)));
     }
     return result;
   }
