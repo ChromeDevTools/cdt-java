@@ -4,6 +4,10 @@
 
 package org.chromium.sdk.internal;
 
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonArray;
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +36,6 @@ import org.json.simple.parser.ParseException;
 @SuppressWarnings("unchecked")
 public class FixtureChromeStub implements ChromeStub {
 
-  private static final Map<Long, String> refToObjectMap = new HashMap<Long, String>();
   private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
 
   private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
@@ -43,14 +46,17 @@ public class FixtureChromeStub implements ChromeStub {
 
   private static final String secondTabId = "2";
 
+  private static final Map<Long, String> refToObjectMap;
   static {
+    refToObjectMap = new HashMap<Long, String>();
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
         "{\"handle\":11,\"type\":\"object\",\"className\":\"MouseEvent\"," +
         "\"constructorFunction\":{\"ref\":19},\"protoObject\":{\"ref\":73}," +
         "\"prototypeObject\":{\"ref\":2},\"properties\":[" +
         "{\"name\":\"x\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}," +
-        "{\"name\":\"y\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}]}");
+        "{\"name\":\"y\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}]," +
+        "\"text\":\"#<an Object>\"}");
     // Script
     refToObjectMap.put(Long.valueOf(getScriptRef()),
         "{\"handle\":" + getScriptRef() + ",\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
@@ -254,6 +260,10 @@ public class FixtureChromeStub implements ChromeStub {
           break;
         case SOURCE:
           //constructSource();
+          break;
+        case SCOPE:
+          constructScopeResponse(nameToJsonValue);
+          break;
       }
       responseMessage.put("seq", nextSeq());
       responseMessage.put("request_seq", seq);
@@ -333,7 +343,7 @@ public class FixtureChromeStub implements ChromeStub {
   }
 
   private void constructBacktrace(JSONObject response, JSONObject responseBody) {
-    response.put("refs", getRefs());
+    response.put("refs", getRefs(getScriptRef(), getFunctionRef()));
     responseBody.put("fromFrame", 0);
     responseBody.put("toFrame", 1);
     responseBody.put("totalFrames", 1);
@@ -348,6 +358,7 @@ public class FixtureChromeStub implements ChromeStub {
     frame.put("debuggerFrame", false);
     frame.put("arguments", new JSONArray());
     frame.put("locals", getLocalsArray());
+    frame.put("scopes", getScopesArray());
     frame.put("position", 305);
     frame.put("line", 18);
     frame.put("column", 3);
@@ -357,31 +368,76 @@ public class FixtureChromeStub implements ChromeStub {
     responseBody.put("frames", frames);
   }
 
-  private JSONArray getRefs() {
-    JSONArray refs = new JSONArray();
-    refs.add(getJsonObjectByRef(getScriptRef()));
-    refs.add(getJsonObjectByRef(getFunctionRef()));
-    return refs;
+  private void constructScopeResponse(Map<String, Object> nameToJsonValue) {
+    nameToJsonValue.put("body", jsonObject(
+        jsonProperty("type", 1),
+        jsonProperty("index", 0),
+        jsonProperty("frameIndex", 0),
+        jsonProperty("object",
+            jsonObject(
+                jsonProperty("handle", -1),
+                jsonProperty("type", "object"),
+                jsonProperty("className", "Object"),
+                jsonProperty("constructorFunction", jsonObject(
+                    "'ref':20,'type':'function','name':'Object','inferredName':''")),
+                jsonProperty("protoObject", jsonObject(
+                  "'ref':21,'type':'object','className':'Object'")),
+                jsonProperty("prototypeObject", jsonObject("'ref':2,'type':'undefined'")),
+                jsonProperty("properties",
+                    jsonArray(
+                        jsonObject("'name':'x','value':{'ref':" + getMouseEventRef() +
+                            ",'type':'object','className':'MouseEvent'}"),
+                        jsonObject("'name':'y','value':{'ref':" + getNumber3Ref() +
+                            ",'type':'number','value':3}")
+                    )
+                ),
+                jsonProperty("text", "#<an Object>")
+            )
+        ),
+        jsonProperty("text", "#<a ScopeMirror>")
+    ));
+    nameToJsonValue.put("refs", getRefs(getNumber3Ref(), getMouseEventRef()));
+  }
+
+  private JSONArray getRefs(int ... refParams) {
+    JSONObject [] refHandleObjects = new JSONObject [refParams.length];
+    for (int i = 0; i < refParams.length; i++) {
+      refHandleObjects[i] = getJsonObjectByRef(refParams[i]);
+    }
+    return jsonArray(refHandleObjects);
   }
 
   private JSONObject getJsonObjectByRef(int ref) {
+    String jsonText = refToObjectMap.get(Long.valueOf(ref));
     try {
-      return JsonUtil.jsonObjectFromJson(refToObjectMap.get(Long.valueOf(ref)));
+      return JsonUtil.jsonObjectFromJson(jsonText);
     } catch (ParseException e) {
-      return null;
+      throw new RuntimeException(e);
     }
   }
 
   private JSONArray getLocalsArray() {
-    JSONArray locals = new JSONArray();
-    JSONObject local = new JSONObject();
-    JSONObject value = new JSONObject();
-    local.put("name", "a");
-    value.put("ref", getNumber3Ref());
-    value.put("type", "number");
-    value.put("value", 1);
-    local.put("value", local);
-    return locals;
+    return jsonArray(
+        jsonObject(
+            jsonProperty("name", "a"),
+            jsonProperty("value",
+                jsonObject(
+                    jsonProperty("ref", getNumber3Ref()),
+                    jsonProperty("type", "number"),
+                    jsonProperty("value", 1)
+                )
+            )
+        )
+    );
+  }
+
+  private JSONArray getScopesArray() {
+    return jsonArray(
+        jsonObject(
+            jsonProperty("type", 0),
+            jsonProperty("index", 0)
+        )
+    );
   }
 
   private JSONObject getScript() {

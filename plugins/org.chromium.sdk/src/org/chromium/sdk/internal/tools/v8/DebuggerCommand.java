@@ -17,6 +17,7 @@ public enum DebuggerCommand {
   FRAME("frame"),
   SCRIPTS("scripts"),
   SOURCE("source"),
+  SCOPE("scope"),
   SETBREAKPOINT("setbreakpoint"),
   CHANGEBREAKPOINT("changebreakpoint"),
   CLEARBREAKPOINT("clearbreakpoint"),
