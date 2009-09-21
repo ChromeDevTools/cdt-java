@@ -35,6 +35,9 @@ public class JsVariableImpl implements JsVariable {
   /** The lazily constructed value of this variable. */
   private JsValueImpl value;
 
+  /** Variable name. */
+  private final String varName;
+
   // The access is synchronized
   private boolean pendingReq = false;
 
@@ -50,8 +53,8 @@ public class JsVariableImpl implements JsVariable {
    * @param callFrame that owns this variable
    * @param valueData value data for this variable
    */
-  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData) {
-    this(callFrame, valueData, null, false);
+  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String varName) {
+    this(callFrame, valueData, varName, null, false);
   }
 
   /**
@@ -63,10 +66,11 @@ public class JsVariableImpl implements JsVariable {
    * @param variableFqn the fully qualified name of this variable
    * @param waitDrilling whether to halt drilling in for any properties of type "object"
    */
-  JsVariableImpl(
-      CallFrameImpl callFrame, ValueMirror valueData, String variableFqn, boolean waitDrilling) {
+  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String varName, String variableFqn,
+      boolean waitDrilling) {
     this.callFrame = callFrame;
     this.valueData = valueData;
+    this.varName = varName;
     this.variableFqn = variableFqn;
     this.waitDrilling = waitDrilling;
   }
@@ -96,7 +100,7 @@ public class JsVariableImpl implements JsVariable {
   }
 
   public String getName() {
-    String name = valueData.getName();
+    String name = varName;
     if (JsonUtil.isInteger(name)) {
       // Fix array element indices
       name = OPEN_BRACKET + name + CLOSE_BRACKET;
