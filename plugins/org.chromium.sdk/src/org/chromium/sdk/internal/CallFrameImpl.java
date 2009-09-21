@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -61,6 +62,11 @@ public class CallFrameImpl implements CallFrame {
   public Collection<JsVariableImpl> getVariables() {
     ensureVariables();
     return variables;
+  }
+
+  public List<? extends JsScope> getVariableScopes() {
+    // TODO(peter.rybin): support scopes
+    return Collections.emptyList();
   }
 
   private void ensureVariables() {
