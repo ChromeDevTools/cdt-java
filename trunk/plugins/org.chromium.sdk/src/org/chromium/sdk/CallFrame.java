@@ -5,6 +5,7 @@
 package org.chromium.sdk;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
@@ -25,8 +26,15 @@ public interface CallFrame {
 
   /**
    * @return the variables known in this frame
+   * @deprecated in favor of {@link #getVariableScopes()}
    */
+  @Deprecated
   Collection<? extends JsVariable> getVariables();
+
+  /**
+   * @return the scopes known in this frame; ordered, innermost first, global scope last
+   */
+  List<? extends JsScope> getVariableScopes();
 
   /**
    * @return the current line number in the Script corresponding to this frame
