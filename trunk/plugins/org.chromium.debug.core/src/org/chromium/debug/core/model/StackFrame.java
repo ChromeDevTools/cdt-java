@@ -8,9 +8,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
@@ -53,7 +56,14 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
-      variables = wrapVariables(getDebugTarget(), stackFrame.getVariables());
+      try {
+        variables = wrapVariables(getDebugTarget(), stackFrame.getVariables());
+      } catch (RuntimeException e) {
+        // We shouldn't throw RuntimeException from here, because calling
+        // ElementContentProvider#update will forget to call update.done().
+        throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            "Failed to read variables", e)); //$NON-NLS-1$
+      }
     }
     return variables;
   }

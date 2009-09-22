@@ -4,9 +4,12 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsValue;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
@@ -43,14 +46,21 @@ public class Value extends DebugElementImpl implements IValue {
   }
 
   public IVariable[] getVariables() throws DebugException {
-    if (variables == null) {
-      if (value.asObject() != null) {
-        variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties());
-      } else {
-        variables = EMPTY_VARIABLES;
+    try {
+      if (variables == null) {
+        if (value.asObject() != null) {
+          variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties());
+        } else {
+          variables = EMPTY_VARIABLES;
+        }
       }
+      return variables;
+    } catch (RuntimeException e) {
+      // We shouldn't throw RuntimeException from here, because calling
+      // ElementContentProvider#update will forget to call update.done().
+      throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+          "Failed to read variables", e)); //$NON-NLS-1$
     }
-    return variables;
   }
 
   public boolean hasVariables() throws DebugException {
