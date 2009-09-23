@@ -13,7 +13,6 @@ import java.util.TreeMap;
 
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
 /**

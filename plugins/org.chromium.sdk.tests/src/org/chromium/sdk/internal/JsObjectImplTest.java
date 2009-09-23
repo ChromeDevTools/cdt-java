@@ -51,9 +51,9 @@ public class JsObjectImplTest {
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     eventMirror = new ValueMirror(
-        11, new ValueMirror.PropertyReference[] {
-            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
-            ValueMirror.newPropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
+        11, new PropertyReference[] {
+            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
+            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
         }, null);
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);

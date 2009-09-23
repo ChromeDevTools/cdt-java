@@ -12,10 +12,10 @@ import java.util.Map;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.PropertyType;
 import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.ValueMirror;
-import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -141,7 +141,7 @@ public class V8ProtocolUtil {
           propTypeValue == PropertyType.CALLBACKS.value ||
           propTypeValue == PropertyType.NORMAL.value) {
         Long longRef = JsonUtil.getAsLong(propValue, V8Protocol.REF);
-        objProps.add(ValueMirror.newPropertyReference(longRef.intValue(), name, propValue));
+        objProps.add(new PropertyReference(longRef.intValue(), name, propValue));
       }
     }
 
