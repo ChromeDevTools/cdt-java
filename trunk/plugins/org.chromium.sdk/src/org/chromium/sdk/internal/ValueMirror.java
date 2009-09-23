@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JsValue.Type;
-import org.json.simple.JSONObject;
 
 /**
  * A representation of a datum (value) in the remote JavaScript VM.
@@ -17,35 +16,6 @@ public class ValueMirror {
    */
   private static final String OBJECT_CLASSNAME = "Object";
 
-  /**
-   * A named property reference.
-   */
-  public static class PropertyReference {
-    private final int ref;
-
-    private final String name;
-
-    private final JSONObject valueObject;
-
-    private PropertyReference(int refId, String propertyName, JSONObject valueObject) {
-      this.ref = refId;
-      this.name = propertyName;
-      this.valueObject = valueObject;
-    }
-
-    public int getRef() {
-      return ref;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public JSONObject getValueObject() {
-      return valueObject;
-    }
-  }
-
   private final int ref;
 
   private Type type;
@@ -55,19 +25,6 @@ public class ValueMirror {
   private PropertyReference[] properties = null;
 
   private String className;
-
-  /**
-   * Constructs a new PropertyReference instance given its "ref" value and name.
-   *
-   * @param refId the "ref" value of this property
-   * @param propertyName the name of the property
-   * @param valueObject a JSON descriptor of the property
-   * @return a new PropertyReference instance
-   */
-  public static PropertyReference newPropertyReference(int refId, String propertyName,
-      JSONObject valueObject) {
-    return new PropertyReference(refId, propertyName, valueObject);
-  }
 
   public ValueMirror(String value, Type type, String className) {
     this.type = type;

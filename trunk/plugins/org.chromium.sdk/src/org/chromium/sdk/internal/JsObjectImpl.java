@@ -17,7 +17,6 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
-import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;

@@ -7,7 +7,6 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.ValueMirror.PropertyReference;
 
 /**
  * A generic implementation of the JsVariable interface.
