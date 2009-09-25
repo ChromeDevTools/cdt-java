@@ -109,7 +109,7 @@ public class FrameMirror {
   }
 
   public interface Locals {
-    List<String> getNames();
-    List<ValueMirror> getValues();
+    // TODO(peter.rybin): consider melting this interface down
+    List<PropertyReference> getLocalRefs();
   }
 }

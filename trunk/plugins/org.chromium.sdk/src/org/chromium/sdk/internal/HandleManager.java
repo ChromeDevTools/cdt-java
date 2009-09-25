@@ -4,9 +4,9 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.json.simple.JSONObject;
@@ -16,26 +16,33 @@ import org.json.simple.JSONObject;
  */
 public class HandleManager {
 
-  private final Map<Long, JSONObject> refToHandle =
-      Collections.synchronizedMap(new HashMap<Long, JSONObject>());
-
-  void reset() {
-    refToHandle.clear();
-  }
+  private final ConcurrentMap<Long, JSONObject> refToHandle =
+      new ConcurrentHashMap<Long, JSONObject>();
 
   public void putAll(Map<Long, JSONObject> map) {
-    refToHandle.putAll(map);
+    for (Map.Entry<Long, JSONObject> en : map.entrySet()) {
+      put(en.getKey(), en.getValue());
+    }
   }
 
   void put(Long ref, JSONObject object) {
-    refToHandle.put(ref, object);
+    JSONObject oldObject = refToHandle.putIfAbsent(ref, object);
+    if (oldObject != null) {
+      mergeValues(oldObject, object);
+    }
   }
 
   void put(JSONObject object) {
-    refToHandle.put(JsonUtil.getAsLong(object, V8Protocol.REF), object);
+    Long ref = JsonUtil.getAsLong(object, V8Protocol.REF_HANDLE);
+    if (ref != null && ref >= 0) {
+      put(ref, object);
+    }
   }
 
   public JSONObject getHandle(Long ref) {
     return refToHandle.get(ref);
+  }
+
+  private static void mergeValues(JSONObject oldObject, JSONObject newObject) {
   }
 }

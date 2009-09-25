@@ -15,7 +15,6 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.PropertyType;
 import org.chromium.sdk.internal.ProtocolOptions;
-import org.chromium.sdk.internal.ValueMirror;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -92,60 +91,111 @@ public class V8ProtocolUtil {
   }
 
   /**
-   * Gets a reference number associated with the given ref object.
-   *
-   * @param refObject the ref object
-   * @return reference number or -1 if no reference value
-   */
-  public static Long getValueRef(JSONObject refObject) {
-    JSONObject argValue = JsonUtil.getAsJSON(refObject, V8Protocol.ARGUMENT_VALUE);
-    if (argValue != null) {
-      Long argValueRef = JsonUtil.getAsLong(argValue, V8Protocol.REF);
-      if (argValueRef != null) {
-        return argValueRef;
-      }
-    }
-    return -1L;
-  }
-
-  /**
    * Constructs {@code PropertyReference}s from the specified object, be it in
    * the "original" or "inlineRefs" format.
    *
    * @param handle to get property references from
    * @return an array of PropertyReferences
    */
-  public static PropertyReference[] extractObjectProperties(JSONObject handle) {
+  public static List<? extends PropertyReference> extractObjectProperties(JSONObject handle) {
     JSONArray props = JsonUtil.getAsJSONArray(handle, V8Protocol.REF_PROPERTIES);
     int propsLen = props.size();
     List<PropertyReference> objProps = new ArrayList<PropertyReference>(propsLen);
     for (int i = 0; i < propsLen; i++) {
       JSONObject prop = (JSONObject) props.get(i);
-      String name = getPropertyName(prop);
-      JSONObject propValue = JsonUtil.getAsJSON(prop, V8Protocol.REF_VALUE);
-      if (propValue == null) {
-        // Handle the original (non-"inlineRefs") format that contains the
-        // value data in the outer objects.
-        propValue = prop;
-      }
-      if (isInternalProperty(name)) {
-        continue;
-      }
-
-      Long propType = JsonUtil.getAsLong(propValue, V8Protocol.REF_PROP_TYPE);
-      // propType is NORMAL by default
-      int propTypeValue = propType != null
-          ? propType.intValue()
-          : PropertyType.NORMAL.value;
-      if (propTypeValue == PropertyType.FIELD.value ||
-          propTypeValue == PropertyType.CALLBACKS.value ||
-          propTypeValue == PropertyType.NORMAL.value) {
-        Long longRef = JsonUtil.getAsLong(propValue, V8Protocol.REF);
-        objProps.add(new PropertyReference(longRef.intValue(), name, propValue));
-      }
+      putMirror(objProps, prop, V8Protocol.REF_VALUE, PropertyNameGetter.SUBPROPERTY);
     }
 
-    return objProps.toArray(new PropertyReference[objProps.size()]);
+    return objProps;
+  }
+
+  static void putMirror(List<PropertyReference> refs, JSONObject propertyObject,
+      CharSequence valuePropertyName, V8ProtocolUtil.PropertyNameGetter nameGetter) {
+    PropertyReference propertyRef = V8ProtocolUtil.extractProperty(propertyObject,
+        valuePropertyName, nameGetter);
+    if (propertyRef != null) {
+      refs.add(propertyRef);
+    }
+  }
+
+  /**
+   * Constructs one {@code PropertyReference} from the specified object, be it in
+   * the "original" or "inlineRefs" format.
+   *
+   * @param prop json object
+   * @param valuePropertyName name of value property in this prop object, might be null
+   * @return PropertyReference or null if we ignore this property
+   */
+  public static PropertyReference extractProperty(JSONObject prop, CharSequence valuePropertyName,
+      PropertyNameGetter nameGetter) {
+    String name = nameGetter.getName(prop, null);
+    if (name == null) {
+      return null;
+    }
+    JSONObject propValue = null;
+    if (valuePropertyName != null) {
+      propValue = JsonUtil.getAsJSON(prop, valuePropertyName);
+    }
+    if (propValue == null) {
+      // Handle the original (non-"inlineRefs") format that contains the
+      // value data in the outer objects.
+      propValue = prop;
+    }
+    if (isInternalProperty(name)) {
+      return null;
+    }
+
+    Long propType = JsonUtil.getAsLong(propValue, V8Protocol.REF_PROP_TYPE);
+    // propType is NORMAL by default
+    int propTypeValue = propType != null
+        ? propType.intValue()
+        : PropertyType.NORMAL.value;
+    if (propTypeValue == PropertyType.FIELD.value ||
+        propTypeValue == PropertyType.CALLBACKS.value ||
+        propTypeValue == PropertyType.NORMAL.value) {
+      Long longRef = JsonUtil.getAsLong(propValue, V8Protocol.REF);
+      return new PropertyReference(longRef.intValue(), name, propValue);
+    }
+    return null;
+  }
+
+  enum PropertyNameGetter {
+    ARGUMENT() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        // an unnamed actual argument (there is no formal counterpart in the
+        // method signature) that will be available in the "arguments" object
+        return JsonUtil.getAsString(ref, V8Protocol.ARGUMENT_NAME);
+      }
+    },
+    LOCAL() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        String name = JsonUtil.getAsString(ref, V8Protocol.LOCAL_NAME);
+        if (V8ProtocolUtil.isInternalProperty(name)) {
+          return null;
+        }
+        return name;
+      }
+    },
+    THIS() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        /** The name of the "this" object to report as a variable name. */
+        return  "this";
+      }
+    },
+    SUBPROPERTY() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        return getPropertyName(ref);
+      }
+    };
+
+    /**
+     * @return property name or null if we should skip this property
+     */
+    abstract String getName(JSONObject ref, JSONObject value);
   }
 
   private static String getPropertyName(JSONObject prop) {

@@ -139,8 +139,8 @@ public class CallFrameImpl implements CallFrame {
           public void messageReceived(JSONObject response) {
             if (JsonUtil.isSuccessful(response)) {
               JsVariable variable =
-                  new JsVariableImpl(CallFrameImpl.this, V8Helper.createValueMirror(
-                      JsonUtil.getBody(response)), expression);
+                  new JsVariableImpl(CallFrameImpl.this, V8Helper.createMirrorFromLookup(
+                      JsonUtil.getBody(response)).getValueMirror(), expression);
               if (variable != null) {
                 callback.success(variable);
               } else {
@@ -173,11 +173,11 @@ public class CallFrameImpl implements CallFrame {
    */
   private Collection<JsVariableImpl> createVariables() {
     FrameMirror.Locals locals = frameMirror.getLocals();
-    List<String> names = locals.getNames();
-    List<ValueMirror> values = locals.getValues();
-    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(names.size());
-    for (int i = 0; i < names.size(); i++) {
-      result.add(new JsVariableImpl(this, values.get(i), names.get(i)));
+    List<PropertyReference> refs = locals.getLocalRefs();
+    List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
+    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
+    for (int i = 0; i < refs.size(); i++) {
+      result.add(new JsVariableImpl(this, mirrors.get(i), refs.get(i).getName()));
     }
     return result;
   }

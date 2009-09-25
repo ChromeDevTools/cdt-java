@@ -4,61 +4,72 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.chromium.sdk.JsValue.Type;
 
 /**
- * A representation of a datum (value) in the remote JavaScript VM.
+ * A representation of a datum (value) in the remote JavaScript VM. Must contain all the
+ * data immutable, except for properties. Reference to properties is optional and may be set later.
  */
 public class ValueMirror {
 
-  /**
-   * Class name of a generic object.
-   */
-  private static final String OBJECT_CLASSNAME = "Object";
+  public static PropertyHoldingValueMirror createScalar(String value, Type type, String className) {
+    return new ValueMirror(value, type, className).getProperties();
+  }
+
+  public static PropertyHoldingValueMirror createObject(int refID,
+      List<? extends PropertyReference> props, String className) {
+    if (props == null) {
+      throw new NullPointerException();
+    }
+    return new ValueMirror(refID, props, className).getProperties();
+  }
+
+  public static ValueMirror createObjectUnknownProperties(int refID, String className) {
+    return new ValueMirror(refID, null, className);
+  }
 
   private final int ref;
 
-  private Type type;
+  private final Type type;
 
-  private String value;
+  private final String value;
 
-  private PropertyReference[] properties = null;
+  private final String className;
 
-  private String className;
+  private volatile PropertyHoldingValueMirror properties = null;
 
-  public ValueMirror(String value, Type type, String className) {
+  private ValueMirror(String value, Type type, String className) {
     this.type = type;
     this.value = value;
     this.ref = -1;
     this.className = className;
+    this.properties =
+        new PropertyHoldingValueMirror(this, Collections.<PropertyReference>emptyList());
   }
 
-  public ValueMirror(int refID) {
-    this.type = Type.TYPE_OBJECT;
-    this.ref = refID;
-    this.className = OBJECT_CLASSNAME;
-  }
-
-  public ValueMirror(int refID, PropertyReference[] props, String className) {
+  private ValueMirror(int refID, List<? extends PropertyReference> props, String className) {
     this.type = getObjectJsType(className);
     this.className = className;
     this.ref = refID;
-    this.properties = props;
+    PropertyHoldingValueMirror propertiesMirror;
+    if (props == null) {
+      propertiesMirror = null;
+    } else {
+      propertiesMirror = new PropertyHoldingValueMirror(this, Collections.unmodifiableList(props));
+    }
+    this.properties = propertiesMirror;
+    this.value = null;
   }
 
   public Type getType() {
     return type;
   }
 
-  public PropertyReference[] getProperties() {
+  public PropertyHoldingValueMirror getProperties() {
     return properties;
-  }
-
-  public void setProperties(String className, PropertyReference[] props) {
-    if (className != null) {
-      this.className = className;
-    }
-    this.properties = props;
   }
 
   public int getRef() {
@@ -80,28 +91,6 @@ public class ValueMirror {
       default:
         return "text";
     }
-  }
-
-  public void setValue(String val) {
-    switch (type) {
-      case TYPE_UNDEFINED:
-      case TYPE_NULL:
-      case TYPE_BOOLEAN:
-      case TYPE_DATE:
-      case TYPE_STRING:
-      case TYPE_NUMBER:
-        value = val;
-        break;
-      case TYPE_OBJECT:
-      case TYPE_ARRAY:
-      case TYPE_FUNCTION:
-      default:
-        throw new IllegalStateException("cannot set value of an object");
-    }
-  }
-
-  public void setType(Type type) {
-    this.type = type;
   }
 
   @Override
@@ -133,5 +122,33 @@ public class ValueMirror {
 
   private static Type getObjectJsType(String className) {
     return JsDataTypeUtil.fromJsonTypeAndClassName("object", className);
+  }
+
+  void mergeFrom(ValueMirror alternative) {
+    synchronized (MERGE_VALUE_MIRROR_MONITOR) {
+      if (alternative.properties != null) {
+        if (this.properties == null) {
+          this.properties =
+              new PropertyHoldingValueMirror(this, alternative.properties.getProperties());
+        } else {
+          mergeProperties(this.properties, alternative.properties);
+        }
+      }
+    }
+  }
+
+  private static final Object MERGE_VALUE_MIRROR_MONITOR = new Object();
+
+  /**
+   * Merge a record from data base with a new record just received. Theoretically
+   * the new record may have something that base version lacks.
+   * However,this method is more of symbolic use right now.
+   *
+   * @param baseProperties record version which is kept in database
+   * @param altProperties record version that just has come from outside and may
+   *        contain additional data
+   */
+  private static void mergeProperties(PropertyHoldingValueMirror baseProperties,
+      PropertyHoldingValueMirror altProperties) {
   }
 }
