@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,11 +51,11 @@ public class JsObjectImplTest {
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
-    eventMirror = new ValueMirror(
-        11, new PropertyReference[] {
+    eventMirror = ValueMirror.createObject(
+        11, Arrays.asList(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
-            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject),
-        }, null);
+            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject)
+        ), null).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
@@ -71,7 +72,6 @@ public class JsObjectImplTest {
     JsObjectImpl jsObject = new JsObjectImpl(callFrame, "", eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
-    jsObject.ensureProperties();
     Collection<JsVariableImpl> variables = jsObject.getProperties();
     assertEquals(2, variables.size()); // "x" and "y"
     Iterator<JsVariableImpl> it = variables.iterator();

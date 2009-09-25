@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.SortedMap;
 
@@ -50,11 +51,11 @@ public class JsArrayImplTest {
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
-    arrayMirror = new ValueMirror(
-        11, new PropertyReference[] {
-            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "[1]", valueObject),
-            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "[3]", valueObject),
-        }, null);
+    arrayMirror = ValueMirror.createObject(
+        11, Arrays.asList(
+            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "1", valueObject),
+            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "3", valueObject)
+        ), null).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 

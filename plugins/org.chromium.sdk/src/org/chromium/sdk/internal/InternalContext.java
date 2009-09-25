@@ -48,4 +48,6 @@ public interface InternalContext {
 
   class ContextDismissedCheckedException extends Exception {
   }
+
+  ValueLoader getValueLoader();
 }

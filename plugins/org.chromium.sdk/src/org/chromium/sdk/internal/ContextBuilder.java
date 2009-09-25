@@ -138,6 +138,8 @@ public class ContextBuilder {
 
   private class PreContext implements InternalContext {
     private final HandleManager handleManager = new HandleManager();
+    private final ValueLoader valueLoader = new ValueLoader(this);
+
     /**
      * We synchronize {@link #isValid} state with commands that are being sent
      * using this monitor.
@@ -202,6 +204,11 @@ public class ContextBuilder {
       // tolerates dismissed context
       return handleManager;
     }
+
+    public ValueLoader getValueLoader() {
+      return valueLoader;
+    }
+
 
     void createContext(DebugContextData contextData) {
       if (context != null) {

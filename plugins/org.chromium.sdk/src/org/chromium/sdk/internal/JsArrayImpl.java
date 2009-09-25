@@ -4,9 +4,9 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -36,16 +36,12 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     super(callFrame, parentFqn, valueState);
   }
 
-  public JsArrayImpl(CallFrameImpl callFrame, ValueMirror valueState,
-      Collection<JsVariableImpl> properties) {
-    super(callFrame, valueState, properties);
-  }
-
   private synchronized void ensureElementsMap() throws MethodIsBlockingException {
     if (indexToElementMap != null) {
       return;
     }
     SortedMap<Integer, JsVariableImpl> map =
+      // TODO(peter.rybin): do we need this comparator at all?
         new TreeMap<Integer, JsVariableImpl>(new Comparator<Integer>() {
           public int compare(Integer o1, Integer o2) {
             return o1 - o2;
@@ -53,14 +49,12 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
         });
 
     for (JsVariableImpl prop : getProperties()) {
-      String name = prop.getName();
-      if (isArrayElementProperty(name)) {
-        String indexString = name.substring(1, name.length() - 1);
-        if (JsonUtil.isInteger(indexString)) {
-          Integer index = Integer.valueOf(indexString);
-          map.put(index, prop);
-        }
+      String name = prop.getRawName();
+      Integer index = getAsArrayIndex(name);
+      if (index == null) {
+        continue;
       }
+      map.put(index, prop);
     }
     indexToElementMap = Collections.unmodifiableSortedMap(map);
   }
@@ -76,20 +70,19 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
   }
 
   public int length() {
+    // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
+    // rather than JsVariableImpl
     int lastIndex = -1;
-    PropertyReference[] propRefs = getMirror().getProperties();
-    for (PropertyReference propRef : propRefs) {
-      String name = propRef.getName();
-      if (isArrayElementProperty(name)) {
-        String indexString = name.substring(1, name.length() - 1);
-        try {
-          int index = Integer.parseInt(indexString);
-          if (index > lastIndex) {
-            lastIndex = index;
-          }
-        } catch (NumberFormatException e) {
-          // not an array element
-        }
+    List<JsVariableImpl> properties = getPropertiesLazily();
+    // TODO(peter.rybin): rename propRefs
+    for (JsVariableImpl prop : properties) {
+      String name = prop.getRawName();
+      Integer index = getAsArrayIndex(name);
+      if (index == null) {
+        continue;
+      }
+      if (index > lastIndex) {
+        lastIndex = index;
       }
     }
     return lastIndex + 1;
@@ -117,8 +110,38 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     return this;
   }
 
-  private static boolean isArrayElementProperty(String name) {
-    return name.startsWith("[") && name.endsWith("]");
+  @Override
+  protected JsVariableImpl.NameDecorator getChildPropertyNameDecorator() {
+    return ARRAY_ELEMENT_DECORATOR;
   }
 
+  /**
+   * @return integer representation of the index or null if it is not an integer
+   */
+  static Integer getAsArrayIndex(String varName) {
+    if (!JsonUtil.isInteger(varName)) {
+      return null;
+    }
+    try {
+      int index = Integer.parseInt(varName);
+      return index;
+    } catch (NumberFormatException e) {
+      return null;
+    }
+  }
+
+  private final static JsVariableImpl.NameDecorator ARRAY_ELEMENT_DECORATOR =
+      new JsVariableImpl.NameDecorator() {
+    @Override
+    String decorateVarName(String rawName) {
+      Integer index = getAsArrayIndex(rawName);
+      if (index == null) {
+        return rawName;
+      }
+      // Fix array element indices
+      return OPEN_BRACKET + rawName + CLOSE_BRACKET;
+    }
+    private static final String OPEN_BRACKET = "[";
+    private static final String CLOSE_BRACKET = "]";
+  };
 }

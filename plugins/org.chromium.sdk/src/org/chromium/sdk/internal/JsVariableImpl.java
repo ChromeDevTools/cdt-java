@@ -13,12 +13,6 @@ import org.chromium.sdk.JsValue.Type;
  */
 public class JsVariableImpl implements JsVariable {
 
-  private static final String DOT = ".";
-
-  private static final String OPEN_BRACKET = "[";
-
-  private static final String CLOSE_BRACKET = "]";
-
   /**
    * The variable value data as reported by the JavaScript VM (is used to
    * construct the variable value.)
@@ -31,19 +25,13 @@ public class JsVariableImpl implements JsVariable {
   /** The fully qualified name of this variable. */
   private final String variableFqn;
 
+  private final NameDecorator nameDecorator;
+
   /** The lazily constructed value of this variable. */
-  private JsValueImpl value;
+  private final JsValueImpl value;
 
   /** Variable name. */
-  private final String varName;
-
-  // The access is synchronized
-  private boolean pendingReq = false;
-
-  // Sentry to stop drilling in for props of type object.
-  private boolean waitDrilling;
-
-  protected volatile boolean failedResponse = false;
+  private final String rawName;
 
   /**
    * Constructs a variable contained in the given call frame with the given
@@ -52,8 +40,8 @@ public class JsVariableImpl implements JsVariable {
    * @param callFrame that owns this variable
    * @param valueData value data for this variable
    */
-  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String varName) {
-    this(callFrame, valueData, varName, null, false);
+  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String name) {
+    this(callFrame, valueData, name, null, NameDecorator.NOOP);
   }
 
   /**
@@ -63,60 +51,42 @@ public class JsVariableImpl implements JsVariable {
    * @param callFrame that owns this variable
    * @param valueData for this variable
    * @param variableFqn the fully qualified name of this variable
-   * @param waitDrilling whether to halt drilling in for any properties of type "object"
    */
-  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String varName, String variableFqn,
-      boolean waitDrilling) {
+  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String name, String variableFqn,
+      NameDecorator nameDecorator) {
     this.callFrame = callFrame;
     this.valueData = valueData;
-    this.varName = varName;
+    this.rawName = name;
     this.variableFqn = variableFqn;
-    this.waitDrilling = waitDrilling;
+    this.nameDecorator = nameDecorator;
+
+    Type type = this.valueData.getType();
+    switch (type) {
+      case TYPE_OBJECT:
+        this.value = new JsObjectImpl(callFrame, this.variableFqn, this.valueData);
+        break;
+      case TYPE_ARRAY:
+        this.value = new JsArrayImpl(callFrame, this.variableFqn, this.valueData);
+        break;
+      default:
+        this.value = new JsValueImpl(this.valueData);
+    }
   }
 
   /**
    * @return a [probably compound] JsValue corresponding to this variable.
    *         {@code null} if there was an error lazy-loading the value data.
    */
-  public synchronized JsValueImpl getValue() {
-    if (isFailedResponse()) {
-      return null;
-    }
-    if (value == null) {
-      Type type = this.valueData.getType();
-      switch (type) {
-        case TYPE_OBJECT:
-          this.value = new JsObjectImpl(callFrame, getFullyQualifiedName(), this.valueData);
-          break;
-        case TYPE_ARRAY:
-          this.value = new JsArrayImpl(callFrame, getFullyQualifiedName(), this.valueData);
-          break;
-        default:
-          this.value = new JsValueImpl(this.valueData);
-      }
-    }
+  public JsValueImpl getValue() {
     return value;
   }
 
   public String getName() {
-    String name = varName;
-    if (JsonUtil.isInteger(name)) {
-      // Fix array element indices
-      name = OPEN_BRACKET + name + CLOSE_BRACKET;
-    }
-    return name;
+    return nameDecorator.decorateVarName(rawName);
   }
 
-  public String getReferenceTypeName() {
-    return valueData.getTypeAsString();
-  }
-
-  public boolean hasValueChanged() {
-    return false; // we do not track values between suspended states
-  }
-
-  public synchronized void setValue(JsValueImpl value) {
-    this.value = value;
+  public String getRawName() {
+    return this.rawName;
   }
 
   public boolean isMutable() {
@@ -159,44 +129,6 @@ public class JsVariableImpl implements JsVariable {
     return callFrame;
   }
 
-  // Used for object properties filling
-  public void setTypeValue(Type type, String val) {
-    valueData.setType(type);
-
-    Type existingType = valueData.getType();
-    if (existingType == null) {
-      valueData.setValue(val);
-      setValue(new JsValueImpl(valueData));
-      return;
-    }
-    switch (existingType) {
-      case TYPE_NUMBER:
-      case TYPE_STRING:
-      case TYPE_BOOLEAN:
-      case TYPE_UNDEFINED:
-      case TYPE_NULL:
-      case TYPE_DATE:
-        valueData.setValue(val);
-        setValue(new JsValueImpl(valueData));
-        break;
-      case TYPE_OBJECT:
-        // You cannot set an object value
-        break;
-    }
-  }
-
-  /**
-   * Resolves property references and sets the class name of an Object variable.
-   *
-   * @param className of this object
-   * @param properties of the Object variable
-   */
-  public synchronized void setProperties(String className, PropertyReference[] properties) {
-    if (properties != null) {
-      valueData.setProperties(className, properties);
-    }
-  }
-
   public ValueMirror getMirror() {
     return valueData;
   }
@@ -207,31 +139,13 @@ public class JsVariableImpl implements JsVariable {
         : getName();
   }
 
-  synchronized boolean isWaitDrilling() {
-    return waitDrilling;
-  }
-
-  synchronized void resetDrilling() {
-    waitDrilling = false;
-  }
-
-  synchronized void setPendingReq() {
-    pendingReq = true;
-  }
-
-  synchronized boolean isPendingReq() {
-    return pendingReq;
-  }
-
-  synchronized void resetPending() {
-    pendingReq = false;
-  }
-
-  protected void setFailedResponse() {
-    this.failedResponse = true;
-  }
-
-  protected boolean isFailedResponse() {
-    return failedResponse;
+  static abstract class NameDecorator {
+    static final NameDecorator NOOP = new NameDecorator() {
+      @Override
+      String decorateVarName(String rawName) {
+        return rawName;
+      }
+    };
+    abstract String decorateVarName(String rawName);
   }
 }

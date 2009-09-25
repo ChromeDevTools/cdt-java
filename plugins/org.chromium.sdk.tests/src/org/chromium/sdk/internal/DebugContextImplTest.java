@@ -4,16 +4,16 @@
 
 package org.chromium.sdk.internal;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
@@ -65,9 +65,13 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     // This call invalidates the debug context for the "lookup" operation that is invoked
     // inside "ensureProperties".
     suspendContext.continueVm(StepAction.CONTINUE, 1, null);
-    JsObjectImpl jsObject = (JsObjectImpl) variables.iterator().next().getValue().asObject();
-    jsObject.ensureProperties();
-    assertTrue(jsObject.isFailedResponse());
+    JsObject jsObject = variables.iterator().next().getValue().asObject();
+    try {
+      jsObject.getProperties();
+      fail();
+    } catch (RuntimeException e) {
+      // this exception is expected
+    }
   }
 
   /**
@@ -107,9 +111,9 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     Collection<? extends JsVariable> variables =
         suspendContext.getCallFrames().get(0).getVariables();
 
-    JsObjectImpl jsObject = (JsObjectImpl) variables.iterator().next().getValue().asObject();
-    jsObject.ensureProperties();
-    assertFalse(jsObject.isFailedResponse());
+    JsObject jsObject = variables.iterator().next().getValue().asObject();
+    // This call should finish OK
+    jsObject.getProperties();
   }
 
   @Override

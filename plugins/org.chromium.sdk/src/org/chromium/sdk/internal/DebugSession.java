@@ -24,16 +24,13 @@ import org.json.simple.JSONObject;
  */
 public class DebugSession {
 
-  /** The name of the "this" object to report as a variable name. */
-  private static final String THIS_NAME = "this";
-
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
 
   private final V8CommandProcessor v8CommandProcessor;
 
   /** A helper for performing complex V8-related actions. */
-  private final V8Helper v8Helper = new V8Helper(this, THIS_NAME);
+  private final V8Helper v8Helper = new V8Helper(this);
 
   private final ContextBuilder contextBuilder;
 
