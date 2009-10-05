@@ -93,9 +93,10 @@ public class V8CommandProcessor {
     V8MessageType type = V8MessageType.forString(JsonUtil.getAsString(v8Json, V8Protocol.KEY_TYPE));
 
     if (V8MessageType.RESPONSE == type) {
-      int requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ).intValue();
+      Long requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ);
       checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
-      CallbackEntry callbackEntry = callbackMap.remove(requestSeq);
+      int requestSeqInt = requestSeq.intValue();
+      CallbackEntry callbackEntry = callbackMap.removeIfContains(requestSeqInt);
       if (callbackEntry != null) {
         LOGGER.log(
             Level.INFO,
@@ -109,7 +110,7 @@ public class V8CommandProcessor {
           }
         };
         try {
-          callThemBack(callbackEntry, caller, requestSeq);
+          callThemBack(callbackEntry, caller, requestSeqInt);
         } catch (RuntimeException e) {
           LOGGER.log(Level.SEVERE, "Failed to dispatch response to callback", e);
         }
