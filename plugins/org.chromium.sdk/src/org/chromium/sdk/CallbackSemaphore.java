@@ -62,7 +62,7 @@ public class CallbackSemaphore implements SyncCallback {
     if (e == null) {
       savedException = null;
     } else {
-      savedException = new Exception("Exception saved from callback");
+      savedException = new Exception("Exception saved from callback", e);
     }
     sem.release();
   }
