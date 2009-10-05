@@ -59,6 +59,14 @@ public class CloseableMap<K, V> {
     return result;
   }
 
+  public synchronized V removeIfContains(K key) {
+    if (mutationClosed) {
+      // We probably can safely ignore this.
+      return null;
+    }
+    return map.remove(key);
+  }
+
   public synchronized void put(K key, V value) {
     if (mutationClosed) {
       throw new IllegalStateException();
