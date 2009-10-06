@@ -22,7 +22,7 @@ import org.json.simple.JSONObject;
  * Listens for scripts sent in the "afterCompile" events and requests their
  * sources.
  */
-public class AfterCompileProcessor extends V8ResponseCallback {
+public class AfterCompileProcessor extends V8ResponseProcessor {
 
   public AfterCompileProcessor(DebugSession debugSession) {
     super(debugSession);

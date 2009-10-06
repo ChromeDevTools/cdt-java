@@ -5,9 +5,12 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugSession;
@@ -211,6 +214,69 @@ public class V8Helper {
       return ValueMirror.createObject(refId, propertyRefs, className);
     } else {
       return ValueMirror.createScalar(text, type, className);
+    }
+  }
+
+  public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
+      V8CommandSender<MESSAGE, EX> commandSender, MESSAGE message,
+      V8BlockingCallback<RES> callback) throws EX {
+    return callV8Sync(commandSender, message, callback,
+        CallbackSemaphore.OPERATION_TIMEOUT_MS);
+  }
+
+  public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
+      V8CommandSender<MESSAGE, EX> commandSender,
+      MESSAGE message, final V8BlockingCallback<RES> callback, long timeoutMs) throws EX {
+    CallbackSemaphore syncCallback = new CallbackSemaphore();
+    final Exception [] exBuff = { null };
+    // A long way of creating buffer for generic type without warnings.
+    final List<RES> resBuff = new ArrayList<RES>(Collections.nCopies(1, (RES)null));
+    V8CommandProcessor.V8HandlerCallback callbackWrapper =
+        new V8CommandProcessor.V8HandlerCallback() {
+      public void failure(String message) {
+        exBuff[0] = new Exception("Failure: " + message);
+      }
+
+      public void messageReceived(JSONObject response) {
+        RES result = callback.messageReceived(response);
+        resBuff.set(0, result);
+      }
+    };
+    commandSender.sendV8CommandAsync(message, true, callbackWrapper, syncCallback);
+
+    boolean waitRes;
+    try {
+      waitRes = syncCallback.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS);
+    } catch (RuntimeException e) {
+      throw new CallbackException(e);
+    }
+
+    if (!waitRes) {
+      throw new CallbackException("Timeout");
+    }
+
+    if (exBuff[0] != null) {
+      throw new CallbackException(exBuff[0]);
+    }
+
+    return resBuff.get(0);
+  }
+
+  /**
+   * Special kind of exceptions for problems in receiving or waiting for the answer.
+   * Clients may try to catch it.
+   */
+  public static class CallbackException extends RuntimeException {
+    CallbackException() {
+    }
+    CallbackException(String message, Throwable cause) {
+      super(message, cause);
+    }
+    CallbackException(String message) {
+      super(message);
+    }
+    CallbackException(Throwable cause) {
+      super(cause);
     }
   }
 }

@@ -6,6 +6,7 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8CommandSender;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.json.simple.JSONObject;
 
@@ -15,7 +16,8 @@ import org.json.simple.JSONObject;
  * DebugContext to this interface -- technically they might be different
  * objects.
  */
-public interface InternalContext {
+public interface InternalContext extends V8CommandSender<DebuggerMessage,
+    InternalContext.ContextDismissedCheckedException> {
   /**
    * Context belongs to a particular {@code DebugSession}.
    * @return DebugSession this context belongs to
@@ -42,7 +44,7 @@ public interface InternalContext {
    * way of making sure context will be valid via this API.
    * @throws ContextDismissedCheckedException if context is not valid anymore
    */
-  void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+  void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback)
       throws ContextDismissedCheckedException;
 

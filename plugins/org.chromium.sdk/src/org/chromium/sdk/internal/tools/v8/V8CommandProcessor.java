@@ -20,7 +20,7 @@ import org.json.simple.JSONObject;
  * via {@code V8CommandOutput}. Response is passed back to callback if it was provided.
  * Also all responses and events are dispatched to group of dedicated processors.
  */
-public class V8CommandProcessor {
+public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, RuntimeException> {
 
   /**
    * A callback to handle V8 debugger responses.
@@ -68,7 +68,7 @@ public class V8CommandProcessor {
   }
 
   public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
-      V8CommandProcessor.V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
+      V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
 
     if (v8HandlerCallback != null) {
       // TODO(peter.rybin): should we handle IllegalStateException better than rethrowing it?

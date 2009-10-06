@@ -10,7 +10,7 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.ContinueProcessor;
-import org.chromium.sdk.internal.tools.v8.processor.V8ResponseCallback;
+import org.chromium.sdk.internal.tools.v8.processor.V8ResponseProcessor;
 import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
 
@@ -55,7 +55,7 @@ public class DefaultResponseHandler {
   }
 
   private static abstract class HandlerGetter {
-    abstract V8ResponseCallback get(DefaultResponseHandler instance);
+    abstract V8ResponseProcessor get(DefaultResponseHandler instance);
   }
 
   /**

@@ -156,7 +156,7 @@ public class CallFrameImpl implements CallFrame {
           }
         };
 
-    getInternalContext().sendMessageAsync(message, true, commandCallback,
+    getInternalContext().sendV8CommandAsync(message, true, commandCallback,
         syncCallback);
   }
 
