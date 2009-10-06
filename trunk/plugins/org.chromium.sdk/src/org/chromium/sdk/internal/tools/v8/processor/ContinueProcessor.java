@@ -12,7 +12,7 @@ import org.json.simple.JSONObject;
 /**
  * Handles the "continue" V8 command replies.
  */
-public class ContinueProcessor extends V8ResponseCallback {
+public class ContinueProcessor extends V8ResponseProcessor {
 
   public ContinueProcessor(DebugSession debugSession) {
     super(debugSession);

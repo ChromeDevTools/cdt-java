@@ -15,7 +15,7 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
  * {@code #tryAcquire()}.
  */
 public class CallbackSemaphore implements SyncCallback {
-  private static final long OPERATION_TIMEOUT_MS = 120000;
+  public static final long OPERATION_TIMEOUT_MS = 120000;
 
   private final Semaphore sem = new Semaphore(0);
   private Exception savedException;

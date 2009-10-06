@@ -11,9 +11,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -131,46 +130,28 @@ public class ValueLoader {
     }
 
     DebuggerMessage message = DebuggerMessageFactory.lookup(propertyRefIds, false);
-    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
 
-    final Exception[] exceptionBuff = { null };
-    final List<PropertyHoldingValueMirror> result =
-        new ArrayList<PropertyHoldingValueMirror>(propertyRefIds.size());
-
-    V8CommandProcessor.V8HandlerCallback callback = new V8CommandProcessor.V8HandlerCallback() {
-      public void messageReceived(JSONObject response) {
-        if (!JsonUtil.isSuccessful(response)) {
-          exceptionBuff[0] = new Exception("Unsuccessful result");
-          return;
-        }
-        readResponseFromLookup(response, propertyRefIds, result);
-      }
-
-      public void failure(String message) {
-        exceptionBuff[0] = new Exception(message);
+    V8BlockingCallback<List<PropertyHoldingValueMirror>> callback =
+        new V8BlockingCallback<List<PropertyHoldingValueMirror>>() {
+      @Override
+      protected List<PropertyHoldingValueMirror> handleSuccessfulResponse(JSONObject response) {
+        return readResponseFromLookup(response, propertyRefIds);
       }
     };
+
     try {
-      context.sendMessageAsync(message, true, callback, callbackSemaphore);
+      return V8Helper.callV8Sync(context, message, callback);
     } catch (ContextDismissedCheckedException e) {
       context.getDebugSession().maybeRethrowContextException(e);
       // or
-      return Collections.emptyList();
+      throw new ValueLoadException("Invalid context", e);
     }
-    boolean res = callbackSemaphore.tryAcquireDefault();
-    if (!res) {
-      throw new ValueLoadException("Timeout");
-    }
-
-    if (exceptionBuff[0] != null) {
-      throw new ValueLoadException(exceptionBuff[0]);
-    }
-
-    return result;
   }
 
-  private void readResponseFromLookup(JSONObject response, List<Long> propertyRefIds,
-      List<PropertyHoldingValueMirror> result) {
+  private List<PropertyHoldingValueMirror> readResponseFromLookup(JSONObject response,
+      List<Long> propertyRefIds) {
+    List<PropertyHoldingValueMirror> result =
+        new ArrayList<PropertyHoldingValueMirror>(propertyRefIds.size());
     JSONObject body = JsonUtil.getAsJSON(response, "body");
     for (int i = 0; i < propertyRefIds.size(); i++) {
       int ref = propertyRefIds.get(i).intValue();
@@ -181,6 +162,7 @@ public class ValueLoader {
       context.getHandleManager().put((long)ref, value);
       result.add(readMirrorFromLookup(ref, value));
     }
+    return result;
   }
 
   /**

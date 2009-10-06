@@ -217,7 +217,7 @@ public class ContextBuilder {
       context = new UserContext(contextData);
     }
 
-    public void sendMessageAsync(DebuggerMessage message, boolean isImmediate,
+    public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
         V8HandlerCallback commandCallback, SyncCallback syncCallback)
         throws ContextDismissedCheckedException {
       synchronized (sendContextCommandsMonitor) {

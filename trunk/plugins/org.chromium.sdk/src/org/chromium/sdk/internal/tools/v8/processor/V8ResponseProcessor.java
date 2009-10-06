@@ -14,11 +14,11 @@ import org.json.simple.JSONObject;
  * NB! The {@link #messageReceived(org.json.simple.JSONObject)} implementation
  * MUST NOT perform debugger commands in a blocking way the current thread.
  */
-public abstract class V8ResponseCallback {
+public abstract class V8ResponseProcessor {
 
   private final DebugSession debugSession;
 
-  public V8ResponseCallback(DebugSession debugSession) {
+  public V8ResponseProcessor(DebugSession debugSession) {
     this.debugSession = debugSession;
   }
 

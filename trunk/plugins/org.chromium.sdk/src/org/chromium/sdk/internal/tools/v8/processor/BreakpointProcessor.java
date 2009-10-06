@@ -30,7 +30,7 @@ import org.json.simple.JSONObject;
 /**
  * Handles the suspension-related V8 command replies and events.
  */
-public class BreakpointProcessor extends V8ResponseCallback {
+public class BreakpointProcessor extends V8ResponseProcessor {
 
   /** The name of the "exception" object to report as a variable name. */
   private static final String EXCEPTION_NAME = "exception";
@@ -70,7 +70,7 @@ public class BreakpointProcessor extends V8ResponseCallback {
       boolean isImmediate = false;
       DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true);
       try {
-        internalContext.sendMessageAsync(message, isImmediate, backtraceProcessor, null);
+        internalContext.sendV8CommandAsync(message, isImmediate, backtraceProcessor, null);
       } catch (ContextDismissedCheckedException e) {
         // Can't happen -- we are just creating context, it couldn't have become invalid
         throw new RuntimeException(e);
