@@ -57,7 +57,7 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out an integer number from a JSON payload
+   * Helper function to rip out an integer number from a JSON payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -75,7 +75,7 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out a double from a JSON payload
+   * Helper function to rip out a double from a JSON payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -92,7 +92,7 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out a string from a JSON payload
+   * Helper function to rip out a string from a JSON payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -108,7 +108,7 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out a Boolean from a JSON payload
+   * Helper function to rip out a Boolean from a JSON payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -128,7 +128,7 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out a nested JSON object from the payload
+   * Helper function to rip out a nested JSON object from the payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -146,7 +146,22 @@ public class JsonUtil {
   }
 
   /**
-   * Helper function to rip out a JSONArray from the payload
+   * Helper function to rip out a nested JSON object from the payload or throw an exception.
+   * @param obj JSON payload
+   * @param key to look up
+   * @return not null
+   * @throws JsonException if failed to rip out the object
+   */
+  public static JSONObject getAsJSONStrict(JSONObject obj, CharSequence key) {
+    JSONObject result = getAsJSON(obj, key);
+    if (result == null) {
+      throw new JsonException("Failed to find property '" + key);
+    }
+    return result;
+  }
+
+  /**
+   * Helper function to rip out a JSONArray from the payload.
    *
    * @param obj JSON payload
    * @param key to look up
@@ -161,6 +176,22 @@ public class JsonUtil {
 
     LOGGER.log(Level.SEVERE, "Key: {0}, found value: {1}", new Object[] {keyString, v});
     return null;
+  }
+
+  /**
+   * Helper function to rip out a JSONArray from the payload or throw an exception.
+   *
+   * @param obj JSON payload
+   * @param key to look up
+   * @return not null
+   * @throws JsonException if failed to rip out the array
+   */
+  public static JSONArray getAsJSONArrayStrict(JSONObject obj, CharSequence key) {
+    JSONArray result = getAsJSONArray(obj, key);
+    if (result == null) {
+      throw new JsonException("Failed to find property '" + key + "' of array type");
+    }
+    return result;
   }
 
   /**

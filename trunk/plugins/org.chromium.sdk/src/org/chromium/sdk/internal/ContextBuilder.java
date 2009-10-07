@@ -200,6 +200,11 @@ public class ContextBuilder {
       return debugSession.getV8Helper().computeLocals(frame, this);
     }
 
+    public List<ScopeMirror> computeScopes(JSONObject frame) {
+      assertValidForUser();
+      return debugSession.getV8Helper().computeScopes(frame, this);
+    }
+
     public HandleManager getHandleManager() {
       // tolerates dismissed context
       return handleManager;

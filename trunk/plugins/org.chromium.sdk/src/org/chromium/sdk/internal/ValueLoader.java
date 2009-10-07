@@ -14,8 +14,11 @@ import java.util.concurrent.ConcurrentMap;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
+import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -48,10 +51,46 @@ public class ValueLoader {
   }
 
   /**
+   * Looks up data for scope on remote.
+   */
+  public List<? extends PropertyReference> loadScopeFields(int scopeNumber, int frameNumber) {
+    DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, frameNumber);
+
+    V8BlockingCallback<List<? extends PropertyReference>> callback =
+        new V8BlockingCallback<List<? extends PropertyReference>>() {
+      @Override
+      protected List<? extends PropertyReference> handleSuccessfulResponse(JSONObject response) {
+        return readFromScopeResponse(response);
+      }
+    };
+
+    try {
+      return V8Helper.callV8Sync(context, message, callback);
+    } catch (ContextDismissedCheckedException e) {
+      context.getDebugSession().maybeRethrowContextException(e);
+      // or
+      return Collections.emptyList();
+    }
+  }
+
+  private List<? extends PropertyReference> readFromScopeResponse(JSONObject response) {
+    JSONArray refs = JsonUtil.getAsJSONArray(response, "refs");
+
+    HandleManager handleManager = context.getHandleManager();
+    for (int i = 0; i < refs.size(); i++) {
+      JSONObject ref = (JSONObject) refs.get(i);
+      handleManager.put(ref);
+    }
+    JSONObject body = JsonUtil.getAsJSONStrict(response, V8Protocol.KEY_BODY);
+    JSONObject objectRef = JsonUtil.getAsJSON(body, "object");
+    return V8ProtocolUtil.extractObjectProperties(objectRef);
+  }
+
+/**
    * For each PropertyReference from propertyRefs tries to either: 1. read it from PropertyReference
    * (possibly cached value) or 2. lookup value by refId from remote
    */
-  public List<ValueMirror> getOrLoadValueFromRefs(List<PropertyReference> propertyRefs) {
+  public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs) {
     ValueMirror[] result = new ValueMirror[propertyRefs.size()];
     List<Integer> mapForLoadResults = new ArrayList<Integer>();
     List<PropertyReference> needsLoading = new ArrayList<PropertyReference>();
