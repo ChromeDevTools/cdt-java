@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.List;
+
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8CommandSender;
@@ -36,6 +38,8 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
   HandleManager getHandleManager();
 
   FrameMirror.Locals computeLocals(JSONObject frame);
+
+  List<ScopeMirror> computeScopes(JSONObject frame);
 
   CallFrameImpl getTopFrameImpl();
 

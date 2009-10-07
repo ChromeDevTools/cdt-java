@@ -63,6 +63,10 @@ public class DebuggerMessageFactory {
     return new LookupMessage(refs, inlineRefs);
   }
 
+  public static DebuggerMessage scope(int scopeNumber, int frameNumber) {
+    return new ScopeMessage(scopeNumber, frameNumber);
+  }
+
   private static Integer getV8IgnoreCount(int count) {
     return count == Breakpoint.EMPTY_VALUE ? null : count;
   }

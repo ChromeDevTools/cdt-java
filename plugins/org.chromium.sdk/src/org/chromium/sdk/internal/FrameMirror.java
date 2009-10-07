@@ -49,6 +49,8 @@ public class FrameMirror {
    */
   private Locals locals = null;
 
+  private List<ScopeMirror> scopes = null;
+
   /**
    * The JSON descriptor of the frame.
    * Should be reset when the locals are resolved.
@@ -89,11 +91,19 @@ public class FrameMirror {
     return locals;
   }
 
+  public List<ScopeMirror> getScopes() {
+    ensureLocals();
+    return scopes;
+  }
+
   private void ensureLocals() {
     if (locals == null) {
       locals = context.computeLocals(frameObject);
-      frameObject = null;
     }
+    if (scopes == null) {
+      scopes = context.computeScopes(frameObject);
+    }
+    frameObject = null;
   }
 
   public synchronized void setScript(Script script) {

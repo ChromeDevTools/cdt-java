@@ -57,6 +57,8 @@ public enum V8Protocol implements CharSequence {
 
   BODY_LOCALS("locals"),
 
+  BODY_SCOPES("scopes"),
+
   BODY_ARGUMENTS("arguments"),
 
   FRAME_SCRIPT("script"),

@@ -20,6 +20,7 @@ import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
+import org.chromium.sdk.internal.ScopeMirror;
 import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.ValueLoadException;
 import org.chromium.sdk.internal.ValueMirror;
@@ -145,6 +146,27 @@ public class V8Helper {
         return localRefs;
       }
     };
+  }
+
+  public List<ScopeMirror> computeScopes(JSONObject frame, InternalContext internalContext) {
+    JSONArray scopes = JsonUtil.getAsJSONArrayStrict(frame, V8Protocol.BODY_SCOPES);
+
+    final List<ScopeMirror> result = new ArrayList<ScopeMirror>(scopes.size());
+
+    for (int i = 0; i < scopes.size(); i++) {
+      JSONObject scope = (JSONObject) scopes.get(i);
+      int type = toInt(JsonUtil.getAsLong(scope, "type"));
+      int index = toInt(JsonUtil.getAsLong(scope, "index"));
+
+      result.add(new ScopeMirror(type, index));
+    }
+
+    return result;
+  }
+
+  private static int toInt(Long l) {
+    // TODO(peter.rybin): maybe check for range and explicitly for null here
+    return l.intValue();
   }
 
   /**

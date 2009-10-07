@@ -41,6 +41,9 @@ public class CallFrameImpl implements CallFrame {
   /** The variables known in this call frame. */
   private Collection<JsVariableImpl> variables;
 
+  /** The scopes known in this call frame. */
+  private List<? extends JsScope> scopes;
+
   /**
    * Constructs a call frame for the given handler using the FrameMirror data
    * from the remote JavaScript VM.
@@ -65,8 +68,8 @@ public class CallFrameImpl implements CallFrame {
   }
 
   public List<? extends JsScope> getVariableScopes() {
-    // TODO(peter.rybin): support scopes
-    return Collections.emptyList();
+    ensureScopes();
+    return scopes;
   }
 
   private void ensureVariables() {
@@ -75,8 +78,10 @@ public class CallFrameImpl implements CallFrame {
     }
   }
 
-  public boolean hasVariables() {
-    return getVariables().size() > 0;
+  private void ensureScopes() {
+    if (scopes == null) {
+      this.scopes = Collections.unmodifiableList(createScopes());
+    }
   }
 
   public int getLineNumber() {
@@ -182,4 +187,12 @@ public class CallFrameImpl implements CallFrame {
     return result;
   }
 
+  private List<JsScopeImpl> createScopes() {
+    List<ScopeMirror> scopes = frameMirror.getScopes();
+    List<JsScopeImpl> result = new ArrayList<JsScopeImpl>(scopes.size());
+    for (ScopeMirror mirror : scopes) {
+      result.add(new JsScopeImpl(this, mirror));
+    }
+    return result;
+  }
 }
