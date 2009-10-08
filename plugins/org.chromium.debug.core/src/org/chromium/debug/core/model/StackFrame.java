@@ -10,8 +10,13 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
@@ -57,7 +62,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
       try {
-        variables = wrapVariables(getDebugTarget(), stackFrame.getVariables());
+        variables = wrapScopes(getDebugTarget(), stackFrame.getVariableScopes());
       } catch (RuntimeException e) {
         // We shouldn't throw RuntimeException from here, because calling
         // ElementContentProvider#update will forget to call update.done().
@@ -77,8 +82,82 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return vars.toArray(new IVariable[vars.size()]);
   }
 
+  static IVariable[] wrapScopes(DebugTargetImpl debugTarget, List<? extends JsScope> jsScopes) {
+    List<Variable> vars = new ArrayList<Variable>();
+
+    for (JsScope scope : jsScopes) {
+      if (scope.getType() == JsScope.Type.GLOBAL) {
+        vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope)));
+      } else {
+        for (JsVariable var : scope.getVariables()) {
+          vars.add(new Variable(debugTarget, var));
+        }
+      }
+    }
+
+    IVariable[] result = new IVariable[vars.size()];
+    // Return in reverse order.
+    for (int i = 0; i < result.length; i++) {
+      result[result.length - i - 1] = vars.get(i);
+    }
+    return result;
+  }
+
+  private static JsVariable wrapScopeAsVariable(final JsScope jsScope) {
+    class ScopeObjectVariable implements JsVariable, JsObject {
+      public String getFullyQualifiedName() {
+        return getName();
+      }
+      public String getName() {
+        // TODO(peter.rybin): should we localize it?
+        return "<" + jsScope.getType() + ">";
+      }
+      public JsValue getValue() throws UnsupportedOperationException {
+        return this;
+      }
+      public boolean isMutable() {
+        return false;
+      }
+      public boolean isReadable() {
+        return true;
+      }
+      public void setValue(String newValue, SetValueCallback callback)
+          throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+      }
+      public JsArray asArray() {
+        return null;
+      }
+      public String getClassName() {
+        // TODO(peter.rybin): should we localize it?
+        return "#Scope";
+      }
+      public Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException {
+        return jsScope.getVariables();
+      }
+      public JsVariable getProperty(String name) {
+        for (JsVariable var : getProperties()) {
+          if (var.getName().equals(name)) {
+            return var;
+          }
+        }
+        return null;
+      }
+      public JsObject asObject() {
+        return this;
+      }
+      public Type getType() {
+        return Type.TYPE_OBJECT;
+      }
+      public String getValueString() {
+        return getClassName();
+      }
+    }
+    return new ScopeObjectVariable();
+  }
+
   public boolean hasVariables() throws DebugException {
-    return stackFrame.getVariables().size() > 0;
+    return stackFrame.getVariableScopes().size() > 0;
   }
 
   public int getLineNumber() throws DebugException {
