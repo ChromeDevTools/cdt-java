@@ -195,7 +195,7 @@ public class ContextBuilder {
      * @param frame to get the data for
      * @return the mirrors corresponding to the frame locals
      */
-    public FrameMirror.Locals computeLocals(JSONObject frame) {
+    public List<PropertyReference> computeLocals(JSONObject frame) {
       assertValidForUser();
       return debugSession.getV8Helper().computeLocals(frame, this);
     }

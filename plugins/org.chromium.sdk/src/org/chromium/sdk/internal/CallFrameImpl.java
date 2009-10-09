@@ -177,8 +177,7 @@ public class CallFrameImpl implements CallFrame {
    * Initializes this frame with variables based on the frameMirror locals.
    */
   private Collection<JsVariableImpl> createVariables() {
-    FrameMirror.Locals locals = frameMirror.getLocals();
-    List<PropertyReference> refs = locals.getLocalRefs();
+    List<PropertyReference> refs = frameMirror.getLocals();
     List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
     Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
     for (int i = 0; i < refs.size(); i++) {
