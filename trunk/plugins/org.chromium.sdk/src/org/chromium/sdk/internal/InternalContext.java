@@ -37,7 +37,7 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    */
   HandleManager getHandleManager();
 
-  FrameMirror.Locals computeLocals(JSONObject frame);
+  List<PropertyReference> computeLocals(JSONObject frame);
 
   List<ScopeMirror> computeScopes(JSONObject frame);
 

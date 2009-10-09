@@ -14,7 +14,6 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.JsonUtil;
@@ -112,13 +111,13 @@ public class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  public FrameMirror.Locals computeLocals(JSONObject frame, InternalContext internalContext) {
+  public List<PropertyReference> computeLocals(JSONObject frame, InternalContext internalContext) {
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
 
     int maxLookups = args.size() + locals.size() + 1 /* "this" */;
 
-    final List<PropertyReference> localRefs = new ArrayList<PropertyReference>(maxLookups);
+    List<PropertyReference> localRefs = new ArrayList<PropertyReference>(maxLookups);
 
     {
       // Receiver ("this")
@@ -141,11 +140,7 @@ public class V8Helper {
           V8ProtocolUtil.PropertyNameGetter.LOCAL);
     }
 
-    return new FrameMirror.Locals() {
-      public List<PropertyReference> getLocalRefs() {
-        return localRefs;
-      }
-    };
+    return localRefs;
   }
 
   public List<ScopeMirror> computeScopes(JSONObject frame, InternalContext internalContext) {

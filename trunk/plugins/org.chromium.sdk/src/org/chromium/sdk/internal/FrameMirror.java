@@ -45,17 +45,9 @@ public class FrameMirror {
   private Script script;
 
   /**
-   * The frame locals.
-   */
-  private Locals locals = null;
-
-  private List<ScopeMirror> scopes = null;
-
-  /**
    * The JSON descriptor of the frame.
-   * Should be reset when the locals are resolved.
    */
-  private JSONObject frameObject;
+  private final JSONObject frameObject;
 
   public FrameMirror(InternalContext context, JSONObject frameObject,
       String scriptName, int line, long scriptId, String frameFunction) {
@@ -86,24 +78,12 @@ public class FrameMirror {
     return frameFunction;
   }
 
-  public Locals getLocals() {
-    ensureLocals();
-    return locals;
+  public List<PropertyReference> getLocals() {
+    return context.computeLocals(frameObject);
   }
 
   public List<ScopeMirror> getScopes() {
-    ensureLocals();
-    return scopes;
-  }
-
-  private void ensureLocals() {
-    if (locals == null) {
-      locals = context.computeLocals(frameObject);
-    }
-    if (scopes == null) {
-      scopes = context.computeScopes(frameObject);
-    }
-    frameObject = null;
+    return context.computeScopes(frameObject);
   }
 
   public synchronized void setScript(Script script) {
@@ -116,10 +96,5 @@ public class FrameMirror {
 
   JSONObject getFrameObject() {
     return frameObject;
-  }
-
-  public interface Locals {
-    // TODO(peter.rybin): consider melting this interface down
-    List<PropertyReference> getLocalRefs();
   }
 }
