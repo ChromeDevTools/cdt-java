@@ -14,7 +14,6 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
@@ -111,7 +110,7 @@ public class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  public List<PropertyReference> computeLocals(JSONObject frame, InternalContext internalContext) {
+  public static List<PropertyReference> computeLocals(JSONObject frame) {
     JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
     JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
 
@@ -143,7 +142,7 @@ public class V8Helper {
     return localRefs;
   }
 
-  public List<ScopeMirror> computeScopes(JSONObject frame, InternalContext internalContext) {
+  public static List<ScopeMirror> computeScopes(JSONObject frame) {
     JSONArray scopes = JsonUtil.getAsJSONArrayStrict(frame, V8Protocol.BODY_SCOPES);
 
     final List<ScopeMirror> result = new ArrayList<ScopeMirror>(scopes.size());
@@ -162,6 +161,12 @@ public class V8Helper {
   private static int toInt(Long l) {
     // TODO(peter.rybin): maybe check for range and explicitly for null here
     return l.intValue();
+  }
+
+  public static PropertyReference computeReceiverRef(JSONObject frame) {
+    JSONObject receiverObject = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
+    return V8ProtocolUtil.extractProperty(receiverObject, null,
+        V8ProtocolUtil.PropertyNameGetter.THIS);
   }
 
   /**

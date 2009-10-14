@@ -4,13 +4,10 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.List;
-
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8CommandSender;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.json.simple.JSONObject;
 
 /**
  * Internal API to DebugContext implementation. The actual object might
@@ -36,10 +33,6 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    * @return HandleManager of this context
    */
   HandleManager getHandleManager();
-
-  List<PropertyReference> computeLocals(JSONObject frame);
-
-  List<ScopeMirror> computeScopes(JSONObject frame);
 
   CallFrameImpl getTopFrameImpl();
 

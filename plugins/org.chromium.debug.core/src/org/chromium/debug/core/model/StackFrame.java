@@ -62,7 +62,8 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
       try {
-        variables = wrapScopes(getDebugTarget(), stackFrame.getVariableScopes());
+        variables = wrapScopes(getDebugTarget(), stackFrame.getVariableScopes(),
+            stackFrame.getReceiverVariable());
       } catch (RuntimeException e) {
         // We shouldn't throw RuntimeException from here, because calling
         // ElementContentProvider#update will forget to call update.done().
@@ -82,17 +83,25 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return vars.toArray(new IVariable[vars.size()]);
   }
 
-  static IVariable[] wrapScopes(DebugTargetImpl debugTarget, List<? extends JsScope> jsScopes) {
+  static IVariable[] wrapScopes(DebugTargetImpl debugTarget, List<? extends JsScope> jsScopes,
+      JsVariable receiverVariable) {
     List<Variable> vars = new ArrayList<Variable>();
 
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
+        if (receiverVariable != null) {
+          vars.add(new Variable(debugTarget, receiverVariable));
+          receiverVariable = null;
+        }
         vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope)));
       } else {
         for (JsVariable var : scope.getVariables()) {
           vars.add(new Variable(debugTarget, var));
         }
       }
+    }
+    if (receiverVariable != null) {
+      vars.add(new Variable(debugTarget, receiverVariable));
     }
 
     IVariable[] result = new IVariable[vars.size()];
@@ -157,7 +166,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public boolean hasVariables() throws DebugException {
-    return stackFrame.getVariableScopes().size() > 0;
+    return stackFrame.getReceiverVariable() != null || stackFrame.getVariableScopes().size() > 0;
   }
 
   public int getLineNumber() throws DebugException {
