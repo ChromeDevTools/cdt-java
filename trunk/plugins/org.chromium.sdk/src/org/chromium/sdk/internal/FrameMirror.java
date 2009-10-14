@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import java.util.List;
 
 import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.json.simple.JSONObject;
 
 /**
@@ -35,11 +36,6 @@ public class FrameMirror {
   private final long scriptId;
 
   /**
-   * The debug context in which this mirror was created.
-   */
-  private final InternalContext context;
-
-  /**
    * A script associated with the frame.
    */
   private Script script;
@@ -49,9 +45,8 @@ public class FrameMirror {
    */
   private final JSONObject frameObject;
 
-  public FrameMirror(InternalContext context, JSONObject frameObject,
+  public FrameMirror(JSONObject frameObject,
       String scriptName, int line, long scriptId, String frameFunction) {
-    this.context = context;
     this.frameObject = frameObject;
     this.scriptName = scriptName;
     this.lineNumber = line;
@@ -79,11 +74,15 @@ public class FrameMirror {
   }
 
   public List<PropertyReference> getLocals() {
-    return context.computeLocals(frameObject);
+    return V8Helper.computeLocals(frameObject);
   }
 
   public List<ScopeMirror> getScopes() {
-    return context.computeScopes(frameObject);
+    return V8Helper.computeScopes(frameObject);
+  }
+
+  public PropertyReference getReceiverRef() {
+    return V8Helper.computeReceiverRef(frameObject);
   }
 
   public synchronized void setScript(Script script) {

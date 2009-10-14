@@ -188,23 +188,6 @@ public class ContextBuilder {
       return getContext().data.frames.getCallFrames().get(0);
     }
 
-    /**
-     * Gets all resolved locals for the call frame, caches scripts and objects
-     * in the scriptManager and handleManager.
-     *
-     * @param frame to get the data for
-     * @return the mirrors corresponding to the frame locals
-     */
-    public List<PropertyReference> computeLocals(JSONObject frame) {
-      assertValidForUser();
-      return debugSession.getV8Helper().computeLocals(frame, this);
-    }
-
-    public List<ScopeMirror> computeScopes(JSONObject frame) {
-      assertValidForUser();
-      return debugSession.getV8Helper().computeScopes(frame, this);
-    }
-
     public HandleManager getHandleManager() {
       // tolerates dismissed context
       return handleManager;

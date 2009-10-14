@@ -25,7 +25,7 @@ public interface CallFrame {
   }
 
   /**
-   * @return the variables known in this frame
+   * @return the variables known in this frame, including the receiver variable
    * @deprecated in favor of {@link #getVariableScopes()}
    */
   @Deprecated
@@ -35,6 +35,11 @@ public interface CallFrame {
    * @return the scopes known in this frame; ordered, innermost first, global scope last
    */
   List<? extends JsScope> getVariableScopes();
+
+  /**
+   * @return the receiver variable known in this frame
+   */
+  JsVariable getReceiverVariable();
 
   /**
    * @return the current line number in the Script corresponding to this frame

@@ -60,7 +60,6 @@ public class JsArrayImplTest {
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
     FrameMirror frameMirror = new FrameMirror(
-        internalContext,
         null,
         "fooscript", 12, FixtureChromeStub.getScriptId(),
         "foofunction");

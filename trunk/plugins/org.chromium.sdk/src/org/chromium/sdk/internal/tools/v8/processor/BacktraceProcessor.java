@@ -108,8 +108,8 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
         }
       }
       frameMirrors[index] =
-          new FrameMirror(step2.getInternalContext(), frameObject, url, currentLine, scriptId, V8ProtocolUtil
-              .getFunctionName(func));
+          new FrameMirror(frameObject, url, currentLine, scriptId,
+              V8ProtocolUtil.getFunctionName(func));
     }
 
 

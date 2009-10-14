@@ -39,10 +39,14 @@ public class CallFrameImpl implements CallFrame {
   private final FrameMirror frameMirror;
 
   /** The variables known in this call frame. */
-  private Collection<JsVariableImpl> variables;
+  private Collection<JsVariableImpl> variables = null;
 
   /** The scopes known in this call frame. */
-  private List<? extends JsScope> scopes;
+  private List<? extends JsScope> scopes = null;
+
+  /** The receiver variable known in this call frame. May be null. */
+  private JsVariable receiverVariable;
+  private boolean receiverVariableLoaded = false;
 
   /**
    * Constructs a call frame for the given handler using the FrameMirror data
@@ -62,6 +66,7 @@ public class CallFrameImpl implements CallFrame {
     return context;
   }
 
+  @Deprecated
   public Collection<JsVariableImpl> getVariables() {
     ensureVariables();
     return variables;
@@ -70,6 +75,11 @@ public class CallFrameImpl implements CallFrame {
   public List<? extends JsScope> getVariableScopes() {
     ensureScopes();
     return scopes;
+  }
+
+  public JsVariable getReceiverVariable() {
+    ensureReceiver();
+    return this.receiverVariable;
   }
 
   private void ensureVariables() {
@@ -81,6 +91,21 @@ public class CallFrameImpl implements CallFrame {
   private void ensureScopes() {
     if (scopes == null) {
       this.scopes = Collections.unmodifiableList(createScopes());
+    }
+  }
+
+  private void ensureReceiver() {
+    if (!receiverVariableLoaded) {
+      PropertyReference ref = frameMirror.getReceiverRef();
+      if (ref == null) {
+        this.receiverVariable = null;
+      } else {
+        ValueLoader valueLoader = context.getValueLoader();
+        ValueMirror mirror =
+            valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
+        this.receiverVariable = new JsVariableImpl(this, mirror, ref.getName());
+      }
+      this.receiverVariableLoaded = true;
     }
   }
 
