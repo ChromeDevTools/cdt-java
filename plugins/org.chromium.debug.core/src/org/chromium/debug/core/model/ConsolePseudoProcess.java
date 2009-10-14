@@ -212,9 +212,19 @@ public class ConsolePseudoProcess extends PlatformObject implements IProcess {
         return;
       }
       String text = writer.toString();
+      int lastLinePos = text.lastIndexOf('\n');
+      if (lastLinePos == -1) {
+        // No full line in the buffer.
+        return;
+      }
+      String readyText = text.substring(0, lastLinePos + 1);
       writer = new StringWriter();
+      if (lastLinePos + 1 != text.length()) {
+        String rest = text.substring(lastLinePos + 1);
+        writer.append(rest);
+      }
       for (IStreamListener listener : listeners) {
-        listener.streamAppended(text, this);
+        listener.streamAppended(readyText, this);
       }
     }
 
