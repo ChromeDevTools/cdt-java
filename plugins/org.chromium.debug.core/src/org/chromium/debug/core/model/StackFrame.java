@@ -161,6 +161,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       public String getValueString() {
         return getClassName();
       }
+      public String getRefId() {
+        return null;
+      }
     }
     return new ScopeObjectVariable();
   }

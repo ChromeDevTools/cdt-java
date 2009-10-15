@@ -42,7 +42,14 @@ public class Value extends DebugElementImpl implements IValue {
   }
 
   public String getValueString() throws DebugException {
-    return JsValueStringifier.toVisibleString(value);
+    String valueText = JsValueStringifier.toVisibleString(value);
+    if (value.asObject() != null) {
+      String ref = value.asObject().getRefId();
+      if (ref != null) {
+        valueText = valueText + "  (id=" + ref + ")";
+      }
+    }
+    return valueText;
   }
 
   public IVariable[] getVariables() throws DebugException {
