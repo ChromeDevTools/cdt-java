@@ -37,4 +37,11 @@ public interface JsObject extends JsValue {
    *         is not an array
    */
   JsArray asArray();
+
+  /**
+   * Optionally returns unique id for this object. No two distinct objects can have the same id.
+   * Lifetime of id may be limited by lifetime of {@link DebugContext}.
+   * @return object id or null
+   */
+  String getRefId();
 }

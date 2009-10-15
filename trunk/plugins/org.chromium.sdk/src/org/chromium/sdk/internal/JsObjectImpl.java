@@ -84,6 +84,16 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     }
   }
 
+  public String getRefId() {
+    int ref = getMirror().getRef();
+    if (ref < 0) {
+      // Negative handle means that it's transient. We don't expose it.
+      return null;
+    } else {
+      return String.valueOf(ref);
+    }
+  }
+
 
   private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
       List<PropertyReference> propertyRefs) throws MethodIsBlockingException {
