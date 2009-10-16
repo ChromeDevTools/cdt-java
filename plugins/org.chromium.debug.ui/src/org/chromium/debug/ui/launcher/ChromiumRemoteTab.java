@@ -71,10 +71,10 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     int debugPortDefault = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
 
     try {
-      store.setDefault(PORT_FIELD_NAME, config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT,
+      store.setDefault(PORT_FIELD_NAME, config.getAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT,
           debugPortDefault));
       store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, config.getAttribute(
-          LaunchType.ADD_NETWORK_CONSOLE, false));
+          LaunchTypeBase.ADD_NETWORK_CONSOLE, false));
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
       store.setDefault(PORT_FIELD_NAME, debugPortDefault);
@@ -89,15 +89,15 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     storeEditor(debugPort, "-1"); //$NON-NLS-1$
     storeEditor(addNetworkConsole, ""); //$NON-NLS-1$
 
-    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
-    config.setAttribute(LaunchType.ADD_NETWORK_CONSOLE,
+    config.setAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
+    config.setAttribute(LaunchTypeBase.ADD_NETWORK_CONSOLE,
         store.getBoolean(ADD_NETWORK_CONSOLE_FIELD_NAME));
   }
 
   @Override
   public boolean isValid(ILaunchConfiguration config) {
     try {
-      int port = config.getAttribute(LaunchType.CHROMIUM_DEBUG_PORT, -1);
+      int port = config.getAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT, -1);
       if (port < minimumPortValue || port > maximumPortValue) {
         setErrorMessage(Messages.ChromiumRemoteTab_InvalidPortNumberError);
         return false;
@@ -113,7 +113,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
     int port = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
-    config.setAttribute(LaunchType.CHROMIUM_DEBUG_PORT, port);
+    config.setAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT, port);
   }
 
   @Override

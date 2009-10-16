@@ -25,7 +25,7 @@
   <extension point="org.eclipse.debug.core.launchConfigurationTypes">
     <launchConfigurationType
         id="org.chromium.debug.ui.LaunchType$Chromium"
-        delegate="org.chromium.debug.ui.launcher.LaunchType$Chromium"
+        delegate="org.chromium.debug.ui.launcher.ChromiumLaunchType"
         modes="debug"
         name="%chromiumLaunchName"
         delegateName="Debug Chromium JavaScript"
@@ -33,7 +33,7 @@
     </launchConfigurationType>
     <launchConfigurationType
         id="org.chromium.debug.ui.LaunchType$StandaloneV8"
-        delegate="org.chromium.debug.ui.launcher.LaunchType$StandaloneV8"
+        delegate="org.chromium.debug.ui.launcher.StandaloneV8LaunchType"
         modes="debug"
         name="%standaloneV8LaunchName"
         delegateName="Debug Standalone V8 JavaScript"
@@ -41,7 +41,6 @@
     </launchConfigurationType>
     <launchConfigurationType
         id="org.chromium.debug.ui.ConsolePseudoConfigurationType"
-        delegate="org.chromium.debug.ui.launcher.LaunchType$StandaloneV8"
         modes="org.chromium.debug.pseudotype"
         name="%consolePseudoLaunchName">
     </launchConfigurationType>
