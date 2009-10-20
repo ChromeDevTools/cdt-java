@@ -4,10 +4,14 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.Collections;
+
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.JavascriptVm.SuspendCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DefaultResponseHandler;
@@ -17,6 +21,7 @@ import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
+import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.json.simple.JSONObject;
 
 /**
@@ -42,13 +47,15 @@ public class DebugSession {
 
   private final ScriptLoader scriptLoader = new ScriptLoader();
 
+  private final DefaultResponseHandler defaultResponseHandler;
+
   public DebugSession(DebugSessionManager sessionManager, ProtocolOptions protocolOptions,
       V8CommandOutput v8CommandOutput) {
     this.scriptManager = new ScriptManager(protocolOptions);
     this.sessionManager = sessionManager;
     this.breakpointManager = new BreakpointManager(this);
 
-    DefaultResponseHandler defaultResponseHandler = new DefaultResponseHandler(this);
+    this.defaultResponseHandler = new DefaultResponseHandler(this);
     this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, defaultResponseHandler);
     this.contextBuilder = new ContextBuilder(this);
   }
@@ -109,6 +116,36 @@ public class DebugSession {
 
   public ContextBuilder getContextBuilder() {
     return contextBuilder;
+  }
+
+  public void suspend(final SuspendCallback suspendCallback) {
+    V8CommandProcessor.V8HandlerCallback v8Callback = new V8CommandProcessor.V8HandlerCallback() {
+      public void failure(String message) {
+        if (suspendCallback != null) {
+          suspendCallback.failure(new Exception(message));
+        }
+      }
+      public void messageReceived(JSONObject response) {
+        if (!JsonUtil.isSuccessful(response)) {
+          if (suspendCallback != null) {
+            suspendCallback.failure(new Exception("Unsuccessful command"));
+          }
+          return;
+        }
+        if (suspendCallback != null) {
+          suspendCallback.success();
+        }
+
+        ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextIfIdle();
+        if (step1 == null) {
+          return;
+        }
+        ContextBuilder.ExpectingBacktraceStep step2 =
+            step1.setContextState(Collections.<Breakpoint>emptyList(), null);
+        defaultResponseHandler.getBreakpointProcessor().processNextStep(step2);
+      }
+    };
+    sendMessageAsync(DebuggerMessageFactory.suspend(), true, v8Callback, null);
   }
 
   public class ScriptLoader {

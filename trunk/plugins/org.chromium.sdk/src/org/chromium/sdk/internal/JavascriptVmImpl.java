@@ -17,6 +17,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   protected JavascriptVmImpl() {
   }
 
+  public void suspend(SuspendCallback callback) {
+    getDebugSession().suspend(callback);
+  }
+
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     getDebugSession().getScriptLoader().loadAllScripts(callback, callbackSemaphore);

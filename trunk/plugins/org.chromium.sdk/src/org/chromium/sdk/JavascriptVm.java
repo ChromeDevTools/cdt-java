@@ -36,6 +36,21 @@ public interface JavascriptVm {
   }
 
   /**
+   * A callback for suspend request.
+   */
+  public interface SuspendCallback {
+
+    /**
+     * Signals that command successfully finished. After this DebugContext should be built
+     * and unless there are some problems,
+     * {@link DebugEventListener#suspended(DebugContext)} will be called soon.
+     */
+    void success();
+
+    void failure(Exception reason);
+  }
+
+  /**
    * Detaches from the related tab debugger.
    *
    * @return whether the operation succeeded
@@ -83,4 +98,11 @@ public interface JavascriptVm {
   void setBreakpoint(Breakpoint.Type type, String target, int line, int position, boolean enabled,
       String condition, int ignoreCount, BreakpointCallback callback);
 
+  /**
+   * Tries to suspend VM. If successful, {@link DebugEventListener#suspended(DebugContext)}
+   * will be called.
+   * @param callback to invoke once the operation result is available,
+   *        may be {@code null}
+   */
+  void suspend(SuspendCallback callback);
 }

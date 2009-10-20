@@ -63,6 +63,10 @@ public class DebuggerMessageFactory {
     return new LookupMessage(refs, inlineRefs);
   }
 
+  public static ContextlessDebuggerMessage suspend() {
+    return new SuspendMessage();
+  }
+
   public static DebuggerMessage scope(int scopeNumber, int frameNumber) {
     return new ScopeMessage(scopeNumber, frameNumber);
   }

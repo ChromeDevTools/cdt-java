@@ -275,14 +275,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public boolean canSuspend() {
-    // Immediate thread suspension is not supported by V8
-    // (as it does not make sense.)
-    return false;
+    return !isDisconnected() && !isSuspended();
   }
 
   public void suspend() throws DebugException {
-    // Immediate thread suspension is not supported by V8
-    // (as it does not make sense.)
+    vmEmbedder.getJavascriptVm().suspend(null);
   }
 
   public boolean canDisconnect() {
@@ -561,15 +558,18 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       synchronized (suspendResumeMonitor) {
         DebugTargetImpl.this.debugContext = context;
         breakpointsHit(context.getBreakpointsHit());
+        int suspendedDetail;
         if (context.getState() == State.EXCEPTION) {
           logExceptionFromContext(context);
-          DebugTargetImpl.this.suspended(DebugEvent.BREAKPOINT);
+          suspendedDetail = DebugEvent.BREAKPOINT;
         } else {
-          boolean hasBreakpointsHit = !context.getBreakpointsHit().isEmpty();
-          DebugTargetImpl.this.suspended(hasBreakpointsHit
-              ? DebugEvent.BREAKPOINT
-              : DebugEvent.STEP_END);
+          if (context.getBreakpointsHit().isEmpty()) {
+            suspendedDetail = DebugEvent.STEP_END;
+          } else {
+            suspendedDetail = DebugEvent.BREAKPOINT;
+          }
         }
+        DebugTargetImpl.this.suspended(suspendedDetail);
 
         alreadyResumedOrSuspended = true;
       }

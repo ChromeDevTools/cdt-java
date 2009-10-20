@@ -65,16 +65,21 @@ public class BreakpointProcessor extends V8ResponseProcessor {
         throw new RuntimeException();
       }
 
-      BacktraceProcessor backtraceProcessor = new BacktraceProcessor(step2);
-      // no need for immediate -- we are known to be on break
-      boolean isImmediate = false;
-      DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true);
-      try {
-        internalContext.sendV8CommandAsync(message, isImmediate, backtraceProcessor, null);
-      } catch (ContextDismissedCheckedException e) {
-        // Can't happen -- we are just creating context, it couldn't have become invalid
-        throw new RuntimeException(e);
-      }
+      processNextStep(step2);
+    }
+  }
+
+  public void processNextStep(ContextBuilder.ExpectingBacktraceStep step2) {
+    BacktraceProcessor backtraceProcessor = new BacktraceProcessor(step2);
+    InternalContext internalContext = step2.getInternalContext();
+
+    DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true);
+    try {
+      // Command is not immediate because we are supposed to be suspended.
+      internalContext.sendV8CommandAsync(message, false, backtraceProcessor, null);
+    } catch (ContextDismissedCheckedException e) {
+      // Can't happen -- we are just creating context, it couldn't have become invalid
+      throw new RuntimeException(e);
     }
   }
 
