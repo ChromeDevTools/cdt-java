@@ -33,6 +33,10 @@ public class DefaultResponseHandler {
     this.continueProcessor = new ContinueProcessor(debugSession);
   }
 
+  public BreakpointProcessor getBreakpointProcessor() {
+    return bpp;
+  }
+
   /**
    * @param type response type ("response" or "event")
    * @param response from the V8 VM debugger

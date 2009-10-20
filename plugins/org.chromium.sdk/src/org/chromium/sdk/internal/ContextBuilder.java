@@ -112,6 +112,14 @@ public class ContextBuilder {
     };
   }
 
+  public ExpectingBreakEventStep buildNewContextIfIdle() {
+    if (currentStep == null) {
+      return buildNewContext();
+    } else {
+      return null;
+    }
+  }
+
   /**
    * Debug session is stopped. Cancel context in any state.
    */
