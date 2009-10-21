@@ -203,7 +203,11 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
 
     String command = V8DebuggerToolMessageFactory.attach();
-    return sendSimpleCommandSync(attachCallback, command);
+    Result attachResult = sendSimpleCommandSync(attachCallback, command);
+
+    debugSession.startCommunication();
+
+    return attachResult;
   }
 
   /**

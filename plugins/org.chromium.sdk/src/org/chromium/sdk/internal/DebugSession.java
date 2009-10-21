@@ -10,15 +10,18 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.Version;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.JavascriptVm.SuspendCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DefaultResponseHandler;
+import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -136,7 +139,7 @@ public class DebugSession {
           suspendCallback.success();
         }
 
-        ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextIfIdle();
+        ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextWhenIdle();
         if (step1 == null) {
           return;
         }
@@ -192,6 +195,40 @@ public class DebugSession {
         }
       }
     }
+  }
+
+  /**
+   * Checks version of V8 and check if it in running state.
+   */
+  public void startCommunication() {
+    V8BlockingCallback<Void> callback = new V8BlockingCallback<Void>() {
+      @Override
+      public Void messageReceived(JSONObject response) {
+        Version vmVersion = V8ProtocolUtil.parseVersionResponse(response);
+
+        if (V8VersionMilestones.isRunningAccurate(vmVersion)) {
+          Boolean running = JsonUtil.getAsBoolean(response, V8Protocol.KEY_RUNNING);
+          if (running == Boolean.FALSE) {
+            ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextWhenIdle();
+            // If step is not null -- we are already in process of building a context.
+            if (step1 != null) {
+              ContextBuilder.ExpectingBacktraceStep step2 =
+                  step1.setContextState(Collections.<Breakpoint>emptyList(), null);
+
+              defaultResponseHandler.getBreakpointProcessor().processNextStep(step2);
+            }
+          }
+        }
+        return null;
+      }
+
+      @Override
+      protected Void handleSuccessfulResponse(JSONObject response) {
+        throw new UnsupportedOperationException();
+      }
+    };
+
+    V8Helper.callV8Sync(this.v8CommandProcessor, DebuggerMessageFactory.version(), callback);
   }
 
   public void maybeRethrowContextException(ContextDismissedCheckedException e) {

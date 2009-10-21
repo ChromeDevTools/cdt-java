@@ -23,6 +23,7 @@ public enum DebuggerCommand {
   CLEARBREAKPOINT("clearbreakpoint"),
   LOOKUP("lookup"),
   SUSPEND("suspend"),
+  VERSION("version"),
 
   // Events
   BREAK("break"),

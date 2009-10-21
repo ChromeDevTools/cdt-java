@@ -49,6 +49,8 @@ public enum V8Protocol implements CharSequence {
 
   KEY_BODY("body"),
 
+  KEY_V8_VERSION("V8Version"),
+
   FRAME_RECEIVER("receiver"),
 
   FRAME_FUNC("func"),
