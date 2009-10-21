@@ -134,6 +134,8 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
 
     StandaloneVmImpl.this.debugEventListener = listener;
 
+    debugSession.startCommunication();
+
     connectionState = ConnectionState.CONNECTED;
   }
 

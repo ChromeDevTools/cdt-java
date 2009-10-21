@@ -112,7 +112,7 @@ public class ContextBuilder {
     };
   }
 
-  public ExpectingBreakEventStep buildNewContextIfIdle() {
+  public ExpectingBreakEventStep buildNewContextWhenIdle() {
     if (currentStep == null) {
       return buildNewContext();
     } else {

@@ -71,6 +71,10 @@ public class DebuggerMessageFactory {
     return new ScopeMessage(scopeNumber, frameNumber);
   }
 
+  public static ContextlessDebuggerMessage version() {
+    return new VersionMessage();
+  }
+
   private static Integer getV8IgnoreCount(int count) {
     return count == Breakpoint.EMPTY_VALUE ? null : count;
   }

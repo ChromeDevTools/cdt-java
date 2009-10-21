@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Script;
+import org.chromium.sdk.Version;
 import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyReference;
@@ -270,6 +271,18 @@ public class V8ProtocolUtil {
       return script;
     }
     return null; // good context not found
+  }
+
+  public static Version parseVersionResponse(JSONObject versionResponse) {
+    if (!JsonUtil.isSuccessful(versionResponse)) {
+      return null;
+    }
+    JSONObject body = JsonUtil.getAsJSONStrict(versionResponse, V8Protocol.KEY_BODY);
+    String versionString = JsonUtil.getAsString(body, V8Protocol.KEY_V8_VERSION);
+    if (versionString == null) {
+      return null;
+    }
+    return Version.parseString(versionString);
   }
 
   private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {
