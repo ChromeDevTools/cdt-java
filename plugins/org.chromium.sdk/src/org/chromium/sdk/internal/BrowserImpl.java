@@ -38,17 +38,11 @@ public class BrowserImpl implements Browser {
 
   public static final int OPERATION_TIMEOUT_MS = 3000;
 
-  public static final Version INVALID_VERSION = new Version(0, 0);
-
   /**
    * The protocol version supported by this SDK implementation.
    */
   public static final Version PROTOCOL_VERSION = new Version(0, 1);
 
-  /**
-   * One single session supported by browser.
-   * TODO(peter.rybin): make session replaceable
-   */
   private final ConnectionSessionManager sessionManager = new ConnectionSessionManager();
 
   /** The browser connection (gets opened in session). */
@@ -104,14 +98,18 @@ public class BrowserImpl implements Browser {
 
       sessionConnection = connectionFactory.newOpenConnection(netListener);
 
-      Version serverVersion;
+      String serverVersionString;
       try {
-        serverVersion = devToolsHandler.version(OPERATION_TIMEOUT_MS);
+        serverVersionString = devToolsHandler.version(OPERATION_TIMEOUT_MS);
       } catch (TimeoutException e) {
         throw new IOException("Failed to get protocol version from remote", e);
       }
+      if (serverVersionString == null) {
+        throw new UnsupportedVersionException(BrowserImpl.PROTOCOL_VERSION, null);
+      }
+      Version serverVersion = Version.parseString(serverVersionString);
       if (serverVersion == null ||
-          !BrowserImpl.PROTOCOL_VERSION.isCompatibleWithServer(serverVersion)) {
+          serverVersion.compareTo(BrowserImpl.PROTOCOL_VERSION) < 0) {
         throw new UnsupportedVersionException(BrowserImpl.PROTOCOL_VERSION, serverVersion);
       }
     }

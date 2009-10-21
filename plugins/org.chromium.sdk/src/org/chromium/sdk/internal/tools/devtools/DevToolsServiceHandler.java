@@ -13,7 +13,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
@@ -75,7 +74,7 @@ public class DevToolsServiceHandler implements ToolHandler {
    * is available.
    */
   private interface VersionCallback {
-    void versionReceived(Version version);
+    void versionReceived(String versionString);
   }
 
   /**
@@ -133,14 +132,7 @@ public class DevToolsServiceHandler implements ToolHandler {
     }
     if (callback != null) {
       String versionString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
-      String[] parts = versionString.split("\\.");
-      if (parts.length != 2) {
-        callback.versionReceived(null); // an invalid version
-        return;
-      }
-      callback.versionReceived(new Version(
-          Integer.valueOf(parts[0]),
-          Integer.valueOf(parts[1])));
+      callback.versionReceived(versionString);
     }
   }
 
@@ -203,16 +195,16 @@ public class DevToolsServiceHandler implements ToolHandler {
     return output[0];
   }
 
-  public Version version(int timeout) throws TimeoutException {
+  public String version(int timeout) throws TimeoutException {
     final Semaphore sem = new Semaphore(0);
-    final Version[] output = new Version[1];
+    final String[] output = new String[1];
     synchronized (lock) {
       if (versionCallback != null) {
         throw new IllegalStateException("version request is pending");
       }
       versionCallback = new VersionCallback() {
-        public void versionReceived(Version version) {
-          output[0] = version;
+        public void versionReceived(String versionString) {
+          output[0] = versionString;
           sem.release();
         }
       };
