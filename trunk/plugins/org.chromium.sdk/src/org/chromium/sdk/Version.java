@@ -4,49 +4,36 @@
 
 package org.chromium.sdk;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
- * An object that describes a ChromeDevTools protocol version.
+ * An object that describes the numeric part of version.
  */
-public class Version {
-  private final int major;
-
-  private final int minor;
-
-  private String cachedString;
+public class Version implements Comparable<Version> {
+  private final List<Integer> components;
 
   /**
-   * Constructs an immutable Version instance given the {@code major} and
-   * {@code minor} version parts.
-   *
-   * @param major version part
-   * @param minor version part
+   * Constructs an immutable Version instance given the numeric components of version.
    */
-  public Version(int major, int minor) {
-    this.major = major;
-    this.minor = minor;
-  }
-
-  public int getMajor() {
-    return major;
-  }
-
-  public int getMinor() {
-    return minor;
+  public Version(Integer ... components) {
+    this(Arrays.asList(components));
   }
 
   /**
-   * Checks if this version is compatible with that version (i.e. an SDK that
-   * supports {@code this} version can talk to a Browser that supports {@code
-   * serverVersion}).
-   *
-   * @param serverVersion version to check the compatiblity with
-   * @return whether {@code this} version SDK can talk to a Browser that
-   *         supports the {@code serverVersion} (i.e. their major versions match
-   *         and the SDK minor version is not greater than that supported by
-   *         the Browser).
+   * Constructs an immutable Version instance given the numeric components of version.
    */
-  public boolean isCompatibleWithServer(Version serverVersion) {
-    return serverVersion.major == this.major && serverVersion.minor >= this.minor;
+  public Version(List<Integer> components) {
+    this.components = Collections.unmodifiableList(new ArrayList<Integer>(components));
+  }
+
+  /**
+   * @return numeric components of version in form of list of integers
+   */
+  public List<Integer> getComponents() {
+    return components;
   }
 
   @Override
@@ -55,21 +42,66 @@ public class Version {
       return false;
     }
     Version that = (Version) obj;
-    return this.major == that.major && this.minor == that.minor;
+    return this.components.equals(that.components);
   }
 
   @Override
   public int hashCode() {
-    return toString().hashCode();
+    return components.hashCode();
+  }
+
+  public int compareTo(Version other) {
+    for (int i = 0; i < this.components.size(); i++) {
+      if (other.components.size() <= i) {
+        // shorter version is less
+        return +1;
+      }
+      int res = this.components.get(i).compareTo(other.components.get(i));
+      if (res != 0) {
+        return res;
+      }
+    }
+    if (this.components.size() < other.components.size()) {
+      return -1;
+    } else {
+      return 0;
+    }
   }
 
   @Override
   public String toString() {
-    if (cachedString == null) {
-      StringBuilder sb = new StringBuilder();
-      sb.append('[').append(major).append('.').append(minor).append(']');
-      cachedString = sb.toString();
+    return components.toString();
+  }
+
+  /**
+   * Parses string as version as far as it is dot-delimited integer numbers.
+   * @param text string representation of version; not null
+   * @return new instance of version or null if text is not version.
+   */
+  public static Version parseString(String text) {
+    int i = 0;
+    List<Integer> components = new ArrayList<Integer>(4);
+    while (i < text.length()) {
+      int num = Character.digit(text.charAt(i), 10);
+      if (num < 0) {
+        break;
+      }
+      i++;
+      while (i < text.length() && Character.digit(text.charAt(i), 10) >= 0) {
+        num = num * 10 + Character.digit(text.charAt(i), 10);
+        i++;
+      }
+      components.add(num);
+      if (i < text.length() && text.charAt(i) == '.') {
+        i++;
+        continue;
+      } else {
+        break;
+      }
     }
-    return cachedString;
+    if (components.isEmpty()) {
+      return null;
+    }
+    return new Version(components);
   }
 }
