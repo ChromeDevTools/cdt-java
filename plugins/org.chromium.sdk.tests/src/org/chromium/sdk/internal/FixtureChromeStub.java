@@ -264,6 +264,8 @@ public class FixtureChromeStub implements ChromeStub {
         case SCOPE:
           constructScopeResponse(nameToJsonValue);
           break;
+        default:
+          success = false;
       }
       responseMessage.put("seq", nextSeq());
       responseMessage.put("request_seq", seq);
