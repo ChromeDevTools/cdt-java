@@ -152,6 +152,7 @@ public class V8ProtocolUtil {
         ? propType.intValue()
         : PropertyType.NORMAL.value;
     if (propTypeValue == PropertyType.FIELD.value ||
+        propTypeValue == PropertyType.CONSTANT_FUNCTION.value ||
         propTypeValue == PropertyType.CALLBACKS.value ||
         propTypeValue == PropertyType.NORMAL.value) {
       Long longRef = JsonUtil.getAsLong(propValue, V8Protocol.REF);

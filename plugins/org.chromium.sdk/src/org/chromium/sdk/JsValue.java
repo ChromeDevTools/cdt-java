@@ -81,7 +81,8 @@ public interface JsValue {
      * @return whether {@code type} corresponds to a JsObject
      */
     public static boolean isObjectType(Type type) {
-      return type == TYPE_OBJECT || type == TYPE_ARRAY || type == TYPE_ERROR;
+      return type == TYPE_OBJECT || type == TYPE_ARRAY || type == TYPE_ERROR ||
+          type == TYPE_FUNCTION;
     }
   }
 
