@@ -106,17 +106,11 @@ public class JsVariableImpl implements JsVariable {
     }
   }
 
-  public Type getType() {
-    return valueData.getType();
-  }
-
   @Override
   public String toString() {
     return new StringBuilder()
         .append("[JsVariable: name=")
         .append(getName())
-        .append(",type=")
-        .append(getType())
         .append(",value=")
         .append(getValue())
         .append(']')
@@ -146,7 +140,12 @@ public class JsVariableImpl implements JsVariable {
       String decorateVarName(String rawName) {
         return rawName;
       }
+      @Override
+      String buildAccessSuffix(String rawName) {
+        return "." + rawName;
+      }
     };
     abstract String decorateVarName(String rawName);
+    abstract String buildAccessSuffix(String rawName);
   }
 }

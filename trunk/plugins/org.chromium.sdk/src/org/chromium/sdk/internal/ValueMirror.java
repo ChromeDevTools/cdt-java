@@ -4,9 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.chromium.sdk.JsValue.Type;
 
 /**
@@ -20,11 +17,11 @@ public class ValueMirror {
   }
 
   public static PropertyHoldingValueMirror createObject(int refID,
-      List<? extends PropertyReference> props, String className) {
-    if (props == null) {
+      SubpropertiesMirror subpropertiesMirror, String className) {
+    if (subpropertiesMirror == null) {
       throw new NullPointerException();
     }
-    return new ValueMirror(refID, props, className).getProperties();
+    return new ValueMirror(refID, subpropertiesMirror, className).getProperties();
   }
 
   public static ValueMirror createObjectUnknownProperties(int refID, String className) {
@@ -46,19 +43,18 @@ public class ValueMirror {
     this.value = value;
     this.ref = -1;
     this.className = className;
-    this.properties =
-        new PropertyHoldingValueMirror(this, Collections.<PropertyReference>emptyList());
+    this.properties = new PropertyHoldingValueMirror(this);
   }
 
-  private ValueMirror(int refID, List<? extends PropertyReference> props, String className) {
+  private ValueMirror(int refID, SubpropertiesMirror subpropertiesMirror, String className) {
     this.type = getObjectJsType(className);
     this.className = className;
     this.ref = refID;
     PropertyHoldingValueMirror propertiesMirror;
-    if (props == null) {
+    if (subpropertiesMirror == null) {
       propertiesMirror = null;
     } else {
-      propertiesMirror = new PropertyHoldingValueMirror(this, Collections.unmodifiableList(props));
+      propertiesMirror = new PropertyHoldingValueMirror(this, subpropertiesMirror);
     }
     this.properties = propertiesMirror;
     this.value = null;
@@ -129,7 +125,7 @@ public class ValueMirror {
       if (alternative.properties != null) {
         if (this.properties == null) {
           this.properties =
-              new PropertyHoldingValueMirror(this, alternative.properties.getProperties());
+              new PropertyHoldingValueMirror(this, alternative.properties.getSubpropertiesMirror());
         } else {
           mergeProperties(this.properties, alternative.properties);
         }

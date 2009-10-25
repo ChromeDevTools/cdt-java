@@ -141,6 +141,14 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
       // Fix array element indices
       return OPEN_BRACKET + rawName + CLOSE_BRACKET;
     }
+    @Override
+    String buildAccessSuffix(String rawName) {
+      Integer index = getAsArrayIndex(rawName);
+      if (index == null) {
+        return NOOP.buildAccessSuffix(rawName);
+      }
+      return OPEN_BRACKET + rawName + CLOSE_BRACKET;
+    }
     private static final String OPEN_BRACKET = "[";
     private static final String CLOSE_BRACKET = "]";
   };

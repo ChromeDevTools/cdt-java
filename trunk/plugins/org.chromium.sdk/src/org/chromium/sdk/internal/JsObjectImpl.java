@@ -72,8 +72,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
         ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
 
-        List<PropertyReference> propertyRefs =
-            valueLoader.loadSubpropertiesInMirror(getMirror()).getProperties();
+        List<? extends PropertyReference> propertyRefs =
+            valueLoader.loadSubpropertiesInMirror(getMirror())
+            .getSubpropertiesMirror().getProperties();
         List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
         List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
@@ -96,7 +97,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
 
   private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
-      List<PropertyReference> propertyRefs) throws MethodIsBlockingException {
+      List<? extends PropertyReference> propertyRefs) throws MethodIsBlockingException {
     // TODO(peter.rybin) Maybe assert that context is valid here
 
     List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());
@@ -114,17 +115,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   private String getFullyQualifiedName(String propName) {
-    String fqn;
-    if (JsonUtil.isInteger(propName)) {
-      fqn = parentFqn + '[' + propName + ']';
-    } else {
-      if (propName.startsWith(".")) {
-        // ".arguments" is not legal
-        fqn = null;
-      }
-      fqn = parentFqn + '.' + propName;
+    if (propName.startsWith(".")) {
+      // ".arguments" is not legal
+      return null;
     }
-    return fqn;
+    return parentFqn + getChildPropertyNameDecorator().buildAccessSuffix(propName);
   }
 
   @Override
