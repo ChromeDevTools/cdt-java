@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.SortedMap;
 
@@ -52,7 +51,7 @@ public class JsArrayImplTest {
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     arrayMirror = ValueMirror.createObject(
-        11, Arrays.asList(
+        11, new SubpropertiesMirror.Simple(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "1", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "3", valueObject)
         ), null).getValueMirror();

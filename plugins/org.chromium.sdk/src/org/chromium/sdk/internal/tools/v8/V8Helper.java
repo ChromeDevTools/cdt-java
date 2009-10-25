@@ -20,6 +20,7 @@ import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.ScopeMirror;
 import org.chromium.sdk.internal.ScriptManager;
+import org.chromium.sdk.internal.SubpropertiesMirror;
 import org.chromium.sdk.internal.ValueLoadException;
 import org.chromium.sdk.internal.ValueMirror;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -231,9 +232,8 @@ public class V8Helper {
       String className, Type type, String text) {
     if (Type.isObjectType(type)) {
       int refId = JsonUtil.getAsLong(jsonValue, V8Protocol.REF_HANDLE).intValue();
-      List<? extends PropertyReference> propertyRefs
-          = V8ProtocolUtil.extractObjectProperties(jsonValue);
-      return ValueMirror.createObject(refId, propertyRefs, className);
+      return ValueMirror.createObject(refId,
+          new SubpropertiesMirror.JsonBased(jsonValue), className);
     } else {
       return ValueMirror.createScalar(text, type, className);
     }

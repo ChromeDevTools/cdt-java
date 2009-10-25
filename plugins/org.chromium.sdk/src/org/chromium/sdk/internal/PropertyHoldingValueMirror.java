@@ -4,8 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.List;
-
 /**
  * A representation of a properties data of a value in the remote JavaScript VM.
  * Must be immutable. Conceptually it always corresponds to a {@link ValueMirror}
@@ -13,19 +11,23 @@ import java.util.List;
  */
 public class PropertyHoldingValueMirror {
   private final ValueMirror valueMirror;
+  private final SubpropertiesMirror subpropertiesMirror;
 
-  private final List<PropertyReference> properties;
-
-  PropertyHoldingValueMirror(ValueMirror valueMirror, List<PropertyReference> properties) {
+  PropertyHoldingValueMirror(ValueMirror valueMirror) {
     this.valueMirror = valueMirror;
-    this.properties = properties;
+    this.subpropertiesMirror = SubpropertiesMirror.EMPTY;
+  }
+
+  PropertyHoldingValueMirror(ValueMirror valueMirror, SubpropertiesMirror subpropertiesMirror) {
+    this.valueMirror = valueMirror;
+    this.subpropertiesMirror = subpropertiesMirror;
   }
 
   public ValueMirror getValueMirror() {
     return valueMirror;
   }
 
-  public List<PropertyReference> getProperties() {
-    return properties;
+  public SubpropertiesMirror getSubpropertiesMirror() {
+    return subpropertiesMirror;
   }
 }

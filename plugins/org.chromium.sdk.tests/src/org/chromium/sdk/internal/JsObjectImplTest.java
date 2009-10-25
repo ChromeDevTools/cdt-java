@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -52,7 +51,7 @@ public class JsObjectImplTest {
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     eventMirror = ValueMirror.createObject(
-        11, Arrays.asList(
+        11, new SubpropertiesMirror.Simple(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject)
         ), null).getValueMirror();
