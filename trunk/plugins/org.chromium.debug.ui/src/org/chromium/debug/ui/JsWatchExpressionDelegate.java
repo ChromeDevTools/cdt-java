@@ -144,7 +144,7 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
     final CallFrame frame = stackFrame.getCallFrame();
     frame.evaluateAsync(expression, new CallFrame.EvaluateCallback() {
         public void success(JsVariable variable) {
-          final Variable var = new Variable(contextImpl.getDebugTarget(), variable);
+          final Variable var = new Variable(contextImpl.getDebugTarget(), variable, false);
           listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
         }
 

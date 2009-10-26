@@ -20,9 +20,16 @@ public class Variable extends DebugElementImpl implements IVariable {
 
   private final JsVariable variable;
 
-  public Variable(DebugTargetImpl debugTarget, JsVariable variable) {
+  /**
+   * Specifies whether this variable is internal property (__proto__ etc).
+   * TODO(peter.rybin): use it in UI.
+   */
+  private final boolean isInternalProperty;
+
+  public Variable(DebugTargetImpl debugTarget, JsVariable variable, boolean isInternalProperty) {
     super(debugTarget);
     this.variable = variable;
+    this.isInternalProperty = isInternalProperty;
   }
 
   public String getName() throws DebugException {

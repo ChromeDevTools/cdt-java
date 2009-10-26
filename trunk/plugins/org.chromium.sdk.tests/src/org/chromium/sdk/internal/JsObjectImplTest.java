@@ -51,7 +51,7 @@ public class JsObjectImplTest {
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     eventMirror = ValueMirror.createObject(
-        11, new SubpropertiesMirror.Simple(
+        11, new SubpropertiesMirror.ListBased(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject)
         ), null).getValueMirror();
