@@ -51,7 +51,7 @@ public class JsArrayImplTest {
         "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     arrayMirror = ValueMirror.createObject(
-        11, new SubpropertiesMirror.Simple(
+        11, new SubpropertiesMirror.ListBased(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "1", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "3", valueObject)
         ), null).getValueMirror();

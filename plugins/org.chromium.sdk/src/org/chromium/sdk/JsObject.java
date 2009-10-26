@@ -26,6 +26,14 @@ public interface JsObject extends JsValue {
   Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException;
 
   /**
+   * @return the internal properties of this compound value (e.g. those properties which
+   *         are not detectable with the "in" operator: __proto__ etc)
+   * @throws MethodIsBlockingException if called from a callback because it may
+   *         need to load value from remote
+   */
+  Collection<? extends JsVariable> getInternalProperties() throws MethodIsBlockingException;
+
+  /**
    * @param name of the property to get
    * @return the property object or {@code null} if {@code name} does not
    *         designate an existing object property

@@ -6,6 +6,7 @@ package org.chromium.debug.core.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -75,10 +76,14 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   static IVariable[] wrapVariables(
-      DebugTargetImpl debugTarget, Collection<? extends JsVariable> jsVars) {
+      DebugTargetImpl debugTarget, Collection<? extends JsVariable> jsVars,
+      Collection <? extends JsVariable> jsInternalProperties) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
     for (JsVariable jsVar : jsVars) {
-      vars.add(new Variable(debugTarget, jsVar));
+      vars.add(new Variable(debugTarget, jsVar, false));
+    }
+    for (JsVariable jsMetaVar : jsInternalProperties) {
+      vars.add(new Variable(debugTarget, jsMetaVar, true));
     }
     return vars.toArray(new IVariable[vars.size()]);
   }
@@ -90,18 +95,18 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(new Variable(debugTarget, receiverVariable));
+          vars.add(new Variable(debugTarget, receiverVariable, false));
           receiverVariable = null;
         }
-        vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope)));
+        vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope), false));
       } else {
         for (JsVariable var : scope.getVariables()) {
-          vars.add(new Variable(debugTarget, var));
+          vars.add(new Variable(debugTarget, var, false));
         }
       }
     }
     if (receiverVariable != null) {
-      vars.add(new Variable(debugTarget, receiverVariable));
+      vars.add(new Variable(debugTarget, receiverVariable, false));
     }
 
     IVariable[] result = new IVariable[vars.size()];
@@ -143,6 +148,10 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       }
       public Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException {
         return jsScope.getVariables();
+      }
+      public Collection<? extends JsVariable> getInternalProperties()
+          throws MethodIsBlockingException {
+        return Collections.emptyList();
       }
       public JsVariable getProperty(String name) {
         for (JsVariable var : getProperties()) {

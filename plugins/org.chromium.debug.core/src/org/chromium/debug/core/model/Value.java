@@ -56,7 +56,8 @@ public class Value extends DebugElementImpl implements IValue {
     try {
       if (variables == null) {
         if (value.asObject() != null) {
-          variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties());
+          variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties(),
+              value.asObject().getInternalProperties());
         } else {
           variables = EMPTY_VARIABLES;
         }

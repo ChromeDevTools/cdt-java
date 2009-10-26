@@ -18,7 +18,8 @@ import org.json.simple.JSONObject;
 public abstract class V8BlockingCallback<RES> {
   public RES messageReceived(JSONObject response) {
     if (!JsonUtil.isSuccessful(response)) {
-      throw new RuntimeException("Unsuccessful command");
+      throw new RuntimeException("Unsuccessful command " +
+          JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
     }
     return handleSuccessfulResponse(response);
   }

@@ -109,6 +109,19 @@ public class V8ProtocolUtil {
 
     return objProps;
   }
+  public static List<? extends PropertyReference> extractObjectInternalProperties(
+      JSONObject handle) {
+    List<PropertyReference> objProps = new ArrayList<PropertyReference>(3);
+    JSONObject protoObject = JsonUtil.getAsJSON(handle, "protoObject");
+    if (protoObject != null) {
+      putMirror(objProps, protoObject, null, PropertyNameGetter.PROTO_OBJECT);
+    }
+    JSONObject constructorFunction = JsonUtil.getAsJSON(handle, "constructorFunction");
+    if (constructorFunction != null) {
+      putMirror(objProps, constructorFunction, null, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
+    }
+    return objProps;
+  }
 
   static void putMirror(List<PropertyReference> refs, JSONObject propertyObject,
       CharSequence valuePropertyName, V8ProtocolUtil.PropertyNameGetter nameGetter) {
@@ -185,6 +198,18 @@ public class V8ProtocolUtil {
       String getName(JSONObject ref, JSONObject value) {
         /** The name of the "this" object to report as a variable name. */
         return  "this";
+      }
+    },
+    PROTO_OBJECT() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        return  "__proto__";
+      }
+    },
+    CONSTRUCTOR_FUNCTION() {
+      @Override
+      String getName(JSONObject ref, JSONObject value) {
+        return  "constructor";
       }
     },
     SUBPROPERTY() {

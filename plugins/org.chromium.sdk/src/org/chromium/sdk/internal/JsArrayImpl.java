@@ -73,7 +73,7 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
     // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
     // rather than JsVariableImpl
     int lastIndex = -1;
-    List<JsVariableImpl> properties = getPropertiesLazily();
+    List<JsVariableImpl> properties = getSubpropertiesHelper().getPropertiesLazily();
     // TODO(peter.rybin): rename propRefs
     for (JsVariableImpl prop : properties) {
       String name = prop.getRawName();

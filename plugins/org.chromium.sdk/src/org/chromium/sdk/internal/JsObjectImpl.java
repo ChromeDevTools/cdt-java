@@ -20,18 +20,9 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
  */
 public class JsObjectImpl extends JsValueImpl implements JsObject {
 
-  private List<JsVariableImpl> properties = null;
-
   private final CallFrameImpl callFrame;
 
   private final String parentFqn;
-
-  private Map<String, JsVariableImpl> propertyMap = null;
-
-  /**
-   * A lock for the properties and propertyMap fields access/modification.
-   */
-  private final Object propertyLock = new Object();
 
   /**
    * This constructor implies the lazy resolution of object properties.
@@ -47,42 +38,11 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   public Collection<JsVariableImpl> getProperties() throws MethodIsBlockingException {
-    return getPropertiesLazily();
+    return subproperties.getPropertiesLazily();
   }
 
-  /**
-   * Calls to this method must be synchronized on propertyLock.
-   */
-  private Map<String, JsVariableImpl> ensurePropertyMap() {
-    if (propertyMap == null) {
-      List<JsVariableImpl> propertiesList = getPropertiesLazily();
-      Map<String, JsVariableImpl> map =
-          new HashMap<String, JsVariableImpl>(propertiesList.size() * 2, 0.75f);
-      for (JsVariableImpl prop : propertiesList) {
-        map.put(prop.getName(), prop);
-      }
-      propertyMap = Collections.unmodifiableMap(map);
-    }
-    return propertyMap;
-  }
-
-  public List<JsVariableImpl> getPropertiesLazily() throws MethodIsBlockingException {
-    synchronized (propertyLock) {
-      if (properties == null) {
-
-        ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
-
-        List<? extends PropertyReference> propertyRefs =
-            valueLoader.loadSubpropertiesInMirror(getMirror())
-            .getSubpropertiesMirror().getProperties();
-        List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
-
-        List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
-            propertyRefs);
-        properties = Collections.unmodifiableList(wrappedProperties);
-      }
-      return properties;
-    }
+  public Collection<JsVariableImpl> getInternalProperties() throws MethodIsBlockingException {
+    return internalProperties.getPropertiesLazily();
   }
 
   public String getRefId() {
@@ -93,33 +53,6 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     } else {
       return String.valueOf(ref);
     }
-  }
-
-
-  private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
-      List<? extends PropertyReference> propertyRefs) throws MethodIsBlockingException {
-    // TODO(peter.rybin) Maybe assert that context is valid here
-
-    List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());
-    for (int i = 0; i < mirrorProperties.size(); i++) {
-      ValueMirror mirror = mirrorProperties.get(i);
-      String varName = propertyRefs.get(i).getName();
-      String fqn = getFullyQualifiedName(varName);
-      if (fqn == null) {
-        continue;
-      }
-      result.add(new JsVariableImpl(callFrame, mirror, varName, fqn,
-          getChildPropertyNameDecorator()));
-    }
-    return result;
-  }
-
-  private String getFullyQualifiedName(String propName) {
-    if (propName.startsWith(".")) {
-      // ".arguments" is not legal
-      return null;
-    }
-    return parentFqn + getChildPropertyNameDecorator().buildAccessSuffix(propName);
   }
 
   @Override
@@ -147,7 +80,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   public JsVariable getProperty(String name) {
-    return ensurePropertyMap().get(name);
+    return subproperties.getProperty(name);
   }
 
   public String getClassName() {
@@ -157,4 +90,104 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   protected JsVariableImpl.NameDecorator getChildPropertyNameDecorator() {
     return JsVariableImpl.NameDecorator.NOOP;
   }
+
+  Subproperties getSubpropertiesHelper() {
+    return subproperties;
+  }
+
+  abstract class Subproperties {
+    private List<JsVariableImpl> properties = null;
+    private Map<String, JsVariableImpl> propertyMap = null;
+
+    /**
+     * Calls to this method must be synchronized on propertyLock.
+     */
+    private Map<String, JsVariableImpl> ensurePropertyMap() {
+      if (propertyMap == null) {
+        List<JsVariableImpl> propertiesList = getPropertiesLazily();
+        Map<String, JsVariableImpl> map =
+            new HashMap<String, JsVariableImpl>(propertiesList.size() * 2, 0.75f);
+        for (JsVariableImpl prop : propertiesList) {
+          map.put(prop.getName(), prop);
+        }
+        propertyMap = Collections.unmodifiableMap(map);
+      }
+      return propertyMap;
+    }
+
+
+    private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
+        List<? extends PropertyReference> propertyRefs) throws MethodIsBlockingException {
+      // TODO(peter.rybin) Maybe assert that context is valid here
+
+      List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());
+      for (int i = 0; i < mirrorProperties.size(); i++) {
+        ValueMirror mirror = mirrorProperties.get(i);
+        String varName = propertyRefs.get(i).getName();
+        String fqn = getFullyQualifiedName(varName);
+        if (fqn == null) {
+          continue;
+        }
+        result.add(new JsVariableImpl(callFrame, mirror, varName, fqn,
+            getNameDecorator()));
+      }
+      return result;
+    }
+
+    private String getFullyQualifiedName(String propName) {
+      if (propName.startsWith(".")) {
+        // ".arguments" is not legal
+        return null;
+      }
+      return parentFqn + getNameDecorator().buildAccessSuffix(propName);
+    }
+
+    JsVariableImpl getProperty(String propertyName) {
+      return ensurePropertyMap().get(propertyName);
+    }
+
+    List<JsVariableImpl> getPropertiesLazily() throws MethodIsBlockingException {
+      synchronized (this) {
+        if (properties == null) {
+
+          ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
+
+          List<? extends PropertyReference> propertyRefs = getPropertyRefs(
+              valueLoader.loadSubpropertiesInMirror(getMirror()));
+          List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
+
+          List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
+              propertyRefs);
+          properties = Collections.unmodifiableList(wrappedProperties);
+        }
+        return properties;
+      }
+    }
+
+    abstract JsVariableImpl.NameDecorator getNameDecorator();
+    abstract List<? extends PropertyReference> getPropertyRefs(
+        PropertyHoldingValueMirror mirrorWithProperties);
+  }
+
+  private final Subproperties subproperties = new Subproperties() {
+    @Override
+    JsVariableImpl.NameDecorator getNameDecorator() {
+      return getChildPropertyNameDecorator();
+    }
+    @Override
+    List<? extends PropertyReference> getPropertyRefs(PropertyHoldingValueMirror mirror) {
+      return mirror.getSubpropertiesMirror().getProperties();
+    }
+  };
+
+  private final Subproperties internalProperties = new Subproperties() {
+    @Override
+    JsVariableImpl.NameDecorator getNameDecorator() {
+      return JsVariableImpl.NameDecorator.NOOP;
+    }
+    @Override
+    List<? extends PropertyReference> getPropertyRefs(PropertyHoldingValueMirror mirror) {
+      return mirror.getSubpropertiesMirror().getInternalProperties();
+    }
+  };
 }

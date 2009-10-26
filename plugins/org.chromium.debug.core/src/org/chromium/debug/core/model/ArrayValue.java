@@ -31,7 +31,7 @@ public class ArrayValue extends Value implements IIndexedValue {
     SortedMap<Integer, ? extends JsVariable> elements = ((JsArray) getJsValue()).toSparseArray();
     List<IVariable> variables = new ArrayList<IVariable>(elements.size());
     for (JsVariable jsVar : elements.values()) {
-      variables.add(new Variable(getDebugTarget(), jsVar));
+      variables.add(new Variable(getDebugTarget(), jsVar, false));
     }
     return variables.toArray(new IVariable[variables.size()]);
   }
