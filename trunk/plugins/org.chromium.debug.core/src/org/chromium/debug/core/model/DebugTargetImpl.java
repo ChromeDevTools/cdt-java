@@ -638,7 +638,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   /**
    * This very simple source locator works because we provide our own source files.
-   * We'll have to try harder, one we link with resource js files.
+   * We'll have to try harder, once we link with resource js files.
    */
   private final ISourceLocator sourceLocator = new ISourceLocator() {
     public Object getSourceElement(IStackFrame stackFrame) {
