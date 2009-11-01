@@ -12,6 +12,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
@@ -140,6 +141,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
         throw new UnsupportedOperationException();
       }
       public JsArray asArray() {
+        return null;
+      }
+      public JsFunction asFunction() {
         return null;
       }
       public String getClassName() {
