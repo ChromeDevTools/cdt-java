@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
@@ -79,6 +80,10 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return null;
   }
 
+  public JsFunction asFunction() {
+    return null;
+  }
+
   public JsVariable getProperty(String name) {
     return subproperties.getProperty(name);
   }
@@ -91,8 +96,18 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
     return JsVariableImpl.NameDecorator.NOOP;
   }
 
+  protected CallFrameImpl getCallFrame() {
+    return callFrame;
+  }
+
   Subproperties getSubpropertiesHelper() {
     return subproperties;
+  }
+
+  protected SubpropertiesMirror getSubpropertiesMirror() {
+    ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
+
+    return valueLoader.loadSubpropertiesInMirror(getMirror()).getSubpropertiesMirror();
   }
 
   abstract class Subproperties {
@@ -150,11 +165,9 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       synchronized (this) {
         if (properties == null) {
 
-          ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
-
-          List<? extends PropertyReference> propertyRefs = getPropertyRefs(
-              valueLoader.loadSubpropertiesInMirror(getMirror()));
-          List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
+        List<? extends PropertyReference> propertyRefs = getPropertyRefs(getSubpropertiesMirror());
+        ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
+        List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
           List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
               propertyRefs);
@@ -166,7 +179,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
 
     abstract JsVariableImpl.NameDecorator getNameDecorator();
     abstract List<? extends PropertyReference> getPropertyRefs(
-        PropertyHoldingValueMirror mirrorWithProperties);
+        SubpropertiesMirror subpropertiesMirror);
   }
 
   private final Subproperties subproperties = new Subproperties() {
@@ -175,8 +188,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return getChildPropertyNameDecorator();
     }
     @Override
-    List<? extends PropertyReference> getPropertyRefs(PropertyHoldingValueMirror mirror) {
-      return mirror.getSubpropertiesMirror().getProperties();
+    List<? extends PropertyReference> getPropertyRefs(SubpropertiesMirror subpropertiesMirror) {
+      return subpropertiesMirror.getProperties();
     }
   };
 
@@ -186,8 +199,8 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return JsVariableImpl.NameDecorator.NOOP;
     }
     @Override
-    List<? extends PropertyReference> getPropertyRefs(PropertyHoldingValueMirror mirror) {
-      return mirror.getSubpropertiesMirror().getInternalProperties();
+    List<? extends PropertyReference> getPropertyRefs(SubpropertiesMirror subpropertiesMirror) {
+      return subpropertiesMirror.getInternalProperties();
     }
   };
 }

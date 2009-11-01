@@ -47,6 +47,12 @@ public interface JsObject extends JsValue {
   JsArray asArray();
 
   /**
+   * @return this object cast to {@link JsFunction} or {@code null} if this object
+   *         is not a function
+   */
+  JsFunction asFunction();
+
+  /**
    * Optionally returns unique id for this object. No two distinct objects can have the same id.
    * Lifetime of id may be limited by lifetime of {@link DebugContext}.
    * @return object id or null
