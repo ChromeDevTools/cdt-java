@@ -18,7 +18,7 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 /**
  * A generic implementation of the JsArray interface.
  */
-public class JsArrayImpl extends JsObjectImpl implements JsArray {
+class JsArrayImpl extends JsObjectImpl implements JsArray {
 
   /**
    * An indexed sparse array of elements. Keys are indices, values are elements.
@@ -32,7 +32,7 @@ public class JsArrayImpl extends JsObjectImpl implements JsArray {
    * @param parentFqn the fully qualified name of this array parent
    * @param valueState the mirror corresponding to this array
    */
-  public JsArrayImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
+  JsArrayImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
     super(callFrame, parentFqn, valueState);
   }
 

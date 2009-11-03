@@ -20,20 +20,29 @@ public abstract class SubpropertiesMirror {
 
   public abstract List<? extends PropertyReference> getInternalProperties();
 
+  public abstract Object getAdditionalProperties();
+
   /**
    * Keeps properties in for of JSON and parses JSON on demand.
    */
   public static class JsonBased extends SubpropertiesMirror {
     private final JSONObject jsonWithProperties;
+    private final AdditionalPropertyFactory additionalPropertyFactory;
 
     private List<? extends PropertyReference> properties = null;
     private List<? extends PropertyReference> internalProperties = null;
+    private Object additionalProperties = null;
 
-    public JsonBased(JSONObject jsonWithProperties) {
+    public JsonBased(JSONObject jsonWithProperties,
+        AdditionalPropertyFactory additionalPropertyFactory) {
+      if (additionalPropertyFactory == null) {
+        additionalPropertyFactory = NO_OP_FACTORY;
+      }
       if (JsonUtil.getAsJSONArray(jsonWithProperties, V8Protocol.REF_PROPERTIES) == null) {
         throw new RuntimeException("Value handle without properties");
       }
       this.jsonWithProperties = jsonWithProperties;
+      this.additionalPropertyFactory = additionalPropertyFactory;
     }
 
     @Override
@@ -51,6 +60,25 @@ public abstract class SubpropertiesMirror {
       }
       return internalProperties;
     }
+
+    @Override
+    public Object getAdditionalProperties() {
+      if (additionalProperties == null) {
+        additionalProperties =
+            additionalPropertyFactory.createAdditionalProperties(jsonWithProperties);
+      }
+      return additionalProperties;
+    }
+
+    public interface AdditionalPropertyFactory {
+      Object createAdditionalProperties(JSONObject jsonWithProperties);
+    }
+
+    private static AdditionalPropertyFactory NO_OP_FACTORY = new AdditionalPropertyFactory() {
+      public Object createAdditionalProperties(JSONObject jsonWithProperties) {
+        return EMPTY_OBJECT;
+      }
+    };
   }
 
   static class ListBased extends SubpropertiesMirror {
@@ -69,6 +97,11 @@ public abstract class SubpropertiesMirror {
     public List<? extends PropertyReference> getInternalProperties() {
       return Collections.emptyList();
     }
+
+    @Override
+    public Object getAdditionalProperties() {
+      return EMPTY_OBJECT;
+    }
   }
 
   static final SubpropertiesMirror EMPTY = new SubpropertiesMirror() {
@@ -81,5 +114,12 @@ public abstract class SubpropertiesMirror {
     public List<? extends PropertyReference> getInternalProperties() {
       return Collections.emptyList();
     }
+
+    @Override
+    public Object getAdditionalProperties() {
+      return EMPTY_OBJECT;
+    }
   };
+
+  private static final Object EMPTY_OBJECT = new Object();
 }

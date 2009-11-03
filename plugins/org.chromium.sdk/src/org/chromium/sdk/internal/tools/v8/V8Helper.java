@@ -14,6 +14,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.DebugSession;
+import org.chromium.sdk.internal.FunctionAdditionalProperties;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
@@ -186,7 +187,7 @@ public class V8Helper {
     String className = JsonUtil.getAsString(jsonValue, V8Protocol.REF_CLASSNAME);
     Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
     if (type == null) {
-      throw new ValueLoadException("Bad lookup result: type field not specified");
+      throw new ValueLoadException("Bad lookup result: type field not recognized: " + typeString);
     }
     return createMirrorFromLookup(jsonValue, className, type, text);
   }
@@ -214,7 +215,7 @@ public class V8Helper {
     if (text == null) { // try another format
       if (Type.isObjectType(type)) {
         int refId = JsonUtil.getAsLong(jsonValue, V8Protocol.REF).intValue();
-        return ValueMirror.createObjectUnknownProperties(refId, className);
+        return ValueMirror.createObjectUnknownProperties(refId, type, className);
       } else {
         // try another format
         String value = JsonUtil.getAsString(jsonValue, V8Protocol.REF_VALUE);
@@ -232,12 +233,35 @@ public class V8Helper {
       String className, Type type, String text) {
     if (Type.isObjectType(type)) {
       int refId = JsonUtil.getAsLong(jsonValue, V8Protocol.REF_HANDLE).intValue();
-      return ValueMirror.createObject(refId,
-          new SubpropertiesMirror.JsonBased(jsonValue), className);
+      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory additionalPropertyFactory;
+      if (type == Type.TYPE_FUNCTION) {
+        additionalPropertyFactory = FUNCTION_PROPERTY_FACTORY;
+      } else {
+        additionalPropertyFactory = null;
+      }
+      SubpropertiesMirror.JsonBased subpropertiesMirror =
+          new SubpropertiesMirror.JsonBased(jsonValue, additionalPropertyFactory);
+      return ValueMirror.createObject(refId, subpropertiesMirror, type, className);
     } else {
       return ValueMirror.createScalar(text, type, className);
     }
   }
+
+  private static final
+      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory FUNCTION_PROPERTY_FACTORY =
+      new SubpropertiesMirror.JsonBased.AdditionalPropertyFactory() {
+    public Object createAdditionalProperties(JSONObject jsonWithProperties) {
+      Long pos = JsonUtil.getAsLong(jsonWithProperties, "position");
+      if (pos == null) {
+        pos = Long.valueOf(FunctionAdditionalProperties.NO_POSITION);
+      }
+      Long scriptId = JsonUtil.getAsLong(jsonWithProperties, "scriptId");
+      if (scriptId == null) {
+        scriptId = Long.valueOf(FunctionAdditionalProperties.NO_SCRIPT_ID);
+      }
+      return new FunctionAdditionalProperties(pos.intValue(), scriptId.intValue());
+    }
+  };
 
   public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
       V8CommandSender<MESSAGE, EX> commandSender, MESSAGE message,

@@ -17,6 +17,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.json.simple.JSONObject;
@@ -54,7 +55,7 @@ public class JsArrayImplTest {
         11, new SubpropertiesMirror.ListBased(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "1", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "3", valueObject)
-        ), null).getValueMirror();
+        ), Type.TYPE_OBJECT, null).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
