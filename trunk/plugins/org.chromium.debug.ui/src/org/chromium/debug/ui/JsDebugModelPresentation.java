@@ -48,6 +48,10 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
   }
 
   public IEditorInput getEditorInput(Object element) {
+    return toEditorInput(element);
+  }
+
+  public static IEditorInput toEditorInput(Object element) {
     if (element instanceof IFile) {
       return new FileEditorInput((IFile) element);
     }
