@@ -17,15 +17,15 @@ public class ValueMirror {
   }
 
   public static PropertyHoldingValueMirror createObject(int refID,
-      SubpropertiesMirror subpropertiesMirror, String className) {
+      SubpropertiesMirror subpropertiesMirror, Type type, String className) {
     if (subpropertiesMirror == null) {
       throw new NullPointerException();
     }
-    return new ValueMirror(refID, subpropertiesMirror, className).getProperties();
+    return new ValueMirror(refID, subpropertiesMirror, type, className).getProperties();
   }
 
-  public static ValueMirror createObjectUnknownProperties(int refID, String className) {
-    return new ValueMirror(refID, null, className);
+  public static ValueMirror createObjectUnknownProperties(int refID, Type type, String className) {
+    return new ValueMirror(refID, null, type, className);
   }
 
   private final int ref;
@@ -46,8 +46,9 @@ public class ValueMirror {
     this.properties = new PropertyHoldingValueMirror(this);
   }
 
-  private ValueMirror(int refID, SubpropertiesMirror subpropertiesMirror, String className) {
-    this.type = getObjectJsType(className);
+  private ValueMirror(int refID, SubpropertiesMirror subpropertiesMirror, Type type,
+      String className) {
+    this.type = type;
     this.className = className;
     this.ref = refID;
     PropertyHoldingValueMirror propertiesMirror;

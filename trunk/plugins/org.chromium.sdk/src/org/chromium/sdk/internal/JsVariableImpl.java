@@ -63,6 +63,8 @@ public class JsVariableImpl implements JsVariable {
     Type type = this.valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
+        this.value = new JsFunctionImpl(callFrame, this.variableFqn, this.valueData);
+        break;
       case TYPE_OBJECT:
         this.value = new JsObjectImpl(callFrame, this.variableFqn, this.valueData);
         break;

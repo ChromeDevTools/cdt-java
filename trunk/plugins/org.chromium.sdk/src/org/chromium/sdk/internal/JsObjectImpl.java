@@ -19,7 +19,7 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 /**
  * A generic implementation of the JsObject interface.
  */
-public class JsObjectImpl extends JsValueImpl implements JsObject {
+class JsObjectImpl extends JsValueImpl implements JsObject {
 
   private final CallFrameImpl callFrame;
 
@@ -32,7 +32,7 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * @param parentFqn the fully qualified name of the object parent
    * @param valueState the value data from the JS VM
    */
-  public JsObjectImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
+  JsObjectImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
     super(valueState);
     this.callFrame = callFrame;
     this.parentFqn = parentFqn;

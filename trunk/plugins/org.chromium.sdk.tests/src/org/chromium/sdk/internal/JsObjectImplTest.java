@@ -17,6 +17,7 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.json.simple.JSONObject;
@@ -54,7 +55,7 @@ public class JsObjectImplTest {
         11, new SubpropertiesMirror.ListBased(
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
             new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject)
-        ), null).getValueMirror();
+        ), Type.TYPE_OBJECT, null).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
