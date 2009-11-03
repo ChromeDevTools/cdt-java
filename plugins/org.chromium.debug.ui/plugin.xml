@@ -197,7 +197,20 @@
         </action>
     </viewerContribution>
   </extension>
-
+  <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.chromium.debug.core.model.Variable"
+            id="org.chromium.debug.ui.ChromiumVariableActions">
+         <action
+               label="%OpenFunctionAction.label"
+               class="org.chromium.debug.ui.actions.OpenFunctionAction"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.OpenFunctionAction">
+         </action>
+      </objectContribution>
+  </extension>
   <extension
          point="org.eclipse.ui.propertyPages">
     <page
