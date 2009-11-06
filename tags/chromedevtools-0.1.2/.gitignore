@@ -1,0 +1,9 @@
+plugins/org.chromium.debug.core/.settings
+plugins/org.chromium.debug.core/bin
+plugins/org.chromium.debug.ui/.settings
+plugins/org.chromium.debug.ui/bin
+plugins/org.chromium.sdk.tests/.settings
+plugins/org.chromium.sdk.tests/bin
+plugins/org.chromium.sdk/.settings
+plugins/org.chromium.sdk/bin
+

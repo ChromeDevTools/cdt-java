@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Google Chrome Developer Tools SDK
+Bundle-SymbolicName: org.chromium.sdk
+Bundle-Version: 0.1.2.qualifier
+Bundle-Vendor: The Chromium Authors
+Bundle-ClassPath: lib/json_simple/json_simple-1.1.jar,
+ .
+Export-Package: org.chromium.sdk,
+ org.chromium.sdk.internal;x-internal:=true,
+ org.chromium.sdk.internal.tools.devtools;x-internal:=true,
+ org.chromium.sdk.internal.tools.v8;x-internal:=true,
+ org.chromium.sdk.internal.tools.v8.processor;x-internal:=true,
+ org.chromium.sdk.internal.tools.v8.request;x-internal:=true,
+ org.chromium.sdk.internal.transport;x-internal:=true
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6

@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: ChromeDevTools SDK Tests
+Bundle-SymbolicName: org.chromium.sdk.tests
+Bundle-Version: 0.1.2.0
+Fragment-Host: org.chromium.sdk;bundle-version="0.1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Require-Bundle: org.junit4;bundle-version="4.3.1"
