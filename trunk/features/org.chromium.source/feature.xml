@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.source"
       label="%featureName"
-      version="0.1.2.qualifier"
+      version="0.1.3.qualifier"
       provider-name="%providerName">
 
    <description>
