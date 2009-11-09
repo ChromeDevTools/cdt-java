@@ -30,7 +30,7 @@ import org.json.simple.JSONObject;
 /**
  * Handles the suspension-related V8 command replies and events.
  */
-public class BreakpointProcessor extends V8ResponseProcessor {
+public class BreakpointProcessor extends V8EventProcessor {
 
   /** The name of the "exception" object to report as a variable name. */
   private static final String EXCEPTION_NAME = "exception";
@@ -40,11 +40,11 @@ public class BreakpointProcessor extends V8ResponseProcessor {
   }
 
   @Override
-  public void messageReceived(JSONObject response) {
+  public void messageReceived(JSONObject eventMessage) {
     V8MessageType type =
-        V8MessageType.forString(JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
+        V8MessageType.forString(JsonUtil.getAsString(eventMessage, V8Protocol.KEY_TYPE));
     if (V8MessageType.EVENT == type) {
-      String event = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
+      String event = JsonUtil.getAsString(eventMessage, V8Protocol.KEY_EVENT);
       DebugSession debugSession = getDebugSession();
 
       ContextBuilder contextBuilder = debugSession.getContextBuilder();
@@ -55,10 +55,10 @@ public class BreakpointProcessor extends V8ResponseProcessor {
 
       ContextBuilder.ExpectingBacktraceStep step2;
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
-        Collection<Breakpoint> breakpointsHit = getBreakpointsHit(response);
+        Collection<Breakpoint> breakpointsHit = getBreakpointsHit(eventMessage);
         step2 = step1.setContextState(breakpointsHit, null);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
-        ExceptionData exception = createException(response, internalContext);
+        ExceptionData exception = createException(eventMessage, internalContext);
         step2 = step1.setContextState(Collections.<Breakpoint> emptySet(), exception);
       } else {
         contextBuilder.buildSequenceFailure();

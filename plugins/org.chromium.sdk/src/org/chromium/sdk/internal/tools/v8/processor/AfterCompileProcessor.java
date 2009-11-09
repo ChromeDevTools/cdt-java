@@ -22,19 +22,16 @@ import org.json.simple.JSONObject;
  * Listens for scripts sent in the "afterCompile" events and requests their
  * sources.
  */
-public class AfterCompileProcessor extends V8ResponseProcessor {
+public class AfterCompileProcessor extends V8EventProcessor {
 
   public AfterCompileProcessor(DebugSession debugSession) {
     super(debugSession);
   }
 
   @Override
-  public void messageReceived(JSONObject response) {
-    if (!JsonUtil.isSuccessful(response)) {
-      return;
-    }
+  public void messageReceived(JSONObject eventMessage) {
     final DebugSession debugSession = getDebugSession();
-    JSONObject script = getScriptToLoad(response,
+    JSONObject script = getScriptToLoad(eventMessage,
         debugSession.getScriptManager().getProtocolOptions());
     if (script == null) {
       return;
