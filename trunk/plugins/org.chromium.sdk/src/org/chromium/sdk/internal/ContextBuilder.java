@@ -288,6 +288,7 @@ public class ContextBuilder {
             if (callback != null) {
               callback.success();
             }
+            getDebugSession().getDebugEventListener().resumed();
           }
           public void failure(String message) {
             synchronized (sendContextCommandsMonitor) {
