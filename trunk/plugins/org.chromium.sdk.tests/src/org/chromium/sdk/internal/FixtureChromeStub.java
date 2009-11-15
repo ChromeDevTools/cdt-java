@@ -255,7 +255,7 @@ public class FixtureChromeStub implements ChromeStub {
           constructBacktrace(responseMessage, jsonBody);
           break;
         case SCRIPTS:
-          nameToJsonValue.put("body", constructScripts());
+          nameToJsonValue.put("body", constructScripts(JsonUtil.getAsJSONArray(args, "ids")));
           nameToJsonValue.put("refs", constructScriptRefs());
           break;
         case SOURCE:
@@ -332,10 +332,13 @@ public class FixtureChromeStub implements ChromeStub {
     return refs;
   }
 
-  private JSONArray constructScripts() {
+  private JSONArray constructScripts(JSONArray ids) {
     JSONArray scripts = new JSONArray();
     for (Script script : scriptManager.allScripts()) {
-      scripts.add(getJsonObjectByRef(scriptIdToScriptRefMap.get(script.getId())));
+      Long id = script.getId();
+      if (ids == null || ids.contains(id)) {
+        scripts.add(getJsonObjectByRef(scriptIdToScriptRefMap.get(script.getId())));
+      }
     }
     return scripts;
   }
