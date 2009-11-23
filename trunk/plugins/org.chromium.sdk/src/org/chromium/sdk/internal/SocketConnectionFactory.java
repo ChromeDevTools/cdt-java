@@ -32,8 +32,14 @@ public class SocketConnectionFactory implements ConnectionFactory {
   }
 
   public SocketConnection newOpenConnection(NetListener netListener) throws IOException {
+    ConnectionLogger connectionLogger;
+    if (connectionLoggerFactory == null) {
+      connectionLogger = null;
+    } else {
+      connectionLogger = connectionLoggerFactory.newConnectionLogger();
+    }
     SocketConnection connection = new SocketConnection(endpoint, connectionTimeoutMs,
-        connectionLoggerFactory.newConnectionLogger(), handshaker);
+        connectionLogger, handshaker);
     connection.setNetListener(netListener);
     connection.start();
     return connection;

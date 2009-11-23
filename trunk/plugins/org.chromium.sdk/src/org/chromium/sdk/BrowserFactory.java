@@ -35,7 +35,7 @@ public abstract class BrowserFactory {
    * of Browser connecting to the same {@code socketAddress}.
    *
    * @param socketAddress the browser is listening on
-   * @param connectionLogger provides facility for listening to network
+   * @param connectionLoggerFactory provides facility for listening to network
    *        traffic; may be null
    * @return a Browser instance for the {@code socketAddress}
    */
