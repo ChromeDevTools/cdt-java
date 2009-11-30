@@ -23,8 +23,8 @@ public class TestProtocolParser {
   @Test
   public void test1() throws JsonProtocolParseException, ParseException {
     // JsonProtocolParser parser = new JsonProtocolParser(Arrays.asList(CommandResponse.class));
-    String sample = "{'seq':0,'request_seq':1,'type':'response','command':'version'," +
-        "'success':true,'body':{'V8Version':'1.3.19 (candidate)'},'refs':[],'running':true}"
+    String sample = ("{'seq':0,'request_seq':1,'type':'response','command':'version'," +
+        "'success':true,'body':{'V8Version':'1.3.19 (candidate)'},'refs':[],'running':true}")
         .replace('\'', '"');
 
     JSONObject json = JsonUtil.jsonObjectFromJson(sample);
