@@ -97,7 +97,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
       normalExit = true;
     } finally {
       if (!normalExit) {
-        devToolSessionManager.cutTheLine();
+        devToolSessionManager.cutTheLineMyself();
       }
     }
   }
