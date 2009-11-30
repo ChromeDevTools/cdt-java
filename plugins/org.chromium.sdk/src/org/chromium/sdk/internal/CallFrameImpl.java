@@ -16,13 +16,15 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONObject;
 
 /**
  * A generic implementation of the CallFrame interface.
@@ -166,18 +168,25 @@ public class CallFrameImpl implements CallFrame {
     V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
         ? null
         : new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (JsonUtil.isSuccessful(response)) {
+          public void messageReceived(CommandResponse response) {
+            SuccessCommandResponse successResponse = response.asSuccess();
+            if (successResponse != null) {
+              ValueHandle body;
+              try {
+                body = successResponse.getBody().asEvaluateBody();
+              } catch (JsonProtocolParseException e) {
+                throw new RuntimeException(e);
+              }
               JsVariable variable =
                   new JsVariableImpl(CallFrameImpl.this, V8Helper.createMirrorFromLookup(
-                      JsonUtil.getBody(response)).getValueMirror(), expression);
+                      body).getValueMirror(), expression);
               if (variable != null) {
                 callback.success(variable);
               } else {
                 callback.failure("Evaluation failed");
               }
             } else {
-              callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+              callback.failure(response.asFailure().getMessage());
             }
           }
 

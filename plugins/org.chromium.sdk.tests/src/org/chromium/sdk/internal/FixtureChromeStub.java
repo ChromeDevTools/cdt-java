@@ -8,14 +8,23 @@ import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonArray;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
+import org.chromium.sdk.internal.protocolparser.JsonType;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
@@ -23,6 +32,7 @@ import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.DebuggerToolCommand;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
@@ -59,36 +69,64 @@ public class FixtureChromeStub implements ChromeStub {
         "\"text\":\"#<an Object>\"}");
     // Script
     refToObjectMap.put(Long.valueOf(getScriptRef()),
-        "{\"handle\":" + getScriptRef() + ",\"type\":\"script\",\"name\":\"file:///C:/1.js\"," +
-        "\"id\":" + getScriptId() + ",\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
-        "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
-        "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
-        "\\r\\n}\\r\\n\\r\\n\\r\\nfunction clicked() {\\r\\n  var obj = {\\r\\n" +
-        "    objField : { internalObj : { intField : 1}, simpleString : \\\"foo\\\" },\\r\\n" +
-        "    someNumber : 3\\r\\n  };\\r\\n  var a = 1;\\r\\n\\r\\n  var arr;\\r\\n" +
-        "  arr = [\\\"foo\\\", 3, new Date(), obj, arr];\\r\\n" +
-        "  for (var i = 5; i < 240; i += 2) {\\r\\n    arr[i] = \\\"bar\\\";\\r\\n  }\\r\\n" +
-        "  arr[100] = 0.99999887;\\r\\n//  var b = a + 1\\r\\n//  console.log('Foo');\\r\\n" +
-        "  anotherScript();\\r\\n}\\r\\n\\r\\nfunction anotherScript() {\\r\\n  var i = 0;\\r\\n" +
-        "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
-        "\"scriptType\":2,\"context\":{\"ref\":0},\"text\":\"file:///C:/1.js (lines: 32)\"}");
+        jsonObject(
+            jsonProperty("handle", getScriptRef()),
+            jsonProperty("type", "script"),
+            jsonProperty("name", "file:///C:/1.js"),
+            jsonProperty("id", getScriptId()),
+            jsonProperty("lineOffset", 0),
+            jsonProperty("columnOffset", 0),
+            jsonProperty("lineCount", 32),
+            jsonProperty("source",
+                "SomeObject = function() {\r\n  this.fieldOne = \"One\";\r\n};\r\n\r\n"
+                + "SomeObject.prototype.methodTwo = function() {\r\n  alert(this.fieldOne);"
+                + "\r\n}\r\n\r\n\r\nfunction clicked() {\r\n  var obj = {\r\n"
+                + "    objField : { internalObj : { intField : 1}, simpleString : \"foo\" },\r\n"
+                + "    someNumber : 3\r\n  };\r\n  var a = 1;\r\n\r\n  var arr;\r\n"
+                + "  arr = [\"foo\", 3, new Date(), obj, arr];\r\n"
+                + "  for (var i = 5; i < 240; i += 2) {\r\n    arr[i] = \"bar\";\r\n  }\r\n"
+                + "  arr[100] = 0.99999887;\r\n//  var b = a + 1\r\n//  console.log('Foo');\r\n"
+                + "  anotherScript();\r\n}\r\n\r\nfunction anotherScript() {\r\n  var i = 0;\r\n"
+                + "  i += 2;\r\n  var someObj = new SomeObject();\r\n}\r\n"
+            ),
+            jsonProperty("sourceLength", 595),
+            jsonProperty("type", "script"),
+            jsonProperty("type", "script"),
+            jsonProperty("scriptType", 2),
+            jsonProperty("context", jsonObject(jsonProperty("ref", 0))),
+            jsonProperty("text", "file:///C:/1.js (lines: 32)"),
+            jsonProperty("compilationType", 17) // a random value
+            ).toJSONString()
+        );
     // Compiled Script
     refToObjectMap.put(Long.valueOf(getCompiledScriptRef()),
-        "{\"handle\":" + getCompiledScriptRef() +
-        ",\"type\":\"script\",\"name\":\"file:///C:/2.js\"," +
-        "\"id\":" + getCompiledScriptId() +
-        ",\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":32," +
-        "\"source\":\"SomeObject = function() {\\r\\n  this.fieldOne = \\\"One\\\";\\r\\n};" +
-        "\\r\\n\\r\\nSomeObject.prototype.methodTwo = function() {\\r\\n  alert(this.fieldOne);" +
-        "\\r\\n}\\r\\n\\r\\n\\r\\nfunction compiled() {\\r\\n  var obj = {\\r\\n" +
-        "    compiled : { internalObj : { intField : 1}, simpleString : \\\"foo\\\" },\\r\\n" +
-        "    someNumber : 3\\r\\n  };\\r\\n  var a = 1;\\r\\n\\r\\n  var arr;\\r\\n" +
-        "  arr = [\\\"foo\\\", 3, new Date(), obj, arr];\\r\\n" +
-        "  for (var i = 5; i < 240; i += 2) {\\r\\n    arr[i] = \\\"bar\\\";\\r\\n  }\\r\\n" +
-        "  arr[100] = 0.99999887;\\r\\n//  var b = a + 1\\r\\n//  console.log('Foo');\\r\\n" +
-        "  anotherScript();\\r\\n}\\r\\n\\r\\nfunction anotherScript() {\\r\\n  var i = 0;\\r\\n" +
-        "  i += 2;\\r\\n  var someObj = new SomeObject();\\r\\n}\\r\\n\",\"sourceLength\":595," +
-        "\"scriptType\":2,\"context\":{\"ref\":0},\"text\":\"file:///C:/2.js (lines: 32)\"}");
+        jsonObject(
+            jsonProperty("handle", getCompiledScriptRef()),
+            jsonProperty("type", "script"),
+            jsonProperty("name", "file:///C:/2.js"),
+            jsonProperty("id", getCompiledScriptId()),
+            jsonProperty("lineOffset", 0),
+            jsonProperty("columnOffset", 0),
+            jsonProperty("lineCount", 32),
+            jsonProperty("source",
+                "SomeObject = function() {\r\n  this.fieldOne = \"One\";\r\n};" +
+                "\r\n\r\nSomeObject.prototype.methodTwo = function() {\r\n  alert(this.fieldOne);" +
+                "\r\n}\r\n\r\n\r\nfunction compiled() {\r\n  var obj = {\r\n" +
+                "    compiled : { internalObj : { intField : 1}, simpleString : \"foo\" },\r\n" +
+                "    someNumber : 3\r\n  };\r\n  var a = 1;\r\n\r\n  var arr;\r\n" +
+                "  arr = [\"foo\", 3, new Date(), obj, arr];\r\n" +
+                "  for (var i = 5; i < 240; i += 2) {\r\n    arr[i] = \"bar\";\r\n  }\r\n" +
+                "  arr[100] = 0.99999887;\r\n//  var b = a + 1\r\n//  console.log('Foo');\r\n" +
+                "  anotherScript();\r\n}\r\n\r\nfunction anotherScript() {\r\n  var i = 0;\r\n" +
+                "  i += 2;\r\n  var someObj = new SomeObject();\r\n}\r\n"
+            ),
+            jsonProperty("sourceLength", 595),
+            jsonProperty("scriptType", 2),
+            jsonProperty("context", jsonObject(jsonProperty("ref", 0))),
+            jsonProperty("text", "file:///C:/2.js (lines: 32)"),
+            jsonProperty("compilationType", 17) // a random value
+        ).toJSONString()
+        );
     // Function
     refToObjectMap.put(Long.valueOf(getFunctionRef()),
         "{\"handle\":" + getFunctionRef() + ",\"type\":\"function\",\"className\":\"Function\"," +
@@ -123,7 +161,14 @@ public class FixtureChromeStub implements ChromeStub {
   private final ScriptManager scriptManager = new ScriptManager(protocolOptions);
 
   public FixtureChromeStub() {
-    scriptManager.addScript(getJsonObjectByRef(getScriptRef()), constructScriptRefs());
+    JSONObject body = getJsonObjectByRef(getScriptRef());
+    ScriptHandle scriptsNormalBody;
+    try {
+      scriptsNormalBody = V8ProtocolUtil.getV8Parser().parse(body, ScriptHandle.class);
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
+    scriptManager.addScript(scriptsNormalBody, constructScriptRefsTyped());
   }
 
   public static int getNumber3Ref() {
@@ -256,7 +301,7 @@ public class FixtureChromeStub implements ChromeStub {
           break;
         case SCRIPTS:
           nameToJsonValue.put("body", constructScripts(JsonUtil.getAsJSONArray(args, "ids")));
-          nameToJsonValue.put("refs", constructScriptRefs());
+          nameToJsonValue.put("refs", constructScriptRefsJson());
           break;
         case SOURCE:
           //constructSource();
@@ -318,18 +363,25 @@ public class FixtureChromeStub implements ChromeStub {
     return value;
   }
 
-  private JSONArray constructScriptRefs() {
-    JSONArray refs = new JSONArray();
-    JSONObject ref = new JSONObject();
-    JSONObject data = new JSONObject();
-    refs.add(ref);
-    ref.put("text", "#<a ContextMirror>");
-    ref.put("handle", 0L); // must match the context ref in the script object
-    ref.put("type", "context");
-    ref.put("data", data);
-    data.put("value", 1L);
-    data.put("type", "page");
-    return refs;
+  private JSONArray constructScriptRefsJson() {
+    return jsonArray(jsonObject(
+        jsonProperty("text", "#<a ContextMirror>"),
+        jsonProperty("handle", 0L), // must match the context ref in the script object
+        jsonProperty("type", "context"),
+        jsonProperty("data", jsonObject(
+            jsonProperty("value", 1L),
+            jsonProperty("type", "page")
+            ))
+        ));
+  }
+
+  private List<SomeHandle> constructScriptRefsTyped() {
+    JSONArray refs = constructScriptRefsJson();
+    try {
+      return fixtureParser.parseAnything(refs, Refs.class).asHandles();
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private JSONArray constructScripts(JSONArray ids) {
@@ -488,19 +540,27 @@ public class FixtureChromeStub implements ChromeStub {
   }
 
   public void sendAfterCompile() {
-    JSONObject afterCompileObject = new JSONObject();
-    afterCompileObject.put("seq", nextSeq());
-    afterCompileObject.put("type", "event");
-    afterCompileObject.put("event", "afterCompile");
-    afterCompileObject.put("success", true);
-    JSONObject body = new JSONObject();
-    JSONArray refs = constructScriptRefs();
+    JSONObject scriptsObject = getJsonObjectByRef(getCompiledScriptRef());
+    ScriptHandle scriptsNormalBody;
+    try {
+      scriptsNormalBody = V8ProtocolUtil.getV8Parser().parse(scriptsObject, ScriptHandle.class);
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
+    scriptManager.addScript(scriptsNormalBody, constructScriptRefsTyped());
+
     JSONObject scriptObject = getJsonObjectByRef(getCompiledScriptRef());
     scriptObject.remove("source");
-    body.put("script", scriptObject);
-    afterCompileObject.put("body", body);
-    afterCompileObject.put("refs", refs);
-    scriptManager.addScript(getJsonObjectByRef(getCompiledScriptRef()), refs);
+
+    JSONObject afterCompileObject = jsonObject(
+        jsonProperty("seq", nextSeq()),
+        jsonProperty("type", "event"),
+        jsonProperty("event", "afterCompile"),
+        jsonProperty("success", true),
+        jsonProperty("body", jsonObject(jsonProperty("script", scriptObject))),
+        jsonProperty("refs", constructScriptRefsJson())
+        );
+
     sendEvent(createMessage(createDebuggerCommandResponse(afterCompileObject.toJSONString())));
   }
 
@@ -525,5 +585,23 @@ public class FixtureChromeStub implements ChromeStub {
   public void tabNavigated(String newUrl) {
     sendEvent(
         createMessage("{\"command\":\"navigated\",\"result\":0,\"data\":\"" + newUrl + "\"}"));
+  }
+
+  private static final JsonProtocolParser fixtureParser;
+  static {
+    try {
+      fixtureParser = new JsonProtocolParser(Arrays.asList(Refs.class),
+          Arrays.asList(V8ProtocolUtil.getV8Parser()));
+    } catch (JsonProtocolModelParseException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @JsonType(subtypesChosenManually=true)
+  public interface Refs {
+    @JsonSubtypeCasting
+    List<SomeHandle> asHandles() throws JsonProtocolParseException;
+    @JsonSubtypeCasting
+    List<? extends SomeHandle> asHandles2() throws JsonProtocolParseException;
   }
 }

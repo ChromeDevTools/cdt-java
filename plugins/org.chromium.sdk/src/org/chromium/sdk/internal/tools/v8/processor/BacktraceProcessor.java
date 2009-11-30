@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8.processor;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,12 +16,15 @@ import org.chromium.sdk.internal.ContextBuilder;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.FrameMirror;
 import org.chromium.sdk.internal.HandleManager;
-import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocol.BacktraceCommandBody;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.FrameObject;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -34,20 +38,19 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
     this.step2 = step2;
  }
 
-  public void messageReceived(final JSONObject response) {
-    V8MessageType type = V8MessageType.forString(
-        JsonUtil.getAsString(response, V8Protocol.KEY_TYPE));
-    if (type != V8MessageType.RESPONSE) {
-      handleWrongStacktrace();
-    }
-    String commandString = JsonUtil.getAsString(response, V8Protocol.KEY_COMMAND);
+  public void messageReceived(CommandResponse response) {
+    String commandString = response.getCommand();
 
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command != DebuggerCommand.BACKTRACE) {
       handleWrongStacktrace();
     }
+    SuccessCommandResponse successResponse = response.asSuccess();
+    if (successResponse == null) {
+      handleWrongStacktrace();
+    }
 
-    final DebugContext debugContext = setFrames(response);
+    final DebugContext debugContext = setFrames(successResponse);
     final DebugSession debugSession = step2.getInternalContext().getDebugSession();
 
     JavascriptVm.ScriptsCallback afterScriptsAreLoaded = new JavascriptVm.ScriptsCallback() {
@@ -63,30 +66,33 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
     debugSession.getScriptLoader().loadAllScripts(afterScriptsAreLoaded, null);
   }
 
-  private DebugContext setFrames(JSONObject response) {
-    JSONObject body = JsonUtil.getBody(response);
-    JSONArray jsonFrames = JsonUtil.getAsJSONArray(body, V8Protocol.BODY_FRAMES);
+  private DebugContext setFrames(SuccessCommandResponse response) {
+    BacktraceCommandBody body;
+    try {
+      body = response.getBody().asBacktraceCommandBody();
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
+    List<FrameObject> jsonFrames = body.getFrames();
     int frameCnt = jsonFrames.size();
     FrameMirror[] frameMirrors = new FrameMirror[frameCnt];
 
     HandleManager handleManager = step2.getInternalContext().getHandleManager();
 
-    JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
-    handleManager.putAll(V8ProtocolUtil.getRefHandleMap(refs));
+    List<SomeHandle> refs = response.getRefs();
+    handleManager.putAll(refs);
     for (int frameIdx = 0; frameIdx < frameCnt; frameIdx++) {
-      JSONObject frameObject = (JSONObject) jsonFrames.get(frameIdx);
-      int index = JsonUtil.getAsLong(frameObject, V8Protocol.BODY_INDEX).intValue();
-      JSONObject frame = (JSONObject) jsonFrames.get(frameIdx);
-      JSONObject func = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_FUNC);
+      FrameObject frameObject = jsonFrames.get(frameIdx);
+      int index = (int) frameObject.getIndex();
+      FrameObject frame = jsonFrames.get(frameIdx);
+      JSONObject func = frame.getFunc();
 
-      String text =
-          JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_TEXT).replace('\r', ' ').replace(
-              '\n', ' ');
+      String text = frame.getText().replace('\r', ' ').replace('\n', ' ');
       Matcher m = FRAME_TEXT_PATTERN.matcher(text);
       m.matches();
       String url = m.group(1);
 
-      int currentLine = JsonUtil.getAsLong(frame, V8Protocol.BODY_FRAME_LINE).intValue();
+      int currentLine = (int) frame.getLine();
 
       // If we stopped because of the debuggerword then we're on the next
       // line.
@@ -94,17 +100,23 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
       // decide if line is debuggerword. If so, find the next sequential line.
       // The below works for simple scripts but doesn't take into account
       // comments, etc.
-      String srcLine = JsonUtil.getAsString(frame, V8Protocol.BODY_FRAME_SRCLINE);
+      String srcLine = frame.getSourceLineText();
       if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
         currentLine++;
       }
-      Long scriptRef = V8ProtocolUtil.getObjectRef(frame, V8Protocol.FRAME_SCRIPT);
+      Long scriptRef = V8ProtocolUtil.getObjectRef(frame.getScript());
 
       Long scriptId = -1L;
       if (scriptRef != null) {
-        JSONObject handle = handleManager.getHandle(scriptRef);
+        SomeHandle handle = handleManager.getHandle(scriptRef);
+        ScriptHandle scriptHandle;
+        try {
+          scriptHandle = handle.asScriptHandle();
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
         if (handle != null) {
-          scriptId = JsonUtil.getAsLong(handle, V8Protocol.ID);
+          scriptId = scriptHandle.id();
         }
       }
       frameMirrors[index] =

@@ -18,6 +18,9 @@ import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.internal.protocol.data.SomeRef;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.json.simple.JSONObject;
@@ -49,12 +52,14 @@ public class JsObjectImplTest {
     DebugContext debugContext = listener.getDebugContext();
 
     JSONObject valueObject = (JSONObject) JSONValue.parse(
-        "{\"handle\":" + FixtureChromeStub.getNumber3Ref() +
+        "{\"ref\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
+    SomeRef someRef = V8ProtocolUtil.getV8Parser().parse(valueObject, SomeRef.class);
+    DataWithRef dataWithRef = DataWithRef.fromSomeRef(someRef);
     eventMirror = ValueMirror.createObject(
         11, new SubpropertiesMirror.ListBased(
-            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "x", valueObject),
-            new PropertyReference(FixtureChromeStub.getNumber3Ref(), "y", valueObject)
+            new PropertyReference("x", dataWithRef),
+            new PropertyReference("y", dataWithRef)
         ), Type.TYPE_OBJECT, null).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);

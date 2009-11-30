@@ -7,7 +7,7 @@ package org.chromium.sdk.internal.tools.v8.processor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.ExceptionData;
@@ -15,17 +15,17 @@ import org.chromium.sdk.internal.ContextBuilder;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.ExceptionDataImpl;
 import org.chromium.sdk.internal.InternalContext;
-import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.protocol.BreakEventBody;
+import org.chromium.sdk.internal.protocol.EventNotification;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  * Handles the suspension-related V8 command replies and events.
@@ -40,11 +40,10 @@ public class BreakpointProcessor extends V8EventProcessor {
   }
 
   @Override
-  public void messageReceived(JSONObject eventMessage) {
-    V8MessageType type =
-        V8MessageType.forString(JsonUtil.getAsString(eventMessage, V8Protocol.KEY_TYPE));
-    if (V8MessageType.EVENT == type) {
-      String event = JsonUtil.getAsString(eventMessage, V8Protocol.KEY_EVENT);
+  public void messageReceived(EventNotification eventMessage) {
+    final boolean isEvent = true;
+    if (isEvent) {
+      String event = eventMessage.getEvent();
       DebugSession debugSession = getDebugSession();
 
       ContextBuilder contextBuilder = debugSession.getContextBuilder();
@@ -53,12 +52,20 @@ public class BreakpointProcessor extends V8EventProcessor {
 
       InternalContext internalContext = step1.getInternalContext();
 
+      BreakEventBody breakEventBody;
+      try {
+        breakEventBody = eventMessage.getBody().asBreakEventBody();
+      } catch (JsonProtocolParseException e) {
+        throw new RuntimeException(e);
+      }
+
       ContextBuilder.ExpectingBacktraceStep step2;
       if (V8Protocol.EVENT_BREAK.key.equals(event)) {
-        Collection<Breakpoint> breakpointsHit = getBreakpointsHit(eventMessage);
+        Collection<Breakpoint> breakpointsHit = getBreakpointsHit(eventMessage, breakEventBody);
         step2 = step1.setContextState(breakpointsHit, null);
       } else if (V8Protocol.EVENT_EXCEPTION.key.equals(event)) {
-        ExceptionData exception = createException(eventMessage, internalContext);
+        ExceptionData exception = createException(eventMessage, breakEventBody,
+            internalContext);
         step2 = step1.setContextState(Collections.<Breakpoint> emptySet(), exception);
       } else {
         contextBuilder.buildSequenceFailure();
@@ -83,9 +90,9 @@ public class BreakpointProcessor extends V8EventProcessor {
     }
   }
 
-  private Collection<Breakpoint> getBreakpointsHit(JSONObject reply) {
-    JSONObject body = JsonUtil.getAsJSON(reply, V8Protocol.BREAK_BODY);
-    JSONArray breakpointIdsArray = JsonUtil.getAsJSONArray(body, V8Protocol.BREAK_BREAKPOINTS);
+  private Collection<Breakpoint> getBreakpointsHit(EventNotification response,
+      BreakEventBody breakEventBody) {
+    List<Long> breakpointIdsArray = breakEventBody.getBreakpoints();
     BreakpointManager breakpointManager = getDebugSession().getBreakpointManager();
     if (breakpointIdsArray == null) {
       // Suspended on step end.
@@ -93,7 +100,7 @@ public class BreakpointProcessor extends V8EventProcessor {
     }
     Collection<Breakpoint> breakpointsHit = new ArrayList<Breakpoint>(breakpointIdsArray.size());
     for (int i = 0, size = breakpointIdsArray.size(); i < size; ++i) {
-      Breakpoint existingBp = breakpointManager.getBreakpoint((Long)breakpointIdsArray.get(i));
+      Breakpoint existingBp = breakpointManager.getBreakpoint(breakpointIdsArray.get(i));
       if (existingBp != null) {
         breakpointsHit.add(existingBp);
       }
@@ -101,24 +108,24 @@ public class BreakpointProcessor extends V8EventProcessor {
     return breakpointsHit;
   }
 
-  private ExceptionData createException(JSONObject response, InternalContext internalContext) {
-    JSONObject body = JsonUtil.getBody(response);
-
-    JSONArray refs = JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS);
-    JSONObject exception = JsonUtil.getAsJSON(body, V8Protocol.EXCEPTION);
-    Map<Long, JSONObject> refHandleMap = V8ProtocolUtil.getRefHandleMap(refs);
-    V8ProtocolUtil.putHandle(refHandleMap, exception);
-    internalContext.getHandleManager().putAll(refHandleMap);
+  private ExceptionData createException(EventNotification response, BreakEventBody body,
+      InternalContext internalContext) {
+    List<SomeHandle> refs = response.getRefs();
+    ValueHandle exception = body.getException();
+    List<SomeHandle> handles = new ArrayList<SomeHandle>(refs.size() + 1);
+    handles.addAll(refs);
+    handles.add(exception.getSuper());
+    internalContext.getHandleManager().putAll(handles);
 
     // source column is not exposed ("sourceColumn" in "body")
-    String sourceText = JsonUtil.getAsString(body, V8Protocol.BODY_FRAME_SRCLINE);
+    String sourceText = body.getSourceLineText();
 
     return new ExceptionDataImpl(internalContext,
         V8Helper.createMirrorFromLookup(exception).getValueMirror(),
         EXCEPTION_NAME,
-        JsonUtil.getAsBoolean(body, V8Protocol.UNCAUGHT),
+        body.isUncaught(),
         sourceText,
-        JsonUtil.getAsString(exception, V8Protocol.REF_TEXT));
+        exception.text());
   }
 
 }

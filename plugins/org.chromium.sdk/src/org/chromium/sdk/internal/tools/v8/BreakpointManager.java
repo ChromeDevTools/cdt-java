@@ -7,9 +7,11 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocol.BreakpointBody;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONObject;
 
 public class BreakpointManager {
   /**
@@ -34,10 +36,16 @@ public class BreakpointManager {
         callback == null
             ? null
             : new V8CommandProcessor.V8HandlerCallback() {
-              public void messageReceived(JSONObject response) {
-                if (JsonUtil.isSuccessful(response)) {
-                  JSONObject body = JsonUtil.getBody(response);
-                  long id = JsonUtil.getAsLong(body, V8Protocol.BODY_BREAKPOINT);
+              public void messageReceived(CommandResponse response) {
+                SuccessCommandResponse successResponse = response.asSuccess();
+                if (successResponse != null) {
+                  BreakpointBody body;
+                  try {
+                    body = successResponse.getBody().asBreakpointBody();
+                  } catch (JsonProtocolParseException e) {
+                    throw new RuntimeException(e);
+                  }
+                  long id = body.getBreakpoint();
 
                   final BreakpointImpl breakpoint =
                       new BreakpointImpl(type, id, enabled, ignoreCount,
@@ -46,7 +54,7 @@ public class BreakpointManager {
                   callback.success(breakpoint);
                   idToBreakpoint.put(breakpoint.getId(), breakpoint);
                 } else {
-                  callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                  callback.failure(response.asFailure().getMessage());
                 }
               }
               public void failure(String message) {
@@ -73,14 +81,15 @@ public class BreakpointManager {
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
         true,
         new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
-            if (JsonUtil.isSuccessful(response)) {
+          public void messageReceived(CommandResponse response) {
+            SuccessCommandResponse successResponse = response.asSuccess();
+            if (successResponse != null) {
               if (callback != null) {
                 callback.success(null);
               }
             } else {
               if (callback != null) {
-                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                callback.failure(response.asFailure().getMessage());
               }
             }
           }
@@ -99,12 +108,13 @@ public class BreakpointManager {
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
         true,
         new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
+          public void messageReceived(CommandResponse response) {
             if (callback != null) {
-              if (JsonUtil.isSuccessful(response)) {
-                  callback.success(breakpointImpl);
+              SuccessCommandResponse successResponse = response.asSuccess();
+              if (successResponse != null) {
+                callback.success(breakpointImpl);
               } else {
-                  callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                callback.failure(response.asFailure().getMessage());
               }
             }
           }

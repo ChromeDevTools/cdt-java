@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
+import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.json.simple.JSONObject;
 
 /**
  * This class is intended to hold properties either already parsed or to be parsed on demand.
@@ -22,33 +22,60 @@ public abstract class SubpropertiesMirror {
 
   public abstract Object getAdditionalProperties();
 
+  public static class ObjectValueBased extends JsonBased<ObjectValueHandle> {
+    private final ObjectValueHandle objectValueHandle;
+    public ObjectValueBased(ObjectValueHandle valueHandle,
+        AdditionalPropertyFactory<ObjectValueHandle> additionalPropertyFactory) {
+      super(additionalPropertyFactory);
+      this.objectValueHandle = valueHandle;
+    }
+    @Override
+    protected ObjectValueHandle getObjectForFactory() {
+      return objectValueHandle;
+    }
+    @Override
+    protected ObjectValueHandle getObjectValue() {
+      return objectValueHandle;
+    }
+  }
+  public static class FunctionValueBased extends JsonBased<FunctionValueHandle> {
+    private final FunctionValueHandle functionValueHandle;
+    public FunctionValueBased(FunctionValueHandle functionValueHandle,
+        AdditionalPropertyFactory<FunctionValueHandle> additionalPropertyFactory) {
+      super(additionalPropertyFactory);
+      this.functionValueHandle = functionValueHandle;
+    }
+    @Override
+    protected FunctionValueHandle getObjectForFactory() {
+      return functionValueHandle;
+    }
+    @Override
+    protected ObjectValueHandle getObjectValue() {
+      return functionValueHandle.getSuper();
+    }
+  }
+
   /**
    * Keeps properties in for of JSON and parses JSON on demand.
    */
-  public static class JsonBased extends SubpropertiesMirror {
-    private final JSONObject jsonWithProperties;
-    private final AdditionalPropertyFactory additionalPropertyFactory;
+  public static abstract class JsonBased<T> extends SubpropertiesMirror {
+    private final AdditionalPropertyFactory<T> additionalPropertyFactory;
 
     private List<? extends PropertyReference> properties = null;
     private List<? extends PropertyReference> internalProperties = null;
     private Object additionalProperties = null;
 
-    public JsonBased(JSONObject jsonWithProperties,
-        AdditionalPropertyFactory additionalPropertyFactory) {
+    public JsonBased(AdditionalPropertyFactory<T> additionalPropertyFactory) {
       if (additionalPropertyFactory == null) {
         additionalPropertyFactory = NO_OP_FACTORY;
       }
-      if (JsonUtil.getAsJSONArray(jsonWithProperties, V8Protocol.REF_PROPERTIES) == null) {
-        throw new RuntimeException("Value handle without properties");
-      }
-      this.jsonWithProperties = jsonWithProperties;
       this.additionalPropertyFactory = additionalPropertyFactory;
     }
 
     @Override
     public synchronized List<? extends PropertyReference> getProperties() {
       if (properties == null) {
-        properties = V8ProtocolUtil.extractObjectProperties(jsonWithProperties);
+        properties = V8ProtocolUtil.extractObjectProperties(getObjectValue());
       }
       return properties;
     }
@@ -56,26 +83,29 @@ public abstract class SubpropertiesMirror {
     @Override
     public synchronized List<? extends PropertyReference> getInternalProperties() {
       if (internalProperties == null) {
-        internalProperties = V8ProtocolUtil.extractObjectInternalProperties(jsonWithProperties);
+        internalProperties = V8ProtocolUtil.extractObjectInternalProperties(getObjectValue());
       }
       return internalProperties;
     }
+
+    protected abstract ObjectValueHandle getObjectValue();
 
     @Override
     public Object getAdditionalProperties() {
       if (additionalProperties == null) {
         additionalProperties =
-            additionalPropertyFactory.createAdditionalProperties(jsonWithProperties);
+            additionalPropertyFactory.createAdditionalProperties(getObjectForFactory());
       }
       return additionalProperties;
     }
+    protected abstract T getObjectForFactory();
 
-    public interface AdditionalPropertyFactory {
-      Object createAdditionalProperties(JSONObject jsonWithProperties);
+    public interface AdditionalPropertyFactory<T> {
+      Object createAdditionalProperties(T jsonWithProperties);
     }
 
-    private static AdditionalPropertyFactory NO_OP_FACTORY = new AdditionalPropertyFactory() {
-      public Object createAdditionalProperties(JSONObject jsonWithProperties) {
+    private static AdditionalPropertyFactory NO_OP_FACTORY = new AdditionalPropertyFactory<Void>() {
+      public Object createAdditionalProperties(Void jsonWithProperties) {
         return EMPTY_OBJECT;
       }
     };

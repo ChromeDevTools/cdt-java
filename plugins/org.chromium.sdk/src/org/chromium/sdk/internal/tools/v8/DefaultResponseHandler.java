@@ -6,12 +6,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocol.EventNotification;
+import org.chromium.sdk.internal.protocol.IncomingMessage;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.V8EventProcessor;
-import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
-import org.json.simple.JSONObject;
 
 public class DefaultResponseHandler {
 
@@ -37,12 +36,13 @@ public class DefaultResponseHandler {
    * @param type response type ("response" or "event")
    * @param response from the V8 VM debugger
    */
-  public void handleResponseWithHandler(V8MessageType type, final JSONObject response) {
-    if (type != V8MessageType.EVENT) {
+  public void handleResponseWithHandler(IncomingMessage response) {
+    EventNotification eventResponse = response.asEventNotification();
+    if (eventResponse == null) {
       // Currently only events are supported.
       return;
     }
-    String commandString = JsonUtil.getAsString(response, V8Protocol.KEY_EVENT);
+    String commandString = eventResponse.getEvent();
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command == null) {
       LOGGER.log(Level.WARNING,
@@ -53,7 +53,7 @@ public class DefaultResponseHandler {
     if (handlerGetter == null) {
       return;
     }
-    handlerGetter.get(this).messageReceived(response);
+    handlerGetter.get(this).messageReceived(eventResponse);
   }
 
   private static abstract class ProcessorGetter {

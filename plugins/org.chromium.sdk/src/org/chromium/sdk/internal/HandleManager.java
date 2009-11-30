@@ -4,11 +4,13 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.json.simple.JSONObject;
 
 /**
@@ -16,33 +18,43 @@ import org.json.simple.JSONObject;
  */
 public class HandleManager {
 
-  private final ConcurrentMap<Long, JSONObject> refToHandle =
-      new ConcurrentHashMap<Long, JSONObject>();
+  private final ConcurrentMap<Long, SomeHandle> refToHandle =
+      new ConcurrentHashMap<Long, SomeHandle>();
 
-  public void putAll(Map<Long, JSONObject> map) {
-    for (Map.Entry<Long, JSONObject> en : map.entrySet()) {
-      put(en.getKey(), en.getValue());
+  public void putAll(List<SomeHandle> list) {
+    for (SomeHandle handle : list) {
+      put(handle.handle(), handle);
     }
   }
 
-  void put(Long ref, JSONObject object) {
-    JSONObject oldObject = refToHandle.putIfAbsent(ref, object);
+  SomeHandle put(Long ref, JSONObject object) {
+    SomeHandle smthWithHandle;
+    try {
+      smthWithHandle = V8ProtocolUtil.getV8Parser().parse(object, SomeHandle.class);
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
+    put(ref, smthWithHandle);
+    return smthWithHandle;
+  }
+
+  private void put(Long ref, SomeHandle smthWithHandle) {
+    SomeHandle oldObject = refToHandle.putIfAbsent(ref, smthWithHandle);
     if (oldObject != null) {
-      mergeValues(oldObject, object);
+      mergeValues(oldObject, smthWithHandle);
     }
   }
 
-  void put(JSONObject object) {
-    Long ref = JsonUtil.getAsLong(object, V8Protocol.REF_HANDLE);
-    if (ref != null && ref >= 0) {
-      put(ref, object);
+  void put(SomeHandle someHandle) {
+    if (someHandle.handle() >= 0) {
+      put(someHandle.handle(), someHandle);
     }
   }
 
-  public JSONObject getHandle(Long ref) {
+  public SomeHandle getHandle(Long ref) {
     return refToHandle.get(ref);
   }
 
-  private static void mergeValues(JSONObject oldObject, JSONObject newObject) {
+  private static void mergeValues(SomeHandle oldObject, SomeHandle newObject) {
   }
 }

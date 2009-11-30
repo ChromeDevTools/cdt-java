@@ -14,18 +14,18 @@ import org.chromium.sdk.Version;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.JavascriptVm.SuspendCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DefaultResponseHandler;
 import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONObject;
 
 /**
  * A default, thread-safe implementation of the JsDebugContext interface.
@@ -128,8 +128,9 @@ public class DebugSession {
           suspendCallback.failure(new Exception(message));
         }
       }
-      public void messageReceived(JSONObject response) {
-        if (!JsonUtil.isSuccessful(response)) {
+      public void messageReceived(CommandResponse response) {
+        SuccessCommandResponse successResponse = response.asSuccess();
+        if (successResponse == null) {
           if (suspendCallback != null) {
             suspendCallback.failure(new Exception("Unsuccessful command"));
           }
@@ -167,12 +168,13 @@ public class DebugSession {
         this.doneInitialScriptLoad = true;
         // Not loaded the scripts initially, do full load.
         v8Helper.reloadAllScriptsAsync(new V8HandlerCallback() {
-          public void messageReceived(JSONObject response) {
+          public void messageReceived(CommandResponse response) {
             if (callback != null) {
-              if (JsonUtil.isSuccessful(response)) {
+              SuccessCommandResponse successResponse = response.asSuccess();
+              if (successResponse != null) {
                 callback.success(getScriptManager().allScripts());
               } else {
-                callback.failure(JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+                callback.failure(response.asFailure().getMessage());
               }
             }
           }
@@ -203,11 +205,15 @@ public class DebugSession {
   public void startCommunication() {
     V8BlockingCallback<Void> callback = new V8BlockingCallback<Void>() {
       @Override
-      public Void messageReceived(JSONObject response) {
-        Version vmVersion = V8ProtocolUtil.parseVersionResponse(response);
+      public Void messageReceived(CommandResponse response) {
+        SuccessCommandResponse successResponse = response.asSuccess();
+        if (successResponse == null) {
+          return null;
+        }
+        Version vmVersion = V8ProtocolUtil.parseVersionResponse(successResponse);
 
         if (V8VersionMilestones.isRunningAccurate(vmVersion)) {
-          Boolean running = JsonUtil.getAsBoolean(response, V8Protocol.KEY_RUNNING);
+          Boolean running = successResponse.running();
           if (running == Boolean.FALSE) {
             ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextWhenIdle();
             // If step is not null -- we are already in process of building a context.
@@ -223,7 +229,7 @@ public class DebugSession {
       }
 
       @Override
-      protected Void handleSuccessfulResponse(JSONObject response) {
+      protected Void handleSuccessfulResponse(SuccessCommandResponse response) {
         throw new UnsupportedOperationException();
       }
     };

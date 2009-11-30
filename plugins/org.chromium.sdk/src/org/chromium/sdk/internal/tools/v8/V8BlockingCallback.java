@@ -4,30 +4,31 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
-import org.chromium.sdk.internal.JsonUtil;
-import org.json.simple.JSONObject;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 
 /**
  * The callback that handles JSON response to a VM command. The command-sender is staying
  * blocked until callback finishes, which allows the callback to return a result of
  * user-specified type {@code RES}.
- * <p>User should subclass this and implement {@link #handleSuccessfulResponse(JSONObject)}
- * method.
+ * <p>User should subclass this and implement
+ * {@link #handleSuccessfulResponse(SuccessCommandResponse)} method.
  * @param <RES> type of result value that is passed back to caller
  */
 public abstract class V8BlockingCallback<RES> {
-  public RES messageReceived(JSONObject response) {
-    if (!JsonUtil.isSuccessful(response)) {
+  public RES messageReceived(CommandResponse response) {
+    SuccessCommandResponse successResponse = response.asSuccess();
+    if (successResponse == null) {
       throw new RuntimeException("Unsuccessful command " +
-          JsonUtil.getAsString(response, V8Protocol.KEY_MESSAGE));
+          response.asFailure().getMessage());
     }
-    return handleSuccessfulResponse(response);
+    return handleSuccessfulResponse(successResponse);
   }
 
   /**
-   * User-implemetable method that handled successful json repsone and pass result back to
+   * User-implementable method that handled successful json response and pass result back to
    * command-sender.
    * @param response with "success=true"
    */
-  protected abstract RES handleSuccessfulResponse(JSONObject response);
+  protected abstract RES handleSuccessfulResponse(SuccessCommandResponse response);
 }

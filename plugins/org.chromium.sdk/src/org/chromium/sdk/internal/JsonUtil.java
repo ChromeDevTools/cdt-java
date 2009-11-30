@@ -9,7 +9,6 @@ import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -205,22 +204,6 @@ public class JsonUtil {
     } catch (NumberFormatException e) {
       return false;
     }
-  }
-
-  /**
-   * @param response to get the body from
-   * @return the "body" value
-   */
-  public static JSONObject getBody(JSONObject response) {
-    return JsonUtil.getAsJSON(response, V8Protocol.KEY_BODY);
-  }
-
-  /**
-   * @param response to get the status from
-   * @return the "success" value
-   */
-  public static boolean isSuccessful(JSONObject response) {
-    return JsonUtil.getAsBoolean(response, V8Protocol.KEY_SUCCESS);
   }
 
   public static String quoteString(String string) {
