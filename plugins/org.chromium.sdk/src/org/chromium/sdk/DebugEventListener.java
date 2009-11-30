@@ -5,7 +5,7 @@
 package org.chromium.sdk;
 
 /**
- * This interface is used by the SDK to report debug events for a certain tab to
+ * This interface is used by the SDK to report debug events for a certain {@link JavascriptVm} to
  * the clients.
  */
 public interface DebugEventListener {
@@ -28,7 +28,8 @@ public interface DebugEventListener {
   void resumed();
 
   /**
-   * Reports the browser debug connection has terminated.
+   * Reports the debug connection has terminated and {@link JavascriptVm} has stopped operating.
+   * This event is reported always, regardless of which reason causes termination.
    */
   void disconnected();
 

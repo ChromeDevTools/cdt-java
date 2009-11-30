@@ -157,10 +157,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    * message and unregisters tab from browser.
    * Should be called from UI, may block.
    */
-  public void cutTheLine() {
+  public void cutTheLineMyself() {
     toolHandler.cutTheLine();
   }
-
   /**
    * This method is sure to be called only once.
    */
@@ -228,9 +227,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     } catch (AttachmentFailureException e) {
       result = null;
     } finally {
-
       // Make sure line is cut
-      cutTheLine();
+      cutTheLineMyself();
     }
 
     return result;
@@ -285,8 +283,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     private boolean alreadyHasEos = false;
 
     /**
-     * We should be in UI thread, because this method synchronizes and may be waiting for
-     * Connection thread.
+     * Here we call methods that are normally are being invoked from Connection Dispatch
+     * thread. So we compete for "this" as synchronization monitor with that thread.
+     * We should be careful, cause theoretically it may cause a deadlock.
      */
     void cutTheLine() {
       // First mark ourselves as "cut off" to stop other threads,
@@ -310,7 +309,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       }
       sendEos();
     }
-    private void sendEos() {
+    private synchronized void sendEos() {
       if (alreadyHasEos) {
         return;
       }
@@ -325,8 +324,8 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   private void processClosed(JSONObject json) {
     notifyCallback(detachCallback, Result.OK);
-
-    browserTabImpl.getTabDebugEventListener().closed();
+    getTabDebugEventListener().closed();
+    cutTheLineMyself();
   }
 
   /**

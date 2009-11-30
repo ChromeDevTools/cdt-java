@@ -598,7 +598,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
     }
     public void closed() {
-      fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+      debugEventListener.disconnected();
     }
   };
 

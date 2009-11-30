@@ -88,11 +88,11 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
 
     NetListener netListener = new NetListener() {
       public void connectionClosed() {
-        onDebuggerDetachedImpl(null);
       }
 
       public void eosReceived() {
         debugSession.getV8CommandProcessor().processEos();
+        onDebuggerDetachedImpl(null);
       }
 
       public void messageReceived(Message message) {
@@ -201,7 +201,7 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     }
 
     public void onDebuggerDetached() {
-      onDebuggerDetachedImpl(null);
+      // Never called for standalone.
     }
   };
 
