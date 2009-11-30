@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.tools.v8.processor;
 
 import org.chromium.sdk.internal.DebugSession;
-import org.json.simple.JSONObject;
+import org.chromium.sdk.internal.protocol.EventNotification;
 
 /**
  * An abstract base implementation of DebugContextImpl-aware
@@ -22,7 +22,7 @@ public abstract class V8EventProcessor {
     this.debugSession = debugSession;
   }
 
-  public abstract void messageReceived(JSONObject eventMessage);
+  public abstract void messageReceived(EventNotification eventMessage);
 
   protected DebugSession getDebugSession() {
     return debugSession;

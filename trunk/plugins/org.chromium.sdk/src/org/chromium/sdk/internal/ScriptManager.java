@@ -8,14 +8,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.ScriptImpl.Descriptor;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  * Manages scripts known in the corresponding browser tab.
@@ -53,7 +53,7 @@ public class ScriptManager {
    * @return the new script, or {@code null} if the response does not contain
    *         a valid script JSON
    */
-  public synchronized Script addScript(JSONObject scriptBody, JSONArray refs) {
+  public synchronized Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
 
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
@@ -65,7 +65,7 @@ public class ScriptManager {
       theScript = new ScriptImpl(desc);
       idToScript.put(desc.id, theScript);
     }
-    if (scriptBody.containsKey(V8Protocol.SOURCE_CODE.key)) {
+    if (scriptBody.source() != null) {
       setSourceCode(scriptBody, theScript);
     }
 
@@ -73,26 +73,14 @@ public class ScriptManager {
   }
 
   /**
-   * Tells whether a script specified by the {@code response} is known to this
-   * manager.
-   *
-   * @param response containing the script to check
-   * @return whether the script is known to this manager. Will also return
-   *         {@code false} if the script name is absent in the {@code response}
-   */
-  public boolean hasScript(JSONObject response) {
-    return findById(V8ProtocolUtil.getScriptIdFromResponse(response)) != null;
-  }
-
-  /**
    * Associates a source received in a "source" V8 response with the given
    * script.
    *
-   * @param body the JSON response body
+   * @param scriptBody the JSON response body
    * @param script the script to associate the source with
    */
-  public void setSourceCode(JSONObject body, ScriptImpl script) {
-    String src = JsonUtil.getAsString(body, V8Protocol.SOURCE_CODE);
+  public void setSourceCode(ScriptHandle body, ScriptImpl script) {
+    String src = body.source();
     if (src == null) {
       return;
     }

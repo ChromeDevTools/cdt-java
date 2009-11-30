@@ -10,9 +10,10 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.CloseableMap;
-import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.IncomingMessage;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.tools.v8.request.V8MessageType;
 import org.json.simple.JSONObject;
 
 /**
@@ -32,7 +33,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
      *
      * @param response from the V8 debugger
      */
-    void messageReceived(JSONObject response);
+    void messageReceived(CommandResponse response);
 
     /**
      * This method is invoked when a debugger command has failed.
@@ -46,7 +47,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       public void failure(String message) {
       }
 
-      public void messageReceived(JSONObject response) {
+      public void messageReceived(CommandResponse response) {
       }
     };
   }
@@ -90,12 +91,18 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
   }
 
   public void processIncomingJson(final JSONObject v8Json) {
-    V8MessageType type = V8MessageType.forString(JsonUtil.getAsString(v8Json, V8Protocol.KEY_TYPE));
+    IncomingMessage response;
+    try {
+      response = V8ProtocolUtil.getV8Parser().parse(v8Json, IncomingMessage.class);
+    } catch (JsonProtocolParseException e) {
+      LOGGER.log(Level.SEVERE, "JSON message does not conform to the protocol", e);
+      return;
+    }
 
-    if (V8MessageType.RESPONSE == type) {
-      Long requestSeq = JsonUtil.getAsLong(v8Json, V8Protocol.KEY_REQSEQ);
-      checkNull(requestSeq, "Could not read 'request_seq' from debugger reply");
-      int requestSeqInt = requestSeq.intValue();
+    final CommandResponse commandResponse = response.asCommandResponse();
+
+    if (commandResponse != null) {
+      int requestSeqInt = (int) commandResponse.getRequestSeq();
       CallbackEntry callbackEntry = callbackMap.removeIfContains(requestSeqInt);
       if (callbackEntry != null) {
         LOGGER.log(
@@ -106,7 +113,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
         CallbackCaller caller = new CallbackCaller() {
           @Override
           void call(V8HandlerCallback handlerCallback) {
-            handlerCallback.messageReceived(v8Json);
+            handlerCallback.messageReceived(commandResponse);
           }
         };
         try {
@@ -117,7 +124,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       }
     }
 
-    defaultResponseHandler.handleResponseWithHandler(type, v8Json);
+    defaultResponseHandler.handleResponseWithHandler(response);
   }
 
   public void processEos() {
@@ -151,6 +158,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       }
     } catch (RuntimeException e) {
       callbackException = e;
+      throw e;
     } finally {
       if (callbackEntry.syncCallback != null) {
         callbackEntry.syncCallback.callbackDone(callbackException);

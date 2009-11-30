@@ -28,7 +28,7 @@ public class DevToolsServiceHandlerTest extends AbstractAttachedTest<ControlledF
     handler = TestUtil.getDevToolsServiceHandler((BrowserImpl) browserTab.getBrowser());
   }
 
-  @Test(timeout=100)
+  @Test(timeout=1000)
   public void verifyListTabsIsExclusive() throws Exception {
     try {
       // immediately after setUp()
@@ -43,7 +43,7 @@ public class DevToolsServiceHandlerTest extends AbstractAttachedTest<ControlledF
     }
   }
 
-  @Test(timeout=100)
+  @Test(timeout=1000)
   public void verifyVersionIsExclusive() throws Exception {
     try {
       // immediately after setUp()

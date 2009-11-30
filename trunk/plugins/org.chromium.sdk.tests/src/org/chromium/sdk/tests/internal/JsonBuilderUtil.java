@@ -25,6 +25,10 @@ public class JsonBuilderUtil {
     return new JsonPropertyTemp(name, value);
   }
 
+  public static JsonPropertyTemp jsonProperty(String name, Boolean value) {
+    return new JsonPropertyTemp(name, value);
+  }
+
   public static JsonPropertyTemp jsonProperty(String name, JSONObject value) {
     return new JsonPropertyTemp(name, value);
   }

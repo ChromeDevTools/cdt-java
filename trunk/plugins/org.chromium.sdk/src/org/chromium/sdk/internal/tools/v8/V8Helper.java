@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.internal.DataWithRef;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.FunctionAdditionalProperties;
 import org.chromium.sdk.internal.JsDataTypeUtil;
-import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.ScopeMirror;
@@ -24,10 +24,19 @@ import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.SubpropertiesMirror;
 import org.chromium.sdk.internal.ValueLoadException;
 import org.chromium.sdk.internal.ValueMirror;
+import org.chromium.sdk.internal.protocol.CommandResponse;
+import org.chromium.sdk.internal.protocol.FrameObject;
+import org.chromium.sdk.internal.protocol.ScopeRef;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
+import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
+import org.chromium.sdk.internal.protocol.data.PropertyObject;
+import org.chromium.sdk.internal.protocol.data.RefWithDisplayData;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  * A helper class for performing complex V8-related operations.
@@ -73,17 +82,25 @@ public class V8Helper {
             finalCallback.failure(message);
           }
 
-          public void messageReceived(JSONObject response) {
-            JSONArray body = JsonUtil.getAsJSONArray(response, V8Protocol.KEY_BODY);
+          public void messageReceived(CommandResponse response) {
+            SuccessCommandResponse successResponse = response.asSuccess();
+
+            // TODO(peter.rybin): add try/finally for unlock, with some error reporting probably.
+            List<ScriptHandle> body;
+            try {
+              body = successResponse.getBody().asScripts();
+            } catch (JsonProtocolParseException e) {
+              throw new RuntimeException(e);
+            }
             ScriptManager scriptManager = debugSession.getScriptManager();
             for (int i = 0; i < body.size(); ++i) {
-              JSONObject scriptJson = (JSONObject) body.get(i);
-              Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptJson);
+              ScriptHandle scriptHandle = body.get(i);
+              Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
               if (scriptManager.findById(id) == null &&
-                  !ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(
-                      JsonUtil.getAsString(scriptJson, V8Protocol.SOURCE_CODE))) {
+                  !ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(scriptHandle.source())) {
                 scriptManager.addScript(
-                    scriptJson, JsonUtil.getAsJSONArray(response, V8Protocol.FRAME_REFS));
+                    scriptHandle,
+                    successResponse.getRefs());
               }
             }
             unlock();
@@ -112,9 +129,9 @@ public class V8Helper {
    * @param frame to get the data for
    * @return the mirrors corresponding to the frame locals
    */
-  public static List<PropertyReference> computeLocals(JSONObject frame) {
-    JSONArray args = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_ARGUMENTS);
-    JSONArray locals = JsonUtil.getAsJSONArray(frame, V8Protocol.BODY_LOCALS);
+  public static List<PropertyReference> computeLocals(FrameObject frame) {
+    List<PropertyObject> args = frame.getArguments();
+    List<PropertyObject> locals = frame.getLocals();
 
     int maxLookups = args.size() + locals.size() + 1 /* "this" */;
 
@@ -122,37 +139,35 @@ public class V8Helper {
 
     {
       // Receiver ("this")
-      JSONObject receiverObject = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
-      V8ProtocolUtil.putMirror(localRefs, receiverObject, null,
+      RefWithDisplayData receiverObject = frame.getReceiver().asWithDisplayData();
+      V8ProtocolUtil.putMirror(localRefs, receiverObject,
           V8ProtocolUtil.PropertyNameGetter.THIS);
     }
 
     // Arguments
     for (int i = 0; i < args.size(); i++) {
-      JSONObject arg = (JSONObject) args.get(i);
-      V8ProtocolUtil.putMirror(localRefs, arg, V8Protocol.ARGUMENT_VALUE,
-          V8ProtocolUtil.PropertyNameGetter.ARGUMENT);
+      PropertyObject arg = args.get(i);
+      V8ProtocolUtil.putMirror(localRefs, arg, V8ProtocolUtil.PropertyNameGetter.SUBPROPERTY);
     }
 
     // Locals
     for (int i = 0; i < locals.size(); i++) {
-      JSONObject local = (JSONObject) locals.get(i);
-      V8ProtocolUtil.putMirror(localRefs, local, V8Protocol.LOCAL_VALUE,
-          V8ProtocolUtil.PropertyNameGetter.LOCAL);
+      PropertyObject local = locals.get(i);
+      V8ProtocolUtil.putMirror(localRefs, local, V8ProtocolUtil.PropertyNameGetter.SUBPROPERTY);
     }
 
     return localRefs;
   }
 
-  public static List<ScopeMirror> computeScopes(JSONObject frame) {
-    JSONArray scopes = JsonUtil.getAsJSONArrayStrict(frame, V8Protocol.BODY_SCOPES);
+  public static List<ScopeMirror> computeScopes(FrameObject frame) {
+    List<ScopeRef> scopes = frame.getScopes();
 
     final List<ScopeMirror> result = new ArrayList<ScopeMirror>(scopes.size());
 
     for (int i = 0; i < scopes.size(); i++) {
-      JSONObject scope = (JSONObject) scopes.get(i);
-      int type = toInt(JsonUtil.getAsLong(scope, "type"));
-      int index = toInt(JsonUtil.getAsLong(scope, "index"));
+      ScopeRef scope = scopes.get(i);
+      int type = (int) scope.type();
+      int index = (int) scope.index();
 
       result.add(new ScopeMirror(type, index));
     }
@@ -160,14 +175,9 @@ public class V8Helper {
     return result;
   }
 
-  private static int toInt(Long l) {
-    // TODO(peter.rybin): maybe check for range and explicitly for null here
-    return l.intValue();
-  }
-
-  public static PropertyReference computeReceiverRef(JSONObject frame) {
-    JSONObject receiverObject = JsonUtil.getAsJSON(frame, V8Protocol.FRAME_RECEIVER);
-    return V8ProtocolUtil.extractProperty(receiverObject, null,
+  public static PropertyReference computeReceiverRef(FrameObject frame) {
+    RefWithDisplayData receiverObject = frame.getReceiver().asWithDisplayData();
+    return V8ProtocolUtil.extractProperty(receiverObject,
         V8ProtocolUtil.PropertyNameGetter.THIS);
   }
 
@@ -178,18 +188,18 @@ public class V8Helper {
    * @return a {@link PropertyHoldingValueMirror} instance, containing data
    *         from jsonValue; not null
    */
-  public static PropertyHoldingValueMirror createMirrorFromLookup(JSONObject jsonValue) {
-    String text = JsonUtil.getAsString(jsonValue, V8Protocol.REF_TEXT);
+  public static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle) {
+    String text = valueHandle.text();
     if (text == null) {
       throw new ValueLoadException("Bad lookup result");
     }
-    String typeString = JsonUtil.getAsString(jsonValue, V8Protocol.REF_TYPE);
-    String className = JsonUtil.getAsString(jsonValue, V8Protocol.REF_CLASSNAME);
+    String typeString = valueHandle.type();
+    String className = valueHandle.className();
     Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
     if (type == null) {
       throw new ValueLoadException("Bad lookup result: type field not recognized: " + typeString);
     }
-    return createMirrorFromLookup(jsonValue, className, type, text);
+    return createMirrorFromLookup(valueHandle, type);
   }
 
   /**
@@ -197,65 +207,82 @@ public class V8Helper {
    * @return a {@link ValueMirror} instance, containing data
    *         from {@code jsonValue}; or {@code null} if {@code jsonValue} is not a handle
    */
-  public static ValueMirror createValueMirrorOptional(JSONObject jsonValue) {
-    String typeString = JsonUtil.getAsString(jsonValue, V8Protocol.REF_TYPE);
-    if (typeString == null) {
+  public static ValueMirror createValueMirrorOptional(DataWithRef handleFromProperty) {
+    RefWithDisplayData withData = handleFromProperty.getWithDisplayData();
+    if (withData == null) {
       return null;
     }
-    return createValueMirror(jsonValue, typeString);
+    return createValueMirror(withData);
+  }
+  public static ValueMirror createValueMirrorOptional(ValueHandle valueHandle) {
+    return createValueMirror(valueHandle);
   }
 
-  private static ValueMirror createValueMirror(JSONObject jsonValue, String typeString) {
-    String className = JsonUtil.getAsString(jsonValue, V8Protocol.REF_CLASSNAME);
-    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
+  private static ValueMirror createValueMirror(ValueHandle valueHandle) {
+    String className = valueHandle.className();
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(valueHandle.type(), className);
     if (type == null) {
       throw new ValueLoadException("Bad value object");
     }
-    String text = JsonUtil.getAsString(jsonValue, V8Protocol.REF_TEXT);
-    if (text == null) { // try another format
+    String text = valueHandle.text();
+    return createMirrorFromLookup(valueHandle, type).getValueMirror();
+  }
+
+  private static ValueMirror createValueMirror(RefWithDisplayData jsonValue) {
+    String className = jsonValue.className();
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(jsonValue.type(), className);
+    if (type == null) {
+      throw new ValueLoadException("Bad value object");
+    }
+    { // try another format
       if (Type.isObjectType(type)) {
-        int refId = JsonUtil.getAsLong(jsonValue, V8Protocol.REF).intValue();
+        int refId = (int) jsonValue.ref();
         return ValueMirror.createObjectUnknownProperties(refId, type, className);
       } else {
         // try another format
-        String value = JsonUtil.getAsString(jsonValue, V8Protocol.REF_VALUE);
-        if (value == null) {
-          value = typeString; // e.g. "undefined"
+        Object valueObj = jsonValue.value();
+        String valueStr;
+        if (valueObj == null) {
+          valueStr = jsonValue.type(); // e.g. "undefined"
+        } else {
+          valueStr = valueObj.toString();
         }
-        return ValueMirror.createScalar(value, type, className).getValueMirror();
+        return ValueMirror.createScalar(valueStr, type, className).getValueMirror();
       }
-    } else {
-      return createMirrorFromLookup(jsonValue, className, type, text).getValueMirror();
     }
   }
 
-  private static PropertyHoldingValueMirror createMirrorFromLookup(JSONObject jsonValue,
-      String className, Type type, String text) {
+  private static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle,
+      Type type) {
     if (Type.isObjectType(type)) {
-      int refId = JsonUtil.getAsLong(jsonValue, V8Protocol.REF_HANDLE).intValue();
-      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory additionalPropertyFactory;
+      ObjectValueHandle objectValueHandle = valueHandle.asObject();
+      int refId = (int) valueHandle.handle();
+      SubpropertiesMirror subpropertiesMirror;
       if (type == Type.TYPE_FUNCTION) {
-        additionalPropertyFactory = FUNCTION_PROPERTY_FACTORY;
+        FunctionValueHandle functionValueHandle = objectValueHandle.asFunction();
+        subpropertiesMirror = new SubpropertiesMirror.FunctionValueBased(functionValueHandle,
+            FUNCTION_PROPERTY_FACTORY2);
       } else {
-        additionalPropertyFactory = null;
+        subpropertiesMirror =
+          new SubpropertiesMirror.ObjectValueBased(objectValueHandle, null);
       }
-      SubpropertiesMirror.JsonBased subpropertiesMirror =
-          new SubpropertiesMirror.JsonBased(jsonValue, additionalPropertyFactory);
-      return ValueMirror.createObject(refId, subpropertiesMirror, type, className);
+      return ValueMirror.createObject(refId, subpropertiesMirror, type, valueHandle.className());
     } else {
-      return ValueMirror.createScalar(text, type, className);
+      return ValueMirror.createScalar(valueHandle.text(), type, valueHandle.className());
     }
   }
 
+  // TODO(peter.rybin): Get rid of this monstrosity once we switched to type JSON interfaces.
   private static final
-      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory FUNCTION_PROPERTY_FACTORY =
-      new SubpropertiesMirror.JsonBased.AdditionalPropertyFactory() {
-    public Object createAdditionalProperties(JSONObject jsonWithProperties) {
-      Long pos = JsonUtil.getAsLong(jsonWithProperties, "position");
+      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory<FunctionValueHandle>
+      FUNCTION_PROPERTY_FACTORY2 =
+      new SubpropertiesMirror.JsonBased.AdditionalPropertyFactory<FunctionValueHandle>() {
+    public Object createAdditionalProperties(FunctionValueHandle jsonWithProperties) {
+      Long pos = jsonWithProperties.position();
       if (pos == null) {
         pos = Long.valueOf(FunctionAdditionalProperties.NO_POSITION);
       }
-      Long scriptId = JsonUtil.getAsLong(jsonWithProperties, "scriptId");
+      Long scriptId = jsonWithProperties.scriptId();
       if (scriptId == null) {
         scriptId = Long.valueOf(FunctionAdditionalProperties.NO_SCRIPT_ID);
       }
@@ -283,7 +310,7 @@ public class V8Helper {
         exBuff[0] = new Exception("Failure: " + message);
       }
 
-      public void messageReceived(JSONObject response) {
+      public void messageReceived(CommandResponse response) {
         RES result = callback.messageReceived(response);
         resBuff.set(0, result);
       }

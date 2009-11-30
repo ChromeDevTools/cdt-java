@@ -7,8 +7,8 @@ package org.chromium.sdk.internal;
 import java.util.List;
 
 import org.chromium.sdk.Script;
+import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.json.simple.JSONObject;
 
 /**
  * A representation of a remote JavaScript VM call frame.
@@ -43,9 +43,9 @@ public class FrameMirror {
   /**
    * The JSON descriptor of the frame.
    */
-  private final JSONObject frameObject;
+  private final FrameObject frameObject;
 
-  public FrameMirror(JSONObject frameObject,
+  public FrameMirror(FrameObject frameObject,
       String scriptName, int line, long scriptId, String frameFunction) {
     this.frameObject = frameObject;
     this.scriptName = scriptName;
@@ -91,9 +91,5 @@ public class FrameMirror {
 
   public synchronized Script getScript() {
     return script;
-  }
-
-  JSONObject getFrameObject() {
-    return frameObject;
   }
 }

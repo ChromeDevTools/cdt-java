@@ -4,11 +4,13 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.List;
+
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  * An objects that holds data for a "script" which is a part of a resource
@@ -62,21 +64,21 @@ public class ScriptImpl implements Script {
           this.endLine == that.endLine;
     }
 
-    public static Descriptor forResponse(JSONObject script, JSONArray refs,
+    public static Descriptor forResponse(ScriptHandle script, List<SomeHandle> refs,
         ProtocolOptions protocolOptions) {
       script = V8ProtocolUtil.validScript(script, refs, protocolOptions);
       if (script == null) {
         return null;
       }
-      String name = JsonUtil.getAsString(script, V8Protocol.BODY_NAME);
+      String name = script.name();
       try {
-        Long scriptType = JsonUtil.getAsLong(script, V8Protocol.BODY_SCRIPT_TYPE);
+        Long scriptType = script.scriptType();
         Type type = V8ProtocolUtil.getScriptType(scriptType);
         if (type == null) {
           return null;
         }
-        int lineOffset = JsonUtil.getAsLong(script, V8Protocol.BODY_LINEOFFSET).intValue();
-        int lineCount = JsonUtil.getAsLong(script, V8Protocol.BODY_LINECOUNT).intValue();
+        int lineOffset = (int) script.lineOffset();
+        int lineCount = (int) script.lineCount();
         int id = V8ProtocolUtil.getScriptIdFromResponse(script).intValue();
         return new Descriptor(type, id, name, lineOffset, lineCount);
       } catch (Exception e) {
@@ -164,11 +166,17 @@ public class ScriptImpl implements Script {
   }
 
   public static Long getScriptId(HandleManager handleManager, long scriptRef) {
-    JSONObject handle = handleManager.getHandle(scriptRef);
+    SomeHandle handle = handleManager.getHandle(scriptRef);
     if (handle == null) {
       return -1L; // not found
     }
-    return JsonUtil.getAsLong(handle, V8Protocol.ID);
+    ScriptHandle scriptHandle;
+    try {
+      scriptHandle = handle.asScriptHandle();
+    } catch (JsonProtocolParseException e) {
+      throw new RuntimeException(e);
+    }
+    return scriptHandle.id();
   }
 
 }

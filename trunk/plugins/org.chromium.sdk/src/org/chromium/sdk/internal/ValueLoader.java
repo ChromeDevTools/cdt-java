@@ -12,13 +12,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.protocol.ScopeBody;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -59,7 +63,8 @@ public class ValueLoader {
     V8BlockingCallback<List<? extends PropertyReference>> callback =
         new V8BlockingCallback<List<? extends PropertyReference>>() {
       @Override
-      protected List<? extends PropertyReference> handleSuccessfulResponse(JSONObject response) {
+      protected List<? extends PropertyReference> handleSuccessfulResponse(
+          SuccessCommandResponse response) {
         return readFromScopeResponse(response);
       }
     };
@@ -73,16 +78,21 @@ public class ValueLoader {
     }
   }
 
-  private List<? extends PropertyReference> readFromScopeResponse(JSONObject response) {
-    JSONArray refs = JsonUtil.getAsJSONArray(response, "refs");
+  private List<? extends PropertyReference> readFromScopeResponse(SuccessCommandResponse response) {
+    List<SomeHandle> refs = response.getRefs();
 
     HandleManager handleManager = context.getHandleManager();
     for (int i = 0; i < refs.size(); i++) {
-      JSONObject ref = (JSONObject) refs.get(i);
+      SomeHandle ref = refs.get(i);
       handleManager.put(ref);
     }
-    JSONObject body = JsonUtil.getAsJSONStrict(response, V8Protocol.KEY_BODY);
-    JSONObject objectRef = JsonUtil.getAsJSON(body, "object");
+    ScopeBody body;
+    try {
+      body = response.getBody().asScopeBody();
+    } catch (JsonProtocolParseException e) {
+      throw new ValueLoadException(e);
+    }
+    ObjectValueHandle objectRef = body.getObject();
     return V8ProtocolUtil.extractObjectProperties(objectRef);
   }
 
@@ -130,20 +140,25 @@ public class ValueLoader {
    * Reads data from caches or from JSON from propertyReference. Never accesses remote.
    */
   private ValueMirror readFromPropertyReference(PropertyReference propertyReference) {
-    int refId = propertyReference.getRef();
-    Long refIdObject = Long.valueOf(refId);
+    Long refIdObject = propertyReference.getRef();
 
     ValueMirror mirror = refToMirror.get(refIdObject);
     if (mirror != null) {
       return mirror;
     }
-    JSONObject cachedHandle = context.getHandleManager().getHandle(refIdObject);
+    SomeHandle cachedHandle = context.getHandleManager().getHandle(refIdObject);
     // If we have cached handle, we reads cached handle, not using one from propertyeReference
     // because we expect to find more complete version in cache. Is it ok?
     if (cachedHandle != null) {
-      mirror = V8Helper.createValueMirrorOptional(cachedHandle);
+      ValueHandle valueHandle;
+      try {
+        valueHandle = cachedHandle.asValueHandle();
+      } catch (JsonProtocolParseException e) {
+        throw new RuntimeException(e);
+      }
+      mirror = V8Helper.createValueMirrorOptional(valueHandle);
     } else {
-      JSONObject handleFromProperty = propertyReference.getValueObject();
+      DataWithRef handleFromProperty = propertyReference.getValueObject();
 
       mirror = V8Helper.createValueMirrorOptional(handleFromProperty);
     }
@@ -173,7 +188,8 @@ public class ValueLoader {
     V8BlockingCallback<List<PropertyHoldingValueMirror>> callback =
         new V8BlockingCallback<List<PropertyHoldingValueMirror>>() {
       @Override
-      protected List<PropertyHoldingValueMirror> handleSuccessfulResponse(JSONObject response) {
+      protected List<PropertyHoldingValueMirror> handleSuccessfulResponse(
+          SuccessCommandResponse response) {
         return readResponseFromLookup(response, propertyRefIds);
       }
     };
@@ -187,19 +203,31 @@ public class ValueLoader {
     }
   }
 
-  private List<PropertyHoldingValueMirror> readResponseFromLookup(JSONObject response,
-      List<Long> propertyRefIds) {
+  private List<PropertyHoldingValueMirror> readResponseFromLookup(
+      SuccessCommandResponse successResponse, List<Long> propertyRefIds) {
     List<PropertyHoldingValueMirror> result =
         new ArrayList<PropertyHoldingValueMirror>(propertyRefIds.size());
-    JSONObject body = JsonUtil.getAsJSON(response, "body");
+    JSONObject body;
+    try {
+      body = successResponse.getBody().asLookupMap();
+    } catch (JsonProtocolParseException e) {
+      throw new ValueLoadException(e);
+    }
     for (int i = 0; i < propertyRefIds.size(); i++) {
       int ref = propertyRefIds.get(i).intValue();
       JSONObject value = JsonUtil.getAsJSON(body, String.valueOf(ref));
       if (value == null) {
         throw new ValueLoadException("Failed to find value for ref=" + ref);
       }
-      context.getHandleManager().put((long)ref, value);
-      result.add(readMirrorFromLookup(ref, value));
+      SomeHandle smthHandle = context.getHandleManager().put((long)ref, value);
+      ValueHandle valueHandle;
+      try {
+        valueHandle = smthHandle.asValueHandle();
+      } catch (JsonProtocolParseException e) {
+        throw new ValueLoadException(e);
+      }
+
+      result.add(readMirrorFromLookup(ref, valueHandle));
     }
     return result;
   }
@@ -213,7 +241,7 @@ public class ValueLoader {
    * @return a ValueMirror instance with the specified name, containing data
    *         from handle, or {@code null} if {@code handle} is not a handle
    */
-  private PropertyHoldingValueMirror readMirrorFromLookup(int ref, JSONObject jsonValue) {
+  private PropertyHoldingValueMirror readMirrorFromLookup(int ref, ValueHandle jsonValue) {
     PropertyHoldingValueMirror propertiesMirror = V8Helper.createMirrorFromLookup(jsonValue);
     ValueMirror newMirror = propertiesMirror.getValueMirror();
 

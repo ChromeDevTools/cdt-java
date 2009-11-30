@@ -4,38 +4,33 @@
 
 package org.chromium.sdk.internal;
 
-import org.json.simple.JSONObject;
 
 /**
  * A named property reference.
  */
 public class PropertyReference {
-  private final int ref;
-
   private final String name;
 
-  private final JSONObject valueObject;
+  private final DataWithRef smthWithRef;
 
   /**
-   * @param refId the "ref" value of this property
    * @param propertyName the name of the property
    * @param valueObject a JSON descriptor of the property
    */
-  public PropertyReference(int refId, String propertyName, JSONObject valueObject) {
-    this.ref = refId;
+  public PropertyReference(String propertyName, DataWithRef smthWithRef) {
     this.name = propertyName;
-    this.valueObject = valueObject;
+    this.smthWithRef = smthWithRef;
   }
 
-  public int getRef() {
-    return ref;
+  public long getRef() {
+    return smthWithRef.ref();
   }
 
   public String getName() {
     return name;
   }
 
-  public JSONObject getValueObject() {
-    return valueObject;
+  public DataWithRef getValueObject() {
+    return smthWithRef;
   }
 }
