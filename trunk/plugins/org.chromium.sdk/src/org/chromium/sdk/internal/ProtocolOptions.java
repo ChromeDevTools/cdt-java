@@ -4,10 +4,17 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.internal.protocol.data.ContextHandle;
+
 /**
- * Some options of protocol which we have doubts in. Probably this interface
- * ought to become empty and be deleted.
+ * Embedder-specific filter for V8 VM contexts.
  */
+ // TODO(peter.rybin): rename into V8ContextFilter together with all its variables.
 public interface ProtocolOptions {
-  boolean requireDataField();
+  /**
+   * Given a context handler, it should check whether it is our context or not.
+   * The field {@link ContextHandle#data()} of embedder-specific type should be used.
+   * @return whether the context is ours
+   */
+  boolean isContextOurs(ContextHandle contextHandle);
 }

@@ -10,6 +10,10 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
 public interface ContextHandle extends JsonSubtype<SomeHandle> {
+  /**
+   * Any value, provided by V8 embedding application. For Chrome it may be {@link ContextData}
+   * as well as its stringified form (as "type,in").
+   */
   @JsonOptionalField
-  ContextData data();
+  Object data();
 }
