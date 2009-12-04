@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
@@ -49,7 +50,7 @@ public class FixtureChromeStub implements ChromeStub {
   private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
 
   private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
-    public boolean requireDataField() {
+    public boolean isContextOurs(ContextHandle contextHandle) {
       return true;
     }
   };

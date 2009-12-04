@@ -305,17 +305,9 @@ public class V8ProtocolUtil {
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
-      ContextData data = contextHandle.data();
-      if (data == null) {
-        if (protocolOptions.requireDataField()) {
-          return null;
-        } else {
-          return script;
-        }
+      if (!protocolOptions.isContextOurs(contextHandle)) {
+        return null;
       }
-
-      long scriptContextId = data.value();
-      // Here we are probably supposed to compare it with our context id.
       return script;
     }
     return null; // good context not found

@@ -19,8 +19,11 @@ import org.chromium.sdk.internal.BrowserTabImpl;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.ProtocolOptions;
 import org.chromium.sdk.internal.Result;
+import org.chromium.sdk.internal.ProtocolOptions;
+import org.chromium.sdk.internal.protocol.data.ContextData;
+import org.chromium.sdk.internal.protocol.data.ContextHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.tools.ToolHandler;
 import org.chromium.sdk.internal.tools.ToolOutput;
@@ -69,7 +72,34 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       Logger.getLogger(ChromeDevToolSessionManager.class.getName());
 
   private static final ProtocolOptions PROTOCOL_OPTIONS = new ProtocolOptions() {
-    public boolean requireDataField() {
+    public boolean isContextOurs(ContextHandle contextHandle) {
+      Object data = contextHandle.data();
+      if (data == null) {
+        return false;
+      }
+
+      final boolean skipSketchCode = true;
+      if (skipSketchCode) {
+        // We do not actually have a context id to compare with. So we shouldn't waste time
+        // on parsing until we have this id.
+        return true;
+      }
+
+      long scriptContextId;
+      if (data instanceof String) {
+        String stringData = (String) data;
+        // we should parse string and check context id. It should have the format "type,id".
+      } else if (data instanceof JSONObject) {
+        JSONObject dataObject = (JSONObject) data;
+        ContextData contextData;
+        try {
+          contextData = V8ProtocolUtil.getV8Parser().parse(dataObject, ContextData.class);
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
+        scriptContextId = contextData.value();
+      }
+      //TODO(peter.rybin): Here we are probably supposed to compare it with our context id.
       return true;
     }
   };

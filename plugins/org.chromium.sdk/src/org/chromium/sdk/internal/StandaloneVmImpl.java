@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.transport.Connection;
@@ -38,8 +39,9 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
   private static final int WAIT_FOR_HANDSHAKE_TIMEOUT_MS = 3000;
 
   private static final ProtocolOptions PROTOCOL_OPTIONS = new ProtocolOptions() {
-    public boolean requireDataField() {
-      return false;
+    public boolean isContextOurs(ContextHandle contextHandle) {
+      // We do not check context in standalone V8 mode.
+      return true;
     }
   };
 
