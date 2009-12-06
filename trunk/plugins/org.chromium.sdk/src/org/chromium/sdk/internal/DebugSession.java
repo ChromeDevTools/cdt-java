@@ -52,9 +52,9 @@ public class DebugSession {
 
   private final DefaultResponseHandler defaultResponseHandler;
 
-  public DebugSession(DebugSessionManager sessionManager, ProtocolOptions protocolOptions,
+  public DebugSession(DebugSessionManager sessionManager, V8ContextFilter contextFilter,
       V8CommandOutput v8CommandOutput) {
-    this.scriptManager = new ScriptManager(protocolOptions);
+    this.scriptManager = new ScriptManager(contextFilter);
     this.sessionManager = sessionManager;
     this.breakpointManager = new BreakpointManager(this);
 

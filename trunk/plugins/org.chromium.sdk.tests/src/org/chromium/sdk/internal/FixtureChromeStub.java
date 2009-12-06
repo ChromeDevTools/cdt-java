@@ -49,7 +49,7 @@ public class FixtureChromeStub implements ChromeStub {
 
   private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
 
-  private static final ProtocolOptions protocolOptions = new ProtocolOptions() {
+  private static final V8ContextFilter contextFilter = new V8ContextFilter() {
     public boolean isContextOurs(ContextHandle contextHandle) {
       return true;
     }
@@ -159,7 +159,7 @@ public class FixtureChromeStub implements ChromeStub {
     scriptIdToScriptRefMap.put(Long.valueOf(getCompiledScriptId()), getCompiledScriptRef());
   }
 
-  private final ScriptManager scriptManager = new ScriptManager(protocolOptions);
+  private final ScriptManager scriptManager = new ScriptManager(contextFilter);
 
   public FixtureChromeStub() {
     JSONObject body = getJsonObjectByRef(getScriptRef());

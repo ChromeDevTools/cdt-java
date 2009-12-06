@@ -65,8 +65,8 @@ public class ScriptImpl implements Script {
     }
 
     public static Descriptor forResponse(ScriptHandle script, List<SomeHandle> refs,
-        ProtocolOptions protocolOptions) {
-      script = V8ProtocolUtil.validScript(script, refs, protocolOptions);
+        V8ContextFilter contextFilter) {
+      script = V8ProtocolUtil.validScript(script, refs, contextFilter);
       if (script == null) {
         return null;
       }

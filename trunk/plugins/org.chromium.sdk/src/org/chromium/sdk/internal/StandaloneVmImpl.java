@@ -38,7 +38,7 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
 
   private static final int WAIT_FOR_HANDSHAKE_TIMEOUT_MS = 3000;
 
-  private static final ProtocolOptions PROTOCOL_OPTIONS = new ProtocolOptions() {
+  private static final V8ContextFilter CONTEXT_FILTER = new V8ContextFilter() {
     public boolean isContextOurs(ContextHandle contextHandle) {
       // We do not check context in standalone V8 mode.
       return true;
@@ -62,7 +62,7 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     this.connection = connection;
     this.handshaker = handshaker;
     V8CommandOutputImpl v8CommandOutput = new V8CommandOutputImpl(connection);
-    this.debugSession = new DebugSession(sessionManager, PROTOCOL_OPTIONS, v8CommandOutput);
+    this.debugSession = new DebugSession(sessionManager, CONTEXT_FILTER, v8CommandOutput);
   }
 
   public void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException {

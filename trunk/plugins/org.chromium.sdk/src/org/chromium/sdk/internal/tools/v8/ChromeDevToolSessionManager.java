@@ -20,7 +20,7 @@ import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.DebugSessionManager;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.Result;
-import org.chromium.sdk.internal.ProtocolOptions;
+import org.chromium.sdk.internal.V8ContextFilter;
 import org.chromium.sdk.internal.protocol.data.ContextData;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -71,7 +71,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
   private static final Logger LOGGER =
       Logger.getLogger(ChromeDevToolSessionManager.class.getName());
 
-  private static final ProtocolOptions PROTOCOL_OPTIONS = new ProtocolOptions() {
+  private static final V8ContextFilter CONTEXT_FILTER = new V8ContextFilter() {
     public boolean isContextOurs(ContextHandle contextHandle) {
       Object data = contextHandle.data();
       if (data == null) {
@@ -130,7 +130,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     this.browserTabImpl = browserTabImpl;
     this.toolOutput = toolOutput;
     V8CommandOutputImpl v8MessageOutput = new V8CommandOutputImpl(toolOutput);
-    this.debugSession = new DebugSession(this, PROTOCOL_OPTIONS, v8MessageOutput);
+    this.debugSession = new DebugSession(this, CONTEXT_FILTER, v8MessageOutput);
   }
 
   public DebugSession getDebugSession() {

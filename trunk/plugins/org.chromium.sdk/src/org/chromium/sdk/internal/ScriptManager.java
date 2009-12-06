@@ -39,10 +39,10 @@ public class ScriptManager {
   private final Map<Long, ScriptImpl> idToScript =
       Collections.synchronizedMap(new HashMap<Long, ScriptImpl>());
 
-  private final ProtocolOptions protocolOptions;
+  private final V8ContextFilter contextFilter;
 
-  ScriptManager(ProtocolOptions protocolOptions) {
-    this.protocolOptions = protocolOptions;
+  ScriptManager(V8ContextFilter contextFilter) {
+    this.contextFilter = contextFilter;
   }
 
   /**
@@ -58,7 +58,7 @@ public class ScriptManager {
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
-      Descriptor desc = Descriptor.forResponse(scriptBody, refs, protocolOptions);
+      Descriptor desc = Descriptor.forResponse(scriptBody, refs, contextFilter);
       if (desc == null) {
         return null;
       }
@@ -147,7 +147,7 @@ public class ScriptManager {
     idToScript.clear();
   }
 
-  public ProtocolOptions getProtocolOptions() {
-    return protocolOptions;
+  public V8ContextFilter getContextFilter() {
+    return contextFilter;
   }
 }
