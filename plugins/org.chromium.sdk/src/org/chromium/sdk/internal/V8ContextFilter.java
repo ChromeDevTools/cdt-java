@@ -9,8 +9,7 @@ import org.chromium.sdk.internal.protocol.data.ContextHandle;
 /**
  * Embedder-specific filter for V8 VM contexts.
  */
- // TODO(peter.rybin): rename into V8ContextFilter together with all its variables.
-public interface ProtocolOptions {
+public interface V8ContextFilter {
   /**
    * Given a context handler, it should check whether it is our context or not.
    * The field {@link ContextHandle#data()} of embedder-specific type should be used.

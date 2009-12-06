@@ -14,7 +14,7 @@ import org.chromium.sdk.internal.DataWithRef;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.PropertyType;
-import org.chromium.sdk.internal.ProtocolOptions;
+import org.chromium.sdk.internal.V8ContextFilter;
 import org.chromium.sdk.internal.protocol.AfterCompileBody;
 import org.chromium.sdk.internal.protocol.BacktraceCommandBody;
 import org.chromium.sdk.internal.protocol.BreakEventBody;
@@ -292,7 +292,7 @@ public class V8ProtocolUtil {
    *         otherwise
    */
   public static ScriptHandle validScript(ScriptHandle script, List<SomeHandle> refs,
-      ProtocolOptions protocolOptions) {
+      V8ContextFilter contextFilter) {
     Long contextRef = V8ProtocolUtil.getObjectRef(script.context());
     for (int i = 0, size = refs.size(); i < size; i++) {
       SomeHandle ref = refs.get(i);
@@ -305,7 +305,7 @@ public class V8ProtocolUtil {
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
-      if (!protocolOptions.isContextOurs(contextHandle)) {
+      if (!contextFilter.isContextOurs(contextHandle)) {
         return null;
       }
       return script;

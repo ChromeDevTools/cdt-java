@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.ProtocolOptions;
+import org.chromium.sdk.internal.V8ContextFilter;
 import org.chromium.sdk.internal.protocol.AfterCompileBody;
 import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.EventNotification;
@@ -35,7 +35,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
   public void messageReceived(EventNotification eventMessage) {
     final DebugSession debugSession = getDebugSession();
     ScriptHandle script = getScriptToLoad(eventMessage,
-        debugSession.getScriptManager().getProtocolOptions());
+        debugSession.getScriptManager().getContextFilter());
     if (script == null) {
       return;
     }
@@ -75,7 +75,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
   }
 
   private static ScriptHandle getScriptToLoad(EventNotification eventResponse,
-      ProtocolOptions protocolOptions) {
+      V8ContextFilter contextFilter) {
     AfterCompileBody body;
     try {
       body = eventResponse.getBody().asAfterCompileBody();
@@ -89,6 +89,6 @@ public class AfterCompileProcessor extends V8EventProcessor {
             Script.Type.NATIVE) {
       return null;
     }
-    return V8ProtocolUtil.validScript(script, eventResponse.getRefs(), protocolOptions);
+    return V8ProtocolUtil.validScript(script, eventResponse.getRefs(), contextFilter);
   }
 }
