@@ -14,7 +14,10 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
  */
 @JsonType
 public interface PropertyObject {
-  String name();
+  /**
+   * @return either String (normal property) or Long (array element)
+   */
+  Object name();
 
   @JsonSubtypeCasting
   PropertyWithValue asPropertyWithValue();

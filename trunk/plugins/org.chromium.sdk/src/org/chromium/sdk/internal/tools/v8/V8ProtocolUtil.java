@@ -212,7 +212,8 @@ public class V8ProtocolUtil {
     static class SubpropertyNameGetter extends PropertyNameGetter<PropertyObject> {
       @Override
       String getName(PropertyObject ref) {
-        return ref.name();
+        Object nameObject = ref.name();
+        return nameObject.toString();
       }
       @Override
       DataWithRef getRef(PropertyObject prop) {
