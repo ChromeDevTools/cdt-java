@@ -17,8 +17,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.protocol.data.SomeRef;
+import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
@@ -51,16 +50,26 @@ public class JsArrayImplTest {
     messageResponder.sendSuspendedEvent();
     DebugContext debugContext = listener.getDebugContext();
 
-    JSONObject valueObject = (JSONObject) JSONValue.parse(
-        "{\"ref\":" + FixtureChromeStub.getNumber3Ref() +
-        ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
-    SomeRef someRef = V8ProtocolUtil.getV8Parser().parse(valueObject, SomeRef.class);
-    DataWithRef dataWithRef = DataWithRef.fromSomeRef(someRef);
-    arrayMirror = ValueMirror.createObject(
-        11, new SubpropertiesMirror.ListBased(
-            new PropertyReference("1", dataWithRef),
-            new PropertyReference("3", dataWithRef)
-        ), Type.TYPE_OBJECT, null).getValueMirror();
+    String propertyRefText = "{'ref':" + FixtureChromeStub.getNumber3Ref() +
+        ",'type':'number','value':3,'text':'3'}";
+
+    String valueHandleJsonText = (
+            "{'protoObject':{'ref':55516,'className':'Array','type':'object'}," +
+            "'text':'#<an Array>'," +
+            "'handle':5559,'" +
+            "constructorFunction':{'ref':55515,'inferredName':''," +
+            "'name':'Array','type':'function'}," +
+            "'prototypeObject':{'ref':5553,'type':'undefined'}," +
+            "'className':'Array','properties':[{'name':'length'," +
+            "'value':{'ref':55517,'value':2,'type':'number'}}," +
+            "{'name':1,'value':" + propertyRefText + "}," +
+            "{'name':3,'value':"+ propertyRefText +"}],'type':'object'}"
+        ).replace('\'', '"');
+    JSONObject valueHandleJson = (JSONObject) JSONValue.parse(valueHandleJsonText);
+    ValueHandle valueHandle =
+        V8ProtocolUtil.getV8Parser().parse(valueHandleJson, ValueHandle.class);
+
+    arrayMirror = V8Helper.createMirrorFromLookup(valueHandle).getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
@@ -76,7 +85,7 @@ public class JsArrayImplTest {
     JsArrayImpl jsArray = new JsArrayImpl(callFrame, "", arrayMirror);
     assertNotNull(jsArray.asArray());
     Collection<JsVariableImpl> properties = jsArray.getProperties();
-    assertEquals(2, properties.size());
+    assertEquals(2 + 1, properties.size()); // 2 array element properties and one length property.
     assertEquals(4, jsArray.length());
     SortedMap<Integer, ? extends JsVariable> sparseArray = jsArray.toSparseArray();
     assertEquals(2, sparseArray.size());
