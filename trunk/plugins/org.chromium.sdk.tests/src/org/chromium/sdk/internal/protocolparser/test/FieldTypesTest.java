@@ -7,7 +7,7 @@ package org.chromium.sdk.internal.protocolparser.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
@@ -29,7 +29,7 @@ public class FieldTypesTest {
     {
       JSONObject json = parseJson("{'val': 2 }");
       TypeWithNullableLong val = parser.parse(json, TypeWithNullableLong.class);
-      assertEquals(2L, val.val());
+      assertEquals(Long.valueOf(2), val.val());
     }
 
     {
@@ -56,11 +56,11 @@ public class FieldTypesTest {
     }
 
     {
-      JSONObject json = parseJson("{'val': null }");
-      TypeWithLong val = parser.parse(json, TypeWithLong.class);
       try {
+        JSONObject json = parseJson("{'val': null }");
+        TypeWithLong val = parser.parse(json, TypeWithLong.class);
         val.val();
-        assertTrue(false);
+        fail();
       } catch (Exception e) {
         // expected
       }
@@ -116,7 +116,7 @@ public class FieldTypesTest {
       JSONObject json = parseJson("{'data': null }");
       try {
         parser.parse(json, TypeWithSomething.class);
-        assertTrue(false);
+        fail();
       } catch (Exception e) {
         // expected
       }
@@ -149,10 +149,10 @@ public class FieldTypesTest {
     JSONObject emptyJson = parseJson("{}");
 
     {
-      TypeWithNullableLong val = parser.parse(emptyJson, TypeWithNullableLong.class);
       try {
+        TypeWithNullableLong val = parser.parse(emptyJson, TypeWithNullableLong.class);
         val.val();
-        assertTrue(false);
+        fail();
       } catch (Exception e) {
         // expected
       }
@@ -160,7 +160,7 @@ public class FieldTypesTest {
     {
       try {
         TypeWithSomething val = parser.parse(emptyJson, TypeWithSomething.class);
-        assertTrue(false);
+        fail();
       } catch (Exception e) {
         // expected
       }
