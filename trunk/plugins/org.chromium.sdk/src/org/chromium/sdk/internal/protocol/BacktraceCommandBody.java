@@ -12,7 +12,7 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
 public interface BacktraceCommandBody extends JsonSubtype<CommandResponseBody> {
-
+  @JsonOptionalField
   List<FrameObject> getFrames();
 
   @JsonOptionalField
@@ -21,6 +21,5 @@ public interface BacktraceCommandBody extends JsonSubtype<CommandResponseBody> {
   @JsonOptionalField
   Long toFrame();
 
-  @JsonOptionalField
   Long totalFrames();
 }

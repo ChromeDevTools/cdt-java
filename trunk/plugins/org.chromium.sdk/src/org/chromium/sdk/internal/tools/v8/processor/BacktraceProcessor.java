@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8.processor;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,6 +75,9 @@ class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8Command
       throw new RuntimeException(e);
     }
     List<FrameObject> jsonFrames = body.getFrames();
+    if (jsonFrames == null) {
+      jsonFrames = Collections.emptyList();
+    }
     int frameCnt = jsonFrames.size();
     FrameMirror[] frameMirrors = new FrameMirror[frameCnt];
 
