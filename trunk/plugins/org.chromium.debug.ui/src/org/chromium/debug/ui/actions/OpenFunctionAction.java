@@ -63,7 +63,7 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
         if (script == null) {
           return;
         }
-        IFile resource = variable.getDebugTarget().getResourceManager().getResource(script);
+        IFile resource = variable.getDebugTarget().getScriptResource(script);
         IEditorInput input = JsDebugModelPresentation.toEditorInput(resource);
         IEditorPart editor;
         try {
