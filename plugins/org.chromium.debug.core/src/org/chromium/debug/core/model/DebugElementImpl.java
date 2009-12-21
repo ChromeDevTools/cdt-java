@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IDebugElement;
@@ -14,6 +13,10 @@ import org.eclipse.debug.core.model.IDebugElement;
  */
 public class DebugElementImpl extends PlatformObject implements IDebugElement {
 
+  /**
+   * Instance of {@link DebugTargetImpl} or {@code null} if this is {@link DebugTargetImpl}.
+   * TODO(peter.rybin): Do we really need this null value?
+   */
   private final DebugTargetImpl debugTarget;
 
   public DebugElementImpl(DebugTargetImpl debugTarget) {
@@ -29,7 +32,7 @@ public class DebugElementImpl extends PlatformObject implements IDebugElement {
   }
 
   public String getModelIdentifier() {
-    return ChromiumDebugPlugin.DEBUG_MODEL_ID;
+    return getDebugTarget().getChromiumModelIdentifier();
   }
 
   @Override

@@ -8,6 +8,7 @@ import java.text.MessageFormat;
 
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
+import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterManager;
 import org.eclipse.core.runtime.IStatus;
@@ -25,7 +26,8 @@ public class ChromiumDebugPlugin extends Plugin {
   public static final String PLUGIN_ID = "org.chromium.debug.core"; //$NON-NLS-1$
 
   /** The debug model ID. */
-  public static final String DEBUG_MODEL_ID = "org.chromium.debug"; //$NON-NLS-1$
+  // TODO(peter.rybin): inline this constant
+  public static final String DEBUG_MODEL_ID = VProjectWorkspaceBridge.DEBUG_MODEL_ID;
 
   /** The JavaScript line breakpoint marker. */
   public static final String BP_MARKER = PLUGIN_ID + ".LineBP"; //$NON-NLS-1$

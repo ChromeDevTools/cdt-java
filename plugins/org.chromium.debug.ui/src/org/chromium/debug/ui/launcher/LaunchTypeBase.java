@@ -13,6 +13,8 @@ import org.chromium.debug.core.model.Destructable;
 import org.chromium.debug.core.model.DestructingGuard;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
+import org.chromium.debug.core.model.VProjectWorkspaceBridge;
+import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.ui.PluginUtil;
 import org.chromium.sdk.ConnectionLogger;
 import org.eclipse.core.runtime.CoreException;
@@ -38,20 +40,20 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
     if (!mode.equals(ILaunchManager.DEBUG_MODE)) {
       // Chromium JavaScript launch is only supported for debugging.
       return;
-    } 
-    
+    }
+
     int port =
         config.getAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT,
             PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
 
     boolean addNetworkConsole = config.getAttribute(LaunchTypeBase.ADD_NETWORK_CONSOLE, false);
-  
+
     JavascriptVmEmbedder.ConnectionToRemote remoteServer =
         createConnectionToRemote(port, launch, addNetworkConsole);
     try {
-  
-      String projectNameBase = config.getName();
-  
+
+      final String projectNameBase = config.getName();
+
       DestructingGuard destructingGuard = new DestructingGuard();
       try {
         Destructable lauchDestructor = new Destructable() {
@@ -61,41 +63,37 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
             }
           }
         };
-  
+
         destructingGuard.addValue(lauchDestructor);
-  
-        final DebugTargetImpl target = new DebugTargetImpl(launch);
-  
+
+        WorkspaceBridge.Factory relationsFactory =
+            new VProjectWorkspaceBridge.FactoryImpl(projectNameBase);
+
+        final DebugTargetImpl target = new DebugTargetImpl(launch, relationsFactory);
+
         Destructable targetDestructor = new Destructable() {
           public void destruct() {
             terminateTarget(target);
           }
         };
         destructingGuard.addValue(targetDestructor);
-        boolean attached = target.attach(
-            projectNameBase, remoteServer, destructingGuard,
-            new Runnable() {
-              public void run() {
-                PluginUtil.openProjectExplorerView();
-              }
-            },
-            monitor);
+
+        boolean attached = target.attach(remoteServer, destructingGuard,
+            OPENING_VIEW_ATTACH_CALLBACK, monitor);
         if (!attached) {
           // Error
           return;
         }
-  
-        launch.setSourceLocator(target.getSourceLocator());
-  
+
         launch.addDebugTarget(target);
         monitor.done();
-  
+
         // All OK
         destructingGuard.discharge();
       } finally {
         destructingGuard.doFinally();
       }
-  
+
     } finally {
       remoteServer.disposeConnection();
     }
@@ -147,6 +145,12 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
       new NamedConnectionLoggerFactory() {
     public ConnectionLogger createLogger(String title) {
       return null;
+    }
+  };
+
+  private static final Runnable OPENING_VIEW_ATTACH_CALLBACK = new Runnable() {
+    public void run() {
+      PluginUtil.openProjectExplorerView();
     }
   };
 }
