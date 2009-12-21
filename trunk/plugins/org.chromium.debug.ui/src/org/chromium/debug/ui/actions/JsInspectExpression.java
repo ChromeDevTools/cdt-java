@@ -4,8 +4,8 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.Value;
 import org.chromium.sdk.JsVariable;
 import org.eclipse.core.runtime.PlatformObject;
@@ -76,7 +76,7 @@ public class JsInspectExpression extends PlatformObject
   }
 
   public String getModelIdentifier() {
-    return ChromiumDebugPlugin.DEBUG_MODEL_ID;
+    return VProjectWorkspaceBridge.DEBUG_MODEL_ID;
   }
 
   public void handleDebugEvents(DebugEvent[] events) {
