@@ -104,7 +104,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   public String getModelIdentifier() {
-    return ChromiumDebugPlugin.DEBUG_MODEL_ID;
+    return VProjectWorkspaceBridge.DEBUG_MODEL_ID;
   }
 
   public void changed() {

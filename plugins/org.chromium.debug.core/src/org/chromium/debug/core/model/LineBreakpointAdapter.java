@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -30,7 +29,7 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
       ITextSelection textSelection = (ITextSelection) selection;
       int lineNumber = textSelection.getStartLine();
       IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(
-          ChromiumDebugPlugin.DEBUG_MODEL_ID);
+          VProjectWorkspaceBridge.DEBUG_MODEL_ID);
       for (int i = 0; i < breakpoints.length; i++) {
         IBreakpoint breakpoint = breakpoints[i];
         if (resource.equals(breakpoint.getMarker().getResource())) {
