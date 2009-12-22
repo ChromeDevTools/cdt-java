@@ -15,7 +15,6 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * This class represents the only Chromium V8 VM thread.
@@ -92,11 +91,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public String getName() throws DebugException {
-    String url = getDebugTarget().getJavascriptEmbedder().getThreadName();
-    return NLS.bind(Messages.JsThread_ThreadLabelFormat, (isSuspended()
-        ? Messages.JsThread_ThreadLabelSuspended
-        : Messages.JsThread_ThreadLabelRunning), (url.length() > 0
-        ? (" : " + url) : "")); //$NON-NLS-1$ //$NON-NLS-2$
+    return getDebugTarget().getLabelProvider().getThreadLabel(this);
   }
 
   public IBreakpoint[] getBreakpoints() {

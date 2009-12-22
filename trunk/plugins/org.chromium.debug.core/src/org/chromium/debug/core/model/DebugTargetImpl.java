@@ -51,13 +51,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private boolean isDisconnected = false;
 
-  private final WorkspaceBridge.Factory workspaceRelationsFactory;
+  private final WorkspaceBridge.Factory workspaceBridgeFactory;
 
   private WorkspaceBridge workspaceRelations = null;
 
-  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceRelationsFactory) {
+  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
     super(null);
-    this.workspaceRelationsFactory = workspaceRelationsFactory;
+    this.workspaceBridgeFactory = workspaceBridgeFactory;
     this.launch = launch;
     this.threads = new JavascriptThread[] { new JavascriptThread(this) };
   }
@@ -67,9 +67,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
    * Loads browser tabs, consults the {@code selector} which of the tabs to
    * attach to, and if any has been selected, requests an attachment to the tab.
    *
-   * @param projectNameBase to create for the browser scripts
    * @param remoteServer embedding application we are connected with
-   * @param attachCallback to invoke on successful attachment, not mission-critical
+   * @param attachCallback to invoke on successful attachment, can fail to be called
    * @param monitor to report the progress to
    * @return whether the target has attached to a tab
    * @throws CoreException
@@ -98,7 +97,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     // We'd like to know when launch is removed to remove our project.
     DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
 
-    this.workspaceRelations = workspaceRelationsFactory.attachedToVm(this,
+    this.workspaceRelations = workspaceBridgeFactory.attachedToVm(this,
         vmEmbedder.getJavascriptVm());
 
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
@@ -129,10 +128,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public String getName() throws DebugException {
-    if (vmEmbedder == null) {
-      return ""; //$NON-NLS-1$
-    }
-    return vmEmbedder.getTargetName();
+    return workspaceBridgeFactory.getLabelProvider().getTargetLabel(this);
   }
 
   public IProcess getProcess() {
@@ -168,7 +164,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public String getChromiumModelIdentifier() {
-    return workspaceRelationsFactory.getDebugModelIdentifier();
+    return workspaceBridgeFactory.getDebugModelIdentifier();
   }
 
   public boolean canTerminate() {
@@ -459,4 +455,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       throw new UnsupportedOperationException();
     }
   };
+
+  public WorkspaceBridge.JsLabelProvider getLabelProvider() {
+    return workspaceBridgeFactory.getLabelProvider();
+  }
 }
