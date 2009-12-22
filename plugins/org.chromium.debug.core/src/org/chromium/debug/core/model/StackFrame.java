@@ -7,6 +7,7 @@ package org.chromium.debug.core.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -83,6 +84,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     for (JsVariable jsVar : jsVars) {
       vars.add(new Variable(debugTarget, jsVar, false));
     }
+    // Sort all regular properties by name.
+    Collections.sort(vars, VARIABLE_COMPARATOR);
+    // Always put internal properties in the end.
     for (JsVariable jsMetaVar : jsInternalProperties) {
       vars.add(new Variable(debugTarget, jsMetaVar, true));
     }
@@ -101,9 +105,13 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
         }
         vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope), false));
       } else {
+        int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
           vars.add(new Variable(debugTarget, var, false));
         }
+        int endPos = vars.size();
+        List<Variable> sublist = vars.subList(startPos, endPos);
+        Collections.sort(sublist, VARIABLE_COMPARATOR);
       }
     }
     if (receiverVariable != null) {
@@ -306,4 +314,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return stackFrame.hashCode();
   }
 
+  private final static Comparator<Variable> VARIABLE_COMPARATOR = new Comparator<Variable>() {
+    public int compare(Variable var1, Variable var2) {
+      return var1.getName().compareTo(var2.getName());
+    }
+  };
 }

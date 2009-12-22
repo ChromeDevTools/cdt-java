@@ -32,7 +32,7 @@ public class Variable extends DebugElementImpl implements IVariable {
     this.isInternalProperty = isInternalProperty;
   }
 
-  public String getName() throws DebugException {
+  public String getName() {
     return variable.getName();
   }
 
