@@ -66,10 +66,10 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
         destructingGuard.addValue(lauchDestructor);
 
-        WorkspaceBridge.Factory relationsFactory =
+        WorkspaceBridge.Factory bridgeFactory =
             new VProjectWorkspaceBridge.FactoryImpl(projectNameBase);
 
-        final DebugTargetImpl target = new DebugTargetImpl(launch, relationsFactory);
+        final DebugTargetImpl target = new DebugTargetImpl(launch, bridgeFactory);
 
         Destructable targetDestructor = new Destructable() {
           public void destruct() {

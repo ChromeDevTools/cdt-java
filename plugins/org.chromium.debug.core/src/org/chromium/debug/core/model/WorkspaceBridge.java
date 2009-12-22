@@ -10,6 +10,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
@@ -37,6 +38,13 @@ public interface WorkspaceBridge {
     WorkspaceBridge attachedToVm(DebugTargetImpl debugTargetImpl, JavascriptVm javascriptVm);
 
     String getDebugModelIdentifier();
+
+    /**
+     * Since we define here how scripts are mapped to workspace, we may want to specify
+     * labels in UI. Each type of bridges provides its own label providers here.
+     * User may cache value of this method.
+     */
+    JsLabelProvider getLabelProvider();
   }
 
   /**
@@ -83,5 +91,25 @@ public interface WorkspaceBridge {
   interface BreakpointHandler extends IBreakpointListener {
     boolean supportsBreakpoint(IBreakpoint breakpoint);
     void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit);
+  }
+
+  /**
+   * Label provider for several debug elements. This object should be stateless.
+   */
+  interface JsLabelProvider {
+    /**
+     * Label for the debug target to be shown in the Debug view.
+     */
+    String getTargetLabel(DebugTargetImpl debugTarget) throws DebugException;
+
+    /**
+     * Label for JavaScript thread to be shown in the Debug view.
+     */
+    String getThreadLabel(JavascriptThread thread) throws DebugException;
+
+    /**
+     * Label for stack frame to be shown in the Debug view.
+     */
+    String getStackFrameLabel(StackFrame stackFrame) throws DebugException;
   }
 }

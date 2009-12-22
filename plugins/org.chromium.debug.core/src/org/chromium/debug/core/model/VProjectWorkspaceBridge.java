@@ -9,6 +9,7 @@ import java.util.Collection;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
@@ -17,12 +18,14 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.ISourceLocator;
 import org.eclipse.debug.core.model.IStackFrame;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Virtual project-supporting implementation of {@link WorkspaceBridge}.
@@ -46,6 +49,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
     public String getDebugModelIdentifier() {
       return DEBUG_MODEL_ID;
+    }
+
+    public JsLabelProvider getLabelProvider() {
+      return LABEL_PROVIDER;
     }
   }
 
@@ -240,6 +247,39 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
 
       return resourceManager.getResource(script);
+    }
+  };
+
+  private final static JsLabelProvider LABEL_PROVIDER = new JsLabelProvider() {
+    public String getTargetLabel(DebugTargetImpl debugTarget) {
+      JavascriptVmEmbedder vmEmbedder = debugTarget.getJavascriptEmbedder();
+      if (vmEmbedder == null) {
+        return ""; //$NON-NLS-1$
+      }
+      return vmEmbedder.getTargetName();
+    }
+
+    public String getThreadLabel(JavascriptThread thread) {
+      String url = thread.getDebugTarget().getJavascriptEmbedder().getThreadName();
+      return NLS.bind(Messages.JsThread_ThreadLabelFormat, (thread.isSuspended()
+          ? Messages.JsThread_ThreadLabelSuspended
+          : Messages.JsThread_ThreadLabelRunning), (url.length() > 0
+          ? (" : " + url) : "")); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    public String getStackFrameLabel(StackFrame stackFrame) throws DebugException {
+      CallFrame callFrame = stackFrame.getCallFrame();
+      String name = callFrame.getFunctionName();
+      Script script = callFrame.getScript();
+      if (script == null) {
+        return Messages.StackFrame_UnknownScriptName;
+      }
+      int line = script.getStartLine() + stackFrame.getLineNumber();
+      if (line != -1) {
+        name = NLS.bind(Messages.StackFrame_NameFormat,
+            new Object[] {name, script.getName(), line});
+      }
+      return name;
     }
   };
 }

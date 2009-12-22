@@ -27,7 +27,6 @@ import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
 import org.eclipse.debug.core.model.IVariable;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * An IStackFrame implementation over a JsStackFrame instance.
@@ -207,16 +206,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public String getName() throws DebugException {
-    String name = stackFrame.getFunctionName();
-    Script script = stackFrame.getScript();
-    if (script == null) {
-      return Messages.StackFrame_UnknownScriptName;
-    }
-    int line = script.getStartLine() + getLineNumber();
-    if (line != -1) {
-      name = NLS.bind(Messages.StackFrame_NameFormat, new Object[] {name, script.getName(), line});
-    }
-    return name;
+    return getDebugTarget().getLabelProvider().getStackFrameLabel(this);
   }
 
   public IRegisterGroup[] getRegisterGroups() throws DebugException {
