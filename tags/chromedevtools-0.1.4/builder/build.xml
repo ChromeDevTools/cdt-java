@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+
+<!--
+  Copyright (c) 2009 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<project name="chromedevtools" default="main" basedir=".">
+
+  <!-- The source repository location (where the plugins and features folders are) -->
+  <property name="sourceBaseLocation" value="${basedir}/.." />
+
+  <!-- The location of the PDE build configuration -->
+  <property name="builder" value="${basedir}/releng.builder" />
+
+  <!-- This is a destination directory -->
+  <property name="buildDirectory" value="${sourceBaseLocation}/../staging" />
+
+
+  <!-- Where the PDE builder (releng) Eclipse installation resides. We run -->
+  <!-- this Eclipse for building -->
+  <property name="pdeEclipseLocation" value="FILL THIS VALUE" />
+
+  <!-- The location of the target Eclipse installation: that against which -->
+  <!-- he project will be compiled.                                        -->
+  <!-- It is recommended to use a distinct target Eclipse installation     -->
+  <!-- but for the sake of simplicity we are using the releng one.         -->
+  <property name="baseLocation" value="${pdeEclipseLocation}" />
+
+  <!-- The location of rt.jar in the build environment -->
+  <property name="java.rt" value="FILL THIS VALUE" />
+
+
+  <target name="main">
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.pde.build.Build" />
+      <arg value="-nosplash" />
+      <arg value="-DsourceBaseLocation=${sourceBaseLocation}" />
+      <arg value="-Dbuilder=${builder}" />
+      <arg value="-DbaseLocation=${baseLocation}" />
+      <arg value="-Djava.rt=${java.rt}" />
+      <arg value="-DbuildDirectory=${buildDirectory}" />
+    </exec>
+  </target>
+
+  <target name="clean">
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="clean" />
+      <arg value="-application" />
+      <arg value="org.eclipse.pde.build.Build" />
+      <arg value="-nosplash" />
+      <arg value="-Dbuilder=${builder}" />
+      <arg value="-DbuildDirectory=${buildDirectory}" />
+    </exec>
+  </target>
+
+
+</project>
