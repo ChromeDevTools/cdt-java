@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.transport;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.concurrent.Callable;
@@ -13,6 +12,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
+import org.chromium.sdk.LineReader;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
@@ -27,14 +27,14 @@ public interface Handshaker {
    * @throws IOException if handshake process failed physically (input or output has unexpectedly
    * closed) or logically (if unexpected message came from remote).
    */
-  void perform(BufferedReader input, Writer output) throws IOException;
+  void perform(LineReader input, Writer output) throws IOException;
 
   /**
    * Implementation of handshake from Google Chrome Developer Tools Protocol. Used when we
    * connect to browser.
    */
   Handshaker CHROMIUM = new Handshaker() {
-    public void perform(BufferedReader input, Writer output) throws IOException {
+    public void perform(LineReader input, Writer output) throws IOException {
       output.write(OUTGOING_MESSAGE);
       output.flush();
 
@@ -88,9 +88,9 @@ public interface Handshaker {
     private final RunnableFuture<RemoteInfo> runnableFuture =
         new FutureTask<RemoteInfo>(new HandshakeTaks());
 
-    private BufferedReader input = null;
+    private LineReader input = null;
 
-    public void perform(BufferedReader input, Writer output) throws IOException {
+    public void perform(LineReader input, Writer output) throws IOException {
       this.input = input;
       runnableFuture.run();
 

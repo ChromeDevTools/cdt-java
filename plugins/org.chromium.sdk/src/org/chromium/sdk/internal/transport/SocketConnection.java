@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.ConnectionLogger;
+import org.chromium.sdk.LineReader;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
@@ -67,9 +68,9 @@ public class SocketConnection implements Connection {
    */
   private class WriterThread extends InterruptibleThread {
 
-    private final BufferedWriter writer;
+    private final ConnectionLogger.LoggableWriter writer;
 
-    public WriterThread(BufferedWriter writer) {
+    public WriterThread(ConnectionLogger.LoggableWriter writer) {
       super("WriterThread");
       this.writer = writer;
     }
@@ -88,7 +89,8 @@ public class SocketConnection implements Connection {
     private void handleOutboundMessage(Message message) {
       try {
         LOGGER.log(Level.FINER, "-->{0}", message);
-        message.sendThrough(writer);
+        message.sendThrough(writer.getWriter());
+        writer.markSeparatorForLog();
       } catch (IOException e) {
         SocketConnection.this.shutdown(e, false);
       }
@@ -131,10 +133,11 @@ public class SocketConnection implements Connection {
    */
   private class ReaderThread extends InterruptibleThread {
 
-    private final BufferedReader reader;
-    private final Writer handshakeWriter;
+    private final ConnectionLogger.LoggableReader reader;
+    private final ConnectionLogger.LoggableWriter handshakeWriter;
 
-    public ReaderThread(BufferedReader reader, Writer handshakeWriter) {
+    public ReaderThread(ConnectionLogger.LoggableReader reader,
+        ConnectionLogger.LoggableWriter handshakeWriter) {
       super("ReaderThread");
       this.reader = reader;
       this.handshakeWriter = handshakeWriter;
@@ -151,14 +154,17 @@ public class SocketConnection implements Connection {
           connectionLogger.start();
         }
 
-        handshaker.perform(reader, handshakeWriter);
+        handshaker.perform(reader.getReader(), handshakeWriter.getWriter());
+
+        reader.markSeparatorForLog();
+        handshakeWriter.markSeparatorForLog();
 
         startWriterThread();
 
         while (!isTerminated && isAttached.get()) {
           Message message;
           try {
-            message = Message.fromBufferedReader(reader);
+            message = Message.fromBufferedReader(reader.getReader());
           } catch (MalformedMessageException e) {
             LOGGER.log(Level.SEVERE, "Malformed protocol message", e);
             continue;
@@ -168,6 +174,7 @@ public class SocketConnection implements Connection {
             break;
           }
           inboundQueue.add(new RegularMessageItem(message));
+          reader.markSeparatorForLog();
         }
         breakException = null;
       } catch (IOException e) {
@@ -238,13 +245,13 @@ public class SocketConnection implements Connection {
   private AtomicBoolean isAttached = new AtomicBoolean(false);
 
   /** The communication socket. */
-  protected Socket socket;
+  private Socket socket;
 
   /** The socket reader. */
-  protected BufferedReader reader;
+  private ConnectionLogger.LoggableReader reader;
 
   /** The socket writer. */
-  protected BufferedWriter writer;
+  private ConnectionLogger.LoggableWriter writer;
 
   private final ConnectionLogger connectionLogger;
 
@@ -252,13 +259,13 @@ public class SocketConnection implements Connection {
   private final Handshaker handshaker;
 
   /** The listener to report network events to. */
-  protected volatile NetListener listener;
+  private volatile NetListener listener;
 
   /** The inbound message queue. */
-  protected final BlockingQueue<MessageItem> inboundQueue = new LinkedBlockingQueue<MessageItem>();
+  private final BlockingQueue<MessageItem> inboundQueue = new LinkedBlockingQueue<MessageItem>();
 
   /** The outbound message queue. */
-  protected final BlockingQueue<Message> outboundQueue = new LinkedBlockingQueue<Message>();
+  private final BlockingQueue<Message> outboundQueue = new LinkedBlockingQueue<Message>();
 
   /** The socket endpoint. */
   private final SocketAddress socketEndpoint;
@@ -283,12 +290,44 @@ public class SocketConnection implements Connection {
   void attach() throws IOException {
     this.socket = new Socket();
     this.socket.connect(socketEndpoint, connectionTimeoutMs);
-    Writer streamWriter = new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET);
-    Reader streamReader = new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET);
+    final Writer streamWriter = new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET);
+    final Reader streamReader = new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET);
+
+    ConnectionLogger.LoggableReader loggableReader = new ConnectionLogger.LoggableReader() {
+      private final LineReader lineReader;
+      {
+        final BufferedReader bufferedReader =
+            new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
+        lineReader = new LineReader() {
+          public int read(char[] cbuf, int off, int len) throws IOException {
+            return bufferedReader.read(cbuf, off, len);
+          }
+          public String readLine() throws IOException {
+            return bufferedReader.readLine();
+          }
+        };
+      }
+
+      public LineReader getReader() {
+        return lineReader;
+      }
+
+      public void markSeparatorForLog() {
+      }
+    };
+
+    ConnectionLogger.LoggableWriter loggableWriter = new ConnectionLogger.LoggableWriter() {
+      private final BufferedWriter bufferedWriter = new BufferedWriter(streamWriter);
+      public Writer getWriter() {
+        return bufferedWriter;
+      }
+      public void markSeparatorForLog() {
+      }
+    };
 
     if (connectionLogger != null) {
-      streamWriter = connectionLogger.wrapWriter(streamWriter);
-      streamReader = connectionLogger.wrapReader(streamReader);
+      loggableWriter = connectionLogger.wrapWriter(loggableWriter);
+      loggableReader = connectionLogger.wrapReader(loggableReader);
       connectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
         public void closeConnection() {
           close();
@@ -296,8 +335,8 @@ public class SocketConnection implements Connection {
       });
     }
 
-    this.writer = new BufferedWriter(streamWriter);
-    this.reader = new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
+    this.writer = loggableWriter;
+    this.reader = loggableReader;
     isAttached.set(true);
 
     this.readerThread = new ReaderThread(reader, writer);

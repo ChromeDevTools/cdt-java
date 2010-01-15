@@ -4,7 +4,6 @@
 
 package org.chromium.sdk;
 
-import java.io.Reader;
 import java.io.Writer;
 
 /**
@@ -21,14 +20,14 @@ public interface ConnectionLogger {
    * @return new writer that should pass all data to {@code streamWriter} and
    * silently copy it elsewhere (without additional exceptions).
    */
-  Writer wrapWriter(Writer streamWriter);
+  LoggableWriter wrapWriter(LoggableWriter streamWriter);
 
   /**
    * @return new reader that should give access to all data
    * from {@code streamReader} and silently copy it elsewhere (without
    * additional exceptions).
    */
-  Reader wrapReader(Reader streamReader);
+  LoggableReader wrapReader(LoggableReader streamReader);
 
   /**
    * Connection may allow the logger to close it. It is nice for UI, where
@@ -64,5 +63,31 @@ public interface ConnectionLogger {
      * Creates new instance of {@link ConnectionLogger}.
      */
     ConnectionLogger newConnectionLogger();
+  }
+
+  /**
+   * Reader that allows client to add marks to stream. These marks may become visible in log
+   * console.
+   */
+  interface LoggableReader {
+    LineReader getReader();
+
+    /**
+     * Add log mark at current reader's position.
+     */
+    void markSeparatorForLog();
+  }
+
+  /**
+   * Writer that allows client to add marks to stream. These marks may become visible in log
+   * console.
+   */
+  interface LoggableWriter {
+    Writer getWriter();
+
+    /**
+     * Add log mark at current writer's position.
+     */
+    void markSeparatorForLog();
   }
 }
