@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.transport;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -12,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.chromium.sdk.LineReader;
 
 /**
  * A transport message encapsulating the data sent/received over the wire
@@ -113,7 +114,7 @@ public class Message {
    * @throws MalformedMessageException if the input does not represent a valid
    *         message
    */
-  public static Message fromBufferedReader(BufferedReader reader)
+  public static Message fromBufferedReader(LineReader reader)
       throws IOException, MalformedMessageException {
     Map<String, String> headers = new HashMap<String, String>();
     synchronized (reader) {

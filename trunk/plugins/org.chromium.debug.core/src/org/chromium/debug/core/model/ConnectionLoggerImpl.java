@@ -5,10 +5,10 @@
 package org.chromium.debug.core.model;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Writer;
 
 import org.chromium.sdk.ConnectionLogger;
+import org.chromium.sdk.LineReader;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.ITerminate;
 
@@ -46,44 +46,82 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     this.lifecycleListener = lifecycleListener;
   }
 
-  public Writer wrapWriter(final Writer streamWriter) {
-    return new Writer() {
+  /**
+   * We mix 2 streams into a single console. This type helps to annotate them textually.
+   */
+  private interface StreamId {
+    String getStreamName();
+  }
+
+  public LoggableWriter wrapWriter(final LoggableWriter originalLoggableWriter) {
+    final StreamId streamId = new StreamId() {
+      public String getStreamName() {
+        return Messages.ConnectionLoggerImpl_SentToChrome;
+      }
+    };
+    final Writer originalWriter = originalLoggableWriter.getWriter();
+    final Writer wrappedWriter = new Writer() {
       @Override
       public void close() throws IOException {
-        streamWriter.close();
+        originalWriter.close();
         flushLogWriter();
       }
       @Override
       public void flush() throws IOException {
-        streamWriter.flush();
+        originalWriter.flush();
         flushLogWriter();
       }
       @Override
       public void write(char[] cbuf, int off, int len) throws IOException {
-        streamWriter.write(cbuf, off, len);
-
-        writeToLog(cbuf, off, len, this,
-            Messages.ConnectionLoggerImpl_SentToChrome);
+        originalWriter.write(cbuf, off, len);
+        writeToLog(cbuf, off, len, streamId);
+      }
+    };
+    return new LoggableWriter() {
+      public Writer getWriter() {
+        return wrappedWriter;
+      }
+      public void markSeparatorForLog() {
+        writeToLog(MESSAGE_SEPARATOR, streamId);
+        flushLogWriter();
       }
     };
   }
-  public Reader wrapReader(final Reader streamReader) {
-    return new Reader() {
-      @Override
-      public void close() throws IOException {
-        streamReader.close();
-        flushLogWriter();
-      }
 
-      @Override
+  public LoggableReader wrapReader(final LoggableReader loggableReader) {
+    final StreamId streamId = new StreamId() {
+      public String getStreamName() {
+        return Messages.ConnectionLoggerImpl_ReceivedFromChrome;
+      }
+    };
+    final LineReader streamReader = loggableReader.getReader();
+    final LineReader wrappedReader = new LineReader() {
       public int read(char[] cbuf, int off, int len) throws IOException {
         int res = streamReader.read(cbuf, off, len);
         if (res > 0) {
-          writeToLog(cbuf, off, res, this,
-              Messages.ConnectionLoggerImpl_ReceivedFromChrome);
+          writeToLog(cbuf, off, res, streamId);
           flushLogWriter();
         }
         return res;
+      }
+
+      public String readLine() throws IOException {
+        String res = streamReader.readLine();
+        if (res != null) {
+          writeToLog(res + '\n', streamId);
+          flushLogWriter();
+        }
+        return res;
+      }
+    };
+    return new LoggableReader() {
+      public LineReader getReader() {
+        return wrappedReader;
+      }
+
+      public void markSeparatorForLog() {
+        writeToLog(MESSAGE_SEPARATOR, streamId);
+        flushLogWriter();
       }
     };
   }
@@ -105,19 +143,29 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     this.connectionCloser = connectionCloser;
   }
 
-  private synchronized void writeToLog(char[] cbuf, int off, int len, Object source,
-      String sourceName) {
+  private synchronized void writeToLog(String str, StreamId streamId) {
     try {
-      if (lastSource != source) {
-        if (lastSource != null) {
-          logWriter.append('\n');
-        }
-        logWriter.append("> ").append(sourceName).append('\n'); //$NON-NLS-1$
-        lastSource = source;
-      }
+      printHead(streamId);
+      logWriter.append(str);
+    } catch (IOException e) {
+      DebugPlugin.log(e);
+    }
+  }
+  private synchronized void writeToLog(char[] cbuf, int off, int len, StreamId streamId) {
+    try {
+      printHead(streamId);
       logWriter.write(cbuf, off, len);
     } catch (IOException e) {
       DebugPlugin.log(e);
+    }
+  }
+  private void printHead(StreamId streamId) throws IOException {
+    if (lastSource != streamId) {
+      if (lastSource != null) {
+        logWriter.append('\n');
+      }
+      logWriter.append("> ").append(streamId.getStreamName()).append('\n'); //$NON-NLS-1$
+      lastSource = streamId;
     }
   }
   private void flushLogWriter() {
@@ -130,7 +178,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
 
   private final Writer logWriter;
   private final LogLifecycleListener lifecycleListener;
-  private Object lastSource = null;
+  private StreamId lastSource = null;
   private volatile ConnectionCloser connectionCloser = null;
   private volatile boolean isClosed = false;
 
@@ -151,4 +199,6 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       connectionCloser0.closeConnection();
     }
   };
+
+  private static final String MESSAGE_SEPARATOR = Messages.ConnectionLoggerImpl_MessageSeparator;
 }
