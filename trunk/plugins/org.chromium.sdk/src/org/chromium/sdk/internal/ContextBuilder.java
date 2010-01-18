@@ -13,6 +13,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.CommandResponse;
@@ -303,6 +304,10 @@ public class ContextBuilder {
         };
 
         sendMessageAsyncAndIvalidate(message, commandCallback, true, null);
+      }
+
+      public JsEvaluateContext getGlobalEvaluateContext() {
+        throw new UnsupportedOperationException();
       }
 
       InternalContext getInternalContextForTests() {

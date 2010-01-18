@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
@@ -29,7 +30,7 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 /**
  * A generic implementation of the CallFrame interface.
  */
-public class CallFrameImpl implements CallFrame {
+public class CallFrameImpl implements CallFrame, JsEvaluateContext {
 
   /** The frame ID as reported by the JavaScript VM. */
   private final int frameId;
@@ -197,6 +198,10 @@ public class CallFrameImpl implements CallFrame {
 
     getInternalContext().sendV8CommandAsync(message, true, commandCallback,
         syncCallback);
+  }
+
+  public JsEvaluateContext getEvaluateContext() {
+    return this;
   }
 
   /**

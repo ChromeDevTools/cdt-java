@@ -7,22 +7,10 @@ package org.chromium.sdk;
 import java.util.Collection;
 import java.util.List;
 
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
-
-
 /**
  * An object that represents a browser JavaScript VM call frame.
  */
 public interface CallFrame {
-
-  /**
-   * A callback for the "evaluate" request.
-   */
-  interface EvaluateCallback {
-    void success(JsVariable variable);
-
-    void failure(String errorMessage);
-  }
 
   /**
    * @return the variables known in this frame, including the receiver variable
@@ -72,29 +60,7 @@ public interface CallFrame {
   String getFunctionName();
 
   /**
-   * Synchronously evaluates an arbitrary JavaScript {@code expression} in
-   * the context of the call frame. The evaluation result is reported to
-   * the specified {@code evaluateCallback}. The method will block until the evaluation
-   * result is available.
-   *
-   * @param expression to evaluate
-   * @param evaluateCallback to report the evaluation result to
-   * @throws MethodIsBlockingException if called from a callback because it blocks
-   *         until remote VM returns result
+   * @return context for evaluating expressions in scope of this frame
    */
-  void evaluateSync(String expression, EvaluateCallback evaluateCallback)
-      throws MethodIsBlockingException;
-
-  /**
-   * Asynchronously evaluates an arbitrary JavaScript {@code expression} in
-   * the context of the call frame. The evaluation result is reported to
-   * the specified {@code evaluateCallback} and right after this to syncCallback.
-   * The method doesn't block.
-   *
-   * @param expression to evaluate
-   * @param evaluateCallback to report the evaluation result to
-   * @param syncCallback to report the end of any processing
-   */
-  void evaluateAsync(String expression, EvaluateCallback evaluateCallback,
-      SyncCallback syncCallback);
+  JsEvaluateContext getEvaluateContext();
 }
