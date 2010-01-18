@@ -8,8 +8,11 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -50,20 +53,20 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public StackFrame[] getStackFrames() throws DebugException {
-    if (isSuspended()) {
-      ensureStackFrames();
-      return stackFrames;
-    } else {
-      return EMPTY_FRAMES;
-    }
+    ensureStackFrames(getDebugTarget().getDebugContext());
+    return stackFrames;
   }
 
   public void reset() {
     this.stackFrames = null;
   }
 
-  private void ensureStackFrames() {
-    this.stackFrames = wrapStackFrames(getDebugTarget().getDebugContext().getCallFrames());
+  private void ensureStackFrames(DebugContext debugContext) {
+    if (debugContext == null) {
+      this.stackFrames = EMPTY_FRAMES;
+    } else {
+      this.stackFrames = wrapStackFrames(debugContext.getCallFrames());
+    }
   }
 
   private StackFrame[] wrapStackFrames(List<? extends CallFrame> jsFrames) {
@@ -143,8 +146,13 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   private void step(StepAction stepAction, int detail) throws DebugException {
+    DebugContext debugContext = getDebugTarget().getDebugContext();
+    if (debugContext == null) {
+      throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+          "Step attempted while not suspended")); //$NON-NLS-1$
+    }
     setStepping(true);
-    getDebugTarget().getDebugContext().continueVm(stepAction, 1, null);
+    debugContext.continueVm(stepAction, 1, null);
     // The suspend event should be fired once the backtrace is ready
     // (in BacktraceProcessor).
     getDebugTarget().fireResumeEvent(detail);

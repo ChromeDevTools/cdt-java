@@ -45,7 +45,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private JavascriptVmEmbedder vmEmbedder = STUB_VM_EMBEDDER;
 
-  private DebugContext debugContext;
+  private volatile DebugContext debugContext;
 
   private boolean isSuspended = false;
 
@@ -204,6 +204,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   }
 
   public void resumed(int detail) {
+    debugContext = null;
     fireResumeEvent(detail);
   }
 
