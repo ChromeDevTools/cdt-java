@@ -19,7 +19,6 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
-import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
@@ -73,7 +72,7 @@ public class JsObjectImplTest {
 
   @Test
   public void testObjectData() throws Exception {
-    JsObjectImpl jsObject = new JsObjectImpl(callFrame, "", eventMirror);
+    JsObjectImpl jsObject = new JsObjectImpl(callFrame.getInternalContext(), "", eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
     Collection<JsVariableImpl> variables = jsObject.getProperties();

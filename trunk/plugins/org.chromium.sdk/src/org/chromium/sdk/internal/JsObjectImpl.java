@@ -21,20 +21,20 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
  */
 class JsObjectImpl extends JsValueImpl implements JsObject {
 
-  private final CallFrameImpl callFrame;
+  private final InternalContext context;
 
   private final String parentFqn;
 
   /**
    * This constructor implies the lazy resolution of object properties.
    *
-   * @param callFrame where this instance belongs in
+   * @param context where this instance belongs in
    * @param parentFqn the fully qualified name of the object parent
    * @param valueState the value data from the JS VM
    */
-  JsObjectImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
+  JsObjectImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
     super(valueState);
-    this.callFrame = callFrame;
+    this.context = context;
     this.parentFqn = parentFqn;
   }
 
@@ -96,8 +96,8 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
     return JsVariableImpl.NameDecorator.NOOP;
   }
 
-  protected CallFrameImpl getCallFrame() {
-    return callFrame;
+  protected InternalContext getInternalContext() {
+    return context;
   }
 
   Subproperties getSubpropertiesHelper() {
@@ -105,9 +105,7 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   protected SubpropertiesMirror getSubpropertiesMirror() {
-    ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
-
-    return valueLoader.loadSubpropertiesInMirror(getMirror()).getSubpropertiesMirror();
+    return context.getValueLoader().loadSubpropertiesInMirror(getMirror()).getSubpropertiesMirror();
   }
 
   abstract class Subproperties {
@@ -143,7 +141,7 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
         if (fqn == null) {
           continue;
         }
-        result.add(new JsVariableImpl(callFrame, mirror, varName, fqn,
+        result.add(new JsVariableImpl(context, mirror, varName, fqn,
             getNameDecorator()));
       }
       return result;
@@ -166,7 +164,7 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
         if (properties == null) {
 
         List<? extends PropertyReference> propertyRefs = getPropertyRefs(getSubpropertiesMirror());
-        ValueLoader valueLoader = callFrame.getInternalContext().getValueLoader();
+        ValueLoader valueLoader = context.getValueLoader();
         List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
           List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,

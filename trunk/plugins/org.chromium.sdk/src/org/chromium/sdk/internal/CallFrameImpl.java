@@ -105,7 +105,7 @@ public class CallFrameImpl implements CallFrame {
         ValueLoader valueLoader = context.getValueLoader();
         ValueMirror mirror =
             valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
-        this.receiverVariable = new JsVariableImpl(this, mirror, ref.getName());
+        this.receiverVariable = new JsVariableImpl(this.context, mirror, ref.getName());
       }
       this.receiverVariableLoaded = true;
     }
@@ -178,7 +178,7 @@ public class CallFrameImpl implements CallFrame {
                 throw new RuntimeException(e);
               }
               JsVariable variable =
-                  new JsVariableImpl(CallFrameImpl.this, V8Helper.createMirrorFromLookup(
+                  new JsVariableImpl(CallFrameImpl.this.context, V8Helper.createMirrorFromLookup(
                       body).getValueMirror(), expression);
               if (variable != null) {
                 callback.success(variable);
@@ -215,7 +215,7 @@ public class CallFrameImpl implements CallFrame {
     List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
     Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
     for (int i = 0; i < refs.size(); i++) {
-      result.add(new JsVariableImpl(this, mirrors.get(i), refs.get(i).getName()));
+      result.add(new JsVariableImpl(this.context, mirrors.get(i), refs.get(i).getName()));
     }
     return result;
   }

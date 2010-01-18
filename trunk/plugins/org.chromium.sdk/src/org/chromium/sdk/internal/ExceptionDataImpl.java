@@ -32,7 +32,8 @@ public class ExceptionDataImpl implements ExceptionData {
 
   public JsObject getExceptionObject() {
     if (cachedException == null) {
-      cachedException = new JsObjectImpl(context.getTopFrameImpl(), name, mirror);
+      cachedException =
+          new JsObjectImpl(context.getTopFrameImpl().getInternalContext(), name, mirror);
     }
     return cachedException;
   }
