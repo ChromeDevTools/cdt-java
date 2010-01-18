@@ -28,12 +28,12 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
   /**
    * This constructor implies lazy resolution of object properties.
    *
-   * @param callFrame this array belongs in
+   * @param context this array belongs in
    * @param parentFqn the fully qualified name of this array parent
    * @param valueState the mirror corresponding to this array
    */
-  JsArrayImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
-    super(callFrame, parentFqn, valueState);
+  JsArrayImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
+    super(context, parentFqn, valueState);
   }
 
   private synchronized void ensureElementsMap() throws MethodIsBlockingException {

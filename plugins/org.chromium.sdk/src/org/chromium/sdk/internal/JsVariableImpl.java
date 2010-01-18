@@ -19,8 +19,8 @@ public class JsVariableImpl implements JsVariable {
    */
   private final ValueMirror valueData;
 
-  /** The call frame this variable belongs in. */
-  private final CallFrameImpl callFrame;
+  /** The context this variable belongs in. */
+  private final InternalContext context;
 
   /** The fully qualified name of this variable. */
   private final String variableFqn;
@@ -34,27 +34,27 @@ public class JsVariableImpl implements JsVariable {
   private final String rawName;
 
   /**
-   * Constructs a variable contained in the given call frame with the given
+   * Constructs a variable contained in the given context with the given
    * value mirror.
    *
-   * @param callFrame that owns this variable
+   * @param context that owns this variable
    * @param valueData value data for this variable
    */
-  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String name) {
-    this(callFrame, valueData, name, null, NameDecorator.NOOP);
+  JsVariableImpl(InternalContext context, ValueMirror valueData, String name) {
+    this(context, valueData, name, null, NameDecorator.NOOP);
   }
 
   /**
-   * Constructs a variable contained in the given call frame with the given
+   * Constructs a variable contained in the given context with the given
    * value mirror.
    *
-   * @param callFrame that owns this variable
+   * @param context that owns this variable
    * @param valueData for this variable
    * @param variableFqn the fully qualified name of this variable
    */
-  JsVariableImpl(CallFrameImpl callFrame, ValueMirror valueData, String name, String variableFqn,
+  JsVariableImpl(InternalContext context, ValueMirror valueData, String name, String variableFqn,
       NameDecorator nameDecorator) {
-    this.callFrame = callFrame;
+    this.context = context;
     this.valueData = valueData;
     this.rawName = name;
     this.variableFqn = variableFqn;
@@ -63,14 +63,14 @@ public class JsVariableImpl implements JsVariable {
     Type type = this.valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
-        this.value = new JsFunctionImpl(callFrame, this.variableFqn, this.valueData);
+        this.value = new JsFunctionImpl(context, this.variableFqn, this.valueData);
         break;
       case TYPE_ERROR:
       case TYPE_OBJECT:
-        this.value = new JsObjectImpl(callFrame, this.variableFqn, this.valueData);
+        this.value = new JsObjectImpl(context, this.variableFqn, this.valueData);
         break;
       case TYPE_ARRAY:
-        this.value = new JsArrayImpl(callFrame, this.variableFqn, this.valueData);
+        this.value = new JsArrayImpl(context, this.variableFqn, this.valueData);
         break;
       default:
         this.value = new JsValueImpl(this.valueData);
@@ -121,10 +121,10 @@ public class JsVariableImpl implements JsVariable {
   }
 
   /**
-   * Returns the call frame owning this variable.
+   * Returns the context owning this variable.
    */
-  protected CallFrameImpl getCallFrame() {
-    return callFrame;
+  protected InternalContext getInternalContext() {
+    return context;
   }
 
   public ValueMirror getMirror() {

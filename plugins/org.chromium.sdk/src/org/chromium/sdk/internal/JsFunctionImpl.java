@@ -11,8 +11,8 @@ import org.chromium.sdk.Script;
  * Generic implementation of {@link JsFunction}.
  */
 class JsFunctionImpl extends JsObjectImpl implements JsFunction {
-  JsFunctionImpl(CallFrameImpl callFrame, String parentFqn, ValueMirror valueState) {
-    super(callFrame, parentFqn, valueState);
+  JsFunctionImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
+    super(context, parentFqn, valueState);
   }
 
   public Script getScript() {
@@ -23,7 +23,7 @@ class JsFunctionImpl extends JsObjectImpl implements JsFunction {
     if (scriptId == FunctionAdditionalProperties.NO_SCRIPT_ID) {
       return null;
     }
-    DebugSession debugSession = getCallFrame().getInternalContext().getDebugSession();
+    DebugSession debugSession = getInternalContext().getDebugSession();
     return debugSession.getScriptManager().findById(Long.valueOf(scriptId));
   }
 
