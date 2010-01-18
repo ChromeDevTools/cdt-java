@@ -6,9 +6,8 @@ package org.chromium.debug.ui;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugElementImpl;
-import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.Variable;
-import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
@@ -133,16 +132,17 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
       });
       return;
     }
-    if (!(contextImpl instanceof StackFrame)) {
+
+    final JsEvaluateContext evaluateContext =
+        (JsEvaluateContext) contextImpl.getAdapter(JsEvaluateContext.class);
+    if (evaluateContext == null) {
       listener.watchEvaluationFinished(new BadWatchExpressionResult(
           new DebugException(
               new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID, "Bad debug context")), //$NON-NLS-1$
           expression));
       return;
     }
-    StackFrame stackFrame = (StackFrame) contextImpl;
-    final CallFrame frame = stackFrame.getCallFrame();
-    frame.evaluateAsync(expression, new CallFrame.EvaluateCallback() {
+    evaluateContext.evaluateAsync(expression, new JsEvaluateContext.EvaluateCallback() {
         public void success(JsVariable variable) {
           final Variable var = new Variable(contextImpl.getDebugTarget(), variable, false);
           listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));

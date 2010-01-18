@@ -10,21 +10,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
-import org.chromium.sdk.internal.protocol.CommandResponse;
-import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
-import org.chromium.sdk.internal.protocol.data.ValueHandle;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
-import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
-import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 
 /**
  * A generic implementation of the CallFrame interface.
@@ -84,6 +73,10 @@ public class CallFrameImpl implements CallFrame {
     return this.receiverVariable;
   }
 
+  public JsEvaluateContext getEvaluateContext() {
+    return evaluateContextImpl;
+  }
+
   private void ensureVariables() {
     if (variables == null) {
       this.variables = Collections.unmodifiableCollection(createVariables());
@@ -136,69 +129,6 @@ public class CallFrameImpl implements CallFrame {
     return frameMirror.getScript();
   }
 
-  public void evaluateSync(String expression, EvaluateCallback evaluateCallback)
-      throws MethodIsBlockingException {
-    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    evaluateAsync(expression, evaluateCallback, callbackSemaphore);
-    boolean res = callbackSemaphore.tryAcquireDefault();
-    if (!res) {
-      evaluateCallback.failure("Timeout");
-    }
-  }
-
-  public void evaluateAsync(final String expression, final EvaluateCallback callback,
-      SyncCallback syncCallback) {
-    try {
-      evaluateAsyncImpl(expression, callback, syncCallback);
-    } catch (ContextDismissedCheckedException e) {
-      getInternalContext().getDebugSession().maybeRethrowContextException(e);
-      // or
-      try {
-        callback.failure(e.getMessage());
-      } finally {
-        syncCallback.callbackDone(null);
-      }
-    }
-  }
-  public void evaluateAsyncImpl(final String expression, final EvaluateCallback callback,
-      SyncCallback syncCallback) throws ContextDismissedCheckedException {
-    DebuggerMessage message =
-      DebuggerMessageFactory.evaluate(expression, getIdentifier(), null, null);
-
-    V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
-        ? null
-        : new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(CommandResponse response) {
-            SuccessCommandResponse successResponse = response.asSuccess();
-            if (successResponse != null) {
-              ValueHandle body;
-              try {
-                body = successResponse.getBody().asEvaluateBody();
-              } catch (JsonProtocolParseException e) {
-                throw new RuntimeException(e);
-              }
-              JsVariable variable =
-                  new JsVariableImpl(CallFrameImpl.this.context, V8Helper.createMirrorFromLookup(
-                      body).getValueMirror(), expression);
-              if (variable != null) {
-                callback.success(variable);
-              } else {
-                callback.failure("Evaluation failed");
-              }
-            } else {
-              callback.failure(response.asFailure().getMessage());
-            }
-          }
-
-          public void failure(String message) {
-            callback.failure(message);
-          }
-        };
-
-    getInternalContext().sendV8CommandAsync(message, true, commandCallback,
-        syncCallback);
-  }
-
   /**
    * @return this call frame's unique identifier within the V8 VM (0 is the top
    *         frame)
@@ -228,4 +158,15 @@ public class CallFrameImpl implements CallFrame {
     }
     return result;
   }
+
+  private final JsEvaluateContextImpl evaluateContextImpl = new JsEvaluateContextImpl() {
+    @Override
+    protected Integer getFrameIdentifier() {
+      return getIdentifier();
+    }
+    @Override
+    public InternalContext getInternalContext() {
+      return context;
+    }
+  };
 }

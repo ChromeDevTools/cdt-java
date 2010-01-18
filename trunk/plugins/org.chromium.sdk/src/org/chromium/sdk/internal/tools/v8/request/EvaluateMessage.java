@@ -21,7 +21,9 @@ public class EvaluateMessage extends DebuggerMessage {
       Boolean global, Boolean disableBreak) {
     super(DebuggerCommand.EVALUATE.value);
     putArgument("expression", expression);
-    putArgument("frame", frame);
+    if (frame != null) {
+      putArgument("frame", frame);
+    }
     putArgument("global", global);
     putArgument("disable_break", disableBreak);
     putArgument("inlineRefs", Boolean.TRUE);
