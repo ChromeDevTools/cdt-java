@@ -192,9 +192,12 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   @Override
   @SuppressWarnings("unchecked")
   public Object getAdapter(Class adapter) {
-    if (adapter == EvaluateContext.class) {
-      DebugContext debugContext = getDebugTarget().getDebugContext();
-      return new EvaluateContext(debugContext.getGlobalEvaluateContext(), getDebugTarget());
+    if (adapter == StackFrame.class) {
+      try {
+        return getTopStackFrame();
+      } catch (DebugException e) {
+        ChromiumDebugPlugin.log(e);
+      }
     }
     return super.getAdapter(adapter);
   }

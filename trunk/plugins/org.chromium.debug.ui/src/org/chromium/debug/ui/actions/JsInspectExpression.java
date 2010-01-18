@@ -4,7 +4,7 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.model.EvaluateContext;
+import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.Value;
 import org.chromium.sdk.JsVariable;
@@ -24,7 +24,7 @@ import org.eclipse.debug.core.model.IValue;
 public class JsInspectExpression extends PlatformObject
     implements IErrorReportingExpression, IDebugEventSetListener {
 
-  private final EvaluateContext stackFrame;
+  private final StackFrame stackFrame;
 
   private final JsVariable variable;
 
@@ -32,7 +32,7 @@ public class JsInspectExpression extends PlatformObject
 
   private final String expression;
 
-  public JsInspectExpression(EvaluateContext stackFrame, String expression, JsVariable variable,
+  public JsInspectExpression(StackFrame stackFrame, String expression, JsVariable variable,
       String errorMessage) {
     this.stackFrame = stackFrame;
     this.expression = expression;
