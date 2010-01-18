@@ -13,7 +13,6 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.CommandResponse;
@@ -266,10 +265,6 @@ public class ContextBuilder {
         return data.exceptionData;
       }
 
-      public JsEvaluateContext getGlobalEvaluateContext() {
-        return evaluateContext;
-      }
-
       /**
        * @throws IllegalStateException if context has already been continued
        */
@@ -313,17 +308,6 @@ public class ContextBuilder {
       InternalContext getInternalContextForTests() {
         return PreContext.this;
       }
-
-      private final JsEvaluateContext evaluateContext = new JsEvaluateContextImpl() {
-        @Override
-        protected Integer getFrameIdentifier() {
-          return null;
-        }
-        @Override
-        public InternalContext getInternalContext() {
-          return PreContext.this;
-        }
-      };
     }
   }
 

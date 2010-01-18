@@ -103,8 +103,4 @@ public interface DebugContext {
    */
   void continueVm(StepAction stepAction, int stepCount, ContinueCallback callback);
 
-  /**
-   * @return evaluate context for evaluating expressions in global scope
-   */
-  JsEvaluateContext getGlobalEvaluateContext();
 }
