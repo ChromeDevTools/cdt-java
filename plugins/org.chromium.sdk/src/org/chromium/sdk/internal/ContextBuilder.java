@@ -266,6 +266,10 @@ public class ContextBuilder {
         return data.exceptionData;
       }
 
+      public JsEvaluateContext getGlobalEvaluateContext() {
+        return evaluateContext;
+      }
+
       /**
        * @throws IllegalStateException if context has already been continued
        */
@@ -306,13 +310,20 @@ public class ContextBuilder {
         sendMessageAsyncAndIvalidate(message, commandCallback, true, null);
       }
 
-      public JsEvaluateContext getGlobalEvaluateContext() {
-        throw new UnsupportedOperationException();
-      }
-
       InternalContext getInternalContextForTests() {
         return PreContext.this;
       }
+
+      private final JsEvaluateContext evaluateContext = new JsEvaluateContextImpl() {
+        @Override
+        protected Integer getFrameIdentifier() {
+          return null;
+        }
+        @Override
+        public InternalContext getInternalContext() {
+          return PreContext.this;
+        }
+      };
     }
   }
 
