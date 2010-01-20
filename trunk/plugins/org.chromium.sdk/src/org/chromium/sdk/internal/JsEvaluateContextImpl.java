@@ -55,7 +55,7 @@ abstract class JsEvaluateContextImpl implements JsEvaluateContext {
     Integer frameIdentifier = getFrameIdentifier();
     Boolean isGlobal = frameIdentifier == null ? Boolean.TRUE : null;
     DebuggerMessage message =
-        DebuggerMessageFactory.evaluate(expression, frameIdentifier, isGlobal, null);
+        DebuggerMessageFactory.evaluate(expression, frameIdentifier, isGlobal, Boolean.TRUE);
 
     V8CommandProcessor.V8HandlerCallback commandCallback = callback == null
         ? null

@@ -319,7 +319,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   @SuppressWarnings("unchecked")
   @Override
   public Object getAdapter(Class adapter) {
-    if (ILaunch.class.equals(adapter)) {
+    if (adapter == EvaluateContext.class) {
+      JavascriptThread thread = getThread();
+      if (thread == null) {
+        return null;
+      }
+      return thread.getAdapter(adapter);
+    } else if (adapter == ILaunch.class) {
       return this.launch;
     }
     return super.getAdapter(adapter);
