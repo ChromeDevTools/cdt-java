@@ -55,6 +55,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private WorkspaceBridge workspaceRelations = null;
 
+  private final ListenerBlock listenerBlock = new ListenerBlock();
+
   public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
     super(null);
     this.workspaceBridgeFactory = workspaceBridgeFactory;
@@ -83,6 +85,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
     monitor.worked(1);
     final JavascriptVmEmbedder embedder = connector.attach(embedderListener, debugEventListener);
+    // From this moment V8 may call our listeners. We block them by listenerBlock for a while.
 
     Destructable embedderDestructor = new Destructable() {
       public void destruct() {
@@ -99,6 +102,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
     this.workspaceRelations = workspaceBridgeFactory.attachedToVm(this,
         vmEmbedder.getJavascriptVm());
+    listenerBlock.unblock();
 
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
     reloadScriptsAndPossiblyResume(attachCallback);
@@ -367,6 +371,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
 
     public void resumed() {
+      listenerBlock.waitUntilReady();
       synchronized (suspendResumeMonitor) {
         DebugTargetImpl.this.resumed(DebugEvent.CLIENT_REQUEST);
         alreadyResumedOrSuspended = true;
@@ -374,10 +379,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
 
     public void scriptLoaded(Script newScript) {
+      listenerBlock.waitUntilReady();
       workspaceRelations.scriptLoaded(newScript);
     }
 
     public void suspended(DebugContext context) {
+      listenerBlock.waitUntilReady();
       synchronized (suspendResumeMonitor) {
         DebugTargetImpl.this.debugContext = context;
         workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
@@ -417,6 +424,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private final JavascriptVmEmbedder.Listener embedderListener =
       new JavascriptVmEmbedder.Listener() {
     public void reset() {
+      listenerBlock.waitUntilReady();
       workspaceRelations.handleVmResetEvent();
       fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
     }
@@ -459,5 +467,30 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public WorkspaceBridge.JsLabelProvider getLabelProvider() {
     return workspaceBridgeFactory.getLabelProvider();
+  }
+
+  private static class ListenerBlock {
+    private volatile boolean isBlocked = true;
+    private final Object monitor = new Object();
+    void waitUntilReady() {
+      if (isBlocked) {
+        return;
+      }
+      synchronized (monitor) {
+        while (isBlocked) {
+          try {
+            monitor.wait();
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    }
+    void unblock() {
+      isBlocked = true;
+      synchronized (monitor) {
+        monitor.notifyAll();
+      }
+    }
   }
 }
