@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
@@ -309,4 +310,17 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       return var1.getName().compareTo(var2.getName());
     }
   };
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Object getAdapter(Class adapter) {
+    if (adapter == EvaluateContext.class) {
+      DebugContext debugContext = getDebugTarget().getDebugContext();
+      if (debugContext == null) {
+        return null;
+      }
+      return new EvaluateContext(getCallFrame().getEvaluateContext(), getDebugTarget());
+    }
+    return super.getAdapter(adapter);
+  }
 }

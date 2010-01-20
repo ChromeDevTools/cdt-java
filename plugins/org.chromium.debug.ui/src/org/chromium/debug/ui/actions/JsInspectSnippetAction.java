@@ -4,7 +4,7 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.EvaluateContext;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
 import org.chromium.debug.ui.JsEvalContextManager;
 import org.chromium.debug.ui.editors.JavascriptUtil;
@@ -140,21 +140,21 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     return null;
   }
 
-  private StackFrame getStackFrameContext() {
+  private EvaluateContext getStackFrameContext() {
+    // TODO(peter.rybin): consider simply using DebugUITools.getDebugContext()
     IWorkbenchPart part = getTargetPart();
-    return getStackFrameForPart(part);
+    return getEvaluateContextForPart(part);
   }
 
-  private StackFrame getStackFrameForPart(IWorkbenchPart part) {
-    StackFrame frame = part == null
+  private EvaluateContext getEvaluateContextForPart(IWorkbenchPart part) {
+    EvaluateContext frame = part == null
         ? JsEvalContextManager.getStackFrameFor(getWindow())
         : JsEvalContextManager.getStackFrameFor(part);
     return frame;
   }
 
   private void run() {
-    getStackFrameContext().getCallFrame().getEvaluateContext().evaluateAsync(
-        getSelectedText(), this, null);
+    getStackFrameContext().getJsEvaluateContext().evaluateAsync(getSelectedText(), this, null);
   }
 
   protected String getSelectedText() {

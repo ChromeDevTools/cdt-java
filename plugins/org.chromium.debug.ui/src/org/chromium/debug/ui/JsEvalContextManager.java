@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.EvaluateContext;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.contexts.DebugContextEvent;
@@ -35,8 +35,8 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
 
   private IWorkbenchWindow activeWindow;
 
-  private final Map<IWorkbenchPage, StackFrame> pageToFrame =
-      new HashMap<IWorkbenchPage, StackFrame>();
+  private final Map<IWorkbenchPage, EvaluateContext> pageToFrame =
+      new HashMap<IWorkbenchPage, EvaluateContext>();
 
   protected JsEvalContextManager() {
     DebugUITools.getDebugContextManager().addDebugContextListener(this);
@@ -83,7 +83,9 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
       if (selection instanceof IStructuredSelection) {
         Object firstElement = ((IStructuredSelection) selection).getFirstElement();
         if (firstElement instanceof IAdaptable) {
-          StackFrame frame = (StackFrame) ((IAdaptable) firstElement).getAdapter(StackFrame.class);
+          IAdaptable adaptable = (IAdaptable) firstElement;
+
+          EvaluateContext frame = (EvaluateContext) adaptable.getAdapter(EvaluateContext.class);
           if (frame != null) {
             putStackFrame(page, frame);
             return;
@@ -103,9 +105,9 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
    * @return the stack frame in whose context the evaluation is performed, or
    *         {@code null} if none
    */
-  public static StackFrame getStackFrameFor(IWorkbenchPart part) {
+  public static EvaluateContext getStackFrameFor(IWorkbenchPart part) {
     IWorkbenchPage page = part.getSite().getPage();
-    StackFrame frame = getStackFrameFor(page);
+    EvaluateContext frame = getStackFrameFor(page);
     if (frame == null) {
       return getStackFrameFor(page.getWorkbenchWindow());
     }
@@ -121,7 +123,7 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
    * @return the stack frame in whose the evaluation is performed, or {@code
    *         null} if none
    */
-  public static StackFrame getStackFrameFor(IWorkbenchWindow window) {
+  public static EvaluateContext getStackFrameFor(IWorkbenchWindow window) {
     Set<IWorkbenchWindow> visitedWindows = new HashSet<IWorkbenchWindow>();
     if (window == null) {
       window = instance.activeWindow;
@@ -129,10 +131,10 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
     return getStackFrameFor(window, visitedWindows);
   }
 
-  private static StackFrame getStackFrameFor(
+  private static EvaluateContext getStackFrameFor(
       IWorkbenchWindow window, Set<IWorkbenchWindow> visitedWindows) {
     IWorkbenchPage activePage = window.getActivePage();
-    StackFrame frame = null;
+    EvaluateContext frame = null;
     // Check the active page in the window
     if (activePage != null) {
       frame = getStackFrameFor(activePage);
@@ -166,7 +168,7 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
     return null;
   }
 
-  private static StackFrame getStackFrameFor(IWorkbenchPage page) {
+  private static EvaluateContext getStackFrameFor(IWorkbenchPage page) {
     if (instance != null) {
       return instance.pageToFrame.get(page);
     }
@@ -181,7 +183,7 @@ public class JsEvalContextManager implements IWindowListener, IDebugContextListe
     }
   }
 
-  private void putStackFrame(IWorkbenchPage page, StackFrame frame) {
+  private void putStackFrame(IWorkbenchPage page, EvaluateContext frame) {
     pageToFrame.put(page, frame);
     System.setProperty(DEBUGGER_ACTIVE, Boolean.TRUE.toString());
   }
