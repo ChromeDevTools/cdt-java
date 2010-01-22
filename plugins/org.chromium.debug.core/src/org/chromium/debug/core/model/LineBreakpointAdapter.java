@@ -19,7 +19,27 @@ import org.eclipse.ui.texteditor.ITextEditor;
 /**
  * Adapter to create breakpoints in JS files.
  */
-public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
+public abstract class LineBreakpointAdapter implements IToggleBreakpointsTarget {
+
+  public static class ForVirtualProject extends LineBreakpointAdapter {
+    @Override
+    protected ITextEditor getEditor(IWorkbenchPart part) {
+      if (part instanceof ITextEditor) {
+        ITextEditor editorPart = (ITextEditor) part;
+        IResource resource = (IResource) editorPart.getEditorInput().getAdapter(IResource.class);
+        if (resource != null &&
+            ChromiumDebugPluginUtil.CHROMIUM_EXTENSION.equals(resource.getFileExtension())) {
+          return editorPart;
+        }
+      }
+      return null;
+    }
+
+    @Override
+    protected String getDebugModelId() {
+      return VProjectWorkspaceBridge.DEBUG_MODEL_ID;
+    }
+  }
 
   public void toggleLineBreakpoints(IWorkbenchPart part, ISelection selection)
       throws CoreException {
@@ -29,7 +49,7 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
       ITextSelection textSelection = (ITextSelection) selection;
       int lineNumber = textSelection.getStartLine();
       IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(
-          VProjectWorkspaceBridge.DEBUG_MODEL_ID);
+          getDebugModelId());
       for (int i = 0; i < breakpoints.length; i++) {
         IBreakpoint breakpoint = breakpoints[i];
         if (resource.equals(breakpoint.getMarker().getResource())) {
@@ -58,17 +78,9 @@ public class LineBreakpointAdapter implements IToggleBreakpointsTarget {
    * @return the editor being used to edit a PDA file, associated with the given
    *         part, or <code>null</code> if none
    */
-  private ITextEditor getEditor(IWorkbenchPart part) {
-    if (part instanceof ITextEditor) {
-      ITextEditor editorPart = (ITextEditor) part;
-      IResource resource = (IResource) editorPart.getEditorInput().getAdapter(IResource.class);
-      if (resource != null &&
-          ChromiumDebugPluginUtil.CHROMIUM_EXTENSION.equals(resource.getFileExtension())) {
-        return editorPart;
-      }
-    }
-    return null;
-  }
+  protected abstract ITextEditor getEditor(IWorkbenchPart part);
+
+  protected abstract String getDebugModelId();
 
   public void toggleMethodBreakpoints(IWorkbenchPart part, ISelection selection)
       throws CoreException {

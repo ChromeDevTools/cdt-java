@@ -24,7 +24,7 @@ public class BreakpointAdapterFactory implements IAdapterFactory {
       if (resource != null) {
         String extension = resource.getFileExtension();
         if (extension != null && ChromiumDebugPluginUtil.CHROMIUM_EXTENSION.equals(extension)) {
-          return new LineBreakpointAdapter();
+          return new LineBreakpointAdapter.ForVirtualProject();
         }
       }
     }
