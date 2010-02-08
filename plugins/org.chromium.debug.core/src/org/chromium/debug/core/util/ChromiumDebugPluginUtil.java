@@ -20,9 +20,9 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.widgets.Display;
@@ -71,14 +71,13 @@ public class ChromiumDebugPluginUtil {
   /**
    * Creates an empty workspace project with the name starting with the given projectNameBase.
    * Created project is guaranteed to be new in EFS, but workspace may happen to
-   * alreay have project with such url (left uncleaned from previous runs). Such project
+   * already have project with such url (left uncleaned from previous runs). Such project
    * silently gets deleted.
    * @param projectNameBase project name template
    * @return the newly created project, or {@code null} if the creation failed
    */
   public static IProject createEmptyProject(String projectNameBase) {
-    URI projectUri;
-    String projectName;
+    ProjectCheckData projectProject;
     try {
       for (int uniqueNumber = 0; ; uniqueNumber++) {
         String projectNameTry;
@@ -87,14 +86,8 @@ public class ChromiumDebugPluginUtil {
         } else {
           projectNameTry = projectNameBase + " (" + uniqueNumber + ")"; //$NON-NLS-1$ //$NON-NLS-2$
         }
-        URI projectUriTry = ChromiumScriptFileSystem.getFileStoreUri(
-            new Path(null, "/" + projectNameTry)); //$NON-NLS-1$
-        IFileStore projectStore = EFS.getStore(projectUriTry);
-        if (projectStore.fetchInfo().exists()) {
-          continue;
-        } else {
-          projectUri = projectUriTry;
-          projectName = projectNameTry;
+        projectProject = checkProjectName(projectNameTry);
+        if (projectProject != null) {
           break;
         }
       }
@@ -102,15 +95,21 @@ public class ChromiumDebugPluginUtil {
       ChromiumDebugPlugin.log(e);
       return null;
     }
-    IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+    IProject project = projectProject.getProject();
+    if (project.exists()) {
+      try {
+        project.delete(true, null);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(e);
+        return null;
+      }
+    }
+
     IProjectDescription description =
-        ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
-    description.setLocationURI(projectUri);
+        ResourcesPlugin.getWorkspace().newProjectDescription(project.getName());
+    description.setLocationURI(projectProject.getProjectUri());
     description.setNatureIds(new String[] { JS_DEBUG_PROJECT_NATURE });
     try {
-      if (project.exists()) {
-        project.delete(true, null);
-      }
 
       project.create(description, null);
       project.open(null);
@@ -118,9 +117,44 @@ public class ChromiumDebugPluginUtil {
       return project;
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
+      return null;
     }
+  }
 
-    return null;
+  private interface ProjectCheckData {
+    IProject getProject();
+    URI getProjectUri();
+  }
+
+  /**
+   * Checks whether debug virtual project can be created.
+   * @param projectNameTry desired project name
+   * @return project project with parameters data or null if project with desired name cannot be
+   *         created
+   */
+  private static ProjectCheckData checkProjectName(String projectNameTry) throws CoreException {
+    final IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectNameTry);
+    if (project.exists()) {
+      URI projectURI = project.getLocationURI();
+      if (!ChromiumScriptFileSystem.isChromiumDebugURI(projectURI)) {
+        // This is not our project. Do not touch it.
+        return null;
+      }
+    }
+    IPath newPath = project.getFullPath();
+    final URI projectUriTry = ChromiumScriptFileSystem.getFileStoreUri(newPath);
+    IFileStore projectStore = EFS.getStore(projectUriTry);
+    if (projectStore.fetchInfo().exists()) {
+      return null;
+    }
+    return new ProjectCheckData() {
+      public IProject getProject() {
+        return project;
+      }
+      public URI getProjectUri() {
+        return projectUriTry;
+      }
+    };
   }
 
 

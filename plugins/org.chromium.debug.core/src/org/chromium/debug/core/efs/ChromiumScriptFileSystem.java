@@ -42,6 +42,10 @@ public class ChromiumScriptFileSystem extends FileSystem {
     }
   }
 
+  public static boolean isChromiumDebugURI(URI uri) {
+    return CHROMIUMDEBUG_SCHEME.equals(uri.getScheme());
+  }
+
   /**
    * Converts a chromiumdebug FS FileStore URI into a path relative to the FS root.
    *
