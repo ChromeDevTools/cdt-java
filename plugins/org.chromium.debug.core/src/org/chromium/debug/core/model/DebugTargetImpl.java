@@ -55,7 +55,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private WorkspaceBridge workspaceRelations = null;
 
-  private final ListenerBlock listenerBlock = new ListenerBlock();
+  private ListenerBlock listenerBlock = null;
 
   public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
     super(null);
@@ -84,25 +84,30 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       return false;
     }
     monitor.worked(1);
-    final JavascriptVmEmbedder embedder = connector.attach(embedderListener, debugEventListener);
-    // From this moment V8 may call our listeners. We block them by listenerBlock for a while.
+    this.listenerBlock = new ListenerBlock();
+    try {
+      final JavascriptVmEmbedder embedder = connector.attach(embedderListener, debugEventListener);
+      // From this moment V8 may call our listeners. We block them by listenerBlock for a while.
 
-    Destructable embedderDestructor = new Destructable() {
-      public void destruct() {
-        embedder.getJavascriptVm().detach();
-      }
-    };
+      Destructable embedderDestructor = new Destructable() {
+        public void destruct() {
+          embedder.getJavascriptVm().detach();
+        }
+      };
 
-    destructingGuard.addValue(embedderDestructor);
+      destructingGuard.addValue(embedderDestructor);
 
-    this.vmEmbedder = embedder;
+      this.vmEmbedder = embedder;
 
-    // We'd like to know when launch is removed to remove our project.
-    DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
+      // We'd like to know when launch is removed to remove our project.
+      DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
 
-    this.workspaceRelations = workspaceBridgeFactory.attachedToVm(this,
-        vmEmbedder.getJavascriptVm());
-    listenerBlock.unblock();
+      this.workspaceRelations = workspaceBridgeFactory.attachedToVm(this,
+          vmEmbedder.getJavascriptVm());
+      listenerBlock.setProperlyInitialized();
+    } finally {
+      listenerBlock.unblock();
+    }
 
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
     reloadScriptsAndPossiblyResume(attachCallback);
@@ -477,23 +482,29 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private static class ListenerBlock {
     private volatile boolean isBlocked = true;
+    private volatile boolean hasBeenProperlyInitialized = false;
     private final Object monitor = new Object();
     void waitUntilReady() {
       if (isBlocked) {
-        return;
-      }
-      synchronized (monitor) {
-        while (isBlocked) {
-          try {
-            monitor.wait();
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        synchronized (monitor) {
+          while (isBlocked) {
+            try {
+              monitor.wait();
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
           }
         }
       }
+      if (!hasBeenProperlyInitialized) {
+        throw new RuntimeException("DebugTarget has not been properly initialized"); //$NON-NLS-1$
+      }
+    }
+    void setProperlyInitialized() {
+      hasBeenProperlyInitialized = true;
     }
     void unblock() {
-      isBlocked = true;
+      isBlocked = false;
       synchronized (monitor) {
         monitor.notifyAll();
       }

@@ -70,6 +70,8 @@ public interface JavascriptVm {
    *        may be {@code null}
    * @throws MethodIsBlockingException if called from a callback because it
    *         blocks until scripts are received
+   * TODO(peter.rybin): get rid of callback (return result explicitly)
+   * TODO(peter.rybin): support notification about collected scripts
    */
   void getScripts(ScriptsCallback callback) throws MethodIsBlockingException;
 

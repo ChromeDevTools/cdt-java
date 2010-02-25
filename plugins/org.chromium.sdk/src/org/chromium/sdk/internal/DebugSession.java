@@ -152,6 +152,7 @@ public class DebugSession {
     sendMessageAsync(DebuggerMessageFactory.suspend(), true, v8Callback, null);
   }
 
+  // TODO(peter.rybin): clean up this stuff; loadAllScripts is obviously not reentrant.
   public class ScriptLoader {
 
     /** Whether the initial script loading has completed. */
