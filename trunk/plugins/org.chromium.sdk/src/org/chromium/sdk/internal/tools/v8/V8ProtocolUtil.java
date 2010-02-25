@@ -219,7 +219,7 @@ public class V8ProtocolUtil {
       DataWithRef getRef(PropertyObject prop) {
         PropertyWithValue asPropertyWithValue = prop.asPropertyWithValue();
         if (asPropertyWithValue != null) {
-          return DataWithRef.fromSomeRef(asPropertyWithValue.getValue().getSuper());
+          return DataWithRef.fromSomeRef(asPropertyWithValue.getValue());
         } else {
           return DataWithRef.fromLong(prop.asPropertyWithRef().ref());
         }

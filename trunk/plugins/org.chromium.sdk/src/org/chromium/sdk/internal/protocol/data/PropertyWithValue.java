@@ -13,5 +13,5 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 public interface PropertyWithValue extends JsonSubtype<PropertyObject> {
   @JsonSubtypeCondition
   @JsonOptionalField
-  RefWithDisplayData getValue();
+  SomeRef getValue();
 }
