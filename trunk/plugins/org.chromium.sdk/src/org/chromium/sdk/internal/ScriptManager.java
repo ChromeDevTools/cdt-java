@@ -76,10 +76,10 @@ public class ScriptManager {
    * Associates a source received in a "source" V8 response with the given
    * script.
    *
-   * @param scriptBody the JSON response body
+   * @param body the JSON response body
    * @param script the script to associate the source with
    */
-  public void setSourceCode(ScriptHandle body, ScriptImpl script) {
+  private void setSourceCode(ScriptHandle body, ScriptImpl script) {
     String src = body.source();
     if (src == null) {
       return;
@@ -130,8 +130,8 @@ public class ScriptManager {
   }
 
   /**
-   * This method allows running the same code for all scripts in the manager.
-   *
+   * This method allows running the same code for all scripts in the manager. All modifications
+   * are blocked for this period of time.
    * @param callback to invoke for every script, until
    *        {@link Callback#process(Script)} returns {@code false}.
    */

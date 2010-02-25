@@ -90,7 +90,7 @@ public class ScriptImpl implements Script {
 
   private final Descriptor descriptor;
 
-  private String source;
+  private volatile String source = null;
 
   /**
    * @param descriptor of the script retrieved from a "scripts" response

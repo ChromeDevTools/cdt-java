@@ -7,7 +7,6 @@ package org.chromium.sdk.internal.tools.v8;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.CallbackSemaphore;
@@ -48,44 +47,33 @@ public class V8Helper {
    */
   private final DebugSession debugSession;
 
-  /**
-   * A semaphore that prevents concurrent script reloading (which may effectively
-   * double the efforts.)
-   */
-  private final Semaphore scriptsReloadSemaphore = new Semaphore(1);
-
   public V8Helper(DebugSession debugSession) {
     this.debugSession = debugSession;
   }
 
+  public interface ScriptLoadCallback {
+    void success();
+    void failure(String message);
+  }
+
   /**
-   * Reloads all normal scripts found in the page. First, all scripts without
-   * their sources are retrieved to save bandwidth (script list change during a
-   * page lifetime is a relatively rare event.) If at least one script has been
-   * added, the script cache is dropped and re-populated with new scripts that
-   * are re-requested together with their sources.
-   *
+   * Loads all scripts and stores them in ScriptManager.
    * @param callback to invoke when the script reloading has completed
+   * @param syncCallback to invoke after callback whether it normally returned or threw an exception
    */
-  public void reloadAllScriptsAsync(V8CommandProcessor.V8HandlerCallback callback,
-      SyncCallback syncCallback) {
-    final V8CommandProcessor.V8HandlerCallback finalCallback = callback != null
-        ? callback
-        : V8CommandProcessor.V8HandlerCallback.NULL_CALLBACK;
-    lock();
+  public static void reloadAllScriptsAsync(final DebugSession debugSession,
+      final ScriptLoadCallback callback, SyncCallback syncCallback) {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         true,
         new V8CommandProcessor.V8HandlerCallback() {
           public void failure(String message) {
-            unlock();
-            finalCallback.failure(message);
+            callback.failure(message);
           }
 
           public void messageReceived(CommandResponse response) {
             SuccessCommandResponse successResponse = response.asSuccess();
 
-            // TODO(peter.rybin): add try/finally for unlock, with some error reporting probably.
             List<ScriptHandle> body;
             try {
               body = successResponse.getBody().asScripts();
@@ -98,28 +86,13 @@ public class V8Helper {
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
               if (scriptManager.findById(id) == null &&
                   !ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(scriptHandle.source())) {
-                scriptManager.addScript(
-                    scriptHandle,
-                    successResponse.getRefs());
+                scriptManager.addScript(scriptHandle, successResponse.getRefs());
               }
             }
-            unlock();
-            finalCallback.messageReceived(response);
+            callback.success();
           }
         },
         syncCallback);
-  }
-
-  protected void lock() {
-    try {
-      scriptsReloadSemaphore.acquire();
-    } catch (InterruptedException e) {
-      // consider it a successful acquisition
-    }
-  }
-
-  protected void unlock() {
-    scriptsReloadSemaphore.release();
   }
 
   /**
