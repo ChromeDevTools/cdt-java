@@ -222,7 +222,7 @@ public class V8Helper {
     String className = valueHandle.className();
     Type type = JsDataTypeUtil.fromJsonTypeAndClassName(valueHandle.type(), className);
     if (type == null) {
-      throw new ValueLoadException("Bad value object");
+      type = Type.TYPE_OBJECT;
     }
     String text = valueHandle.text();
     return createMirrorFromLookup(valueHandle, type).getValueMirror();
