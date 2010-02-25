@@ -4,11 +4,15 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
@@ -23,7 +27,6 @@ import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 
@@ -152,41 +155,36 @@ public class DebugSession {
     sendMessageAsync(DebuggerMessageFactory.suspend(), true, v8Callback, null);
   }
 
-  // TODO(peter.rybin): clean up this stuff; loadAllScripts is obviously not reentrant.
   public class ScriptLoader {
 
-    /** Whether the initial script loading has completed. */
-    private volatile boolean doneInitialScriptLoad = false;
+    private final Object monitor = new Object();
+    /**
+     * Stores the callbacks that are waiting for result.
+     * This field being reset to null means that result is ready (loaded into ScriptManager)
+     * and no more callbacks are accepted.
+     */
+    private List<ScriptsCallback> pendingCallbacks = new ArrayList<ScriptsCallback>(2);
+    private List<SyncCallback> pendingSyncCallbacks = new ArrayList<SyncCallback>(2);
 
     /**
      * Loads all scripts from the remote if necessary, and feeds them into the
      * callback provided (if any).
-     *
-     * @param callback nullable callback to invoke when the scripts are ready
      */
-    public void loadAllScripts(final ScriptsCallback callback, SyncCallback syncCallback) {
-      if (!doneInitialScriptLoad) {
-        this.doneInitialScriptLoad = true;
-        // Not loaded the scripts initially, do full load.
-        v8Helper.reloadAllScriptsAsync(new V8HandlerCallback() {
-          public void messageReceived(CommandResponse response) {
-            if (callback != null) {
-              SuccessCommandResponse successResponse = response.asSuccess();
-              if (successResponse != null) {
-                callback.success(getScriptManager().allScripts());
-              } else {
-                callback.failure(response.asFailure().getMessage());
-              }
-            }
-          }
-
-          public void failure(String message) {
-            if (callback != null) {
-              callback.failure(message);
-            }
-          }
-        }, syncCallback);
-      } else {
+    public void loadAllScripts(ScriptsCallback callback, SyncCallback syncCallback) {
+      boolean resultIsReady;
+      boolean sendMessage;
+      synchronized (monitor) {
+        if (pendingCallbacks == null) {
+          resultIsReady = true;
+          sendMessage = false;
+        } else {
+          resultIsReady = false;
+          sendMessage = pendingCallbacks.isEmpty();
+          pendingCallbacks.add(callback);
+          pendingSyncCallbacks.add(syncCallback);
+        }
+      }
+      if (resultIsReady) {
         try {
           if (callback != null) {
             callback.success(getScriptManager().allScripts());
@@ -196,8 +194,68 @@ public class DebugSession {
             syncCallback.callbackDone(null);
           }
         }
+        return;
+      }
+      if (sendMessage) {
+        sendAsyncMessage();
       }
     }
+    private void sendAsyncMessage() {
+      V8Helper.ScriptLoadCallback groupCallback = new V8Helper.ScriptLoadCallback() {
+        public void success() {
+          final Collection<Script> scripts = scriptManager.allScripts();
+          processCall(new CallbackCaller() {
+            @Override
+            void call(ScriptsCallback callback) {
+              callback.success(scripts);
+            }
+          });
+        }
+
+        public void failure(final String message) {
+          processCall(new CallbackCaller() {
+            @Override
+            void call(ScriptsCallback callback) {
+              callback.failure(message);
+            }
+          });
+        }
+
+        private void processCall(CallbackCaller caller) {
+          List<ScriptsCallback> savedCallbacks;
+          synchronized (monitor) {
+            savedCallbacks = pendingCallbacks;
+            pendingCallbacks = null;
+          }
+          for (ScriptsCallback callback : savedCallbacks) {
+            if (callback != null) {
+              caller.call(callback);
+            }
+          }
+        }
+        abstract class CallbackCaller {
+          abstract void call(ScriptsCallback callback);
+        }
+      };
+
+      SyncCallback groupSyncCallback = new SyncCallback() {
+        public void callbackDone(RuntimeException e) {
+          List<SyncCallback> savedCallbacks;
+          synchronized (monitor) {
+            savedCallbacks = pendingSyncCallbacks;
+            pendingSyncCallbacks = null;
+          }
+          for (SyncCallback callback : savedCallbacks) {
+            if (callback != null) {
+              callback.callbackDone(e);
+            }
+          }
+        }
+      };
+
+      V8Helper.reloadAllScriptsAsync(DebugSession.this, groupCallback, groupSyncCallback);
+    }
+
   }
 
   /**
