@@ -11,13 +11,12 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.V8ContextFilter;
 import org.chromium.sdk.internal.protocol.AfterCompileBody;
-import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.EventNotification;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
-import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 
@@ -43,12 +42,9 @@ public class AfterCompileProcessor extends V8EventProcessor {
         DebuggerMessageFactory.scripts(
             Collections.singletonList(V8ProtocolUtil.getScriptIdFromResponse(script)), true),
         true,
-        new V8CommandProcessor.V8HandlerCallback(){
-          public void messageReceived(CommandResponse response) {
-            SuccessCommandResponse successResponse = response.asSuccess();
-            if (successResponse == null) {
-              return;
-            }
+        new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
             List<ScriptHandle> body;
             try {
               body = successResponse.getBody().asScripts();
@@ -67,6 +63,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
             }
           }
 
+          @Override
           public void failure(String message) {
             // The script is now missing.
           }
