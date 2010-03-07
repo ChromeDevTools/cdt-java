@@ -121,9 +121,9 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     } catch (ExecutionException e) {
-      throw new IOException("Failed to get version", e);
+      throw newIOException("Failed to get version", e);
     } catch (TimeoutException e) {
-      throw new IOException("Timed out waiting for version", e);
+      throw newIOException("Timed out waiting for version", e);
     }
 
     String versionString = remoteInfo.getProtocolVersion();

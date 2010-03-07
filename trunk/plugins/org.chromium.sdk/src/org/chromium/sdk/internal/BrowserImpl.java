@@ -102,7 +102,7 @@ public class BrowserImpl implements Browser {
       try {
         serverVersionString = devToolsHandler.version(OPERATION_TIMEOUT_MS);
       } catch (TimeoutException e) {
-        throw new IOException("Failed to get protocol version from remote", e);
+        throw JavascriptVmImpl.newIOException("Failed to get protocol version from remote", e);
       }
       if (serverVersionString == null) {
         throw new UnsupportedVersionException(BrowserImpl.PROTOCOL_VERSION, null);
@@ -291,7 +291,7 @@ public class BrowserImpl implements Browser {
         ticket = connectInternal();
       } catch (UnsupportedVersionException e) {
         // This exception should have happened on tab fetcher creation.
-        throw new IOException("Unexpected version problem", e);
+        throw JavascriptVmImpl.newIOException("Unexpected version problem", e);
       }
 
       Session session = ticket.getSession();

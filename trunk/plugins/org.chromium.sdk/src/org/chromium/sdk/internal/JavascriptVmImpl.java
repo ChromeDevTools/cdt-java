@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal;
 
+import java.io.IOException;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
@@ -39,4 +41,11 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   protected abstract DebugSession getDebugSession();
+
+  // TODO(peter.rybin): This message will be obsolete in JavaSE-1.6.
+  public static IOException newIOException(String message, Throwable cause) {
+    IOException result = new IOException(message);
+    result.initCause(cause);
+    return result;
+  }
 }
