@@ -25,13 +25,14 @@ import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.json.simple.JSONObject;
 
 /**
  * Handles the "backtrace" V8 command replies.
  */
-class BacktraceProcessor implements org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback {
+class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
 
   private final ContextBuilder.ExpectingBacktraceStep step2;
 

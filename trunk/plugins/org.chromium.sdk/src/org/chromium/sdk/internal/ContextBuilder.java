@@ -16,8 +16,8 @@ import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -281,14 +281,9 @@ public class ContextBuilder {
 
         DebuggerMessage message = DebuggerMessageFactory.goOn(stepAction, stepCount);
         V8CommandProcessor.V8HandlerCallback commandCallback
-            = new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(CommandResponse response) {
-            SuccessCommandResponse successResponse = response.asSuccess();
-            if (successResponse == null) {
-              this.failure(response.asFailure().getMessage());
-              return;
-            }
-
+            = new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
             contextDismissed(UserContext.this);
 
             if (callback != null) {
@@ -296,6 +291,7 @@ public class ContextBuilder {
             }
             getDebugSession().getDebugEventListener().resumed();
           }
+          @Override
           public void failure(String message) {
             synchronized (sendContextCommandsMonitor) {
               // resurrected

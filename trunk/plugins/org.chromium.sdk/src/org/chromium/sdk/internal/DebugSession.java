@@ -23,6 +23,7 @@ import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DefaultResponseHandler;
 import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
+import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandOutput;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
@@ -125,20 +126,15 @@ public class DebugSession {
   }
 
   public void suspend(final SuspendCallback suspendCallback) {
-    V8CommandProcessor.V8HandlerCallback v8Callback = new V8CommandProcessor.V8HandlerCallback() {
+    V8CommandProcessor.V8HandlerCallback v8Callback = new V8CommandCallbackBase() {
+      @Override
       public void failure(String message) {
         if (suspendCallback != null) {
           suspendCallback.failure(new Exception(message));
         }
       }
-      public void messageReceived(CommandResponse response) {
-        SuccessCommandResponse successResponse = response.asSuccess();
-        if (successResponse == null) {
-          if (suspendCallback != null) {
-            suspendCallback.failure(new Exception("Unsuccessful command"));
-          }
-          return;
-        }
+      @Override
+      public void success(SuccessCommandResponse successResponse) {
         if (suspendCallback != null) {
           suspendCallback.success();
         }

@@ -8,7 +8,6 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.protocol.BreakpointBody;
-import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
@@ -35,28 +34,25 @@ public class BreakpointManager {
         true,
         callback == null
             ? null
-            : new V8CommandProcessor.V8HandlerCallback() {
-              public void messageReceived(CommandResponse response) {
-                SuccessCommandResponse successResponse = response.asSuccess();
-                if (successResponse != null) {
-                  BreakpointBody body;
-                  try {
-                    body = successResponse.getBody().asBreakpointBody();
-                  } catch (JsonProtocolParseException e) {
-                    throw new RuntimeException(e);
-                  }
-                  long id = body.getBreakpoint();
-
-                  final BreakpointImpl breakpoint =
-                      new BreakpointImpl(type, id, enabled, ignoreCount,
-                          condition, BreakpointManager.this);
-
-                  callback.success(breakpoint);
-                  idToBreakpoint.put(breakpoint.getId(), breakpoint);
-                } else {
-                  callback.failure(response.asFailure().getMessage());
+            : new V8CommandCallbackBase() {
+              @Override
+              public void success(SuccessCommandResponse successResponse) {
+                BreakpointBody body;
+                try {
+                  body = successResponse.getBody().asBreakpointBody();
+                } catch (JsonProtocolParseException e) {
+                  throw new RuntimeException(e);
                 }
+                long id = body.getBreakpoint();
+
+                final BreakpointImpl breakpoint =
+                    new BreakpointImpl(type, id, enabled, ignoreCount,
+                        condition, BreakpointManager.this);
+
+                callback.success(breakpoint);
+                idToBreakpoint.put(breakpoint.getId(), breakpoint);
               }
+              @Override
               public void failure(String message) {
                 if (callback != null) {
                   callback.failure(message);
@@ -80,19 +76,14 @@ public class BreakpointManager {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
         true,
-        new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(CommandResponse response) {
-            SuccessCommandResponse successResponse = response.asSuccess();
-            if (successResponse != null) {
-              if (callback != null) {
-                callback.success(null);
-              }
-            } else {
-              if (callback != null) {
-                callback.failure(response.asFailure().getMessage());
-              }
+        new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
+            if (callback != null) {
+              callback.success(null);
             }
           }
+          @Override
           public void failure(String message) {
             if (callback != null) {
               callback.failure(message);
@@ -107,17 +98,14 @@ public class BreakpointManager {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
         true,
-        new V8CommandProcessor.V8HandlerCallback() {
-          public void messageReceived(CommandResponse response) {
+        new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
             if (callback != null) {
-              SuccessCommandResponse successResponse = response.asSuccess();
-              if (successResponse != null) {
-                callback.success(breakpointImpl);
-              } else {
-                callback.failure(response.asFailure().getMessage());
-              }
+              callback.success(breakpointImpl);
             }
           }
+          @Override
           public void failure(String message) {
             if (callback != null) {
               callback.failure(message);

@@ -66,14 +66,14 @@ public class V8Helper {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
         true,
-        new V8CommandProcessor.V8HandlerCallback() {
+        new V8CommandCallbackBase() {
+          @Override
           public void failure(String message) {
             callback.failure(message);
           }
 
-          public void messageReceived(CommandResponse response) {
-            SuccessCommandResponse successResponse = response.asSuccess();
-
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
             List<ScriptHandle> body;
             try {
               body = successResponse.getBody().asScripts();
