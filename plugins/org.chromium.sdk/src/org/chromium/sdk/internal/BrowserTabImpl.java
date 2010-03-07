@@ -89,7 +89,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
       try {
         result = devToolSessionManager.attachToTab();
       } catch (AttachmentFailureException e) {
-        throw new IOException(e);
+        throw newIOException(null, e);
       }
       if (Result.OK != result) {
         throw new IOException("Failed to attach with result: " + result);

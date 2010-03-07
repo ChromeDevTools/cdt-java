@@ -10,9 +10,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
 
 import org.chromium.sdk.LineReader;
+import org.chromium.sdk.internal.JavascriptVmImpl;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
@@ -85,7 +85,7 @@ public interface Handshaker {
       return runnableFuture;
     }
 
-    private final RunnableFuture<RemoteInfo> runnableFuture =
+    private final FutureTask<RemoteInfo> runnableFuture =
         new FutureTask<RemoteInfo>(new HandshakeTaks());
 
     private LineReader input = null;
@@ -100,7 +100,7 @@ public interface Handshaker {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } catch (ExecutionException e) {
-        throw new IOException("Failed to perform handshake", e);
+        throw JavascriptVmImpl.newIOException("Failed to perform handshake", e);
       }
 
     }
@@ -111,7 +111,7 @@ public interface Handshaker {
         try {
           message = Message.fromBufferedReader(input);
         } catch (MalformedMessageException e) {
-          throw new IOException("Unrecognized handshake message from remote", e);
+          throw JavascriptVmImpl.newIOException("Unrecognized handshake message from remote", e);
         }
         if (message == null) {
           throw new IOException("End of stream");
