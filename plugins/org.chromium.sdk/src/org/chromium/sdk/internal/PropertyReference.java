@@ -9,7 +9,7 @@ package org.chromium.sdk.internal;
  * A named property reference.
  */
 public class PropertyReference {
-  private final String name;
+  private final Object name;
 
   private final DataWithRef smthWithRef;
 
@@ -17,7 +17,7 @@ public class PropertyReference {
    * @param propertyName the name of the property
    * @param valueObject a JSON descriptor of the property
    */
-  public PropertyReference(String propertyName, DataWithRef smthWithRef) {
+  public PropertyReference(Object propertyName, DataWithRef smthWithRef) {
     this.name = propertyName;
     this.smthWithRef = smthWithRef;
   }
@@ -26,7 +26,7 @@ public class PropertyReference {
     return smthWithRef.ref();
   }
 
-  public String getName() {
+  public Object getName() {
     return name;
   }
 

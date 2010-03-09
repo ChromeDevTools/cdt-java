@@ -98,7 +98,9 @@ public class CallFrameImpl implements CallFrame {
         ValueLoader valueLoader = context.getValueLoader();
         ValueMirror mirror =
             valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
-        this.receiverVariable = new JsVariableImpl(this.context, mirror, ref.getName());
+        // This name should be string. We are making it string as a fall-back strategy.
+        String varNameStr = ref.getName().toString();
+        this.receiverVariable = new JsVariableImpl(this.context, mirror, varNameStr);
       }
       this.receiverVariableLoaded = true;
     }
@@ -145,7 +147,9 @@ public class CallFrameImpl implements CallFrame {
     List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
     Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
     for (int i = 0; i < refs.size(); i++) {
-      result.add(new JsVariableImpl(this.context, mirrors.get(i), refs.get(i).getName()));
+      // This name should be string. We are making it string as a fall-back strategy.
+      String varNameStr = refs.get(i).getName().toString();
+      result.add(new JsVariableImpl(this.context, mirrors.get(i), varNameStr));
     }
     return result;
   }

@@ -17,6 +17,7 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -72,7 +73,8 @@ public class JsObjectImplTest {
 
   @Test
   public void testObjectData() throws Exception {
-    JsObjectImpl jsObject = new JsObjectImpl(callFrame.getInternalContext(), "", eventMirror);
+    JsObjectImpl jsObject = new JsObjectImpl(callFrame.getInternalContext(), "test_object",
+        eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
     Collection<JsVariableImpl> variables = jsObject.getProperties();
@@ -94,5 +96,12 @@ public class JsObjectImplTest {
     assertEquals("3", secondVal.getValueString()); //$NON-NLS-1$
     assertNull(firstVal.asObject());
     assertNull(secondVal.asObject());
+
+    JsVariable xProperty = jsObject.getProperty("x");
+    assertEquals("x", xProperty.getName()); //$NON-NLS-1$
+    assertEquals("test_object.x", xProperty.getFullyQualifiedName()); //$NON-NLS-1$
+    JsVariable yProperty = jsObject.getProperty("y");
+    assertEquals("y", yProperty.getName()); //$NON-NLS-1$
+    assertEquals("test_object.y", yProperty.getFullyQualifiedName()); //$NON-NLS-1$
   }
 }

@@ -29,11 +29,11 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
    * This constructor implies lazy resolution of object properties.
    *
    * @param context this array belongs in
-   * @param parentFqn the fully qualified name of this array parent
+   * @param variableFqn the fully qualified name of the variable holding this array
    * @param valueState the mirror corresponding to this array
    */
-  JsArrayImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
-    super(context, parentFqn, valueState);
+  JsArrayImpl(InternalContext context, String variableFqn, ValueMirror valueState) {
+    super(context, variableFqn, valueState);
   }
 
   private synchronized void ensureElementsMap() throws MethodIsBlockingException {
@@ -49,12 +49,12 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
         });
 
     for (JsVariableImpl prop : getProperties()) {
-      String name = prop.getRawName();
-      Integer index = getAsArrayIndex(name);
-      if (index == null) {
+      Object name = prop.getRawNameAsObject();
+      if (name instanceof Number == false) {
         continue;
       }
-      map.put(index, prop);
+      Number index = (Number) name;
+      map.put(index.intValue(), prop);
     }
     indexToElementMap = Collections.unmodifiableSortedMap(map);
   }
@@ -76,13 +76,14 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
     List<JsVariableImpl> properties = getSubpropertiesHelper().getPropertiesLazily();
     // TODO(peter.rybin): rename propRefs
     for (JsVariableImpl prop : properties) {
-      String name = prop.getRawName();
-      Integer index = getAsArrayIndex(name);
-      if (index == null) {
+      Object name = prop.getRawNameAsObject();
+      if (name instanceof Number == false) {
         continue;
       }
-      if (index > lastIndex) {
-        lastIndex = index;
+      Number index = (Number) name;
+      int intIndex = index.intValue();
+      if (intIndex > lastIndex) {
+        lastIndex = intIndex;
       }
     }
     return lastIndex + 1;
@@ -109,47 +110,4 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
   public JsArrayImpl asArray() {
     return this;
   }
-
-  @Override
-  protected JsVariableImpl.NameDecorator getChildPropertyNameDecorator() {
-    return ARRAY_ELEMENT_DECORATOR;
-  }
-
-  /**
-   * @return integer representation of the index or null if it is not an integer
-   */
-  static Integer getAsArrayIndex(String varName) {
-    if (!JsonUtil.isInteger(varName)) {
-      return null;
-    }
-    try {
-      int index = Integer.parseInt(varName);
-      return index;
-    } catch (NumberFormatException e) {
-      return null;
-    }
-  }
-
-  private final static JsVariableImpl.NameDecorator ARRAY_ELEMENT_DECORATOR =
-      new JsVariableImpl.NameDecorator() {
-    @Override
-    String decorateVarName(String rawName) {
-      Integer index = getAsArrayIndex(rawName);
-      if (index == null) {
-        return rawName;
-      }
-      // Fix array element indices
-      return OPEN_BRACKET + rawName + CLOSE_BRACKET;
-    }
-    @Override
-    String buildAccessSuffix(String rawName) {
-      Integer index = getAsArrayIndex(rawName);
-      if (index == null) {
-        return NOOP.buildAccessSuffix(rawName);
-      }
-      return OPEN_BRACKET + rawName + CLOSE_BRACKET;
-    }
-    private static final String OPEN_BRACKET = "[";
-    private static final String CLOSE_BRACKET = "]";
-  };
 }
