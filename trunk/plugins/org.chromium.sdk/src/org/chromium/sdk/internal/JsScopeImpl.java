@@ -43,8 +43,10 @@ public class JsScopeImpl implements JsScope {
 
       properties = new ArrayList<JsVariable>(propertyMirrors.size());
       for (int i = 0; i < propertyMirrors.size(); i++) {
+        // This name should be string. We are making it string as a fall-back strategy.
+        String varNameStr = propertyRefs.get(i).getName().toString();
         properties.add(new JsVariableImpl(callFrameImpl.getInternalContext(),
-            propertyMirrors.get(i), propertyRefs.get(i).getName()));
+            propertyMirrors.get(i), varNameStr));
       }
     }
     return properties;

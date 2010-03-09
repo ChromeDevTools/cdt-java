@@ -82,7 +82,8 @@ public class JsArrayImplTest {
 
   @Test
   public void testArrayData() throws Exception {
-    JsArrayImpl jsArray = new JsArrayImpl(callFrame.getInternalContext(), "", arrayMirror);
+    JsArrayImpl jsArray = new JsArrayImpl(callFrame.getInternalContext(), "test_array",
+        arrayMirror);
     assertNotNull(jsArray.asArray());
     Collection<JsVariableImpl> properties = jsArray.getProperties();
     assertEquals(2 + 1, properties.size()); // 2 array element properties and one length property.
@@ -94,8 +95,12 @@ public class JsArrayImplTest {
     assertNull(jsArray.get(-1));
     assertNull(jsArray.get(0));
     assertEquals(firstElement, jsArray.get(1));
+    assertEquals("[1]", firstElement.getName());
+    assertEquals("test_array[1]", firstElement.getFullyQualifiedName());
     assertNull(jsArray.get(2));
     assertEquals(thirdElement, jsArray.get(3));
+    assertEquals("[3]", thirdElement.getName());
+    assertEquals("test_array[3]", thirdElement.getFullyQualifiedName());
     assertNull(jsArray.get(10));
     checkElementData(firstElement);
     checkElementData(thirdElement);

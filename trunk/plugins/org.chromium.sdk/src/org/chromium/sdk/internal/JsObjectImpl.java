@@ -23,19 +23,22 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
 
   private final InternalContext context;
 
-  private final String parentFqn;
+  /**
+   * Fully qualified name of variable holding this object.
+   */
+  private final String variableFqn;
 
   /**
    * This constructor implies the lazy resolution of object properties.
    *
    * @param context where this instance belongs in
-   * @param parentFqn the fully qualified name of the object parent
+   * @param variableFqn the fully qualified name of the variable holding this object
    * @param valueState the value data from the JS VM
    */
-  JsObjectImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
+  JsObjectImpl(InternalContext context, String variableFqn, ValueMirror valueState) {
     super(valueState);
     this.context = context;
-    this.parentFqn = parentFqn;
+    this.variableFqn = variableFqn;
   }
 
   public Collection<JsVariableImpl> getProperties() throws MethodIsBlockingException {
@@ -92,10 +95,6 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
     return getMirror().getClassName();
   }
 
-  protected JsVariableImpl.NameDecorator getChildPropertyNameDecorator() {
-    return JsVariableImpl.NameDecorator.NOOP;
-  }
-
   protected InternalContext getInternalContext() {
     return context;
   }
@@ -136,23 +135,29 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
       List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());
       for (int i = 0; i < mirrorProperties.size(); i++) {
         ValueMirror mirror = mirrorProperties.get(i);
-        String varName = propertyRefs.get(i).getName();
+        Object varName = propertyRefs.get(i).getName();
         String fqn = getFullyQualifiedName(varName);
         if (fqn == null) {
           continue;
         }
-        result.add(new JsVariableImpl(context, mirror, varName, fqn,
-            getNameDecorator()));
+        String decoratedName = JsVariableImpl.NameDecorator.decorateVarName(varName);
+        result.add(new JsVariableImpl(context, mirror, varName, decoratedName, fqn));
       }
       return result;
     }
 
-    private String getFullyQualifiedName(String propName) {
-      if (propName.startsWith(".")) {
-        // ".arguments" is not legal
+    private String getFullyQualifiedName(Object propName) {
+      if (variableFqn == null) {
         return null;
       }
-      return parentFqn + getNameDecorator().buildAccessSuffix(propName);
+      if (propName instanceof String) {
+        String propNameStr = (String) propName;
+        if (propNameStr.startsWith(".")) {
+          // ".arguments" is not legal
+          return null;
+        }
+      }
+      return variableFqn + JsVariableImpl.NameDecorator.buildAccessSuffix(propName);
     }
 
     JsVariableImpl getProperty(String propertyName) {
@@ -175,16 +180,11 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
       }
     }
 
-    abstract JsVariableImpl.NameDecorator getNameDecorator();
     abstract List<? extends PropertyReference> getPropertyRefs(
         SubpropertiesMirror subpropertiesMirror);
   }
 
   private final Subproperties subproperties = new Subproperties() {
-    @Override
-    JsVariableImpl.NameDecorator getNameDecorator() {
-      return getChildPropertyNameDecorator();
-    }
     @Override
     List<? extends PropertyReference> getPropertyRefs(SubpropertiesMirror subpropertiesMirror) {
       return subpropertiesMirror.getProperties();
@@ -192,10 +192,6 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
   };
 
   private final Subproperties internalProperties = new Subproperties() {
-    @Override
-    JsVariableImpl.NameDecorator getNameDecorator() {
-      return JsVariableImpl.NameDecorator.NOOP;
-    }
     @Override
     List<? extends PropertyReference> getPropertyRefs(SubpropertiesMirror subpropertiesMirror) {
       return subpropertiesMirror.getInternalProperties();

@@ -23,15 +23,16 @@ public class JsVariableImpl implements JsVariable {
   private final InternalContext context;
 
   /** The fully qualified name of this variable. */
-  private final String variableFqn;
-
-  private final NameDecorator nameDecorator;
+  private final String qualifiedName;
 
   /** The lazily constructed value of this variable. */
   private final JsValueImpl value;
 
   /** Variable name. */
-  private final String rawName;
+  private final Object rawName;
+
+  /** Variable name. */
+  private final String decoratedName;
 
   /**
    * Constructs a variable contained in the given context with the given
@@ -41,7 +42,7 @@ public class JsVariableImpl implements JsVariable {
    * @param valueData value data for this variable
    */
   JsVariableImpl(InternalContext context, ValueMirror valueData, String name) {
-    this(context, valueData, name, null, NameDecorator.NOOP);
+    this(context, valueData, name, name, name);
   }
 
   /**
@@ -50,27 +51,27 @@ public class JsVariableImpl implements JsVariable {
    *
    * @param context that owns this variable
    * @param valueData for this variable
-   * @param variableFqn the fully qualified name of this variable
+   * @param qualifiedName the fully qualified name of this variable
    */
-  JsVariableImpl(InternalContext context, ValueMirror valueData, String name, String variableFqn,
-      NameDecorator nameDecorator) {
+  JsVariableImpl(InternalContext context, ValueMirror valueData, Object rawName,
+      String decoratedName, String qualifiedName) {
     this.context = context;
     this.valueData = valueData;
-    this.rawName = name;
-    this.variableFqn = variableFqn;
-    this.nameDecorator = nameDecorator;
+    this.rawName = rawName;
+    this.decoratedName = decoratedName;
+    this.qualifiedName = qualifiedName;
 
     Type type = this.valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
-        this.value = new JsFunctionImpl(context, this.variableFqn, this.valueData);
+        this.value = new JsFunctionImpl(context, this.qualifiedName, this.valueData);
         break;
       case TYPE_ERROR:
       case TYPE_OBJECT:
-        this.value = new JsObjectImpl(context, this.variableFqn, this.valueData);
+        this.value = new JsObjectImpl(context, this.qualifiedName, this.valueData);
         break;
       case TYPE_ARRAY:
-        this.value = new JsArrayImpl(context, this.variableFqn, this.valueData);
+        this.value = new JsArrayImpl(context, this.qualifiedName, this.valueData);
         break;
       default:
         this.value = new JsValueImpl(this.valueData);
@@ -86,10 +87,14 @@ public class JsVariableImpl implements JsVariable {
   }
 
   public String getName() {
-    return nameDecorator.decorateVarName(rawName);
+    return decoratedName;
   }
 
   public String getRawName() {
+    return this.rawName.toString();
+  }
+
+  Object getRawNameAsObject() {
     return this.rawName;
   }
 
@@ -132,23 +137,27 @@ public class JsVariableImpl implements JsVariable {
   }
 
   public String getFullyQualifiedName() {
-    return variableFqn != null
-        ? variableFqn
+    return qualifiedName != null
+        ? qualifiedName
         : getName();
   }
 
-  static abstract class NameDecorator {
-    static final NameDecorator NOOP = new NameDecorator() {
-      @Override
-      String decorateVarName(String rawName) {
-        return rawName;
+  static class NameDecorator {
+    static String decorateVarName(Object rawName) {
+      if (rawName instanceof Number) {
+        return OPEN_BRACKET + rawName + CLOSE_BRACKET;
+      } else {
+        return rawName.toString();
       }
-      @Override
-      String buildAccessSuffix(String rawName) {
+    }
+    static String buildAccessSuffix(Object rawName) {
+      if (rawName instanceof Number) {
+        return OPEN_BRACKET + rawName + CLOSE_BRACKET;
+      } else {
         return "." + rawName;
       }
-    };
-    abstract String decorateVarName(String rawName);
-    abstract String buildAccessSuffix(String rawName);
+    }
+    private static final String OPEN_BRACKET = "[";
+    private static final String CLOSE_BRACKET = "]";
   }
 }

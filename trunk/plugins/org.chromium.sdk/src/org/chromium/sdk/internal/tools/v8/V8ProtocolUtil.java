@@ -146,7 +146,7 @@ public class V8ProtocolUtil {
    */
   public static <OBJ> PropertyReference extractProperty(OBJ prop,
       PropertyNameGetter<OBJ> nameGetter) {
-    String name = nameGetter.getName(prop);
+    Object name = nameGetter.getName(prop);
     if (name == null) {
       return null;
     }
@@ -193,8 +193,8 @@ public class V8ProtocolUtil {
 
     static final PropertyNameGetter<PropertyObject> LOCAL = new SubpropertyNameGetter() {
       @Override
-      String getName(PropertyObject ref) {
-        String name = super.getName(ref);
+      Object getName(PropertyObject ref) {
+        Object name = super.getName(ref);
         if (V8ProtocolUtil.isInternalProperty(name)) {
           return null;
         }
@@ -211,9 +211,8 @@ public class V8ProtocolUtil {
     static final PropertyNameGetter<PropertyObject> SUBPROPERTY = new SubpropertyNameGetter();
     static class SubpropertyNameGetter extends PropertyNameGetter<PropertyObject> {
       @Override
-      String getName(PropertyObject ref) {
-        Object nameObject = ref.name();
-        return nameObject.toString();
+      Object getName(PropertyObject ref) {
+        return ref.name();
       }
       @Override
       DataWithRef getRef(PropertyObject prop) {
@@ -239,7 +238,7 @@ public class V8ProtocolUtil {
     /**
      * @return property name or null if we should skip this property
      */
-    abstract String getName(OBJ ref);
+    abstract Object getName(OBJ ref);
     abstract Long getPropertyType(OBJ prop);
   }
 
@@ -248,9 +247,13 @@ public class V8ProtocolUtil {
    * @return whether the given property name corresponds to an internal V8
    *         property
    */
-  public static boolean isInternalProperty(String propertyName) {
+  public static boolean isInternalProperty(Object propertyName) {
+    if (propertyName instanceof String == false) {
+      return false;
+    }
+    String propertyNameStr = (String) propertyName;
     // Chrome can return properties like ".arguments". They should be ignored.
-    return propertyName.length() == 0 || propertyName.startsWith(".");
+    return propertyNameStr.length() == 0 || propertyNameStr.startsWith(".");
   }
 
   /**
