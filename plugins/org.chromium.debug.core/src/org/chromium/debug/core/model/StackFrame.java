@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
@@ -79,16 +80,22 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   static IVariable[] wrapVariables(
       DebugTargetImpl debugTarget, Collection<? extends JsVariable> jsVars,
+      Set<? extends String> propertyNameBlackList,
       Collection <? extends JsVariable> jsInternalProperties) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
     for (JsVariable jsVar : jsVars) {
+      if (propertyNameBlackList.contains(jsVar.getName())) {
+        continue;
+      }
       vars.add(new Variable(debugTarget, jsVar, false));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
-    for (JsVariable jsMetaVar : jsInternalProperties) {
-      vars.add(new Variable(debugTarget, jsMetaVar, true));
+    if (jsInternalProperties != null) {
+      for (JsVariable jsMetaVar : jsInternalProperties) {
+        vars.add(new Variable(debugTarget, jsMetaVar, true));
+      }
     }
     return vars.toArray(new IVariable[vars.size()]);
   }
@@ -307,8 +314,40 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   private final static Comparator<Variable> VARIABLE_COMPARATOR = new Comparator<Variable>() {
     public int compare(Variable var1, Variable var2) {
-      return var1.getName().compareTo(var2.getName());
+      return compareNameObjects(getNameObject(var1), getNameObject(var2));
     }
+    // Get property name as String or Integer.
+    private Object getNameObject(Variable var) {
+      String name = var.getName();
+      int len = name.length();
+      if (len >= 3 && name.charAt(0) == '[' && name.charAt(len-1) == ']') {
+        Integer i = Integer.valueOf(name.substring(1, len - 1));
+        return i;
+      }
+      return name;
+    }
+    // Compare property name (either string or integer).
+    private int compareNameObjects(Object nameObj1, Object nameObj2) {
+      if (nameObj1 instanceof Integer) {
+        Integer i1 = (Integer) nameObj1;
+        if (nameObj2 instanceof Integer) {
+          Integer i2 = (Integer) nameObj2;
+          return i1.compareTo(i2);
+        } else {
+          return COMPARE_INT_WITH_STRING;
+        }
+      } else {
+        String s1 = (String) nameObj1;
+        if (nameObj2 instanceof String) {
+          String s2 = (String) nameObj2;
+          return s1.compareTo(s2);
+        } else {
+          return -COMPARE_INT_WITH_STRING;
+        }
+      }
+    }
+    // Strings go before numbers.
+    private static final int COMPARE_INT_WITH_STRING = 1;
   };
 
   @Override
