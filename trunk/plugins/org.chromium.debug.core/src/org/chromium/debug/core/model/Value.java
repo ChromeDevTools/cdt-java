@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.Collections;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.JsArray;
@@ -56,7 +58,8 @@ public class Value extends DebugElementImpl implements IValue {
     try {
       if (variables == null) {
         if (value.asObject() != null) {
-          variables = StackFrame.wrapVariables(getDebugTarget(), value.asObject().getProperties(),
+          variables = StackFrame.wrapVariables(getDebugTarget(),
+              value.asObject().getProperties(), Collections.<String>emptySet(),
               value.asObject().getInternalProperties());
         } else {
           variables = EMPTY_VARIABLES;

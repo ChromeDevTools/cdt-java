@@ -4,12 +4,10 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
+import java.util.Collections;
+import java.util.Set;
 
 import org.chromium.sdk.JsArray;
-import org.chromium.sdk.JsVariable;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IIndexedValue;
 import org.eclipse.debug.core.model.IVariable;
@@ -28,12 +26,11 @@ public class ArrayValue extends Value implements IIndexedValue {
   }
 
   private IVariable[] createElements() {
-    SortedMap<Integer, ? extends JsVariable> elements = ((JsArray) getJsValue()).toSparseArray();
-    List<IVariable> variables = new ArrayList<IVariable>(elements.size());
-    for (JsVariable jsVar : elements.values()) {
-      variables.add(new Variable(getDebugTarget(), jsVar, false));
-    }
-    return variables.toArray(new IVariable[variables.size()]);
+    JsArray jsArray = (JsArray) getJsValue();
+    return StackFrame.wrapVariables(getDebugTarget(), jsArray.getProperties(),
+        ARRAY_HIDDEN_PROPERTY_NAMES,
+        // Do not show internal properties for arrays (this may be an option).
+        null);
   }
 
   public int getInitialOffset() {
@@ -64,4 +61,5 @@ public class ArrayValue extends Value implements IIndexedValue {
     return elements.length > 0;
   }
 
+  private static final Set<String> ARRAY_HIDDEN_PROPERTY_NAMES = Collections.singleton("length");
 }
