@@ -10,8 +10,8 @@ The table below shows the compatibility status of various Chrome/Chromium versio
 || Windows dev 5.0.366.2 ||  0.1.4	|| OK || 
 || Linux beta 5.0.342.7 || doesn't work	|| doesn't work || 
 || Linux dev 5.0.366.2 || 0.1.4	|| not checked || 
-|| Mac beta || not checked	|| not checked || 
-|| Mac dev || not checked	|| not checked || 
+|| Mac beta 5.0.342.7 || doesn't work	|| not checked || 
+|| Mac dev 5.0.366.0 || 0.1.4	|| not checked || 
 
 Notes:
   * "Doesn't work" mean that there is an issue with the current beta build; it should be fixed in a later builds.
