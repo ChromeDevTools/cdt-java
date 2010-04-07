@@ -29,7 +29,9 @@
         modes="debug"
         name="%chromiumLaunchName"
         delegateName="Debug Chromium JavaScript"
-        delegateDescription="JavaScript debugger for Chromium">
+        delegateDescription="JavaScript debugger for Chromium"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
     </launchConfigurationType>
     <launchConfigurationType
         id="org.chromium.debug.ui.LaunchType$StandaloneV8"
@@ -37,7 +39,9 @@
         modes="debug"
         name="%standaloneV8LaunchName"
         delegateName="Debug Standalone V8 JavaScript"
-        delegateDescription="JavaScript debugger for Standalone V8">
+        delegateDescription="JavaScript debugger for Standalone V8"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
     </launchConfigurationType>
     <launchConfigurationType
         id="org.chromium.debug.ui.ConsolePseudoConfigurationType"
@@ -229,4 +233,13 @@
       </enabledWhen>
     </page>
   </extension>
+  
+
+   <extension point="org.eclipse.debug.ui.sourceContainerPresentations">
+      <sourceContainerPresentation
+            containerTypeID="org.chromium.debug.core.VProjectSourceContainer.type"
+            icon="res/standalone_v8_16.png"
+            id="org.chromium.debug.core.VProjectSourceContainer.type">
+      </sourceContainerPresentation>
+   </extension>
 </plugin>

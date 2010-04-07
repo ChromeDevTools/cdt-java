@@ -7,6 +7,7 @@ package org.chromium.debug.core.model;
 import java.util.Collection;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
@@ -25,8 +26,6 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.debug.core.model.ISourceLocator;
-import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -71,7 +70,9 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
     this.resourceManager = new ResourceManager(debugProject, breakpointRegistry);
     ILaunch launch = debugTargetImpl.getLaunch();
-    launch.setSourceLocator(sourceLocator);
+
+    ChromiumSourceDirector director = (ChromiumSourceDirector) launch.getSourceLocator();
+    director.initializeVProjectContainers(debugProject, resourceManager);
   }
 
   public void launchRemoved() {
@@ -229,26 +230,6 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           jsBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
         }
       }
-    }
-  };
-
-  /**
-   * This very simple source locator works because we provide our own source files.
-   * We'll have to try harder, once we link with resource js files.
-   */
-  private final ISourceLocator sourceLocator = new ISourceLocator() {
-    public Object getSourceElement(IStackFrame stackFrame) {
-      if (stackFrame instanceof StackFrame == false) {
-        return null;
-      }
-      StackFrame jsStackFrame = (StackFrame) stackFrame;
-
-      Script script = jsStackFrame.getCallFrame().getScript();
-      if (script == null) {
-        return null;
-      }
-
-      return resourceManager.getResource(script);
     }
   };
 

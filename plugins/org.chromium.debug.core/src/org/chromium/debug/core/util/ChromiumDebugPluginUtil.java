@@ -7,6 +7,9 @@ package org.chromium.debug.core.util;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.efs.ChromiumScriptFileSystem;
@@ -36,7 +39,10 @@ import org.eclipse.ui.PlatformUI;
  */
 public class ChromiumDebugPluginUtil {
 
-  public static final String CHROMIUM_EXTENSION = "chromium"; //$NON-NLS-1$
+  private static final String CHROMIUM_EXTENSION = "chromium"; //$NON-NLS-1$
+
+  public static final Set<String> SUPPORTED_EXTENSIONS =
+      new HashSet<String>(Arrays.asList(CHROMIUM_EXTENSION, "js")); //$NON-NLS-1$
 
   public static final String JS_DEBUG_PROJECT_NATURE = "org.chromium.debug.core.jsnature"; //$NON-NLS-1$
 
