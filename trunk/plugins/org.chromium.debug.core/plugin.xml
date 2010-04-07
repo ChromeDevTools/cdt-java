@@ -41,4 +41,30 @@
         <run class="org.chromium.debug.core.efs.ChromiumScriptFileSystem"/>
      </filesystem>
   </extension>
+
+  <extension point="org.eclipse.debug.core.sourceLocators">
+     <sourceLocator 
+        id="org.chromium.debug.core.ChromiumSourceDirector"
+        class="org.chromium.debug.core.ChromiumSourceDirector"
+        name="a ChromiumSourceDirector">
+     </sourceLocator>
+   </extension>
+
+  <extension point="org.eclipse.debug.core.sourcePathComputers">
+     <sourcePathComputer
+        id="org.chromium.debug.core.ChromiumSourceComputer"
+        class="org.chromium.debug.core.ChromiumSourceComputer">
+      </sourcePathComputer>
+  </extension>
+  
+  <extension point="org.eclipse.debug.core.sourceContainerTypes">
+    <sourceContainerType
+      name="JS Server Scripts"
+      class="org.chromium.debug.core.VProjectSourceContainer$TypeDelegate"
+      id="org.chromium.debug.core.VProjectSourceContainer.type"
+      description="Remote V8/Chrome VM JavaScript Scripts">
+    </sourceContainerType>
+   </extension>
+  
+
 </plugin>

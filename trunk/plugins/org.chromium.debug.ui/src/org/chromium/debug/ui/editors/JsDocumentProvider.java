@@ -4,10 +4,12 @@
 
 package org.chromium.debug.ui.editors;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentPartitioner;
 import org.eclipse.jface.text.rules.FastPartitioner;
+import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.editors.text.FileDocumentProvider;
 
 /**
@@ -25,6 +27,24 @@ public class JsDocumentProvider extends FileDocumentProvider {
       doc.setDocumentPartitioner(partitioner);
     }
     return doc;
+  }
+
+  /**
+   * Alternative implementation of the method that does not require file to be a physical file.
+   */
+  @Override
+  public boolean isDeleted(Object element) {
+    if (element instanceof IFileEditorInput) {
+      IFileEditorInput input= (IFileEditorInput) element;
+
+      IProject project = input.getFile().getProject();
+      if (project != null && !project.exists()) {
+        return true;
+      }
+
+      return !input.getFile().exists();
+    }
+    return super.isDeleted(element);
   }
 
 }

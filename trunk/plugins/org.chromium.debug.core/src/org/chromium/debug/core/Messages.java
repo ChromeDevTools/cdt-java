@@ -15,6 +15,8 @@ public class Messages extends NLS {
 
   public static String ChromiumDebugPlugin_InternalError;
 
+  public static String VProjectSourceContainer_DEFAULT_TYPE_NAME;
+
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
