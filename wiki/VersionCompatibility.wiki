@@ -2,7 +2,7 @@
 
 = Version Compatibility =
 
-The table below shows the compatibility status of various Chrome/Chromium versions with versions of ChromeDevTools that have been released or manually built from the repository HEAD source.
+The table below shows the compatibility status of various Chrome/Chromium versions with versions of !ChromeDevTools that have been released or manually built from the repository HEAD source.
 
 || *Chrome version* || *!ChromeDevTools release version* || *Sources in the repository HEAD* ||
 || Windows rel 4.1.249.1045 ||  0.1.4	|| OK || 
