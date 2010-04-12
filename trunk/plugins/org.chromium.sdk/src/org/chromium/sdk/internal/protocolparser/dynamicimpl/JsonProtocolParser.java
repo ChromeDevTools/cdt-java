@@ -374,7 +374,7 @@ public class JsonProtocolParser {
 
         if (fieldTypeParser.asQuickParser() != null) {
           LazyParseFieldMethodHandler onDemandHandler = new LazyParseFieldMethodHandler(
-              fieldTypeParser.asQuickParser(), isOptional, fieldName);
+              fieldTypeParser.asQuickParser(), isOptional, fieldName, typeClass);
           onDemandHanlers.add(onDemandHandler);
           methodHandler = onDemandHandler;
         } else {
@@ -534,11 +534,14 @@ public class JsonProtocolParser {
     private final QuickParser<?> quickParser;
     private final boolean isOptional;
     private final String fieldName;
+    private final Class<?> typeClass;
 
-    LazyParseFieldMethodHandler(QuickParser<?> quickParser, boolean isOptional, String fieldName) {
+    LazyParseFieldMethodHandler(QuickParser<?> quickParser, boolean isOptional, String fieldName,
+        Class<?> typeClass) {
       this.quickParser = quickParser;
       this.isOptional = isOptional;
       this.fieldName = fieldName;
+      this.typeClass = typeClass;
     }
 
     @Override
@@ -546,7 +549,8 @@ public class JsonProtocolParser {
       try {
         return parse(objectData);
       } catch (JsonProtocolParseException e) {
-        throw new JsonProtocolParseRuntimeException("On demand parsing failed", e);
+        throw new JsonProtocolParseRuntimeException(
+            "On demand parsing failed for " + objectData.getUnderlyingObject(), e);
       }
     }
 
@@ -568,11 +572,13 @@ public class JsonProtocolParser {
         try {
           return quickParser.parseValueQuick(value);
         } catch (JsonProtocolParseException e) {
-          throw new JsonProtocolParseException("Failed to parse field " + fieldName, e);
+          throw new JsonProtocolParseException("Failed to parse field " + fieldName + " in type " +
+              typeClass.getName(), e);
         }
       } else {
         if (!isOptional) {
-          throw new JsonProtocolParseException("Field is not optional: " + fieldName);
+          throw new JsonProtocolParseException("Field is not optional: " + fieldName +
+              " (in type " + typeClass.getName() + ")");
         }
         return null;
       }
