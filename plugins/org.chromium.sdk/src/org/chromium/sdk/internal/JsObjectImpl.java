@@ -167,10 +167,10 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
     List<JsVariableImpl> getPropertiesLazily() throws MethodIsBlockingException {
       synchronized (this) {
         if (properties == null) {
-
-        List<? extends PropertyReference> propertyRefs = getPropertyRefs(getSubpropertiesMirror());
-        ValueLoader valueLoader = context.getValueLoader();
-        List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
+          List<? extends PropertyReference> propertyRefs =
+              getPropertyRefs(getSubpropertiesMirror());
+          ValueLoader valueLoader = context.getValueLoader();
+          List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
           List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
               propertyRefs);
