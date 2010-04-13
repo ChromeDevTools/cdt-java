@@ -19,6 +19,7 @@ import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
 import org.chromium.sdk.internal.ScopeMirror;
+import org.chromium.sdk.internal.ScriptImpl;
 import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.SubpropertiesMirror;
 import org.chromium.sdk.internal.ValueLoadException;
@@ -34,6 +35,7 @@ import org.chromium.sdk.internal.protocol.data.RefWithDisplayData;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 
@@ -42,13 +44,7 @@ import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
  */
 public class V8Helper {
 
-  /**
-   * The debug context in which the operations are performed.
-   */
-  private final DebugSession debugSession;
-
   public V8Helper(DebugSession debugSession) {
-    this.debugSession = debugSession;
   }
 
   public interface ScriptLoadCallback {
@@ -63,13 +59,33 @@ public class V8Helper {
    */
   public static void reloadAllScriptsAsync(final DebugSession debugSession,
       final ScriptLoadCallback callback, SyncCallback syncCallback) {
+    reloadScriptAsync(debugSession, null, callback, syncCallback);
+  }
+
+  /**
+   * Loads specified scripts or all existing scripts and stores them in ScriptManager.
+   * @param ids ids of requested scripts or null for all scripts
+   * @param callback to invoke when the script reloading has completed
+   * @param syncCallback to invoke after callback, regardless of whether it has returned normally
+   *        or thrown an exception
+   */
+  public static void reloadScriptAsync(final DebugSession debugSession, final List<Long> ids,
+      final ScriptLoadCallback callback, SyncCallback syncCallback) {
+    ContextlessDebuggerMessage message = DebuggerMessageFactory.scripts(ids, true);
+    if (ids == null) {
+      message = DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true);
+    } else {
+      message = DebuggerMessageFactory.scripts(ids, true);
+    }
     debugSession.sendMessageAsync(
-        DebuggerMessageFactory.scripts(ScriptsMessage.SCRIPTS_NORMAL, true),
+        message,
         true,
         new V8CommandCallbackBase() {
           @Override
           public void failure(String message) {
-            callback.failure(message);
+            if (callback != null) {
+              callback.failure(message);
+            }
           }
 
           @Override
@@ -83,13 +99,24 @@ public class V8Helper {
             ScriptManager scriptManager = debugSession.getScriptManager();
             for (int i = 0; i < body.size(); ++i) {
               ScriptHandle scriptHandle = body.get(i);
+              if (ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(scriptHandle.source())) {
+                continue;
+              }
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
-              if (scriptManager.findById(id) == null &&
-                  !ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(scriptHandle.source())) {
+              ScriptImpl scriptById = scriptManager.findById(id);
+              if (scriptById == null) {
                 scriptManager.addScript(scriptHandle, successResponse.getRefs());
+              } else {
+                // A scrupulous refactoring note:
+                // do not call setSource in a legacy case, when ids parameter is null.
+                if (ids != null) {
+                  scriptById.setSource(scriptHandle.source());
+                }
               }
             }
-            callback.success();
+            if (callback != null) {
+              callback.success();
+            }
           }
         },
         syncCallback);
