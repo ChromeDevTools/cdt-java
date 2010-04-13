@@ -40,9 +40,11 @@ public class ScriptManager {
       Collections.synchronizedMap(new HashMap<Long, ScriptImpl>());
 
   private final V8ContextFilter contextFilter;
+  private final DebugSession debugSession;
 
-  ScriptManager(V8ContextFilter contextFilter) {
+  ScriptManager(V8ContextFilter contextFilter, DebugSession debugSession) {
     this.contextFilter = contextFilter;
+    this.debugSession = debugSession;
   }
 
   /**
@@ -62,7 +64,7 @@ public class ScriptManager {
       if (desc == null) {
         return null;
       }
-      theScript = new ScriptImpl(desc);
+      theScript = new ScriptImpl(desc, debugSession);
       idToScript.put(desc.id, theScript);
     }
     if (scriptBody.source() != null) {

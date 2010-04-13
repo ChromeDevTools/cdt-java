@@ -4,20 +4,37 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.chromium.sdk.LiveEditDebugEventListener;
+import org.chromium.sdk.LiveEditExtension;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.UpdatableScript;
+import org.chromium.sdk.internal.protocol.ChangeLiveBody;
+import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
+import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.chromium.sdk.internal.tools.v8.V8Helper.ScriptLoadCallback;
+import org.chromium.sdk.internal.tools.v8.request.ChangeLiveMessage;
 
 /**
  * An objects that holds data for a "script" which is a part of a resource
  * loaded into the browser, identified by its original document URL, line offset
  * in the original document, and the line count this script spans.
  */
-public class ScriptImpl implements Script {
+public class ScriptImpl implements Script, UpdatableScript {
+
+  /** The class logger. */
+  private static final Logger LOGGER = Logger.getLogger(ScriptImpl.class.getName());
 
   /**
    * An object containing data that uniquely identify a V8 script chunk.
@@ -92,12 +109,15 @@ public class ScriptImpl implements Script {
 
   private volatile String source = null;
 
+  private final DebugSession debugSession;
+
   /**
    * @param descriptor of the script retrieved from a "scripts" response
    */
-  public ScriptImpl(Descriptor descriptor) {
+  public ScriptImpl(Descriptor descriptor, DebugSession debugSession) {
     this.descriptor = descriptor;
     this.source = null;
+    this.debugSession = debugSession;
   }
 
   public Type getType() {
@@ -130,6 +150,56 @@ public class ScriptImpl implements Script {
 
   public void setSource(String source) {
     this.source = source;
+  }
+
+  public void setSourceOnRemote(String newSource, UpdateCallback callback,
+      SyncCallback syncCallback) {
+    V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback);
+    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource),
+        true, v8Callback, syncCallback);
+  }
+
+  private V8CommandProcessor.V8HandlerCallback createScriptUpdateCallback(
+      final UpdateCallback callback) {
+    if (callback == null) {
+      return null;
+    }
+    return new V8CommandCallbackBase() {
+      @Override
+      public void success(SuccessCommandResponse successResponse) {
+        ChangeLiveBody body;
+        try {
+          body = successResponse.getBody().asChangeLiveBody();
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
+
+        ScriptLoadCallback scriptCallback = new ScriptLoadCallback() {
+          public void failure(String message) {
+            LOGGER.log(Level.SEVERE,
+                "Failed to reload script after LiveEdit script update; " + message);
+          }
+          public void success() {
+            LiveEditDebugEventListener listener =
+                LiveEditExtension.castToLiveEditListener(debugSession.getDebugEventListener());
+            if (listener != null) {
+              listener.scriptContentChanged(ScriptImpl.this);
+            }
+          }
+        };
+        V8Helper.reloadScriptAsync(debugSession, Collections.singletonList(getId()),
+            scriptCallback, null);
+
+        debugSession.recreateCurrentContext();
+
+        callback.success(body.getChangeLog());
+      }
+
+      @Override
+      public void failure(String message) {
+        callback.failure(message);
+      }
+    };
   }
 
   @Override

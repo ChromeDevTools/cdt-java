@@ -237,6 +237,17 @@ public class ContextBuilder {
       }
     }
 
+    private boolean sendNoMessageAndInvalidate() {
+      synchronized (sendContextCommandsMonitor) {
+        if (!isValid) {
+          return false;
+        }
+        isValid = false;
+        return true;
+      }
+    }
+
+
     private class UserContext implements DebugContext {
       private final DebugContextData data;
 
@@ -263,6 +274,14 @@ public class ContextBuilder {
 
       public ExceptionData getExceptionData() {
         assertValidForUser();
+        return data.exceptionData;
+      }
+
+      Collection<Breakpoint> getBreakpointsHitSafe() {
+        return data.breakpointsHit;
+      }
+
+      ExceptionData getExceptionDataSafe() {
         return data.exceptionData;
       }
 
@@ -304,6 +323,19 @@ public class ContextBuilder {
         };
 
         sendMessageAsyncAndIvalidate(message, commandCallback, true, null);
+      }
+
+      /**
+       * Behaves as continue but does not send any messages to remote VM.
+       * This brings ContextBuilder to state when we are about to build a new context.
+       */
+      boolean continueLocally() {
+        if (!sendNoMessageAndInvalidate()) {
+          return false;
+        }
+        contextDismissed(UserContext.this);
+        getDebugSession().getDebugEventListener().resumed();
+        return true;
       }
 
       InternalContext getInternalContextForTests() {
@@ -383,6 +415,24 @@ public class ContextBuilder {
         }
       }
     }
+  }
+
+  /**
+   * Drops the current context and initiates reading data and building a new one.
+   * Must be called from Dispatch thread.
+   * @return ExpectingBacktraceStep or null if there is no active context currently
+   */
+  ExpectingBacktraceStep startRebuildCurrentContext() {
+    // We can use currentStep as long as we are being operated from Dispatch thread.
+    if (currentStep instanceof PreContext.UserContext == false) {
+      return null;
+    }
+    PreContext.UserContext userContext = (PreContext.UserContext) currentStep;
+    if (!userContext.continueLocally()) {
+      return null;
+    }
+    return buildNewContext().setContextState(userContext.getBreakpointsHitSafe(),
+        userContext.getExceptionDataSafe());
   }
 
   static InternalContext getInternalContextForTests(DebugContext debugContext) {

@@ -159,7 +159,7 @@ public class FixtureChromeStub implements ChromeStub {
     scriptIdToScriptRefMap.put(Long.valueOf(getCompiledScriptId()), getCompiledScriptRef());
   }
 
-  private final ScriptManager scriptManager = new ScriptManager(contextFilter);
+  private final ScriptManager scriptManager = new ScriptManager(contextFilter, null);
 
   public FixtureChromeStub() {
     JSONObject body = getJsonObjectByRef(getScriptRef());

@@ -19,6 +19,7 @@ import org.chromium.sdk.internal.protocol.AfterCompileBody;
 import org.chromium.sdk.internal.protocol.BacktraceCommandBody;
 import org.chromium.sdk.internal.protocol.BreakEventBody;
 import org.chromium.sdk.internal.protocol.BreakpointBody;
+import org.chromium.sdk.internal.protocol.ChangeLiveBody;
 import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.CommandResponseBody;
 import org.chromium.sdk.internal.protocol.EventNotification;
@@ -367,6 +368,7 @@ public class V8ProtocolUtil {
           ScopeRef.class,
           VersionBody.class,
           AfterCompileBody.class,
+          ChangeLiveBody.class,
 
           SomeHandle.class,
           ScriptHandle.class,

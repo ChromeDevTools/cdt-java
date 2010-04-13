@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.Script;
@@ -58,7 +59,7 @@ public class DebugSession {
 
   public DebugSession(DebugSessionManager sessionManager, V8ContextFilter contextFilter,
       V8CommandOutput v8CommandOutput) {
-    this.scriptManager = new ScriptManager(contextFilter);
+    this.scriptManager = new ScriptManager(contextFilter, this);
     this.sessionManager = sessionManager;
     this.breakpointManager = new BreakpointManager(this);
 
@@ -123,6 +124,27 @@ public class DebugSession {
 
   public ContextBuilder getContextBuilder() {
     return contextBuilder;
+  }
+
+  /**
+   * Drops current context and creates a new one. This is useful if context is known to have changed
+   * (e.g. experimental feature LiveEdit may change current stack while execution is suspended).
+   * The method is asynchronous and returns immediately.
+   * Does nothing if currently there is no active context. Otherwise dismisses current context,
+   * invokes {@link DebugEventListener#resumed()} and initiates downloading stack frame descriptions
+   * and building new context. When the context is built,
+   * calls {@link DebugEventListener#suspended(DebugContext)}.
+   * <p>
+   * Must be called from Dispatch Thread.
+   * @return true if context has been actually dropped.
+   */
+  public boolean recreateCurrentContext() {
+    ContextBuilder.ExpectingBacktraceStep step = contextBuilder.startRebuildCurrentContext();
+    if (step == null) {
+      return false;
+    }
+    defaultResponseHandler.getBreakpointProcessor().processNextStep(step);
+    return true;
   }
 
   public void suspend(final SuspendCallback suspendCallback) {

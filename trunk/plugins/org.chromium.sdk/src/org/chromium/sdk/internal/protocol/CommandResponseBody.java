@@ -41,4 +41,7 @@ public interface CommandResponseBody {
 
   @JsonSubtypeCasting
   VersionBody asVersionBody() throws JsonProtocolParseException;
+
+  @JsonSubtypeCasting
+  ChangeLiveBody asChangeLiveBody() throws JsonProtocolParseException;
 }
