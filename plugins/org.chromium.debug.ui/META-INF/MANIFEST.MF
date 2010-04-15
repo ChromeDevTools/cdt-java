@@ -14,6 +14,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.variables;bundle-version="3.2.100",
  org.eclipse.ui.ide;bundle-version="3.4.1",
  org.chromium.debug.core;bundle-version="0.1.5",
- org.chromium.sdk;bundle-version="0.1.5"
+ org.chromium.sdk;bundle-version="0.1.5",
+ org.eclipse.compare;bundle-version="3.5.0"
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: J2SE-1.5

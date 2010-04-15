@@ -16,7 +16,6 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -88,7 +87,6 @@ public class ResourceManager {
       try {
         putScript(script, scriptFile);
         writeScriptSource(script, scriptFile);
-        setReadOnly(scriptFile);
 
         // Perhaps restore breakpoints for the reloaded script
         List<ChromiumLineBreakpoint> breakpoints = new LinkedList<ChromiumLineBreakpoint>();
@@ -117,6 +115,14 @@ public class ResourceManager {
     }
   }
 
+  public void reloadScript(Script script) {
+    IFile scriptFile = getResource(script);
+    if (scriptFile == null) {
+      throw new RuntimeException("Script file not found"); //$NON-NLS-1$
+    }
+    writeScriptSource(script, scriptFile);
+  }
+
   private String getScriptResourceName(Script script) {
     String name = script.getName();
     if (name == null) {
@@ -131,18 +137,6 @@ public class ResourceManager {
         ChromiumDebugPluginUtil.writeFile(file, script.getSource());
       } catch (final CoreException e) {
         ChromiumDebugPlugin.log(e);
-      }
-    }
-  }
-
-  private void setReadOnly(IFile scriptFile) {
-    ResourceAttributes attributes = scriptFile.getResourceAttributes();
-    if (attributes != null) {
-       attributes.setReadOnly(true);
-       try {
-        scriptFile.setResourceAttributes(attributes);
-      } catch (CoreException e) {
-        throw new RuntimeException(e);  // We do not expect it with our file system.
       }
     }
   }

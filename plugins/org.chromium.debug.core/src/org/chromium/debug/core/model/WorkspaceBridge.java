@@ -53,6 +53,16 @@ public interface WorkspaceBridge {
   IFile getScriptResource(Script script);
 
   /**
+   * @return script that corresponds to a resource from user workspace or null
+   */
+  Script findScriptFromWorkspaceFile(IFile resource);
+
+  /**
+   * Initiates script reloading from remote VM.
+   */
+  void reloadScript(Script script);
+
+  /**
    * Called at starting period of time, requires all scripts to be (re)loaded.
    */
   void reloadScriptsAtStart();
