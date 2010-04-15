@@ -214,6 +214,32 @@
                id="org.chromium.debug.ui.actions.OpenFunctionAction">
          </action>
       </objectContribution>
+      <!-- Experimental actions, temporary disabled. -->
+      <!-- objectContribution
+            objectClass="org.eclipse.core.resources.IFile"
+            id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
+         <menu id="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId"
+               label="V8 Debugging"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="Compare with VM Source"
+               class="org.chromium.debug.ui.actions.CompareChangesAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.CompareChangesAction">
+         </action>
+         <action
+               label="Push Changes to VM"
+               class="org.chromium.debug.ui.actions.PushChangesAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PushChangesAction">
+         </action>
+      </objectContribution -->
   </extension>
   <extension
          point="org.eclipse.ui.propertyPages">

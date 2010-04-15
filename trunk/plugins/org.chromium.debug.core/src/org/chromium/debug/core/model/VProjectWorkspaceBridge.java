@@ -8,6 +8,7 @@ import java.util.Collection;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
+import org.chromium.debug.core.ReversedSourceLookup;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
@@ -62,6 +63,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private final ResourceManager resourceManager;
   private final BreakpointRegistry breakpointRegistry = new BreakpointRegistry();
   private final DebugTargetImpl debugTargetImpl;
+  private final ReversedSourceLookup reversedSourceLookup;
 
   public VProjectWorkspaceBridge(String projectName, DebugTargetImpl debugTargetImpl,
       JavascriptVm javascriptVm) {
@@ -73,6 +75,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
     ChromiumSourceDirector director = (ChromiumSourceDirector) launch.getSourceLocator();
     director.initializeVProjectContainers(debugProject, resourceManager);
+    this.reversedSourceLookup = new ReversedSourceLookup(director, resourceManager);
   }
 
   public void launchRemoved() {
@@ -126,6 +129,18 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   public IFile getScriptResource(Script script) {
     return resourceManager.getResource(script);
+  }
+
+  public Script findScriptFromWorkspaceFile(IFile resource) {
+    Script fastResult = resourceManager.getScript(resource);
+    if (fastResult != null) {
+      return fastResult;
+    }
+    return reversedSourceLookup.findScript(resource);
+  }
+
+  public void reloadScript(Script script) {
+    resourceManager.reloadScript(script);
   }
 
   public BreakpointHandler getBreakpointHandler() {
