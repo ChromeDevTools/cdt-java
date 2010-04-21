@@ -1,0 +1,33 @@
+#summary How to contribute to the project.
+
+= Contribution to the project =
+
+== How to send a patch ==
+
+We use the same code review site that Chromium project does: http://codereview.chromium.org/
+
+You can upload your patch either
+  * via the [http://codereview.chromium.org/new web interface],
+  * with upload.py Python script if your working files are SVN repository or
+  * with git-cl utility if your working files are GIT-SVN repository.
+
+=== Sending a Patch with {{{upload.py}}} Script ===
+0. It assumes that you have your _chromedevtools_ project checked out  with command-line SVN (Eclipse SVN plugin may not work here).
+
+1. Make sure you have an account at http://codereview.chromium.org/
+
+2. Download {{{upload.py}}} script from the web [http://codereview.chromium.org/new Create Issue] page.
+
+3. Prepare all your changes as if you are going to run {{{svn commit}}} (e.g. do all {{{svn add}}} work).
+
+4. Run {{{upload.py}}} script:
+{{{
+./upload.py -s codereview.chromium.org
+}}}
+It will ask the name of your patch, your email and password (latter two get cached).
+You should get a URL of your created _issue_ (this _issue_ is not the same to what is called "issues" on code.google.com). E.g. http://codereview.chromium.org/1707006
+
+5. To update your patch (rather than creating new), run
+{{{
+./upload.py -s codereview.chromium.org -i <issue_number>
+}}}
