@@ -93,7 +93,8 @@ public class ResourceManager {
         for (BreakpointEntry entry : breakpointRegistry.getBreakpointEntries(script)) {
           ChromiumLineBreakpoint lineBreakpoint;
           try {
-            lineBreakpoint = new ChromiumLineBreakpoint(scriptFile, entry.line + 1);
+            lineBreakpoint = new ChromiumLineBreakpoint(scriptFile, entry.line + 1,
+                VProjectWorkspaceBridge.DEBUG_MODEL_ID);
           } catch (CoreException e) {
             ChromiumDebugPlugin.log(e);
             continue;

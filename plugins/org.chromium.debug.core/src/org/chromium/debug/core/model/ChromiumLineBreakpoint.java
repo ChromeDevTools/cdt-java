@@ -53,15 +53,15 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
    * @param lineNumber 1-based line number of the breakpoint
    * @throws CoreException if unable to create the breakpoint
    */
-  public ChromiumLineBreakpoint(final IResource resource, final int lineNumber)
-      throws CoreException {
+  public ChromiumLineBreakpoint(final IResource resource, final int lineNumber,
+      final String modelId) throws CoreException {
     IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
       public void run(IProgressMonitor monitor) throws CoreException {
         IMarker marker = resource.createMarker(ChromiumDebugPlugin.BP_MARKER);
         setMarker(marker);
         marker.setAttribute(IBreakpoint.ENABLED, Boolean.TRUE);
         marker.setAttribute(IMarker.LINE_NUMBER, lineNumber);
-        marker.setAttribute(IBreakpoint.ID, getModelIdentifier());
+        marker.setAttribute(IBreakpoint.ID, modelId);
         marker.setAttribute(IMarker.MESSAGE, NLS.bind(
             Messages.JsLineBreakpoint_MessageMarkerFormat, resource.getName(), lineNumber));
       }
@@ -104,7 +104,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   public String getModelIdentifier() {
-    return VProjectWorkspaceBridge.DEBUG_MODEL_ID;
+    return getMarker().getAttribute(IBreakpoint.ID, "");
   }
 
   public void changed() {
