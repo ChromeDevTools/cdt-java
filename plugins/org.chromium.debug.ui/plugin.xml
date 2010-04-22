@@ -227,7 +227,8 @@
       </objectContribution>
       <!-- Experimental actions, temporary disabled. -->
       <!-- objectContribution
-            objectClass="org.eclipse.core.resources.IFile"
+            objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
+            adaptable="true"
             id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
          <menu id="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId"
                label="V8 Debugging"
@@ -252,6 +253,7 @@
          </action>
       </objectContribution -->
   </extension>
+
   <extension
          point="org.eclipse.ui.propertyPages">
     <page
