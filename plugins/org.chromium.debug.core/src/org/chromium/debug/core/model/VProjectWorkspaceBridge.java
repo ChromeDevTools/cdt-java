@@ -164,7 +164,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           if (resourceManager.isAddingFile(file)) {
             return; // restoring breakpoints in progress
           }
-          final Script script = resourceManager.getScript(file);
+          final Script script = findScriptFromWorkspaceFile(file);
           if (script == null) {
             // Might be a script from a different debug target
             return;
@@ -224,7 +224,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           ChromiumLineBreakpoint lineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
           lineBreakpoint.clear();
           breakpointRegistry.remove(
-              resourceManager.getScript((IFile) breakpoint.getMarker().getResource()),
+              findScriptFromWorkspaceFile((IFile) breakpoint.getMarker().getResource()),
               lineBreakpoint.getLineNumber() - 1,
               lineBreakpoint.getBrowserBreakpoint());
         }
