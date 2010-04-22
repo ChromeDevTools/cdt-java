@@ -4,14 +4,18 @@
 
 package org.chromium.debug.ui.actions;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.mapping.ResourceMapping;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -52,20 +56,32 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
     if (structured.size() != 1) {
       return null;
     }
+
     Object firstElement = structured.getFirstElement();
-    if (firstElement instanceof IFile == false) {
+    if (firstElement instanceof ResourceMapping == false) {
       return null;
     }
-    final IFile file = (IFile) firstElement;
-    URI locationURI = file.getLocationURI();
-    if (locationURI == null) {
+    ResourceMapping resourceMapping = (ResourceMapping) firstElement;
+    final List<IResource> resourceList = new ArrayList<IResource>(1);
+    IResourceVisitor visitor = new IResourceVisitor() {
+      public boolean visit(IResource resource) throws CoreException {
+        resourceList.add(resource);
+        return false;
+      }
+    };
+    try {
+      resourceMapping.accept(null, visitor, null);
+    } catch (CoreException e) {
+      throw new RuntimeException(e);
+    }
+    if (resourceList.size() != 1) {
       return null;
     }
-    String path = locationURI.getPath();
-    if (path == null) {
+    if (resourceList.get(0) instanceof IFile == false) {
       return null;
     }
-    if (!path.endsWith(".js") && !path.endsWith(".chromium")) { //$NON-NLS-1$ //$NON-NLS-2$
+    final IFile file = (IFile) resourceList.get(0);
+    if (!filterFileName(file.getName())) {
       return null;
     }
     return new Runnable() {
@@ -144,6 +160,18 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
     protected DebugTargetImpl getDebugTarget() {
       return debugTargetImpl;
     }
+  }
+
+  /**
+   * @return true if action should be enabled for this file name
+   */
+  private boolean filterFileName(String name) {
+    for (String suffix : ChromiumDebugPluginUtil.SUPPORTED_EXTENSIONS_SUFFIX_LIST) {
+      if (name.endsWith(suffix)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public void dispose() {
