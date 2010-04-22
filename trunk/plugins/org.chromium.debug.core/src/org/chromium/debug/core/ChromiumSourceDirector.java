@@ -24,12 +24,13 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   public void initializeParticipants() {
     ISourceLookupParticipant participant = new AbstractSourceLookupParticipant() {
       public String getSourceName(Object object) throws CoreException {
-        if (object instanceof StackFrame == false) {
-          return null;
+        Script script = null;
+        if (object instanceof Script) {
+          script = (Script) object;
+        } else if (object instanceof StackFrame) {
+          StackFrame jsStackFrame = (StackFrame) object;
+          script = jsStackFrame.getCallFrame().getScript();
         }
-        StackFrame jsStackFrame = (StackFrame) object;
-
-        Script script = jsStackFrame.getCallFrame().getScript();
         if (script == null) {
           return null;
         }

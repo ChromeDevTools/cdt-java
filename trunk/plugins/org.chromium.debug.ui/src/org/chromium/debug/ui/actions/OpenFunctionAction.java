@@ -1,5 +1,7 @@
 package org.chromium.debug.ui.actions;
 
+import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.Variable;
 import org.chromium.debug.ui.JsDebugModelPresentation;
 import org.chromium.debug.ui.editors.JsEditor;
@@ -9,6 +11,11 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.debug.core.model.IDebugTarget;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.model.IValue;
+import org.eclipse.debug.core.model.IWatchExpression;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -27,7 +34,53 @@ import org.eclipse.ui.texteditor.ITextEditor;
 /**
  * The action for context view in Variable view that opens selected function source text in editor.
  */
-public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegate2 {
+public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelegate,
+    IActionDelegate2 {
+  public static class ForVariable extends OpenFunctionAction<Variable> {
+    @Override
+    protected Variable castElement(Object element) {
+      if (element instanceof Variable == false) {
+        return null;
+      }
+      return (Variable) element;
+    }
+    @Override
+    protected JsValue getJsValue(Variable variable) {
+      JsVariable jsVariable = variable.getJsVariable();
+      return jsVariable.getValue();
+    }
+    @Override
+    protected DebugTargetImpl getDebugTarget(Variable variable) {
+      return variable.getDebugTarget();
+    }
+  }
+  public static class ForExpression extends OpenFunctionAction<IWatchExpression> {
+    @Override
+    protected IWatchExpression castElement(Object element) {
+      if (element instanceof IWatchExpression == false) {
+        return null;
+      }
+      return (IWatchExpression) element;
+    }
+    @Override
+    protected DebugTargetImpl getDebugTarget(IWatchExpression expression) {
+      IDebugTarget debugTarget = expression.getDebugTarget();
+      if (debugTarget instanceof DebugTargetImpl == false) {
+        return null;
+      }
+      return (DebugTargetImpl) debugTarget;
+    }
+    @Override
+    protected JsValue getJsValue(IWatchExpression expression) {
+      IValue value = expression.getValue();
+      if (value instanceof Value == false) {
+        return null;
+      }
+      Value chromiumValue = (Value) value;
+      return chromiumValue.getJsValue();
+    }
+  }
+
   private Runnable currentRunnable = null;
 
   public void setActivePart(IAction action, IWorkbenchPart targetPart) {
@@ -41,14 +94,14 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
   }
 
   public void selectionChanged(IAction action, ISelection selection) {
-    final Variable variable = getVariableFromSelection(selection);
-    final JsFunction jsFunction = getJsFunctionFromVariable(variable);
+    final ELEMENT variable = getElementFromSelection(selection);
+    final JsFunction jsFunction = getJsFunctionFromElement(variable);
 
     currentRunnable = createRunnable(variable, jsFunction);
     action.setEnabled(currentRunnable != null);
   }
 
-  private Runnable createRunnable(final Variable variable, final JsFunction jsFunction) {
+  private Runnable createRunnable(final ELEMENT element, final JsFunction jsFunction) {
     if (jsFunction == null) {
       return null;
     }
@@ -63,7 +116,20 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
         if (script == null) {
           return;
         }
-        IFile resource = variable.getDebugTarget().getScriptResource(script);
+        DebugTargetImpl debugTarget = getDebugTarget(element);
+        if (debugTarget == null) {
+          return;
+        }
+        ISourceLocator sourceLocator = debugTarget.getLaunch().getSourceLocator();
+        if (sourceLocator instanceof ISourceLookupDirector == false) {
+          return;
+        }
+        ISourceLookupDirector director = (ISourceLookupDirector) sourceLocator;
+        Object sourceObject = director.getSourceElement(script);
+        if (sourceObject instanceof IFile == false) {
+          return;
+        }
+        IFile resource = (IFile) sourceObject;
         IEditorInput input = JsDebugModelPresentation.toEditorInput(resource);
         IEditorPart editor;
         try {
@@ -94,12 +160,14 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
     currentRunnable.run();
   }
 
-  private JsFunction getJsFunctionFromVariable(Variable variable) {
-    if (variable == null) {
+  private JsFunction getJsFunctionFromElement(ELEMENT element) {
+    if (element == null) {
       return null;
     }
-    JsVariable jsVariable = variable.getJsVariable();
-    JsValue jsValue = jsVariable.getValue();
+    JsValue jsValue = getJsValue(element);
+    if (jsValue == null) {
+      return null;
+    }
     JsObject jsObject = jsValue.asObject();
     if (jsObject == null) {
       return null;
@@ -107,7 +175,7 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
     return jsObject.asFunction();
   }
 
-  private Variable getVariableFromSelection(ISelection selection) {
+  private ELEMENT getElementFromSelection(ISelection selection) {
     if (selection instanceof IStructuredSelection == false) {
       return null;
     }
@@ -117,9 +185,13 @@ public class OpenFunctionAction implements IObjectActionDelegate, IActionDelegat
       return null;
     }
     Object element = structuredSelection.getFirstElement();
-    if (element instanceof Variable == false) {
-      return null;
-    }
-    return (Variable) element;
+    ELEMENT typedElement = castElement(element);
+    return typedElement;
   }
+
+  protected abstract ELEMENT castElement(Object element);
+
+  protected abstract JsValue getJsValue(ELEMENT element);
+
+  protected abstract DebugTargetImpl getDebugTarget(ELEMENT element);
 }
