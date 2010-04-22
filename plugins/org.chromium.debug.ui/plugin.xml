@@ -208,10 +208,21 @@
             id="org.chromium.debug.ui.ChromiumVariableActions">
          <action
                label="%OpenFunctionAction.label"
-               class="org.chromium.debug.ui.actions.OpenFunctionAction"
+               class="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable"
                menubarPath="emptyNavigationGroup"
                enablesFor="1"
-               id="org.chromium.debug.ui.actions.OpenFunctionAction">
+               id="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable">
+         </action>
+      </objectContribution>
+      <objectContribution
+            objectClass="org.eclipse.debug.core.model.IWatchExpression"
+            id="org.chromium.debug.ui.ChromiumExpressionActions">
+         <action
+               label="%OpenFunctionAction.label"
+               class="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression">
          </action>
       </objectContribution>
       <!-- Experimental actions, temporary disabled. -->
