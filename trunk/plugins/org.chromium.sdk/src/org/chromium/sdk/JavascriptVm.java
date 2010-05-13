@@ -107,4 +107,15 @@ public interface JavascriptVm {
    *        may be {@code null}
    */
   void suspend(SuspendCallback callback);
+
+  interface ListBreakpointsCallback {
+    void success(Collection<? extends Breakpoint> breakpoints);
+    void failure(Exception exception);
+  }
+
+  /**
+   * Asynchronously reads breakpoints from remote VM. The now-effective collection of breakpoints
+   * is returned to callback. Already existing {@link Breakpoint} instances are preserved.
+   */
+  void listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
 }

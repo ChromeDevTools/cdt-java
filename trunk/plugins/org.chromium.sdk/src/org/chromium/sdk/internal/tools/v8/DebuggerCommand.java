@@ -22,6 +22,7 @@ public enum DebuggerCommand {
   SETBREAKPOINT("setbreakpoint"),
   CHANGEBREAKPOINT("changebreakpoint"),
   CLEARBREAKPOINT("clearbreakpoint"),
+  LISTBREAKPOINTS("listbreakpoints"),
   LOOKUP("lookup"),
   SUSPEND("suspend"),
   VERSION("version"),
