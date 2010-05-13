@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 
 /**
  * A generic implementation of the Breakpoint interface.
@@ -21,6 +22,16 @@ public class BreakpointImpl implements Breakpoint {
    * The breakpoint id as reported by the JavaScript VM.
    */
   private long id;
+
+  /**
+   * The corresponding script name as reported by the JavaScript VM. May be null.
+   */
+  private String scriptName;
+
+  /**
+   * Breakpoint line number. May become invalidated by LiveEdit actions.
+   */
+  private long lineNumber;
 
   /**
    * Whether the breakpoint is enabled.
@@ -50,14 +61,36 @@ public class BreakpointImpl implements Breakpoint {
    */
   private volatile boolean isDirty = false;
 
-  public BreakpointImpl(Type type, long id, boolean enabled, int ignoreCount, String condition,
-      BreakpointManager breakpointManager) {
+  public BreakpointImpl(Type type, long id, String scriptName, long lineNumber, boolean enabled,
+      int ignoreCount, String condition, BreakpointManager breakpointManager) {
     this.type = type;
+    this.scriptName = scriptName;
     this.id = id;
     this.isEnabled = enabled;
     this.ignoreCount = ignoreCount;
     this.condition = condition;
+    this.lineNumber = lineNumber;
     this.breakpointManager = breakpointManager;
+  }
+
+  public BreakpointImpl(BreakpointInfo info, BreakpointManager breakpointManager) {
+    this.type = getType(info);
+    this.id = info.number();
+    this.breakpointManager = breakpointManager;
+    updateFromRemote(info);
+  }
+  public void updateFromRemote(BreakpointInfo info) {
+    if (this.type != getType(info)) {
+      throw new IllegalArgumentException();
+    }
+    if (this.id != info.number()) {
+      throw new IllegalArgumentException();
+    }
+    this.lineNumber = info.line();
+    this.isEnabled = info.active();
+    this.ignoreCount = (int) info.ignoreCount();
+    this.condition = info.condition();
+    this.scriptName = info.script_name();
   }
 
   public boolean isEnabled() {
@@ -72,12 +105,20 @@ public class BreakpointImpl implements Breakpoint {
     return id;
   }
 
+  public String getScriptName() {
+    return scriptName;
+  }
+
   public int getIgnoreCount() {
     return ignoreCount;
   }
 
   public String getCondition() {
     return condition;
+  }
+
+  public long getLineNumber() {
+    return lineNumber;
   }
 
   public void setEnabled(boolean enabled) {
@@ -132,4 +173,13 @@ public class BreakpointImpl implements Breakpoint {
     return isDirty;
   }
 
+  private static Type getType(BreakpointInfo info) {
+    BreakpointInfo.Type infoType = info.type();
+    switch (infoType) {
+      case scriptId: return Type.SCRIPT_ID;
+      case scriptName: return Type.SCRIPT_NAME;
+      case function: return Type.FUNCTION;
+    }
+    throw new RuntimeException("Unknown type: " + infoType);
+  }
 }

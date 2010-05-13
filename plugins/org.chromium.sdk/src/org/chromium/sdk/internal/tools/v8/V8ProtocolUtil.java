@@ -27,10 +27,12 @@ import org.chromium.sdk.internal.protocol.EventNotificationBody;
 import org.chromium.sdk.internal.protocol.FailedCommandResponse;
 import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.IncomingMessage;
+import org.chromium.sdk.internal.protocol.ListBreakpointsBody;
 import org.chromium.sdk.internal.protocol.ScopeBody;
 import org.chromium.sdk.internal.protocol.ScopeRef;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.VersionBody;
+import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 import org.chromium.sdk.internal.protocol.data.ContextData;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
@@ -369,6 +371,7 @@ public class V8ProtocolUtil {
           VersionBody.class,
           AfterCompileBody.class,
           ChangeLiveBody.class,
+          ListBreakpointsBody.class,
 
           SomeHandle.class,
           ScriptHandle.class,
@@ -383,6 +386,7 @@ public class V8ProtocolUtil {
           SomeSerialized.class,
           ContextHandle.class,
           ContextData.class,
+          BreakpointInfo.class,
       });
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
