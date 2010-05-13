@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.BreakpointRegistry.ScriptIdentifier;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
@@ -104,6 +103,62 @@ public class ResourceManager {
       } catch (final CoreException e) {
         ChromiumDebugPlugin.log(e);
       }
+    }
+  }
+
+  /**
+   * A script identifier class usable as HashMap key.
+   */
+  private static class ScriptIdentifier {
+    private final String name;
+
+    private final long id;
+
+    private final int startLine;
+
+    private final int endLine;
+
+    public static ScriptIdentifier forScript(Script script) {
+      String name = script.getName();
+      return new ScriptIdentifier(
+          name,
+          name != null ? -1 : script.getId(),
+          script.getStartLine(),
+          script.getEndLine());
+    }
+
+    private ScriptIdentifier(String name, long id, int startLine, int endLine) {
+      this.name = name;
+      this.id = id;
+      this.startLine = startLine;
+      this.endLine = endLine;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + (int) (id ^ (id >>> 32));
+      result = prime * result + ((name == null) ? 0 : name.hashCode());
+      result = prime * result + 17 * startLine + 19 * endLine;
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof ScriptIdentifier)) {
+        return false;
+      }
+      ScriptIdentifier that = (ScriptIdentifier) obj;
+      if (this.startLine != that.startLine || this.endLine != that.endLine) {
+        return false;
+      }
+      if (name == null) {
+        // an unnamed script, only id is known
+        return that.name == null && this.id == that.id;
+      }
+      // a named script
+      return this.name.equals(that.name);
     }
   }
 }
