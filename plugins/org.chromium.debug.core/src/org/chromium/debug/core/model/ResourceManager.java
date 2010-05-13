@@ -5,12 +5,9 @@
 package org.chromium.debug.core.model;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.BreakpointRegistry.BreakpointEntry;
 import org.chromium.debug.core.model.BreakpointRegistry.ScriptIdentifier;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Script;
@@ -18,7 +15,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.debug.core.DebugPlugin;
 
 /**
  * This object handles the mapping between {@link Script}s and their corresponding resources
@@ -30,12 +26,9 @@ public class ResourceManager {
       new HashMap<ScriptIdentifier, IFile>();
   private final Map<String, IFile> nameToResource = new HashMap<String, IFile>();
   private final IProject debugProject;
-  private final BreakpointRegistry breakpointRegistry;
-  private Object fileBeingAdded;
 
-  public ResourceManager(IProject debugProject, BreakpointRegistry breakpointRegistry) {
+  public ResourceManager(IProject debugProject) {
     this.debugProject = debugProject;
-    this.breakpointRegistry = breakpointRegistry;
   }
 
   public synchronized void putScript(Script script, IFile resource) {
@@ -83,36 +76,8 @@ public class ResourceManager {
     IFile scriptFile = getResource(script);
     if (scriptFile == null) {
       scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, getScriptResourceName(script));
-      fileBeingAdded = scriptFile;
-      try {
-        putScript(script, scriptFile);
-        writeScriptSource(script, scriptFile);
-
-        // Perhaps restore breakpoints for the reloaded script
-        List<ChromiumLineBreakpoint> breakpoints = new LinkedList<ChromiumLineBreakpoint>();
-        for (BreakpointEntry entry : breakpointRegistry.getBreakpointEntries(script)) {
-          ChromiumLineBreakpoint lineBreakpoint;
-          try {
-            lineBreakpoint = new ChromiumLineBreakpoint(scriptFile, entry.line + 1,
-                VProjectWorkspaceBridge.DEBUG_MODEL_ID);
-          } catch (CoreException e) {
-            ChromiumDebugPlugin.log(e);
-            continue;
-          }
-          lineBreakpoint.setBreakpoint(entry.breakpoint);
-          breakpoints.add(lineBreakpoint);
-        }
-        if (!breakpoints.isEmpty()) {
-          try {
-            DebugPlugin.getDefault().getBreakpointManager().addBreakpoints(
-                breakpoints.toArray(new ChromiumLineBreakpoint[breakpoints.size()]));
-          } catch (CoreException e) {
-            ChromiumDebugPlugin.log(e);
-          }
-        }
-      } finally {
-        fileBeingAdded = null;
-      }
+      putScript(script, scriptFile);
+      writeScriptSource(script, scriptFile);
     }
   }
 
@@ -140,12 +105,5 @@ public class ResourceManager {
         ChromiumDebugPlugin.log(e);
       }
     }
-  }
-
-  /**
-   * @return whether the given file is being added to the target project
-   */
-  public boolean isAddingFile(IFile file) {
-    return file.equals(fileBeingAdded);
   }
 }

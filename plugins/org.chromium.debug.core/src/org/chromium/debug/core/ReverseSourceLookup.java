@@ -18,11 +18,11 @@ import org.eclipse.debug.core.sourcelookup.containers.ContainerSourceContainer;
  * This class implements some approach to this problem. An instance of this class corresponds
  * to a particular debug launch.
  */
-public class ReversedSourceLookup {
+public class ReverseSourceLookup {
   private final ISourceLookupDirector sourceDirector;
   private final ResourceManager resourceManager;
 
-  public ReversedSourceLookup(ISourceLookupDirector sourceDirector,
+  public ReverseSourceLookup(ISourceLookupDirector sourceDirector,
       ResourceManager resourceManager) {
     this.sourceDirector = sourceDirector;
     this.resourceManager = resourceManager;
@@ -32,23 +32,35 @@ public class ReversedSourceLookup {
    * Tries to find a corresponding script for a file from a user workspace.
    */
   public Script findScript(IFile resource) {
+    String name = calculateScriptName(resource);
+    if (name == null) {
+      return null;
+    }
+    return getScript(name, resourceManager);
+  }
+
+  /**
+   * Calculates corresponding script name for a file from a user workspace. It checks
+   * whether file resides in one of source locations. The actual Script instance may not exist.
+   */
+  public String calculateScriptName(IFile resource) {
     for (ISourceContainer container : sourceDirector.getSourceContainers()) {
-      Script script = checkContainer(resource, container);
-      if (script != null) {
-        return script;
+      String scriptName = tryForContainer(resource, container);
+      if (scriptName != null) {
+        return scriptName;
       }
     }
     return null;
   }
 
-  private Script checkContainer(IFile resource, ISourceContainer container) {
+  private String tryForContainer(IFile resource, ISourceContainer container) {
     if (container instanceof ContainerSourceContainer) {
       ContainerSourceContainer containerSourceContainer = (ContainerSourceContainer) container;
       IContainer resourceContainer = containerSourceContainer.getContainer();
       if (resourceContainer.getFullPath().isPrefixOf(resource.getFullPath())) {
         String name = resource.getFullPath().makeRelativeTo(
             resourceContainer.getFullPath()).toPortableString();
-        return getScript(name, resourceManager);
+        return name;
       }
     }
 
