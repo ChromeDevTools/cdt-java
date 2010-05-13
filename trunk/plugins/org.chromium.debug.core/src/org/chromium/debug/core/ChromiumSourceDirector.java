@@ -20,6 +20,8 @@ import org.eclipse.debug.core.sourcelookup.ISourceLookupParticipant;
 public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   private volatile ResourceManager resourceManager = null;
   private volatile IProject project = null;
+  private volatile ReverseSourceLookup reverseSourceLookup = null;
+
 
   public void initializeParticipants() {
     ISourceLookupParticipant participant = new AbstractSourceLookupParticipant() {
@@ -44,6 +46,11 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   public void initializeVProjectContainers(IProject project, ResourceManager resourceManager) {
     this.resourceManager = resourceManager;
     this.project = project;
+    this.reverseSourceLookup = new ReverseSourceLookup(this, resourceManager);
+  }
+
+  public ReverseSourceLookup getReverseSourceLookup() {
+    return reverseSourceLookup;
   }
 
   ResourceManager getResourceManager() {

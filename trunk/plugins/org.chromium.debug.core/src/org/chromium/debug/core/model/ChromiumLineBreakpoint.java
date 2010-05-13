@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.Collection;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.Breakpoint;
 import org.eclipse.core.resources.IMarker;
@@ -26,23 +28,12 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   /** Condition */
   private static final String CONDITION_ATTR = ChromiumDebugPlugin.PLUGIN_ID + ".condition"; //$NON-NLS-1$
 
-  private Breakpoint browserBreakpoint;
-
   /**
    * Default constructor is required for the breakpoint manager to re-create
    * persisted breakpoints. After instantiating a breakpoint, the setMarker
    * method is called to restore this breakpoint's attributes.
    */
-  // FIXME(apavlov): now this does not restore the browserBreakpoint value
   public ChromiumLineBreakpoint() {
-  }
-
-  public void setBreakpoint(Breakpoint breakpoint) {
-    this.browserBreakpoint = breakpoint;
-  }
-
-  public Breakpoint getBrowserBreakpoint() {
-    return browserBreakpoint;
   }
 
   /**
@@ -108,17 +99,42 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   public void changed() {
-    if (browserBreakpoint != null) {
-      browserBreakpoint.setCondition(getCondition());
-      browserBreakpoint.setEnabled(isEnabled());
-      browserBreakpoint.setIgnoreCount(getIgnoreCount());
-      browserBreakpoint.flush(null);
+    BreakpointMap breakpointMap = ChromiumDebugPlugin.getDefault().getBreakpointMap();
+    Collection<BreakpointMap.BreakpointMapping> breakpointPairs =
+        breakpointMap.getSdkBreakpoints(this);
+    for (BreakpointMap.BreakpointMapping pair : breakpointPairs) {
+      Breakpoint breakpoint = pair.getSdkBreakpoint();
+      try {
+        breakpoint.setCondition(getCondition());
+        breakpoint.setEnabled(isEnabled());
+        breakpoint.setIgnoreCount(getIgnoreCount());
+        breakpoint.flush(null);
+      } catch (RuntimeException e) {
+        ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
+            getTargetNameSafe(pair.getDebugTarget()), e));
+      }
     }
   }
 
   public void clear() {
-    if (browserBreakpoint != null) {
-      browserBreakpoint.clear(null);
+    BreakpointMap breakpointMap = ChromiumDebugPlugin.getDefault().getBreakpointMap();
+    Collection<BreakpointMap.BreakpointMapping> breakpointPairs =
+        breakpointMap.getSdkBreakpoints(this);
+    for (BreakpointMap.BreakpointMapping pair : breakpointPairs) {
+      Breakpoint breakpoint = pair.getSdkBreakpoint();
+      try {
+        breakpoint.clear(null);
+      } catch (RuntimeException e) {
+        ChromiumDebugPlugin.log(new Exception("Failed to remove breakpoint in " + //$NON-NLS-1$
+            getTargetNameSafe(pair.getDebugTarget()), e));
+      }
+    }
+  }
+  private static String getTargetNameSafe(DebugTargetImpl debugTargetImpl) {
+    try {
+      return debugTargetImpl.getLaunch().getLaunchConfiguration().getName();
+    } catch (RuntimeException e) {
+      return "<unknown>"; //$NON-NLS-1$
     }
   }
 }

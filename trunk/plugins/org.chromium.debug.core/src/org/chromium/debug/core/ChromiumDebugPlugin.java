@@ -6,6 +6,7 @@ package org.chromium.debug.core;
 
 import java.text.MessageFormat;
 
+import org.chromium.debug.core.model.BreakpointMap;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.eclipse.core.runtime.CoreException;
@@ -30,6 +31,8 @@ public class ChromiumDebugPlugin extends Plugin {
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
 
+  private final BreakpointMap breakpointMap = new BreakpointMap();
+
   private ChromiumBreakpointWBAFactory breakpointWorkbenchAdapterFactory;
 
   public ChromiumDebugPlugin() {
@@ -50,6 +53,10 @@ public class ChromiumDebugPlugin extends Plugin {
     IAdapterManager manager = Platform.getAdapterManager();
     manager.unregisterAdapters(breakpointWorkbenchAdapterFactory);
     super.stop(context);
+  }
+
+  public BreakpointMap getBreakpointMap() {
+    return breakpointMap;
   }
 
   /**
