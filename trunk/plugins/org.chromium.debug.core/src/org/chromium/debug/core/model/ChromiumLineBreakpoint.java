@@ -4,10 +4,11 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.Collection;
-
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.Script;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -98,43 +99,66 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     return getMarker().getAttribute(IBreakpoint.ID, "");
   }
 
-  public void changed() {
-    BreakpointMap breakpointMap = ChromiumDebugPlugin.getDefault().getBreakpointMap();
-    Collection<BreakpointMap.BreakpointMapping> breakpointPairs =
-        breakpointMap.getSdkBreakpoints(this);
-    for (BreakpointMap.BreakpointMapping pair : breakpointPairs) {
-      Breakpoint breakpoint = pair.getSdkBreakpoint();
-      try {
-        breakpoint.setCondition(getCondition());
-        breakpoint.setEnabled(isEnabled());
-        breakpoint.setIgnoreCount(getIgnoreCount());
-        breakpoint.flush(null);
-      } catch (RuntimeException e) {
-        ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
-            getTargetNameSafe(pair.getDebugTarget()), e));
-      }
+  /**
+   * A helper that propagates changes in Eclipse Debugger breakpoints (i.e.
+   * {@link ChromiumLineBreakpoint}) to ChromeDevTools SDK breakpoints. Note that
+   * {@link ChromiumLineBreakpoint} can't do it itself, because it may correspond to several
+   * SDK {@link JavascriptVm}'s simultaneously.
+   */
+  public static class Helper {
+    public interface CreateOnRemoveCallback {
+      void success(Breakpoint breakpoint);
+      void failure(String errorMessage);
     }
-  }
 
-  public void clear() {
-    BreakpointMap breakpointMap = ChromiumDebugPlugin.getDefault().getBreakpointMap();
-    Collection<BreakpointMap.BreakpointMapping> breakpointPairs =
-        breakpointMap.getSdkBreakpoints(this);
-    for (BreakpointMap.BreakpointMapping pair : breakpointPairs) {
-      Breakpoint breakpoint = pair.getSdkBreakpoint();
-      try {
-        breakpoint.clear(null);
-      } catch (RuntimeException e) {
-        ChromiumDebugPlugin.log(new Exception("Failed to remove breakpoint in " + //$NON-NLS-1$
-            getTargetNameSafe(pair.getDebugTarget()), e));
+    public static void createOnRemote(ChromiumLineBreakpoint uiBreakpoint,
+        Script script, DebugTargetImpl debugTarget,
+        final CreateOnRemoveCallback createOnRemoveCallback) throws CoreException {
+      JavascriptVm javascriptVm = debugTarget.getJavascriptEmbedder().getJavascriptVm();
+
+      // ILineBreakpoint lines are 1-based while V8 lines are 0-based
+      final int line = (uiBreakpoint.getLineNumber() - 1) + script.getStartLine();
+      BreakpointCallback callback = new BreakpointCallback() {
+        public void success(Breakpoint sdkBreakpoint) {
+          createOnRemoveCallback.success(sdkBreakpoint);
+        }
+        public void failure(String errorMessage) {
+          createOnRemoveCallback.failure(errorMessage);
+        }
+      };
+
+      if (script.getName() != null) {
+        javascriptVm.setBreakpoint(Breakpoint.Type.SCRIPT_NAME,
+            script.getName(),
+            line,
+            Breakpoint.EMPTY_VALUE,
+            uiBreakpoint.isEnabled(),
+            uiBreakpoint.getCondition(),
+            uiBreakpoint.getIgnoreCount(),
+            callback);
+      } else {
+        javascriptVm.setBreakpoint(Breakpoint.Type.SCRIPT_ID,
+            String.valueOf(script.getId()),
+            line,
+            Breakpoint.EMPTY_VALUE,
+            uiBreakpoint.isEnabled(),
+            uiBreakpoint.getCondition(),
+            uiBreakpoint.getIgnoreCount(),
+            callback);
       }
+
     }
-  }
-  private static String getTargetNameSafe(DebugTargetImpl debugTargetImpl) {
-    try {
-      return debugTargetImpl.getLaunch().getLaunchConfiguration().getName();
-    } catch (RuntimeException e) {
-      return "<unknown>"; //$NON-NLS-1$
+
+    public static void updateOnRemote(Breakpoint sdkBreakpoint,
+        ChromiumLineBreakpoint uiBreakpoint) {
+      sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
+      sdkBreakpoint.setEnabled(uiBreakpoint.isEnabled());
+      sdkBreakpoint.setIgnoreCount(uiBreakpoint.getIgnoreCount());
+      sdkBreakpoint.flush(null);
+    }
+
+    public static void removeOnRemote(Breakpoint sdkBreakpoint) {
+      sdkBreakpoint.clear(null);
     }
   }
 }
