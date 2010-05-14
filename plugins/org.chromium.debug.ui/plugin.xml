@@ -189,9 +189,9 @@
             id="org.chromium.debug.ui.actions.EnableDisableBreakpointAction"/>
         <action
             label="Breakpoint Properties..."
-            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesRulerActionDelegate"
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesRulerAction$Delegate"
             menubarPath="group.properties"
-            id="org.chromium.debug.ui.actions.JavaBreakpointPropertiesRulerActionDelegate">
+            id="org.chromium.debug.ui.actions.JavaBreakpointPropertiesRulerAction$Delegate">
         </action>
         <action
             label="Toggle Enablement"
@@ -203,6 +203,17 @@
   </extension>
   <extension
          point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.chromium.debug.core.model.ChromiumLineBreakpoint"
+            id="org.chromium.debug.core.model.ChromiumLineBreakpoint.object_actions">
+        <action
+            label="Breakpoint Properties..."
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction"
+            menubarPath="group.properties"
+            id="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction">
+        </action>
+      </objectContribution>
+         
       <objectContribution
             objectClass="org.chromium.debug.core.model.Variable"
             id="org.chromium.debug.ui.ChromiumVariableActions">
