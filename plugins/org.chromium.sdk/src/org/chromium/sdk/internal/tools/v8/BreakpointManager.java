@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.BrowserTab;
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
@@ -39,7 +39,8 @@ public class BreakpointManager {
 
   public void setBreakpoint(final Breakpoint.Type type, final String target,
       final int line, int position, final boolean enabled, final String condition,
-      final int ignoreCount, final BrowserTab.BreakpointCallback callback) {
+      final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
+      SyncCallback syncCallback) {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(type, target, toNullableInteger(line),
             toNullableInteger(position), enabled, condition,
@@ -72,7 +73,7 @@ public class BreakpointManager {
                 }
               }
             },
-            null);
+            syncCallback);
   }
 
   public Breakpoint getBreakpoint(Long id) {
@@ -80,7 +81,8 @@ public class BreakpointManager {
   }
 
   public void clearBreakpoint(
-      final BreakpointImpl breakpointImpl, final BreakpointCallback callback) {
+      final BreakpointImpl breakpointImpl, final BreakpointCallback callback,
+      SyncCallback syncCallback) {
     long id = breakpointImpl.getId();
     if (id == Breakpoint.INVALID_ID) {
       return;
@@ -103,11 +105,11 @@ public class BreakpointManager {
             }
           }
         },
-        null);
+        syncCallback);
   }
 
   public void changeBreakpoint(final BreakpointImpl breakpointImpl,
-      final BreakpointCallback callback) {
+      final BreakpointCallback callback, SyncCallback syncCallback) {
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
         true,
@@ -125,7 +127,7 @@ public class BreakpointManager {
             }
           }
         },
-        null);
+        syncCallback);
   }
 
   /**
