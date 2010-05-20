@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
@@ -210,16 +211,19 @@ public class FixtureChromeStub implements ChromeStub {
     new BreakpointManager(null) {
 
       @Override
-      public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
+      public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+          SyncCallback syncCallback) {
       }
 
       @Override
-      public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
+      public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+          SyncCallback syncCallback) {
       }
 
       @Override
       public void setBreakpoint(Type type, String target, int line, int position,
-          boolean enabled, String condition, int ignoreCount, BreakpointCallback callback) {
+          boolean enabled, String condition, int ignoreCount, BreakpointCallback callback,
+          SyncCallback syncCallback) {
       }
     };
 

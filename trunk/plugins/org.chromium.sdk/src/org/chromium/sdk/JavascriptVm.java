@@ -98,7 +98,7 @@ public interface JavascriptVm {
    *        may be {@code null}
    */
   void setBreakpoint(Breakpoint.Type type, String target, int line, int position, boolean enabled,
-      String condition, int ignoreCount, BreakpointCallback callback);
+      String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
    * Tries to suspend VM. If successful, {@link DebugEventListener#suspended(DebugContext)}

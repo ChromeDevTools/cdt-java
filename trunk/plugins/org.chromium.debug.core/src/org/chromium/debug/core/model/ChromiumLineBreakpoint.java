@@ -135,7 +135,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
             uiBreakpoint.isEnabled(),
             uiBreakpoint.getCondition(),
             uiBreakpoint.getIgnoreCount(),
-            callback);
+            callback,
+            null);
       } else {
         javascriptVm.setBreakpoint(Breakpoint.Type.SCRIPT_ID,
             String.valueOf(script.getId()),
@@ -144,7 +145,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
             uiBreakpoint.isEnabled(),
             uiBreakpoint.getCondition(),
             uiBreakpoint.getIgnoreCount(),
-            callback);
+            callback,
+            null);
       }
 
     }
@@ -154,11 +156,11 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
       sdkBreakpoint.setEnabled(uiBreakpoint.isEnabled());
       sdkBreakpoint.setIgnoreCount(uiBreakpoint.getIgnoreCount());
-      sdkBreakpoint.flush(null);
+      sdkBreakpoint.flush(null, null);
     }
 
     public static void removeOnRemote(Breakpoint sdkBreakpoint) {
-      sdkBreakpoint.clear(null);
+      sdkBreakpoint.clear(null, null);
     }
   }
 }

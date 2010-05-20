@@ -33,7 +33,7 @@ import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 
 /**
- * A default, thread-safe implementation of the JsDebugContext interface.
+ * A class that holds and administers main parts of debug protocol implementation.
  */
 public class DebugSession {
 

@@ -49,7 +49,8 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
               bp[0] = breakpoint;
               latch.countDown();
             }
-          });
+          },
+          null);
       latch.await();
     }
     assertNull("Failed to set a breakpoint: " + failure[0], failure[0]);

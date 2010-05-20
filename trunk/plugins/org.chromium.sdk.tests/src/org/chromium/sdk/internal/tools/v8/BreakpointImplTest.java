@@ -13,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
@@ -36,15 +37,17 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     }
 
     @Override
-    public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
+    public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+        SyncCallback syncCallback) {
       BreakpointImplTest.this.isBreakpointChanged = true;
-      super.changeBreakpoint(breakpointImpl, callback);
+      super.changeBreakpoint(breakpointImpl, callback, syncCallback);
     }
 
     @Override
-    public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback) {
+    public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+        SyncCallback syncCallback) {
       BreakpointImplTest.this.isBreakpointCleared = true;
-      super.clearBreakpoint(breakpointImpl, callback);
+      super.clearBreakpoint(breakpointImpl, callback, syncCallback);
     }
 
   }
@@ -69,7 +72,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
               resultBreakpoint[0] = breakpoint;
               latch.countDown();
             }
-          });
+          },
+          null);
       latch.await();
       assertNull(resultMessage[0], resultMessage[0]);
       assertNotNull(resultBreakpoint[0]);
@@ -99,7 +103,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
         latch2.countDown();
       }
 
-    });
+    },
+    null);
     latch2.await();
     assertNull(resultMessage[0], resultMessage[0]);
     assertNotNull(resultBreakpoint[0]);
@@ -126,7 +131,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
         latch.countDown();
       }
 
-    });
+    },
+    null);
     latch.await();
     assertNull(resultMessage[0], resultMessage[0]);
     assertTrue(isBreakpointCleared);
@@ -141,15 +147,15 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
         condition, new TestBreakpointManager(browserTab.getDebugSession()));
 
     bp.setCondition(condition);
-    bp.flush(null);
+    bp.flush(null, null);
     assertFalse(isBreakpointChanged);
 
     bp.setEnabled(enabled);
-    bp.flush(null);
+    bp.flush(null, null);
     assertFalse(isBreakpointChanged);
 
     bp.setIgnoreCount(ignoreCount);
-    bp.flush(null);
+    bp.flush(null, null);
     assertFalse(isBreakpointChanged);
   }
 
