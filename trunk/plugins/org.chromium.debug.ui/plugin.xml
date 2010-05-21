@@ -237,7 +237,7 @@
          </action>
       </objectContribution>
       <!-- Experimental actions, temporary disabled. -->
-      <!-- objectContribution
+      <objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
             id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
@@ -262,7 +262,51 @@
                enablesFor="1"
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
-      </objectContribution -->
+      </objectContribution>
+  </extension>
+
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.debug.ui.DebugPerspective">
+         <actionSet
+               id="org.chromium.debug.ui.ChromiumDebugActionSet">
+         </actionSet>
+      </perspectiveExtension>
+  </extension>
+
+  <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.eclipse.debug.core.ILaunch"
+            id="org.chromium.debug.ui.actions.actions-for-launch">
+         <menu id="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId"
+               label="Synchronize JavaScript Breakpoints"
+               path="launchGroup"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="Reset on Remote"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote.forLaunch">
+         </action>
+         <action
+               label="Reset on Local"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal.forLaunch">
+         </action>
+         <action
+               label="Merge Remote and Local"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge.forLaunch">
+         </action>
+      </objectContribution>
   </extension>
 
   <extension

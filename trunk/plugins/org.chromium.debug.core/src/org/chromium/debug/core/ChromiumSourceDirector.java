@@ -6,6 +6,7 @@ package org.chromium.debug.core;
 
 import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -32,6 +33,9 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
         } else if (object instanceof StackFrame) {
           StackFrame jsStackFrame = (StackFrame) object;
           script = jsStackFrame.getCallFrame().getScript();
+        } else if (object instanceof Breakpoint) {
+          Breakpoint breakpoint = (Breakpoint) object;
+          return breakpoint.getScriptName();
         }
         if (script == null) {
           return null;

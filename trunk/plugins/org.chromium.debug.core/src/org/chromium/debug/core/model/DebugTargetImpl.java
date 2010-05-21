@@ -430,6 +430,12 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
   }
 
+  public void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
+      BreakpointSynchronizer.Callback callback) {
+    workspaceRelations.synchronizeBreakpoints(direction, callback);
+  }
+
+
   private void logExceptionFromContext(DebugContext context) {
     ExceptionData exceptionData = context.getExceptionData();
     List<? extends CallFrame> callFrames = context.getCallFrames();
