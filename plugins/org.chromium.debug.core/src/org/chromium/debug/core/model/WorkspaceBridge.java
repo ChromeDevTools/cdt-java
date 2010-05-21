@@ -122,4 +122,12 @@ public interface WorkspaceBridge {
      */
     String getStackFrameLabel(StackFrame stackFrame) throws DebugException;
   }
+
+  /**
+   * Performs breakpoint synchronization between remote VM and Eclipse IDE. This operation is
+   * partially asynchronous: it blocks for reading breakpoints, but returns before all remote
+   * changes are performed. When operations is fully complete, callback gets invoked.
+   */
+  void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
+      BreakpointSynchronizer.Callback callback);
 }

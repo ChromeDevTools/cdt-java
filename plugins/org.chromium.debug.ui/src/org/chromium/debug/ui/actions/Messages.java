@@ -26,6 +26,8 @@ public class Messages extends NLS {
   public static String ExpressionEvaluator_UnableToEvaluateExpression;
 
   public static String JsBreakpointPropertiesRulerAction_ItemLabel;
+
+  public static String SynchronizeBreakpoints_JOB_TITLE;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);

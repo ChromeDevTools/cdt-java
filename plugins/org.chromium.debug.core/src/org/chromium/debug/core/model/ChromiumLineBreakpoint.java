@@ -4,16 +4,23 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.LineBreakpoint;
 import org.eclipse.osgi.util.NLS;
@@ -113,7 +120,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
 
     public static void createOnRemote(ChromiumLineBreakpoint uiBreakpoint,
         Script script, DebugTargetImpl debugTarget,
-        final CreateOnRemoveCallback createOnRemoveCallback) throws CoreException {
+        final CreateOnRemoveCallback createOnRemoveCallback,
+        SyncCallback syncCallback) throws CoreException {
       JavascriptVm javascriptVm = debugTarget.getJavascriptEmbedder().getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
@@ -127,28 +135,23 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       };
 
+      Type type;
+      String targetString;
       if (script.getName() != null) {
-        javascriptVm.setBreakpoint(Breakpoint.Type.SCRIPT_NAME,
-            script.getName(),
-            line,
-            Breakpoint.EMPTY_VALUE,
-            uiBreakpoint.isEnabled(),
-            uiBreakpoint.getCondition(),
-            uiBreakpoint.getIgnoreCount(),
-            callback,
-            null);
+        type = Breakpoint.Type.SCRIPT_NAME;
+        targetString = script.getName();
       } else {
-        javascriptVm.setBreakpoint(Breakpoint.Type.SCRIPT_ID,
-            String.valueOf(script.getId()),
-            line,
-            Breakpoint.EMPTY_VALUE,
-            uiBreakpoint.isEnabled(),
-            uiBreakpoint.getCondition(),
-            uiBreakpoint.getIgnoreCount(),
-            callback,
-            null);
+        type = Breakpoint.Type.SCRIPT_ID;
+        targetString = String.valueOf(script.getId());
       }
-
+      javascriptVm.setBreakpoint(type,
+          targetString,
+          line,
+          Breakpoint.EMPTY_VALUE,
+          uiBreakpoint.isEnabled(),
+          uiBreakpoint.getCondition(),
+          uiBreakpoint.getIgnoreCount(),
+          callback, syncCallback);
     }
 
     public static void updateOnRemote(Breakpoint sdkBreakpoint,
@@ -159,8 +162,50 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       sdkBreakpoint.flush(null, null);
     }
 
-    public static void removeOnRemote(Breakpoint sdkBreakpoint) {
-      sdkBreakpoint.clear(null, null);
+    public static ChromiumLineBreakpoint createLocal(Breakpoint sdkBreakpoint,
+        IBreakpointManager breakpointManager, IFile resource, int script_line_offset,
+        String debugModelId) throws CoreException {
+      ChromiumLineBreakpoint uiBreakpoint = new ChromiumLineBreakpoint(resource,
+          (int) sdkBreakpoint.getLineNumber() + 1 + script_line_offset,
+          debugModelId);
+      uiBreakpoint.setCondition(sdkBreakpoint.getCondition());
+      uiBreakpoint.setEnabled(sdkBreakpoint.isEnabled());
+      uiBreakpoint.setIgnoreCount(sdkBreakpoint.getIgnoreCount());
+      ignoreList.add(uiBreakpoint);
+      try {
+        breakpointManager.addBreakpoint(uiBreakpoint);
+      } finally {
+        ignoreList.remove(uiBreakpoint);
+      }
+      return uiBreakpoint;
+    }
+  }
+
+  private static final BreakpointIgnoreList ignoreList = new BreakpointIgnoreList();
+
+  public static BreakpointIgnoreList getIgnoreList() {
+    return ignoreList;
+  }
+
+  public static class BreakpointIgnoreList {
+    private final List<ChromiumLineBreakpoint> list = new ArrayList<ChromiumLineBreakpoint>(1);
+
+    public boolean contains(IBreakpoint breakpoint) {
+      return list.contains(breakpoint);
+    }
+
+    public void remove(ChromiumLineBreakpoint lineBreakpoint) {
+      boolean res = list.remove(lineBreakpoint);
+      if (!res) {
+        throw new IllegalStateException();
+      }
+    }
+
+    public void add(ChromiumLineBreakpoint lineBreakpoint) {
+      if (list.contains(lineBreakpoint)) {
+        throw new IllegalStateException();
+      }
+      list.add(lineBreakpoint);
     }
   }
 }

@@ -27,15 +27,15 @@ public class BreakpointMap {
     public InTargetMap() {
     }
 
-    public Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint chromiumLineBreakpoint) {
+    public synchronized Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint chromiumLineBreakpoint) {
       return uiToSdkMap.get(chromiumLineBreakpoint);
     }
 
-    public ChromiumLineBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
+    public synchronized ChromiumLineBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
       return sdkToUiMap.get(sdkBreakpoint);
     }
 
-    public void add(Breakpoint sdkBreakpoint, ChromiumLineBreakpoint uiBreakpoint) {
+    public synchronized void add(Breakpoint sdkBreakpoint, ChromiumLineBreakpoint uiBreakpoint) {
       Object conflict1 = uiToSdkMap.put(uiBreakpoint, sdkBreakpoint);
       Object conflict2 = sdkToUiMap.put(sdkBreakpoint, uiBreakpoint);
       if (conflict1 != null || conflict2 != null) {
@@ -43,12 +43,17 @@ public class BreakpointMap {
       }
     }
 
-    public void remove(ChromiumLineBreakpoint lineBreakpoint) {
+    public synchronized void remove(ChromiumLineBreakpoint lineBreakpoint) {
       Breakpoint sdkBreakpoint = uiToSdkMap.remove(lineBreakpoint);
       if (sdkBreakpoint == null) {
         throw new RuntimeException();
       }
       sdkToUiMap.remove(sdkBreakpoint);
+    }
+
+    public synchronized void clear() {
+      sdkToUiMap.clear();
+      uiToSdkMap.clear();
     }
   }
 }
