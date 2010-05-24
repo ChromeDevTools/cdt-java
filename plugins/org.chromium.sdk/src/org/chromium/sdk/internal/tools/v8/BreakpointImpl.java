@@ -30,6 +30,11 @@ public class BreakpointImpl implements Breakpoint {
   private String scriptName;
 
   /**
+   * The corresponding script id as reported by the JavaScript VM. May be null.
+   */
+  private Long scriptId;
+
+  /**
    * Breakpoint line number. May become invalidated by LiveEdit actions.
    */
   private long lineNumber;
@@ -62,10 +67,11 @@ public class BreakpointImpl implements Breakpoint {
    */
   private volatile boolean isDirty = false;
 
-  public BreakpointImpl(Type type, long id, String scriptName, long lineNumber, boolean enabled,
-      int ignoreCount, String condition, BreakpointManager breakpointManager) {
+  public BreakpointImpl(Type type, long id, String scriptName, Long scriptId, long lineNumber,
+      boolean enabled, int ignoreCount, String condition, BreakpointManager breakpointManager) {
     this.type = type;
     this.scriptName = scriptName;
+    this.scriptId = scriptId;
     this.id = id;
     this.isEnabled = enabled;
     this.ignoreCount = ignoreCount;
@@ -92,6 +98,7 @@ public class BreakpointImpl implements Breakpoint {
     this.ignoreCount = (int) info.ignoreCount();
     this.condition = info.condition();
     this.scriptName = info.script_name();
+    this.scriptId = info.script_id();
   }
 
   public boolean isEnabled() {
@@ -108,6 +115,10 @@ public class BreakpointImpl implements Breakpoint {
 
   public String getScriptName() {
     return scriptName;
+  }
+
+  public Long getScriptId() {
+    return scriptId;
   }
 
   public int getIgnoreCount() {

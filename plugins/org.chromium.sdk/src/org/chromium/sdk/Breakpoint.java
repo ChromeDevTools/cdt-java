@@ -51,6 +51,11 @@ public interface Breakpoint {
   String getScriptName();
 
   /**
+   * @return scriptId as reported by the JavaScript VM debugger; may be null
+   */
+  Long getScriptId();
+
+  /**
    * Returns line number of the breakpoint. As source is changed (typically with LiveEdit feature,
    * and particularly by calling {@link UpdatableScript#setSourceOnRemote}) this value
    * may become stale. It gets updated when {@link JavascriptVm#listBreakpoints} asynchronous
