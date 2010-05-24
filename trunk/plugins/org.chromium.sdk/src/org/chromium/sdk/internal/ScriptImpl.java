@@ -46,15 +46,19 @@ public class ScriptImpl implements Script, UpdatableScript {
 
     public final int lineOffset;
 
+    public final int columnOffset;
+
     public final int endLine;
 
     public final long id;
 
-    public Descriptor(Type type, long id, String name, int lineOffset, int lineCount) {
+    public Descriptor(Type type, long id, String name, int lineOffset, int columnOffset,
+        int lineCount) {
       this.type = type;
       this.id = id;
       this.name = name;
       this.lineOffset = lineOffset;
+      this.columnOffset = columnOffset;
       this.endLine = lineOffset + lineCount - 1;
     }
 
@@ -62,8 +66,8 @@ public class ScriptImpl implements Script, UpdatableScript {
     public int hashCode() {
       return
           name != null ? name.hashCode() : (int) id * 0x101 +
-          lineOffset * 0x1001 +
-          endLine * 0x10001;
+          lineOffset * 0x1001 + columnOffset * 0x10001 +
+          endLine * 0x100001;
     }
 
     @Override
@@ -78,6 +82,7 @@ public class ScriptImpl implements Script, UpdatableScript {
       // The id equality is stronger than the name equality.
       return this.id == that.id &&
           this.lineOffset == that.lineOffset &&
+          this.columnOffset == that.columnOffset &&
           this.endLine == that.endLine;
     }
 
@@ -95,9 +100,10 @@ public class ScriptImpl implements Script, UpdatableScript {
           return null;
         }
         int lineOffset = (int) script.lineOffset();
+        int columnOffset = (int) script.columnOffset();
         int lineCount = (int) script.lineCount();
         int id = V8ProtocolUtil.getScriptIdFromResponse(script).intValue();
-        return new Descriptor(type, id, name, lineOffset, lineCount);
+        return new Descriptor(type, id, name, lineOffset, columnOffset, lineCount);
       } catch (Exception e) {
         // not a script object has been passed in
         return null;
@@ -130,6 +136,10 @@ public class ScriptImpl implements Script, UpdatableScript {
 
   public int getStartLine() {
     return descriptor.lineOffset;
+  }
+
+  public int getStartColumn() {
+    return descriptor.columnOffset;
   }
 
   public int getEndLine() {

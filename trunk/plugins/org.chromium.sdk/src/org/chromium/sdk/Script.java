@@ -44,9 +44,15 @@ public interface Script {
 
   /**
    * @return the start line of this script in the original document
-   *         (zero-based), inclusive
+   *         (zero-based)
    */
   int getStartLine();
+
+  /**
+   * @return the start column of this script in the original document
+   *         (zero-based)
+   */
+  int getStartColumn();
 
   /**
    * @return the end line of this script in the original document (zero-based),

@@ -32,6 +32,7 @@ public interface CallFrame {
   /**
    * @return the current line number in the Script corresponding to this frame
    *         (0-based) or {@code -1} if unknown
+   * TODO(peter.rybin): consider returning absolute line number here, not in-script number.
    */
   int getLineNumber();
 

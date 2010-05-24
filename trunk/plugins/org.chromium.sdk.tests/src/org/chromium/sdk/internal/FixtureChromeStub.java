@@ -575,7 +575,7 @@ public class FixtureChromeStub implements ChromeStub {
 
   private static class FakeBreakpoint extends BreakpointImpl {
     public FakeBreakpoint(Type type, long id, boolean enabled, int ignoreCount, String condition) {
-      super(type, id, "abcde.js", 15, enabled, ignoreCount, condition,
+      super(type, id, "abcde.js", 17L, 15, enabled, ignoreCount, condition,
           NULL_BREAKPOINT_MANAGER);
     }
   }
