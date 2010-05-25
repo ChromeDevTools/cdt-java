@@ -23,7 +23,8 @@ import org.eclipse.core.runtime.Status;
 public class PushChangesAction extends V8ScriptAction {
   @Override
   protected void execute(final FilePair filePair) {
-    UpdatableScript updatableScript = LiveEditExtension.castToUpdatableScript(filePair.getScript());
+    UpdatableScript updatableScript =
+        LiveEditExtension.castToUpdatableScript(filePair.getVmResource().getScript());
 
     if (updatableScript == null) {
       throw new RuntimeException();

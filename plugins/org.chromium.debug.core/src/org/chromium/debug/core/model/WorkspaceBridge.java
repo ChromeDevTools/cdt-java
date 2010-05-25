@@ -10,6 +10,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -47,15 +48,7 @@ public interface WorkspaceBridge {
     JsLabelProvider getLabelProvider();
   }
 
-  /**
-   * Helps UI actions to map from script to resource.
-   */
-  IFile getScriptResource(Script script);
-
-  /**
-   * @return script that corresponds to a resource from user workspace or null
-   */
-  Script findScriptFromWorkspaceFile(IFile resource);
+  VmResource findVmResourceFromWorkspaceFile(IFile resource) throws CoreException;
 
   /**
    * Initiates script reloading from remote VM.

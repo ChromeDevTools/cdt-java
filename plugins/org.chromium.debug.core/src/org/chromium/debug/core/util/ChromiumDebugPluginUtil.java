@@ -44,7 +44,8 @@ public class ChromiumDebugPluginUtil {
   private static final String CHROMIUM_EXTENSION = "chromium"; //$NON-NLS-1$
 
   public static final Set<String> SUPPORTED_EXTENSIONS =
-      new HashSet<String>(Arrays.asList(CHROMIUM_EXTENSION, "js")); //$NON-NLS-1$
+      new HashSet<String>(Arrays.asList(CHROMIUM_EXTENSION, "js", //$NON-NLS-1$
+          "html", "htm")); //$NON-NLS-1$ //$NON-NLS-2$
 
   public static final List<String> SUPPORTED_EXTENSIONS_SUFFIX_LIST;
   static {

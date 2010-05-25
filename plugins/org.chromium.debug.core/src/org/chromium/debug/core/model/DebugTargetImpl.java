@@ -341,11 +341,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return super.getAdapter(adapter);
   }
 
-  public IFile getScriptResource(Script script) {
-    return workspaceRelations.getScriptResource(script);
-  }
-  public Script getScript(IFile resource) {
-    return workspaceRelations.findScriptFromWorkspaceFile(resource);
+  public VmResource getVmResource(IFile resource) throws CoreException {
+    return workspaceRelations.findVmResourceFromWorkspaceFile(resource);
   }
 
   public JavascriptThread getThread() {

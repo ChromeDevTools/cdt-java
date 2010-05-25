@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
@@ -129,7 +129,12 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
     ArrayList<FilePair> result = new ArrayList<FilePair>(targetList.size());
 
     for (DebugTargetImpl target : targetList) {
-      Script script = target.getScript(localFile);
+      VmResource script;
+      try {
+        script = target.getVmResource(localFile);
+      } catch (CoreException e) {
+        throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
+      }
       if (script == null) {
         continue;
       }
@@ -140,19 +145,19 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
 
   protected static class FilePair {
     private final IFile file;
-    private final Script script;
+    private final VmResource vmResource;
     private final DebugTargetImpl debugTargetImpl;
 
-    FilePair(IFile file, Script script, DebugTargetImpl debugTargetImpl) {
+    FilePair(IFile file, VmResource vmResource, DebugTargetImpl debugTargetImpl) {
       this.file = file;
-      this.script = script;
+      this.vmResource = vmResource;
       this.debugTargetImpl = debugTargetImpl;
     }
     protected IFile getFile() {
       return file;
     }
-    protected Script getScript() {
-      return script;
+    protected VmResource getVmResource() {
+      return vmResource;
     }
     protected JavascriptVm getJavascriptVm() {
       return debugTargetImpl.getJavascriptEmbedder().getJavascriptVm();

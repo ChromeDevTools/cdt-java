@@ -5,6 +5,8 @@
 package org.chromium.debug.core;
 
 import org.chromium.debug.core.model.ResourceManager;
+import org.chromium.debug.core.model.VmResourceId;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -44,10 +46,14 @@ public class VProjectSourceContainer implements ISourceContainer {
 
   public Object[] findSourceElements(String name) {
     if (chromiumSourceDirector == null) {
-      return null;
+      return new Object[0];
     }
     ResourceManager resourceManager = chromiumSourceDirector.getResourceManager();
-    return new Object[] { resourceManager.getResource(name) };
+    IFile file = resourceManager.getFile(name);
+    if (file == null) {
+      return new Object[0];
+    }
+    return new Object[] { file };
   }
 
   public String getName() {
@@ -72,6 +78,13 @@ public class VProjectSourceContainer implements ISourceContainer {
 
   public boolean isComposite() {
     return false;
+  }
+
+  public VmResourceId findScriptId(IFile resource) {
+    if (chromiumSourceDirector == null) {
+      throw new IllegalStateException();
+    }
+    return chromiumSourceDirector.getResourceManager().getResourceId(resource);
   }
 
   public Object getAdapter(Class adapter) {

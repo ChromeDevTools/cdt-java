@@ -8,7 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 
-import org.chromium.sdk.Script;
+import org.chromium.debug.core.model.VmResource;
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -29,18 +29,18 @@ import org.eclipse.swt.graphics.Image;
 public class CompareChangesAction extends V8ScriptAction {
   @Override
   protected void execute(FilePair filePair) {
-    LiveEditCompareInput input = new LiveEditCompareInput(filePair.getFile(), filePair.getScript());
+    LiveEditCompareInput input = new LiveEditCompareInput(filePair.getFile(), filePair.getVmResource());
     CompareUI.openCompareEditor(input);
   }
 
   private static class LiveEditCompareInput extends CompareEditorInput {
     private final IFile file;
-    private final Script script;
+    private final VmResource script;
 
-    LiveEditCompareInput(IFile file, Script script) {
+    LiveEditCompareInput(IFile file, VmResource vmResource) {
       super(createCompareConfiguration());
       this.file = file;
-      this.script = script;
+      this.script = vmResource;
     }
 
     private static CompareConfiguration createCompareConfiguration() {
@@ -73,10 +73,10 @@ public class CompareChangesAction extends V8ScriptAction {
       };
       CompareItem right = new CompareItem() {
         public String getName() {
-          return "File in VM " + script.getName(); //$NON-NLS-1$
+          return "File in VM " + script.getFileName(); //$NON-NLS-1$
         }
         public InputStream getContents() throws CoreException {
-          return new ByteArrayInputStream(script.getSource().getBytes());
+          return new ByteArrayInputStream(script.getScript().getSource().getBytes());
         }
       };
       DiffNode diffNode = new DiffNode(null, Differencer.PSEUDO_CONFLICT, null, left, right);

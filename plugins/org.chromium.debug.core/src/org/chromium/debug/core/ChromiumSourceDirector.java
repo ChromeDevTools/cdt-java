@@ -6,6 +6,7 @@ package org.chromium.debug.core;
 
 import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IProject;
@@ -41,7 +42,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
           return null;
         }
 
-        return script.getName();
+        return VmResourceId.forScript(script).getEclipseSourceName();
       }
     };
     addParticipants(new ISourceLookupParticipant[] { participant } );
@@ -50,14 +51,14 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   public void initializeVProjectContainers(IProject project, ResourceManager resourceManager) {
     this.resourceManager = resourceManager;
     this.project = project;
-    this.reverseSourceLookup = new ReverseSourceLookup(this, resourceManager);
+    this.reverseSourceLookup = new ReverseSourceLookup(this);
   }
 
   public ReverseSourceLookup getReverseSourceLookup() {
     return reverseSourceLookup;
   }
 
-  ResourceManager getResourceManager() {
+  public ResourceManager getResourceManager() {
     return resourceManager;
   }
 
