@@ -10,9 +10,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -119,13 +117,13 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     }
 
     public static void createOnRemote(ChromiumLineBreakpoint uiBreakpoint,
-        Script script, DebugTargetImpl debugTarget,
+        VmResourceId scriptId, DebugTargetImpl debugTarget,
         final CreateOnRemoveCallback createOnRemoveCallback,
         SyncCallback syncCallback) throws CoreException {
       JavascriptVm javascriptVm = debugTarget.getJavascriptEmbedder().getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-      final int line = (uiBreakpoint.getLineNumber() - 1) + script.getStartLine();
+      final int line = (uiBreakpoint.getLineNumber() - 1);
       BreakpointCallback callback = new BreakpointCallback() {
         public void success(Breakpoint sdkBreakpoint) {
           createOnRemoveCallback.success(sdkBreakpoint);
@@ -135,17 +133,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       };
 
-      Type type;
-      String targetString;
-      if (script.getName() != null) {
-        type = Breakpoint.Type.SCRIPT_NAME;
-        targetString = script.getName();
-      } else {
-        type = Breakpoint.Type.SCRIPT_ID;
-        targetString = String.valueOf(script.getId());
-      }
-      javascriptVm.setBreakpoint(type,
-          targetString,
+      javascriptVm.setBreakpoint(scriptId.getTypeForBreakpoint(),
+          scriptId.getTargetForBreakpoint(),
           line,
           Breakpoint.EMPTY_VALUE,
           uiBreakpoint.isEnabled(),

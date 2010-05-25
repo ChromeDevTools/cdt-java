@@ -1,10 +1,12 @@
-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 package org.chromium.debug.core.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -20,145 +22,133 @@ import org.eclipse.core.runtime.CoreException;
  * inside Eclipse.
  */
 public class ResourceManager {
-  private final Map<IFile, Script> resourceToScript = new HashMap<IFile, Script>();
-  private final Map<ScriptIdentifier, IFile> scriptIdToResource =
-      new HashMap<ScriptIdentifier, IFile>();
-  private final Map<String, IFile> nameToResource = new HashMap<String, IFile>();
   private final IProject debugProject;
+
+  private final Map<VmResourceId, VmResourceInfo> vmResourceId2Info =
+      new HashMap<VmResourceId, VmResourceInfo>();
+  private final Map<IFile, VmResourceInfo> file2Info = new HashMap<IFile, VmResourceInfo>();
 
   public ResourceManager(IProject debugProject) {
     this.debugProject = debugProject;
   }
 
-  public synchronized void putScript(Script script, IFile resource) {
-    ScriptIdentifier scriptId = ScriptIdentifier.forScript(script);
-    resourceToScript.put(resource, script);
-    scriptIdToResource.put(scriptId, resource);
-    nameToResource.put(script.getName(), resource);
+  public synchronized VmResource getVmResource(VmResourceId id) {
+    VmResourceInfo info = vmResourceId2Info.get(id);
+    if (info == null) {
+      return null;
+    }
+    return info.vmResourceImpl;
   }
 
-  public synchronized Script getScript(IFile resource) {
-    return resourceToScript.get(resource);
+  /**
+   * @param eclipseSourceName eclipse source file name
+   *   (what {@link VmResourceId#getEclipseSourceName()} returns)
+   */
+  public IFile getFile(String eclipseSourceName) {
+    VmResourceId id = VmResourceId.parseString(eclipseSourceName);
+    VmResourceInfo info = vmResourceId2Info.get(id);
+    if (info == null) {
+      return null;
+    }
+    return info.file;
   }
 
-  public synchronized IFile getResource(Script script) {
-    return scriptIdToResource.get(ScriptIdentifier.forScript(script));
+  public synchronized VmResourceId getResourceId(IFile resource) {
+    VmResourceInfo info = file2Info.get(resource);
+    if (info == null) {
+      return null;
+    }
+    return info.id;
   }
 
-  public synchronized boolean scriptHasResource(Script script) {
-    return getResource(script) != null;
+  public synchronized void addScript(Script newScript) {
+    VmResourceId id = VmResourceId.forScript(newScript);
+    VmResourceInfo info = vmResourceId2Info.get(id);
+    if (info == null) {
+      String fileNameTemplate = createFileNameTemplate(id, newScript);
+      IFile scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, fileNameTemplate);
+      info = new VmResourceInfo(scriptFile, id);
+      vmResourceId2Info.put(id, info);
+      file2Info.put(scriptFile, info);
+
+      info.scripts.add(newScript);
+      writeScriptSource(info.scripts, info.file);
+    } else {
+      // TODO(peter.rybin): support adding scripts to one resource at once not to rewrite file
+      // every time.
+      info.scripts.add(newScript);
+      writeScriptSource(info.scripts, info.file);
+    }
   }
 
-  public synchronized IFile getResource(String name) {
-    return nameToResource.get(name);
+  public synchronized void reloadScript(Script script) {
+    VmResourceId id = VmResourceId.forScript(script);
+    VmResourceInfo info = vmResourceId2Info.get(id);
+    if (info == null) {
+      throw new RuntimeException("Script file not found"); //$NON-NLS-1$
+    }
+    if (!info.scripts.contains(script)) {
+      throw new RuntimeException("Script not found in internal list"); //$NON-NLS-1$
+    }
+    writeScriptSource(info.scripts, info.file);
   }
 
   public synchronized void clear() {
     deleteAllScriptFiles();
-    resourceToScript.clear();
-    scriptIdToResource.clear();
-    nameToResource.clear();
+
+    vmResourceId2Info.clear();
+    file2Info.clear();
   }
 
   private void deleteAllScriptFiles() {
-    if (!resourceToScript.isEmpty()) {
-      try {
-        ResourcesPlugin.getWorkspace().delete(
-            resourceToScript.keySet().toArray(new IFile[resourceToScript.size()]), true, null);
-      } catch (CoreException e) {
-        ChromiumDebugPlugin.log(e);
-      }
+    try {
+      ResourcesPlugin.getWorkspace().delete(
+          file2Info.keySet().toArray(new IFile[file2Info.size()]), true, null);
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(e);
     }
   }
 
-  public synchronized void addScript(Script script) {
-    IFile scriptFile = getResource(script);
-    if (scriptFile == null) {
-      scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, getScriptResourceName(script));
-      putScript(script, scriptFile);
-      writeScriptSource(script, scriptFile);
+  private String createFileNameTemplate(VmResourceId id, Script newScript) {
+    return id.createFileNameTemplate(true);
+  }
+
+  private static void writeScriptSource(List<Script> scripts, IFile file) {
+    String fileSource = MockUpResourceWriter.writeScriptSource(scripts);
+
+    try {
+      ChromiumDebugPluginUtil.writeFile(file, fileSource);
+    } catch (final CoreException e) {
+      ChromiumDebugPlugin.log(e);
     }
   }
 
-  public void reloadScript(Script script) {
-    IFile scriptFile = getResource(script);
-    if (scriptFile == null) {
-      throw new RuntimeException("Script file not found"); //$NON-NLS-1$
-    }
-    writeScriptSource(script, scriptFile);
-  }
-
-  private String getScriptResourceName(Script script) {
-    String name = script.getName();
-    if (name == null) {
-      name = Messages.ResourceManager_UnnamedScriptName;
-    }
-    return name;
-  }
-
-  private static void writeScriptSource(Script script, IFile file) {
-    if (script.hasSource()) {
-      try {
-        ChromiumDebugPluginUtil.writeFile(file, script.getSource());
-      } catch (final CoreException e) {
-        ChromiumDebugPlugin.log(e);
-      }
-    }
-  }
-
-  /**
-   * A script identifier class usable as HashMap key.
-   */
-  private static class ScriptIdentifier {
-    private final String name;
-
-    private final long id;
-
-    private final int startLine;
-
-    private final int endLine;
-
-    public static ScriptIdentifier forScript(Script script) {
-      String name = script.getName();
-      return new ScriptIdentifier(
-          name,
-          name != null ? -1 : script.getId(),
-          script.getStartLine(),
-          script.getEndLine());
-    }
-
-    private ScriptIdentifier(String name, long id, int startLine, int endLine) {
-      this.name = name;
+  private class VmResourceInfo {
+    final IFile file;
+    final VmResourceId id;
+    final ArrayList<Script> scripts = new ArrayList<Script>(1);
+    VmResourceInfo(IFile file, VmResourceId id) {
+      this.file = file;
       this.id = id;
-      this.startLine = startLine;
-      this.endLine = endLine;
     }
 
-    @Override
-    public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + (int) (id ^ (id >>> 32));
-      result = prime * result + ((name == null) ? 0 : name.hashCode());
-      result = prime * result + 17 * startLine + 19 * endLine;
-      return result;
-    }
+    final VmResource vmResourceImpl = new VmResource() {
+      public VmResourceId getId() {
+        return id;
+      }
 
-    @Override
-    public boolean equals(Object obj) {
-      if (!(obj instanceof ScriptIdentifier)) {
-        return false;
+      public Script getScript() {
+        synchronized (ResourceManager.this) {
+          if (scripts.size() != 1) {
+            throw new UnsupportedOperationException(
+                "Not supported for complex resources"); //$NON-NLS-1$
+          }
+          return scripts.get(0);
+        }
       }
-      ScriptIdentifier that = (ScriptIdentifier) obj;
-      if (this.startLine != that.startLine || this.endLine != that.endLine) {
-        return false;
+      public String getFileName() {
+        return file.getName();
       }
-      if (name == null) {
-        // an unnamed script, only id is known
-        return that.name == null && this.id == that.id;
-      }
-      // a named script
-      return this.name.equals(that.name);
-    }
+    };
   }
 }

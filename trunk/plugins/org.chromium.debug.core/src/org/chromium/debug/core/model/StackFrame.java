@@ -202,7 +202,13 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   public int getLineNumber() throws DebugException {
     // convert 0-based to 1-based
-    return stackFrame.getLineNumber() + 1;
+    int inScriptLine = stackFrame.getLineNumber() + 1;
+    Script script = stackFrame.getScript();
+    if (script != null) {
+      return inScriptLine + script.getStartLine();
+    } else {
+      return inScriptLine;
+    }
   }
 
   public int getCharStart() throws DebugException {

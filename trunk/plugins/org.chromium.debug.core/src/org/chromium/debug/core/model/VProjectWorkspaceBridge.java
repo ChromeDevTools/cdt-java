@@ -117,16 +117,16 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     });
   }
 
-  public IFile getScriptResource(Script script) {
-    return resourceManager.getResource(script);
+  public VmResource findVmResourceFromWorkspaceFile(IFile resource) throws CoreException {
+    VmResourceId id = findVmResourceIdFromWorkspaceFile(resource);
+    if (id == null) {
+      return null;
+    }
+    return resourceManager.getVmResource(id);
   }
 
-  public Script findScriptFromWorkspaceFile(IFile resource) {
-    Script fastResult = resourceManager.getScript(resource);
-    if (fastResult != null) {
-      return fastResult;
-    }
-    return sourceDirector.getReverseSourceLookup().findScript(resource);
+  private VmResourceId findVmResourceIdFromWorkspaceFile(IFile resource) throws CoreException {
+    return sourceDirector.getReverseSourceLookup().findVmResource(resource);
   }
 
   public void reloadScript(Script script) {
@@ -164,22 +164,30 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       if (ChromiumLineBreakpoint.getIgnoreList().contains(breakpoint)) {
         return;
       }
-      createBreakpointOnRemote(lineBreakpoint, null, null);
+      if (!lineBreakpoint.isEnabled()) {
+        return;
+      }
+      IFile file = (IFile) lineBreakpoint.getMarker().getResource();
+      VmResourceId vmResourceId;
+      try {
+        vmResourceId = findVmResourceIdFromWorkspaceFile(file);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(
+            new Exception("Failed to resolve script for the file " + file, e)); //$NON-NLS-1$
+        return;
+      }
+      if (vmResourceId == null) {
+        // Might be a script from a different debug target
+        return;
+      }
+
+      createBreakpointOnRemote(lineBreakpoint, vmResourceId, null, null);
     }
 
     public void createBreakpointOnRemote(final ChromiumLineBreakpoint lineBreakpoint,
+        final VmResourceId vmResourceId,
         final CreateCallback createCallback, SyncCallback syncCallback) {
       try {
-        if (!lineBreakpoint.isEnabled()) {
-          return;
-        }
-        IFile file = (IFile) lineBreakpoint.getMarker().getResource();
-        final Script script = findScriptFromWorkspaceFile(file);
-        if (script == null) {
-          // Might be a script from a different debug target
-          return;
-        }
-
         ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
             new ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback() {
           public void success(Breakpoint breakpoint) {
@@ -197,7 +205,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           }
         };
 
-        ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, script, debugTargetImpl,
+        ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceId, debugTargetImpl,
             callback, syncCallback);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to create breakpoint in " + //$NON-NLS-1$
@@ -328,13 +336,16 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       CallFrame callFrame = stackFrame.getCallFrame();
       String name = callFrame.getFunctionName();
       Script script = callFrame.getScript();
+      String scriptName;
       if (script == null) {
-        return Messages.StackFrame_UnknownScriptName;
+        scriptName = Messages.StackFrame_UnknownScriptName;
+      } else {
+        scriptName = VmResourceId.forScript(script).getEclipseSourceName();
       }
-      int line = script.getStartLine() + stackFrame.getLineNumber();
+      int line = stackFrame.getLineNumber();
       if (line != -1) {
         name = NLS.bind(Messages.StackFrame_NameFormat,
-            new Object[] {name, script.getName(), line});
+            new Object[] {name, scriptName, line});
       }
       return name;
     }

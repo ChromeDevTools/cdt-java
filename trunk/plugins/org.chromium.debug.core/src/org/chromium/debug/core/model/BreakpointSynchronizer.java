@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
-import org.chromium.debug.core.ReverseSourceLookup;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
@@ -84,6 +83,7 @@ public class BreakpointSynchronizer {
      * Create breakpoint on remote VM (asynchronously) and link it to uiBreakpoint.
      */
     void createBreakpointOnRemote(ChromiumLineBreakpoint uiBreakpoint,
+        VmResourceId vmResourceId,
         CreateCallback createCallback, SyncCallback syncCallback);
 
     interface CreateCallback {
@@ -141,10 +141,8 @@ public class BreakpointSynchronizer {
     }
 
     // Sort all breakpoints by (script_name, line_number).
-    UiBreakpointHandler uiHandler =
-        new UiBreakpointHandler(sourceDirector.getReverseSourceLookup());
     SortedBreakpoints<ChromiumLineBreakpoint> sortedUiBreakpoints =
-        sortBreakpoints(uiBreakpoints, uiHandler);
+        sortBreakpoints(uiBreakpoints, uiBreakpointHandler);
     SortedBreakpoints<Breakpoint> sortedSdkBreakpoints =
         sortBreakpoints(sdkBreakpoints2, sdkBreakpointHandler);
 
@@ -232,6 +230,12 @@ public class BreakpointSynchronizer {
       statusBuilder.getReportBuilder().increment(ReportBuilder.Property.CREATED_LOCALLY);
     }
     for (ChromiumLineBreakpoint uiBreakpoint : uiBreakpointsToCreate) {
+      VmResourceId vmResourceId = uiBreakpointHandler.getVmResourceId(uiBreakpoint);
+      if (vmResourceId == null) {
+        // Actually we should not get here, because getScript call succeeded before.
+        continue;
+      }
+
       final PlannedTaskHelper createTaskHelper = new PlannedTaskHelper(statusBuilder);
       BreakpointHelper.CreateCallback createCallback = new BreakpointHelper.CreateCallback() {
         public void success() {
@@ -241,7 +245,8 @@ public class BreakpointSynchronizer {
           createTaskHelper.setException(ex);
         }
       };
-      breakpointHelper.createBreakpointOnRemote(uiBreakpoint, createCallback, createTaskHelper);
+      breakpointHelper.createBreakpointOnRemote(uiBreakpoint, vmResourceId, createCallback,
+          createTaskHelper);
     }
   }
 
@@ -420,20 +425,15 @@ public class BreakpointSynchronizer {
    * A handler for properties of breakpoint type B that helps reading them.
    */
   private static abstract class PropertyHandler<B> {
-    /** @return script name or null */
-    abstract String getScript(B breakpoint);
+    /** @return vm resource name or null */
+    abstract VmResourceId getVmResourceId(B breakpoint);
     /** @return 0-based number */
     abstract long getLineNumber(B breakpoint);
   }
 
-  private static class UiBreakpointHandler extends PropertyHandler<ChromiumLineBreakpoint> {
-    private final ReverseSourceLookup reverseSourceLookup;
-
-    UiBreakpointHandler(ReverseSourceLookup reverseSourceLookup) {
-      this.reverseSourceLookup = reverseSourceLookup;
-    }
-
-    @Override
+  private final PropertyHandler<ChromiumLineBreakpoint> uiBreakpointHandler =
+      new PropertyHandler<ChromiumLineBreakpoint>() {
+      @Override
     long getLineNumber(ChromiumLineBreakpoint chromiumLineBreakpoint) {
       int lineNumber;
       try {
@@ -445,7 +445,7 @@ public class BreakpointSynchronizer {
     }
 
     @Override
-    String getScript(ChromiumLineBreakpoint chromiumLineBreakpoint) {
+    VmResourceId getVmResourceId(ChromiumLineBreakpoint chromiumLineBreakpoint) {
       IMarker marker = chromiumLineBreakpoint.getMarker();
       if (marker == null) {
         return null;
@@ -455,9 +455,13 @@ public class BreakpointSynchronizer {
         return null;
       }
       IFile file = (IFile) resource;
-      return reverseSourceLookup.calculateScriptName(file);
+      try {
+        return sourceDirector.getReverseSourceLookup().findVmResource(file);
+      } catch (CoreException e) {
+        throw new RuntimeException("Failed to read script name from breakpoint", e); //$NON-NLS-1$
+      }
     }
-  }
+  };
 
   private static final PropertyHandler<Breakpoint> sdkBreakpointHandler =
       new PropertyHandler<Breakpoint>() {
@@ -467,11 +471,16 @@ public class BreakpointSynchronizer {
     }
 
     @Override
-    String getScript(Breakpoint breakpoint) {
-      if (breakpoint.getType() != Breakpoint.Type.SCRIPT_NAME) {
-        return null;
+    VmResourceId getVmResourceId(Breakpoint breakpoint) {
+      if (breakpoint.getType() == Breakpoint.Type.SCRIPT_NAME) {
+        return VmResourceId.forName(breakpoint.getScriptName());
+      } else {
+        Long scriptId = breakpoint.getScriptId();
+        if (scriptId == null) {
+          return null;
+        }
+        return VmResourceId.forId(scriptId);
       }
-      return breakpoint.getScriptName();
     }
   };
 
@@ -479,9 +488,9 @@ public class BreakpointSynchronizer {
    * A helping structure that holds field of complicated type.
    */
   private static class SortedBreakpoints<B> {
-    final Map<String, Map<Long, B>> data;
+    final Map<VmResourceId, Map<Long, B>> data;
 
-    SortedBreakpoints(Map<String, Map<Long, B>> data) {
+    SortedBreakpoints(Map<VmResourceId, Map<Long, B>> data) {
       this.data = data;
     }
   }
@@ -491,16 +500,16 @@ public class BreakpointSynchronizer {
    */
   private static <B> SortedBreakpoints<B> sortBreakpoints(Collection<? extends B> breakpoints,
       PropertyHandler<B> handler) {
-    Map<String, Map<Long, B>> result = new HashMap<String, Map<Long, B>>();
+    Map<VmResourceId, Map<Long, B>> result = new HashMap<VmResourceId, Map<Long, B>>();
     for (B breakpoint : breakpoints) {
-      String script = handler.getScript(breakpoint);
-      if (script == null) {
+      VmResourceId vmResourceId = handler.getVmResourceId(breakpoint);
+      if (vmResourceId == null) {
         continue;
       }
-      Map<Long, B> subMap = result.get(script);
+      Map<Long, B> subMap = result.get(vmResourceId);
       if (subMap == null) {
         subMap = new HashMap<Long, B>(3);
-        result.put(script, subMap);
+        result.put(vmResourceId, subMap);
       }
       long line = handler.getLineNumber(breakpoint);
       // For simplicity we ignore multiple breakpoints on the same line.
