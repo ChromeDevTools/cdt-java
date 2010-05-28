@@ -86,6 +86,13 @@ public class ReverseSourceLookup {
             resourceContainer.getFullPath()).toPortableString();
         return name;
       }
+    } else if (container instanceof SourceNameMapperContainer) {
+      SourceNameMapperContainer mappingContainer =
+          (SourceNameMapperContainer) container;
+      String subResult = tryForNonVirtualContainer(resource, mappingContainer.getTargetContainer());
+      if (subResult != null) {
+        return mappingContainer.getPrefix() + subResult;
+      }
     }
 
     return null;

@@ -65,6 +65,16 @@
       description="Remote V8/Chrome VM JavaScript Scripts">
     </sourceContainerType>
    </extension>
+
+  
+  <extension point="org.eclipse.debug.core.sourceContainerTypes">
+    <sourceContainerType
+      name="%SourceNameMapperContainer.name"
+      class="org.chromium.debug.core.SourceNameMapperContainer$TypeDelegate"
+      id="org.chromium.debug.core.SourceNameMapperContainer.type"
+      description="%SourceNameMapperContainer.description">
+    </sourceContainerType>
+   </extension>
   
 
 </plugin>
