@@ -34,11 +34,11 @@ public class SourceNameMapperContainer implements ISourceContainer {
   public void dispose() {
   }
 
-  String getPrefix() {
+  public String getPrefix() {
     return prefix;
   }
 
-  ISourceContainer getTargetContainer() {
+  public ISourceContainer getTargetContainer() {
     return targetContainer;
   }
 
@@ -185,5 +185,4 @@ public class SourceNameMapperContainer implements ISourceContainer {
       }
     }
   }
-
 }
