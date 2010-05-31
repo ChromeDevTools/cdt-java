@@ -329,11 +329,12 @@
   </extension>
   
 
-   <extension point="org.eclipse.debug.ui.sourceContainerPresentations">
+  <extension point="org.eclipse.debug.ui.sourceContainerPresentations">
       <sourceContainerPresentation
-            containerTypeID="org.chromium.debug.core.VProjectSourceContainer.type"
+            browserClass="org.chromium.debug.ui.source.SourceNameMapperContainerPresentation"
+            containerTypeID="org.chromium.debug.core.SourceNameMapperContainer.type"
             icon="res/standalone_v8_16.png"
-            id="org.chromium.debug.core.VProjectSourceContainer.type">
+            id="org.chromium.debug.ui.SourceNameMapperContainerPresentation">
       </sourceContainerPresentation>
-   </extension>
+  </extension>
 </plugin>
