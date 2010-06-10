@@ -59,6 +59,12 @@ public class Messages extends NLS {
 
   public static String JsThread_ThreadLabelSuspendedExceptionFormat;
 
+  public static String LaunchParams_MERGE_OPTION;
+
+  public static String LaunchParams_NONE_OPTION;
+
+  public static String LaunchParams_RESET_REMOTE_OPTION;
+
   public static String MockUpResourceWriter_NOT_A_JAVASCRIPT;
 
   public static String MockUpResourceWriter_SCRIPT_WITHOUT_TEXT;
