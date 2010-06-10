@@ -237,7 +237,7 @@
          </action>
       </objectContribution>
       <!-- Experimental actions, temporary disabled. -->
-      <objectContribution
+      <!-- objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
             id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
@@ -262,7 +262,7 @@
                enablesFor="1"
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
-      </objectContribution>
+      </objectContribution -->
   </extension>
 
    <extension
