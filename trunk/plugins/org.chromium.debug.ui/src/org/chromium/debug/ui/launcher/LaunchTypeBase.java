@@ -12,6 +12,7 @@ import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Destructable;
 import org.chromium.debug.core.model.DestructingGuard;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
+import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.WorkspaceBridge;
@@ -30,11 +31,6 @@ import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
  */
 public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
-  /** Launch configuration attribute (debug port). */
-  public static final String CHROMIUM_DEBUG_PORT = "debug_port"; //$NON-NLS-1$
-
-  public static final String ADD_NETWORK_CONSOLE = "add_network_console"; //$NON-NLS-1$
-
   public void launch(ILaunchConfiguration config, String mode, final ILaunch launch,
       IProgressMonitor monitor) throws CoreException {
     if (!mode.equals(ILaunchManager.DEBUG_MODE)) {
@@ -43,10 +39,10 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
     }
 
     int port =
-        config.getAttribute(LaunchTypeBase.CHROMIUM_DEBUG_PORT,
+        config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT,
             PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
 
-    boolean addNetworkConsole = config.getAttribute(LaunchTypeBase.ADD_NETWORK_CONSOLE, false);
+    boolean addNetworkConsole = config.getAttribute(LaunchParams.ADD_NETWORK_CONSOLE, false);
 
     JavascriptVmEmbedder.ConnectionToRemote remoteServer =
         createConnectionToRemote(port, launch, addNetworkConsole);

@@ -13,6 +13,10 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.ui.launcher.messages"; //$NON-NLS-1$
 
+  public static String ChromiumRemoteTab_BREAKPOINT_GROUP;
+
+  public static String ChromiumRemoteTab_CONNECTION_GROUP;
+
   public static String ChromiumRemoteTab_ShowDebuggerNetworkCommunication;
 
   public static String ChromiumRemoteTab_PortLabel;
