@@ -76,11 +76,18 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     sourceDirector.initializeVProjectContainers(debugProject, resourceManager);
   }
 
+  public BreakpointSynchronizer getBreakpointSynchronizer() {
+    return new BreakpointSynchronizer(javascriptVm,
+        breakpointInTargetMap, sourceDirector, breakpointHandler, DEBUG_MODEL_ID);
+  }
+
   public void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
       Callback callback) {
-    BreakpointSynchronizer synchronizer = new BreakpointSynchronizer(javascriptVm,
-        breakpointInTargetMap, sourceDirector, breakpointHandler, DEBUG_MODEL_ID);
-    synchronizer.syncBreakpoints(direction, callback);
+    getBreakpointSynchronizer().syncBreakpoints(direction, callback);
+  }
+
+  public void startInitialization() {
+    LaunchInitializationProcedure.startAsync(this);
   }
 
   public void launchRemoved() {
@@ -350,4 +357,9 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       return name;
     }
   };
+
+  public DebugTargetImpl getDebugTarget() {
+    return debugTargetImpl;
+  }
+
 }

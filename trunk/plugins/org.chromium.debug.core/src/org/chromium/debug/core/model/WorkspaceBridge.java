@@ -51,14 +51,16 @@ public interface WorkspaceBridge {
   VmResource findVmResourceFromWorkspaceFile(IFile resource) throws CoreException;
 
   /**
+   * Called after session has been started. It should start process of debug session initialization
+   * (downloading scripts from remove, synchronizing breakpoints etc).
+   * This method should be non-blocking.
+   */
+  void startInitialization();
+
+  /**
    * Initiates script reloading from remote VM.
    */
   void reloadScript(Script script);
-
-  /**
-   * Called at starting period of time, requires all scripts to be (re)loaded.
-   */
-  void reloadScriptsAtStart();
 
   /**
    * Reports about new script loaded in JavaScript VM.
