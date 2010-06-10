@@ -22,9 +22,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -115,14 +112,22 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
 
     DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
-    reloadScriptsAndPossiblyResume(attachCallback);
+    invokeAttachCallback(attachCallback);
+
+    workspaceRelations.startInitialization();
 
     return true;
   }
 
-  private void reloadScriptsAndPossiblyResume(final Runnable attachCallback) {
-    workspaceRelations.reloadScriptsAtStart();
+  /**
+   * To initialize debug UI we call "resumed" manually first. However, "suspended" event
+   * may have already arrived, so we should be careful about this.
+   */
+  void resumeSessionByDefault() {
+    debugEventListener.resumedByDefault();
+  }
 
+  private void invokeAttachCallback(final Runnable attachCallback) {
     try {
       if (attachCallback != null) {
         attachCallback.run();
@@ -130,15 +135,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     } finally {
       fireCreationEvent();
     }
-
-    Job job = new Job("Update debugger state") {
-      @Override
-      protected IStatus run(IProgressMonitor monitor) {
-        debugEventListener.resumedByDefault();
-        return Status.OK_STATUS;
-      }
-    };
-    job.schedule();
   }
 
   public String getName() throws DebugException {

@@ -98,7 +98,6 @@ public class BreakpointSynchronizer {
 
   /**
    * The main entry method of the class. Asynchronously performs synchronization job.
-   * TODO(peter.rybin): consider some end-of-job notification for this method and possibly locks
    */
   public void syncBreakpoints(Direction direction, Callback callback) {
     ReportBuilder reportBuilder = new ReportBuilder(direction);
