@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.debug.core.ILaunchConfiguration;
 
 public class LaunchParams {
 
@@ -44,6 +46,14 @@ public class LaunchParams {
     public String getLabel() {
       return label;
     }
+  }
+
+  public static Direction readBreakpointSyncDirection(ILaunchConfiguration launchConfiguration)
+      throws CoreException {
+    String breakpointOptionString =
+        launchConfiguration.getAttribute(BREAKPOINT_SYNC_DIRECTION, (String)null);
+    int optionIndex = findBreakpointOption(breakpointOptionString);
+    return BREAKPOINT_OPTIONS.get(optionIndex).getDirection();
   }
 
   public final static List<? extends BreakpointOption> BREAKPOINT_OPTIONS = Arrays.asList(

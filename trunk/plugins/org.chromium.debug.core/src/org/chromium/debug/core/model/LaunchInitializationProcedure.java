@@ -4,15 +4,18 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ProgressUtil;
 import org.chromium.debug.core.util.ProgressUtil.MonitorWrapper;
 import org.chromium.debug.core.util.ProgressUtil.Stage;
 import org.chromium.sdk.CallbackSemaphore;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -100,9 +103,20 @@ class LaunchInitializationProcedure {
     try {
       BreakpointsWorkPlan.ANALYZE.start(monitor);
 
-      // TODO(peter.rybin): read from configuration
-      BreakpointSynchronizer.Direction direction = null;
-      if (direction != null) {
+      ILaunchConfiguration launchConfiguration =
+          workspaceBridge.getDebugTarget().getLaunch().getLaunchConfiguration();
+
+      BreakpointSynchronizer.Direction direction;
+      try {
+        direction = LaunchParams.readBreakpointSyncDirection(launchConfiguration);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(
+            new Exception("Failed to read breakpoint synchronization direction " + //$NON-NLS-1$
+                "from launch configuration " + launchConfiguration.getName(), e)); //$NON-NLS-1$
+        direction = null;
+      }
+
+      if (direction == null) {
         return;
       }
       final CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
