@@ -41,11 +41,14 @@ class StateManager {
         throw new SmokeException(monitor.pendingException);
       }
       monitor.defaultReceiver = null;
-      while (monitor.pendingEvent == null) {
+      if (monitor.pendingEvent == null) {
         try {
-          monitor.wait();
+          monitor.wait(TIMEOUT_MS);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
+        }
+        if (monitor.pendingEvent == null) {
+          throw new SmokeException("Timeout waiting for event with " + receiver);
         }
       }
       RES res = monitor.pendingEvent.accept(receiver);
@@ -91,9 +94,10 @@ class StateManager {
       monitor.pendingEvent = event;
       monitor.notify();
       try {
-        do {
-          monitor.wait();
-        } while (monitor.pendingEvent != null);
+        monitor.wait(TIMEOUT_MS);
+        if (monitor.pendingEvent != null) {
+          throw new RuntimeException("Timeout waiting for event processing");
+        }
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -166,4 +170,6 @@ class StateManager {
     Event pendingEvent = null;
     SmokeException pendingException = null;
   }
+
+  private static final int TIMEOUT_MS = 10000;
 }

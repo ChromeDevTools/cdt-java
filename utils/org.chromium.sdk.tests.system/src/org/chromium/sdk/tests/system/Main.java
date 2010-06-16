@@ -45,6 +45,8 @@ public class Main {
 
     StateManager stateManager = new StateManager();
 
+    stateManager.setDefaultReceiver(EXPECT_NOTHING_VISITOR);
+
     BrowserTab tab;
     try {
       tab = connect(address, stateManager);
@@ -332,6 +334,8 @@ public class Main {
       throw new SmokeException("Unexpected event");
     }
   }
+
+  private static final EventVisitorBase<Void> EXPECT_NOTHING_VISITOR = new EventVisitorBase<Void>();
 
   /**
    * Do not pay attention to script afterCompile event.
