@@ -53,7 +53,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
   }
 
   /** The class logger. */
-  static final Logger LOGGER = Logger.getLogger(V8CommandProcessor.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(V8CommandProcessor.class.getName());
 
   private final CloseableMap<Integer, CallbackEntry> callbackMap = CloseableMap.newLinkedMap();
 
@@ -71,7 +71,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
   public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
 
-    if (v8HandlerCallback != null) {
+    if (v8HandlerCallback != null || syncCallback != null) {
       // TODO(peter.rybin): should we handle IllegalStateException better than rethrowing it?
       try {
         callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
@@ -106,7 +106,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       CallbackEntry callbackEntry = callbackMap.removeIfContains(requestSeqInt);
       if (callbackEntry != null) {
         LOGGER.log(
-            Level.INFO,
+            Level.FINE,
             "Request-response roundtrip: {0}ms",
             getCurrentMillis() - callbackEntry.commitMillis);
 
@@ -153,7 +153,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
     try {
       if (callbackEntry.v8HandlerCallback != null) {
         LOGGER.log(
-            Level.INFO, "Notified debugger command callback, request_seq={0}", requestSeq);
+            Level.FINE, "Notified debugger command callback, request_seq={0}", requestSeq);
         callbackCaller.call(callbackEntry.v8HandlerCallback);
       }
     } catch (RuntimeException e) {
