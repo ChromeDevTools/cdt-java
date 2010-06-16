@@ -29,6 +29,13 @@ public class CallbackSemaphore implements SyncCallback {
     return tryAcquire(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
+  public void acquireDefault() throws MethodIsBlockingException {
+    boolean res = tryAcquireDefault();
+    if (!res) {
+      throw new RuntimeException("Failed to acquire semaphore");
+    }
+  }
+
   /**
    * Tries to acquire the semaphore. This method blocks until the semaphore is
    * released; typically release call comes from a worker thread of
