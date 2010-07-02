@@ -23,7 +23,7 @@ public class ChangeBreakpointMessage extends ContextlessDebuggerMessage {
     super(DebuggerCommand.CHANGEBREAKPOINT.value);
     putArgument("breakpoint", breakpoint);
     putArgument("enabled", enabled);
-    putArgument("condition", condition);
+    putNullableArgument("condition", condition);
     putArgument("ignoreCount", ignoreCount);
   }
 }

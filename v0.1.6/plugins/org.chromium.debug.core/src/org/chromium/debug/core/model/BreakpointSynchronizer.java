@@ -86,6 +86,8 @@ public class BreakpointSynchronizer {
         VmResourceId vmResourceId,
         CreateCallback createCallback, SyncCallback syncCallback);
 
+    ChromiumLineBreakpoint.Updater getUpdater();
+
     interface CreateCallback {
       void failure(Exception ex);
       void success();
@@ -209,6 +211,15 @@ public class BreakpointSynchronizer {
 
   private void createBreakpoints(List<Breakpoint> sdkBreakpointsToCreate,
       List<ChromiumLineBreakpoint> uiBreakpointsToCreate, final StatusBuilder statusBuilder) {
+    ChromiumLineBreakpoint.Updater.PatchConditionCallback patchConditionCallback =
+        new ChromiumLineBreakpoint.Updater.PatchConditionCallback() {
+          public void setConditionAndFlush(Breakpoint sdkBreakpoint, String wrappedAgain) {
+            final PlannedTaskHelper patchTaskHelper = new PlannedTaskHelper(statusBuilder);
+            sdkBreakpoint.setCondition(wrappedAgain);
+            sdkBreakpoint.flush(null, patchTaskHelper);
+          }
+    };
+
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
     for (Breakpoint sdkBreakpoint : sdkBreakpointsToCreate) {
       Object sourceElement = sourceDirector.getSourceElement(sdkBreakpoint);
@@ -220,8 +231,8 @@ public class BreakpointSynchronizer {
       IFile resource = (IFile) sourceElement;
       ChromiumLineBreakpoint uiBreakpoint;
       try {
-        uiBreakpoint = ChromiumLineBreakpoint.Helper.createLocal(sdkBreakpoint, breakpointManager,
-            resource, script_line_offset, debugModelId);
+        uiBreakpoint = breakpointHelper.getUpdater().createLocal(sdkBreakpoint, breakpointManager,
+            resource, script_line_offset, debugModelId, patchConditionCallback);
         breakpointInTargetMap.add(sdkBreakpoint, uiBreakpoint);
       } catch (CoreException e) {
         throw new RuntimeException(e);

@@ -53,6 +53,10 @@ public class DebuggerMessage implements JSONStreamAware {
     }
   }
 
+  protected final void putNullableArgument(String key, Object object) {
+    arguments.put(key, object);
+  }
+
   private final void putArgumentString(String key, Object object) {
     arguments.put(key, object.toString());
   }
