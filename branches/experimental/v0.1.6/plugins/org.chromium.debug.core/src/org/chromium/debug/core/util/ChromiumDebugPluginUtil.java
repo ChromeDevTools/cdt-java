@@ -15,6 +15,8 @@ import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.efs.ChromiumScriptFileSystem;
+import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.VmResource;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IContainer;
@@ -281,6 +283,30 @@ public class ChromiumDebugPluginUtil {
       return false;
     }
   }
+
+  /**
+   * Finds all file pairs for a user working file. One working file may correspond to several
+   * scripts if there are more than one debug sessions.
+   */
+  public static List<? extends ScriptTargetMapping> getScriptTargetMapping(IFile localFile) {
+    List<DebugTargetImpl> targetList = DebugTargetImpl.getAllDebugTargetImpls();
+    ArrayList<ScriptTargetMapping> result = new ArrayList<ScriptTargetMapping>(targetList.size());
+
+    for (DebugTargetImpl target : targetList) {
+      VmResource script;
+      try {
+        script = target.getVmResource(localFile);
+      } catch (CoreException e) {
+        throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
+      }
+      if (script == null) {
+        continue;
+      }
+      result.add(new ScriptTargetMapping(localFile, script, target));
+    }
+    return result;
+  }
+
 
   /**
    * The container where the script sources should be put.

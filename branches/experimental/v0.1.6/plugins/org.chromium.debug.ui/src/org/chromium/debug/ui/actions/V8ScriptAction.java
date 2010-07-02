@@ -7,10 +7,8 @@ package org.chromium.debug.ui.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
-import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
-import org.chromium.sdk.JavascriptVm;
+import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
@@ -26,8 +24,8 @@ import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * A base class for all LiveEdit actions that are scoped to a working file from user workspace.
- * It makes all necessary checks and prepares data in form of {@link FilePair} class.
- * The concrete actions implement the {@link #execute(FilePair)} method.
+ * It makes all necessary checks and prepares data in form of {@link ScriptTargetMapping} class.
+ * The concrete actions implement the {@link #execute(ScriptTargetMapping)} method.
  */
 abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2 {
   private Runnable currentRunnable = null;
@@ -97,19 +95,19 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
   }
 
   private void execute(IFile file) {
-    List<? extends FilePair> filePairList = getFilePairs(file);
-    FilePair filePair = getSingleFilePair(filePairList);
+    List<? extends ScriptTargetMapping> filePairList = getFilePairs(file);
+    ScriptTargetMapping filePair = getSingleFilePair(filePairList);
     execute(filePair);
   }
 
-  protected abstract void execute(FilePair filePair);
+  protected abstract void execute(ScriptTargetMapping filePair);
 
   /**
    * A temporary method that excludes all cases when there are more than one file pair for a
    * user file. The proper solution ought to provide a UI for user so that he could review
    * which debug sessions should be included in action.
    */
-  private static FilePair getSingleFilePair(List<? extends FilePair> pairs) {
+  private static ScriptTargetMapping getSingleFilePair(List<? extends ScriptTargetMapping> pairs) {
     if (pairs.size() == 0) {
       throw new RuntimeException("File is not associated with any V8 VM");
     }
@@ -124,47 +122,8 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
    * Finds all file pairs for a user working file. One working file may correspond to several
    * scripts if there are more than one debug sessions.
    */
-  private static List<? extends FilePair> getFilePairs(IFile localFile) {
-    List<DebugTargetImpl> targetList = DebugTargetImpl.getAllDebugTargetImpls();
-    ArrayList<FilePair> result = new ArrayList<FilePair>(targetList.size());
-
-    for (DebugTargetImpl target : targetList) {
-      VmResource script;
-      try {
-        script = target.getVmResource(localFile);
-      } catch (CoreException e) {
-        throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
-      }
-      if (script == null) {
-        continue;
-      }
-      result.add(new FilePair(localFile, script, target));
-    }
-    return result;
-  }
-
-  protected static class FilePair {
-    private final IFile file;
-    private final VmResource vmResource;
-    private final DebugTargetImpl debugTargetImpl;
-
-    FilePair(IFile file, VmResource vmResource, DebugTargetImpl debugTargetImpl) {
-      this.file = file;
-      this.vmResource = vmResource;
-      this.debugTargetImpl = debugTargetImpl;
-    }
-    protected IFile getFile() {
-      return file;
-    }
-    protected VmResource getVmResource() {
-      return vmResource;
-    }
-    protected JavascriptVm getJavascriptVm() {
-      return debugTargetImpl.getJavascriptEmbedder().getJavascriptVm();
-    }
-    protected DebugTargetImpl getDebugTarget() {
-      return debugTargetImpl;
-    }
+  private static List<? extends ScriptTargetMapping> getFilePairs(IFile localFile) {
+    return ChromiumDebugPluginUtil.getScriptTargetMapping(localFile);
   }
 
   /**

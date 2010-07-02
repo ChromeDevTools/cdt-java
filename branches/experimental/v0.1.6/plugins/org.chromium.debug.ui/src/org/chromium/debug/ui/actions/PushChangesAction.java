@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.sdk.LiveEditExtension;
 import org.chromium.sdk.UpdatableScript;
 import org.eclipse.core.resources.IFile;
@@ -22,7 +23,7 @@ import org.eclipse.core.runtime.Status;
  */
 public class PushChangesAction extends V8ScriptAction {
   @Override
-  protected void execute(final FilePair filePair) {
+  protected void execute(final ScriptTargetMapping filePair) {
     UpdatableScript updatableScript =
         LiveEditExtension.castToUpdatableScript(filePair.getVmResource().getScript());
 
