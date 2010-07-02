@@ -64,7 +64,8 @@ public class DebugSession {
     this.breakpointManager = new BreakpointManager(this);
 
     this.defaultResponseHandler = new DefaultResponseHandler(this);
-    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, defaultResponseHandler);
+    this.v8CommandProcessor = new V8CommandProcessor(v8CommandOutput, defaultResponseHandler,
+        this);
     this.contextBuilder = new ContextBuilder(this);
   }
 

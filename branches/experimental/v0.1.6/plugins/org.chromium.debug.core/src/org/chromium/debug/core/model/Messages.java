@@ -29,6 +29,8 @@ public class Messages extends NLS {
 
   public static String DebugTargetImpl_BadResultWhileDisconnecting;
 
+  public static String DebugTargetImpl_BUSY_WITH;
+
   public static String DebugTargetImpl_CannotStartMultipleDebuggers;
 
   public static String DebugTargetImpl_Caught;
@@ -36,6 +38,8 @@ public class Messages extends NLS {
   public static String DebugTargetImpl_FailedToStartSocketConnection;
 
   public static String DebugTargetImpl_LogExceptionFormat;
+
+  public static String DebugTargetImpl_TARGET_NAME_PATTERN;
 
   public static String DebugTargetImpl_TargetName;
 
