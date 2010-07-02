@@ -155,7 +155,7 @@ public class BreakpointImpl implements Breakpoint {
     this.condition = condition;
   }
 
-  private boolean eq(Object left, Object right) {
+  private static <T> boolean eq(T left, T right) {
     return left == right || (left != null && left.equals(right));
   }
 

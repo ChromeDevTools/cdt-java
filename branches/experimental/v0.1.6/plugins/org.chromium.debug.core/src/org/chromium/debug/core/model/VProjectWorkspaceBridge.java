@@ -9,6 +9,7 @@ import java.util.Collection;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
+import org.chromium.debug.core.model.ChromiumLineBreakpoint.Updater;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
@@ -23,6 +24,7 @@ import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugException;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.osgi.util.NLS;
@@ -152,9 +154,29 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
+    private volatile boolean isSkipAllMode = false;
+
+    private final ChromiumLineBreakpoint.Updater updater = new ChromiumLineBreakpoint.Updater(
+        new ChromiumLineBreakpoint.Updater.TargetContext() {
+          public boolean isSkipAllMode() {
+            return isSkipAllMode;
+          }
+          public DebugTargetImpl getDebugTarget() {
+            return debugTargetImpl;
+          }
+        });
+
+    public void initBreakpointManagerListenerState(IBreakpointManager breakpointManager) {
+      this.isSkipAllMode = !breakpointManager.isEnabled();
+    }
+
     public boolean supportsBreakpoint(IBreakpoint breakpoint) {
       return DEBUG_MODEL_ID.equals(breakpoint.getModelIdentifier()) &&
           !debugTargetImpl.isDisconnected();
+    }
+
+    public Updater getUpdater() {
+      return updater;
     }
 
     public ChromiumLineBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
@@ -199,8 +221,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         final VmResourceId vmResourceId,
         final CreateCallback createCallback, SyncCallback syncCallback) {
       try {
-        ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
-            new ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback() {
+        ChromiumLineBreakpoint.Updater.CreateOnRemoveCallback callback =
+            new ChromiumLineBreakpoint.Updater.CreateOnRemoveCallback() {
           public void success(Breakpoint breakpoint) {
             breakpointInTargetMap.add(breakpoint, lineBreakpoint);
             if (createCallback != null) {
@@ -216,8 +238,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           }
         };
 
-        ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceId, debugTargetImpl,
-            callback, syncCallback);
+        updater.createOnRemote(lineBreakpoint, vmResourceId, callback, syncCallback);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to create breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
@@ -238,7 +259,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
 
       try {
-        ChromiumLineBreakpoint.Helper.updateOnRemote(sdkBreakpoint, lineBreakpoint);
+        updater.updateOnRemote(sdkBreakpoint, lineBreakpoint);
       } catch (RuntimeException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
@@ -283,6 +304,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
             getTargetNameSafe(), e));
       }
       breakpointInTargetMap.remove(lineBreakpoint);
+    }
+
+    public void breakpointManagerEnablementChanged(boolean enabled) {
+      isSkipAllMode = !enabled;
     }
 
     public void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {

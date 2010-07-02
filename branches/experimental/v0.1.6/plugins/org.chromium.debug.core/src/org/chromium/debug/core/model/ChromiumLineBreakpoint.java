@@ -105,22 +105,48 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   /**
-   * A helper that propagates changes in Eclipse Debugger breakpoints (i.e.
+   * Updater helps propagate changes in Eclipse Debugger breakpoints (i.e.
    * {@link ChromiumLineBreakpoint}) to ChromeDevTools SDK breakpoints. Note that
    * {@link ChromiumLineBreakpoint} can't do it itself, because it may correspond to several
    * SDK {@link JavascriptVm}'s simultaneously.
+   * Updater instance corresponds to a particular launch/target (via {@link #context} field).
    */
-  public static class Helper {
+  public static class Updater {
+
+    public interface TargetContext {
+      /**
+       * @return whether breakpoint manager is in 'skip all' mode.
+       */
+      boolean isSkipAllMode();
+
+      DebugTargetImpl getDebugTarget();
+    }
+
     public interface CreateOnRemoveCallback {
       void success(Breakpoint breakpoint);
       void failure(String errorMessage);
     }
 
-    public static void createOnRemote(ChromiumLineBreakpoint uiBreakpoint,
-        VmResourceId scriptId, DebugTargetImpl debugTarget,
-        final CreateOnRemoveCallback createOnRemoveCallback,
+    /**
+     * Used when remote breakpoint that we just have read should be effectively enabled/disabled
+     * as a part of 'skip all' mode support. It is enabled/disabled by modifying its
+     * 'condition' field.
+     */
+    public interface PatchConditionCallback {
+      void setConditionAndFlush(Breakpoint sdkBreakpoint, String wrappedAgain);
+    }
+
+    private final TargetContext context;
+
+    Updater(TargetContext context) {
+      this.context = context;
+    }
+
+    public void createOnRemote(ChromiumLineBreakpoint uiBreakpoint,
+        VmResourceId scriptId, final CreateOnRemoveCallback createOnRemoveCallback,
         SyncCallback syncCallback) throws CoreException {
-      JavascriptVm javascriptVm = debugTarget.getJavascriptEmbedder().getJavascriptVm();
+      JavascriptVm javascriptVm =
+          context.getDebugTarget().getJavascriptEmbedder().getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
       final int line = (uiBreakpoint.getLineNumber() - 1);
@@ -138,26 +164,39 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
           line,
           Breakpoint.EMPTY_VALUE,
           uiBreakpoint.isEnabled(),
-          uiBreakpoint.getCondition(),
+          SkipAllHelper.wrapCondition(uiBreakpoint.getCondition(), context.isSkipAllMode()),
           uiBreakpoint.getIgnoreCount(),
           callback, syncCallback);
     }
 
-    public static void updateOnRemote(Breakpoint sdkBreakpoint,
-        ChromiumLineBreakpoint uiBreakpoint) {
-      sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
+    public void updateOnRemote(Breakpoint sdkBreakpoint, ChromiumLineBreakpoint uiBreakpoint) {
+      sdkBreakpoint.setCondition(
+          SkipAllHelper.wrapCondition(uiBreakpoint.getCondition(), context.isSkipAllMode()));
       sdkBreakpoint.setEnabled(uiBreakpoint.isEnabled());
       sdkBreakpoint.setIgnoreCount(uiBreakpoint.getIgnoreCount());
       sdkBreakpoint.flush(null, null);
     }
 
-    public static ChromiumLineBreakpoint createLocal(Breakpoint sdkBreakpoint,
+    /**
+     * @param patchConditionCallback nullable parameter, helps update breakpoint condition on remote
+     *   if it's needed for 'skip all' mode support.
+     */
+    public ChromiumLineBreakpoint createLocal(Breakpoint sdkBreakpoint,
         IBreakpointManager breakpointManager, IFile resource, int script_line_offset,
-        String debugModelId) throws CoreException {
+        String debugModelId, PatchConditionCallback patchConditionCallback) throws CoreException {
       ChromiumLineBreakpoint uiBreakpoint = new ChromiumLineBreakpoint(resource,
           (int) sdkBreakpoint.getLineNumber() + 1 + script_line_offset,
           debugModelId);
-      uiBreakpoint.setCondition(sdkBreakpoint.getCondition());
+      String sdkCondition = sdkBreakpoint.getCondition();
+      String unwrapedCondition = SkipAllHelper.unwrapCondition(sdkCondition);
+      if (patchConditionCallback != null) {
+        String wrappedAgain =
+            SkipAllHelper.wrapCondition(unwrapedCondition, context.isSkipAllMode());
+        if (!eq(sdkCondition, wrappedAgain)) {
+          patchConditionCallback.setConditionAndFlush(sdkBreakpoint, wrappedAgain);
+        }
+      }
+      uiBreakpoint.setCondition(unwrapedCondition);
       uiBreakpoint.setEnabled(sdkBreakpoint.isEnabled());
       uiBreakpoint.setIgnoreCount(sdkBreakpoint.getIgnoreCount());
       ignoreList.add(uiBreakpoint);
@@ -196,5 +235,46 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       }
       list.add(lineBreakpoint);
     }
+  }
+
+  /**
+   * Helps support 'skip all breakpoints' mode in Eclipse. 'Skip all' should work independently
+   * from individual 'enable' property. To have all breakpoints effectively disabled on remote we
+   * modify their conditions with construction that we are able to recognize later.
+   */
+  private static class SkipAllHelper {
+    public static String wrapCondition(String condition, boolean skipAllMode) {
+      if (skipAllMode) {
+        if (condition == null) {
+          return FALSE_EXP;
+        } else {
+          return FALSE_EXP_AND_LEFT_PAREN + condition + RIGHT_PAREN;
+        }
+      } else {
+        return condition;
+      }
+    }
+    public static String unwrapCondition(String condition) {
+      if (condition != null) {
+        if (condition.startsWith(FALSE_EXP)) {
+          if (condition.length() == FALSE_EXP.length()) {
+            return null;
+          } else if (condition.startsWith(FALSE_EXP_AND_LEFT_PAREN) &&
+              condition.endsWith(RIGHT_PAREN)) {
+            return condition.substring(FALSE_EXP_AND_LEFT_PAREN.length(),
+                condition.length() - RIGHT_PAREN.length());
+          }
+        }
+      }
+      return condition;
+    }
+
+    private static final String FALSE_EXP = "!'Eclipse skip all mode'"; //$NON-NLS-1$
+    private static final String FALSE_EXP_AND_LEFT_PAREN = FALSE_EXP + " && ("; //$NON-NLS-1$
+    private static final String RIGHT_PAREN = ")"; //$NON-NLS-1$
+  }
+
+  private static <T> boolean eq(T left, T right) {
+    return left == right || (left != null && left.equals(right));
   }
 }
