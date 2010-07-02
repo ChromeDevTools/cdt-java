@@ -4,8 +4,11 @@
 
 package org.chromium.sdk.internal;
 
+import java.util.AbstractList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,8 +19,10 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.internal.protocol.ChangeLiveBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.LiveEditResult;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocol.data.LiveEditResult.OldTreeNode;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
@@ -174,16 +179,19 @@ public class ScriptImpl implements Script, UpdatableScript {
 
   public void setSourceOnRemote(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
-    V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback);
-    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource),
+    V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback, false);
+    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.FALSE),
+        true, v8Callback, syncCallback);
+  }
+
+  public void previewSetSource(String newSource, UpdateCallback callback, SyncCallback syncCallback) {
+    V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback, true);
+    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.TRUE),
         true, v8Callback, syncCallback);
   }
 
   private V8CommandProcessor.V8HandlerCallback createScriptUpdateCallback(
-      final UpdateCallback callback) {
-    if (callback == null) {
-      return null;
-    }
+      final UpdateCallback callback, final boolean previewOnly) {
     return new V8CommandCallbackBase() {
       @Override
       public void success(SuccessCommandResponse successResponse) {
@@ -194,25 +202,34 @@ public class ScriptImpl implements Script, UpdatableScript {
           throw new RuntimeException(e);
         }
 
-        ScriptLoadCallback scriptCallback = new ScriptLoadCallback() {
-          public void failure(String message) {
-            LOGGER.log(Level.SEVERE,
-                "Failed to reload script after LiveEdit script update; " + message);
-          }
-          public void success() {
-            LiveEditDebugEventListener listener =
-                LiveEditExtension.castToLiveEditListener(debugSession.getDebugEventListener());
-            if (listener != null) {
-              listener.scriptContentChanged(ScriptImpl.this);
+        LiveEditResult resultDescription = body.getResultDescription();
+        if (!previewOnly) {
+          ScriptLoadCallback scriptCallback = new ScriptLoadCallback() {
+            public void failure(String message) {
+              LOGGER.log(Level.SEVERE,
+                  "Failed to reload script after LiveEdit script update; " + message);
+            }
+            public void success() {
+              LiveEditDebugEventListener listener =
+                  LiveEditExtension.castToLiveEditListener(debugSession.getDebugEventListener());
+              if (listener != null) {
+                listener.scriptContentChanged(ScriptImpl.this);
+              }
+            }
+          };
+          V8Helper.reloadScriptAsync(debugSession, Collections.singletonList(getId()),
+              scriptCallback, null);
+
+          if (resultDescription != null) {
+            if (resultDescription.stack_modified()) {
+              debugSession.recreateCurrentContext();
             }
           }
-        };
-        V8Helper.reloadScriptAsync(debugSession, Collections.singletonList(getId()),
-            scriptCallback, null);
+        }
 
-        debugSession.recreateCurrentContext();
-
-        callback.success(body.getChangeLog());
+        if (callback != null) {
+          callback.success(body.getChangeLog(), UpdateResultParser.wrapChangeDescription(resultDescription));
+        }
       }
 
       @Override
@@ -220,6 +237,158 @@ public class ScriptImpl implements Script, UpdatableScript {
         callback.failure(message);
       }
     };
+  }
+
+  private static class UpdateResultParser {
+    static UpdatableScript.ChangeDescription wrapChangeDescription(final LiveEditResult previewDescription) {
+      if (previewDescription == null) {
+        return null;
+      }
+      return new UpdatableScript.ChangeDescription() {
+        public UpdatableScript.OldFunctionNode getChangeTree() {
+          return wrapOldNode(previewDescription.change_tree());
+        }
+
+        public String getCreatedScriptName() {
+          return previewDescription.created_script_name();
+        }
+
+        public boolean isStackModified() {
+          return previewDescription.stack_modified();
+        }
+
+        private UpdatableScript.OldFunctionNode wrapOldNode(final LiveEditResult.OldTreeNode original) {
+          return new OldFunctionNodeImpl(original);
+        }
+
+        private UpdatableScript.NewFunctionNode wrapNewNode(final LiveEditResult.NewTreeNode original) {
+          return new NewFunctionNodeImpl(original);
+        }
+
+        public TextualDiff getTextualDiff() {
+          final LiveEditResult.TextualDiff protocolTextualData = previewDescription.textual_diff();
+          if (protocolTextualData == null) {
+            return null;
+          }
+          return new TextualDiff() {
+            public List<Long> getChunks() {
+              return protocolTextualData.chunks();
+            }
+          };
+        }
+      };
+    }
+
+    private static class OldFunctionNodeImpl implements UpdatableScript.OldFunctionNode {
+      private final LiveEditResult.OldTreeNode treeNode;
+      private final FunctionPositions positions;
+      private final FunctionPositions newPositions;
+
+      OldFunctionNodeImpl(LiveEditResult.OldTreeNode treeNode) {
+        this.treeNode = treeNode;
+        this.positions = wrapPositions(treeNode.positions());
+        if (treeNode.new_positions() == null) {
+          this.newPositions = null;
+        } else {
+          this.newPositions = wrapPositions(treeNode.new_positions());
+        }
+      }
+      public String getName() {
+        return treeNode.name();
+      }
+      public ChangeStatus getStatus() {
+        return statusCodes.get(treeNode.status());
+      }
+      public String getStatusExplanation() {
+        return treeNode.status_explanation();
+      }
+      public List<? extends OldFunctionNode> children() {
+        return wrapList(treeNode.children(), OLD_WRAPPER);
+      }
+      public List<? extends NewFunctionNode> newChildren() {
+        return wrapList(treeNode.new_children(), NEW_WRAPPER);
+      }
+      public FunctionPositions getPositions() {
+        return positions;
+      }
+      public FunctionPositions getNewPositions() {
+        return newPositions;
+      }
+      public OldFunctionNode asOldFunction() {
+        return this;
+      }
+    }
+    private static class NewFunctionNodeImpl implements UpdatableScript.NewFunctionNode {
+      private final LiveEditResult.NewTreeNode treeNode;
+      private final FunctionPositions positions;
+      NewFunctionNodeImpl(LiveEditResult.NewTreeNode treeNode) {
+        this.treeNode = treeNode;
+        this.positions = wrapPositions(treeNode.positions());
+      }
+      public String getName() {
+        return treeNode.name();
+      }
+      public FunctionPositions getPositions() {
+        return positions;
+      }
+      public List<? extends NewFunctionNode> children() {
+        return wrapList(treeNode.children(), NEW_WRAPPER);
+      }
+      public OldFunctionNode asOldFunction() {
+        return null;
+      }
+    }
+
+    private static final Wrapper<LiveEditResult.OldTreeNode, OldFunctionNode> OLD_WRAPPER =
+        new Wrapper<LiveEditResult.OldTreeNode, OldFunctionNode>() {
+          @Override
+          OldFunctionNode wrap(OldTreeNode original) {
+            return new OldFunctionNodeImpl(original);
+          }
+    };
+
+    private static final Wrapper<LiveEditResult.NewTreeNode, NewFunctionNode> NEW_WRAPPER =
+        new Wrapper<LiveEditResult.NewTreeNode, NewFunctionNode>() {
+          @Override
+          NewFunctionNode wrap(LiveEditResult.NewTreeNode original) {
+            return new NewFunctionNodeImpl(original);
+          }
+    };
+
+    private static UpdatableScript.FunctionPositions wrapPositions(final LiveEditResult.Positions rawPositions) {
+      return new UpdatableScript.FunctionPositions() {
+        public long getStart() {
+          return rawPositions.start_position();
+        }
+        public long getEnd() {
+          return rawPositions.end_position();
+        }
+      };
+    }
+
+    private static abstract class Wrapper<FROM, TO> {
+      abstract TO wrap(FROM original);
+    }
+
+    private static <FROM, TO> List<TO> wrapList(final List<? extends FROM> originalList, final Wrapper<FROM, TO> wrapper) {
+      return new AbstractList<TO>() {
+        @Override public TO get(int index) {
+          return wrapper.wrap(originalList.get(index));
+        }
+        @Override public int size() {
+          return originalList.size();
+        }
+      };
+    }
+
+    private static final Map<String, ChangeStatus> statusCodes;
+    static {
+      statusCodes = new HashMap<String, ChangeStatus>(5);
+      statusCodes.put("unchanged", ChangeStatus.UNCHANGED);
+      statusCodes.put("source changed", ChangeStatus.NESTED_CHANGED);
+      statusCodes.put("changed", ChangeStatus.CODE_PATCHED);
+      statusCodes.put("damaged", ChangeStatus.DAMAGED);
+    }
   }
 
   @Override

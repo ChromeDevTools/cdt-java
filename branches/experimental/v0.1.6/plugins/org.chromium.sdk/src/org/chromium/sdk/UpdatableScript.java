@@ -4,6 +4,8 @@
 
 package org.chromium.sdk;
 
+import java.util.List;
+
 /**
  * This interface is a part of {@link Script} interface. It extends {@link Script} in order
  * to support experimental feature and is under development.
@@ -15,13 +17,53 @@ public interface UpdatableScript extends Script {
    */
   void setSourceOnRemote(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
+  void previewSetSource(String newSource, UpdateCallback callback, SyncCallback syncCallback);
+
   interface UpdateCallback {
     /**
      * Script text has been successfully changed. {@link DebugEventListener#scriptChanged} will
      * be called additionally. Besides, a current context may be dismissed and recreated after this
      * event. The order of all listed event notifications is not currently specified.
      */
-    void success(Object report);
+    void success(Object report, ChangeDescription changeDescription);
     void failure(String message);
+  }
+
+  interface ChangeDescription {
+    OldFunctionNode getChangeTree();
+    TextualDiff getTextualDiff();
+    String getCreatedScriptName();
+    boolean isStackModified();
+  }
+  interface TextualDiff {
+    List<Long> getChunks();
+  }
+  interface FunctionNode<T extends FunctionNode<T>> {
+    String getName();
+    FunctionPositions getPositions();
+    List<? extends T> children();
+    OldFunctionNode asOldFunction();
+  }
+
+  interface FunctionPositions {
+    long getStart();
+    long getEnd();
+  }
+
+  enum ChangeStatus {
+    UNCHANGED,
+    NESTED_CHANGED,
+    CODE_PATCHED,
+    DAMAGED
+  }
+
+  interface OldFunctionNode extends FunctionNode<OldFunctionNode> {
+    ChangeStatus getStatus();
+    String getStatusExplanation();
+    /** @return nullable */
+    FunctionPositions getNewPositions();
+    List<? extends NewFunctionNode> newChildren();
+  }
+  interface NewFunctionNode extends FunctionNode<NewFunctionNode> {
   }
 }

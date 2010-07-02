@@ -6,9 +6,11 @@ package org.chromium.debug.ui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 /**
@@ -41,11 +44,19 @@ public class DialogUtils {
    * updater updates consumer vertices in topological order.
    */
 
+
+  /**
+   * A basic interface for anything that can give a value.
+   */
+  public interface Getter<RES> {
+    RES getValue();
+  }
+
   /**
    * Represents source vertex for Updater. Technically updater uses this interface only as a flag
    * interface, because the only methods it uses are {@link Object#equals}/Object{@link #hashCode}.
    */
-  public interface ValueSource<T> {
+  public interface ValueSource<T> extends Getter<T> {
     /**
      * Method is not used by updater, for convenience only.
      * @return current value of the vertex
@@ -71,45 +82,88 @@ public class DialogUtils {
    * Technically Updater does not see a real graph, because it doesn't support vertices
    * that are simultaneously source and consumer. Programmer helps manage other edges manually by
    * calling {@link #reportChanged} method.
+   * <p>
+   * Updater supports conditional updating. At some place in graph there may be switcher that
+   * introduces several scopes. The switcher has only one active scope at a time, that is
+   * controlled by an expression provided. The scope may contain parts of the graph and only
+   * the active scope has its vertices updated, others' update is deferred. Vertices from the scope
+   * are only available via vertex called merger from outside this scope. Scopes may be nested.
+   * Updater always has a root scope.
    */
   public static class Updater {
     private final LinkedHashMap<ValueConsumer, Boolean> needsUpdateMap =
         new LinkedHashMap<ValueConsumer, Boolean>();
     private final Map<ValueSource<?>, List<ValueConsumer>> reversedDependenciesMap =
         new HashMap<ValueSource<?>, List<ValueConsumer>>();
+
+    private final Map<ValueConsumer, ScopeImpl> consumer2Scope =
+        new HashMap<ValueConsumer, ScopeImpl>();
+    private final Map<ValueSource<?>, ScopeImpl> source2Scope =
+        new HashMap<ValueSource<?>, ScopeImpl>();
+
     private boolean alreadyUpdating = false;
+
+    private volatile boolean asyncStopped = false;
+
+    private final ScopeImpl rootScope = new ScopeImpl(this);
 
     public void addConsumer(ValueConsumer value, ValueSource<?> ... dependencies) {
       addConsumer(value, Arrays.asList(dependencies));
     }
-
     /**
-     * Registers a consumer vertex with all its dependencies.
+     * Registers a consumer vertex with all its dependencies. The root scope is assumed.
      */
     public void addConsumer(ValueConsumer value, List<? extends ValueSource<?>> dependencies) {
-      Boolean res = needsUpdateMap.put(value, Boolean.FALSE);
-      if (res != null) {
-        throw new IllegalArgumentException("Already added"); //$NON-NLS-1$
-      }
+      addConsumer(rootScope, value);
       for (ValueSource<?> dep : dependencies) {
-        List<ValueConsumer> reversedDeps = reversedDependenciesMap.get(dep);
-        if (reversedDeps == null) {
-          reversedDeps = new ArrayList<ValueConsumer>(2);
-          reversedDependenciesMap.put(dep, reversedDeps);
-        }
-        reversedDeps.add(value);
+        addDependency(value, dep);
       }
     }
 
     /**
-     * Reports about sources that have been changed and plans future update of consumers. This
-     * method may be called at any time (it is not thread-safe though).
+     * Registers a consumer within a particular scope.
      */
-    public void reportChanged(ValueSource<?> source) {
+    public void addConsumer(Scope scope, ValueConsumer consumer) {
+      Boolean res = needsUpdateMap.put(consumer, Boolean.FALSE);
+      if (res != null) {
+        throw new IllegalArgumentException("Already added"); //$NON-NLS-1$
+      }
+      consumer2Scope.put(consumer, (ScopeImpl)scope);
+    }
+
+    /**
+     * Registers a source within a particular scope.
+     */
+    public void addSource(Scope scope, ValueSource<?> source) {
+      Object conflict = source2Scope.put(source, (ScopeImpl)scope);
+      if (conflict != null) {
+        throw new IllegalArgumentException("Already added"); //$NON-NLS-1$
+      }
+    }
+
+    /**
+     * Adds a dependency of consumer on source. Source may be from the same scope or in outer
+     * scope.
+     */
+    public void addDependency(ValueConsumer consumer, ValueSource<?> source) {
+      Scope consumerScope = consumer2Scope.get(consumer);
+      if (consumerScope == null) {
+        throw new IllegalArgumentException("Unregistered consumer"); //$NON-NLS-1$
+      }
+
+      checkSourceVisibleInScope(source, consumerScope);
+      addDependencyNoCheck(consumer, source);
+    }
+
+    /**
+     * Reports about sources that have been changed and plans future update of consumers. This
+     * method may be called at any time.
+     */
+    public synchronized void reportChanged(ValueSource<?> source) {
       List<ValueConsumer> reversedDeps = reversedDependenciesMap.get(source);
       if (reversedDeps != null) {
         for (ValueConsumer consumer : reversedDeps) {
-          needsUpdateMap.put(consumer, Boolean.TRUE);
+          addConsumerToUpdate(consumer);
         }
       }
     }
@@ -130,20 +184,6 @@ public class DialogUtils {
       }
     }
 
-    private void updateImpl() {
-      boolean hasChanges = true;
-      while (hasChanges) {
-        hasChanges = false;
-        for (Map.Entry<ValueConsumer, Boolean> en : needsUpdateMap.entrySet()) {
-          if (en.getValue() == Boolean.TRUE) {
-            en.setValue(Boolean.FALSE);
-            ValueConsumer currentValue = en.getKey();
-            currentValue.update(this);
-          }
-        }
-      }
-    }
-
     /**
      * Updates all consumer vertices in graph.
      */
@@ -152,6 +192,83 @@ public class DialogUtils {
         en.setValue(Boolean.TRUE);
       }
       update();
+    }
+
+    /**
+     * Returns a root scope that updater always has.
+     */
+    public Scope rootScope() {
+      return rootScope;
+    }
+
+    /**
+     * Request deferred update. This method may be called from any thread.
+     */
+    public void updateAsync() {
+      Display.getDefault().asyncExec(new Runnable() {
+        public void run() {
+          if (asyncStopped) {
+            return;
+          }
+          update();
+        }
+      });
+    }
+
+    /**
+     * Stops asynchronous updates -- an activity which is hard to stop directly.
+     */
+    public void stopAsync() {
+      asyncStopped = true;
+    }
+
+    void addDependencyNoCheck(ValueConsumer value, ValueSource<?> source) {
+      List<ValueConsumer> reversedDeps = reversedDependenciesMap.get(source);
+      if (reversedDeps == null) {
+        reversedDeps = new ArrayList<ValueConsumer>(2);
+        reversedDependenciesMap.put(source, reversedDeps);
+      }
+      reversedDeps.add(value);
+    }
+
+    /**
+     * Makes sure that source is from the scope or from its ancestor.
+     */
+    void checkSourceVisibleInScope(ValueSource<?> source, Scope scope) {
+      Scope sourceScope = source2Scope.get(source);
+      if (sourceScope == null) {
+        throw new IllegalArgumentException("Unregitered source"); //$NON-NLS-1$
+      }
+      do {
+        if (sourceScope.equals(scope)) {
+          return;
+        }
+        scope = scope.getOuterScope();
+      } while (scope != null);
+      throw new RuntimeException("Source from a wrong scope"); //$NON-NLS-1$
+    }
+
+    void addConsumerToUpdate(ValueConsumer consumer) {
+      needsUpdateMap.put(consumer, Boolean.TRUE);
+    }
+
+    private void updateImpl() {
+      boolean hasChanges = true;
+      while (hasChanges) {
+        hasChanges = false;
+        for (Map.Entry<ValueConsumer, Boolean> en : needsUpdateMap.entrySet()) {
+          if (en.getValue() == Boolean.TRUE) {
+            en.setValue(Boolean.FALSE);
+            ValueConsumer currentValue = en.getKey();
+            ScopeImpl scope = consumer2Scope.get(currentValue);
+            if (scope.isActive()) {
+              currentValue.update(this);
+            } else {
+              scope.addDelayedConsumer(currentValue);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -168,6 +285,82 @@ public class DialogUtils {
       this.currentValue = currentValue;
     }
   }
+
+  /**
+   * A scope for update graph vertices. Scopes are nested. The inner scopes are created with
+   * creating switchers.
+   * <p>Scope approximately corresponds to a group of UI controls that may be become disabled,
+   * and thus may not generate any data and needn't any inner updates.
+   */
+  public interface Scope {
+    Scope getOuterScope();
+
+    /**
+     * Creates a switcher that is operated by optional expression.
+     * @param <T> type of expression
+     */
+    <T> OptionalSwitcher<T> addOptionalSwitch(Getter<? extends Optional<T>> expression);
+
+    /**
+     * Creates a switcher that is operated by non-optional expression.
+     * @param <T> type of expression
+     */
+    <T> Switcher<T> addSwitch(Getter<T> expression);
+  }
+
+  /**
+   * A callback that lets UI to reflect that some scope became enabled/disabled.
+   */
+  public interface ScopeEnabler {
+    void setEnabled(boolean enabled, boolean recursive);
+  }
+
+  /**
+   * Base interface for 2 types of switchers. The switcher is a logical element that
+   * enables/disables its scopes according to the value of its expression.
+   * @param <T> type of expression
+   */
+  public interface SwitchBase<T> {
+    Scope addScope(T tag, ScopeEnabler scopeEnabler);
+    ValueConsumer getValueConsumer();
+  }
+
+  /**
+   * A switcher that is operated by non-optional expression.
+   */
+  public interface Switcher<T> extends SwitchBase<T> {
+    /**
+     * Creates a merge element, that links to sources inside switcher's scopes and
+     * exposes them outside a single {@link ValueSource} that has a value of a corresponding source
+     * in an active scope.
+     * @param sources the list of sources in a corresponding scopes; must be in the same order
+     */
+    <P> ValueSource<P> createMerge(ValueSource<? extends P> ... sources);
+  }
+
+  /**
+   * A switcher that is operated by optional expression.
+   */
+  public interface OptionalSwitcher<T> extends SwitchBase<T> {
+    /**
+     * See javadoc for {@link Switcher#createMerge}; the difference of this method is that
+     * all sources have optional type and the merge source itself of optional type. The switcher
+     * expression may have error value, in this case the merger also returns this error value.
+     */
+    <P> ValueSource<? extends Optional<P>> createOptionalMerge(
+        ValueSource<? extends Optional<P>> ... sources);
+  }
+
+  public static <T> ValueSource<T> createConstant(final T constnant, Updater updater) {
+    ValueSource<T> source = new ValueSource<T>() {
+      public T getValue() {
+        return constnant;
+      }
+    };
+    updater.addSource(updater.rootScope(), source);
+    return source;
+  }
+
 
   /*
    * Part 2. Optional data type etc
@@ -241,12 +434,13 @@ public class DialogUtils {
 
   /**
    * Priority of a user interface message.
-   * Constants are listed from most important to least important.
+   * Constants are listed from most important to lest important.
    */
   public enum MessagePriority {
     BLOCKING_PROBLEM(IMessageProvider.ERROR),
     BLOCKING_INFO(IMessageProvider.NONE),
-    WARNING(IMessageProvider.WARNING);
+    WARNING(IMessageProvider.WARNING),
+    NONE(IMessageProvider.NONE);
 
     private final int messageProviderType;
     private MessagePriority(int messageProviderType) {
@@ -260,7 +454,7 @@ public class DialogUtils {
   /**
    * A base class for the source-consumer pair that accepts several values as a consumer,
    * performs a calculation over them and gives it away the result via source interface.
-   * Some sources may be of Optional type. If some of sources have error value the corresponding
+   * Some sources may be of Optional type. If some of sources has error value the corresponding
    * error value is returned automatically.
    * <p>
    * The implementation should override a single method {@link #calculateNormal}.
@@ -295,6 +489,81 @@ public class DialogUtils {
       }
     }
   }
+
+  /**
+   * A separate type of expression evaluator, that in calculations always rely on somebody
+   * to check, that its inputs are of normal values. This interface is not interoperable with
+   * {@link Getter} or any other interface to make sure that the contract is held.
+   */
+  public interface NormalExpression<RES> {
+    RES calculate();
+  }
+
+  /**
+   * Creates a {@link ValueProcessor} that is backed by {@link NormalExpression}.
+   * @param optionalSources list of inputs that are optional and thus have to be checked for
+   *   {@link NormalExpression} contract.
+   */
+  public static <T> ValueProcessor<Optional<T>> createOptionalProcessor(
+      final NormalExpression<T> expression,
+      ValueSource<? extends Optional<?>> ... optionalSources) {
+    final Getter<Optional<T>> getter = handleErrors(expression, optionalSources);
+    return createProcessor(getter);
+  }
+
+  /**
+   * Implements the basic contract of {@link NormalExpression}. Wraps it as {@link Getter} and
+   * keeps all its optional sources that are checked before each calculation.
+   */
+  public static <RES> Getter<Optional<RES>> handleErrors(final NormalExpression<RES> expression,
+      final ValueSource<? extends Optional<?>> ... optionalSources) {
+    NormalExpression<Optional<RES>> wrapper = new NormalExpression<Optional<RES>>() {
+      public Optional<RES> calculate() {
+        return createOptional(expression.calculate());
+      }
+    };
+    return handleErrorsAddNew(wrapper, optionalSources);
+  }
+
+  /**
+   * Implements the basic contract of {@link NormalExpression}. Wraps it as {@link Getter} and
+   * keeps all its optional sources that are checked before each calculation.
+   * The expression may rely that all optionalSources are of normal values, but it is allowed to
+   * return error value itself.
+   */
+  public static <RES> Getter<Optional<RES>> handleErrorsAddNew(
+      final NormalExpression<Optional<RES>> expression,
+      final ValueSource<? extends Optional<?>> ... optionalSources) {
+    return new Getter<Optional<RES>>() {
+      public Optional<RES> getValue() {
+        boolean hasErrors = false;
+        for (ValueSource<? extends Optional<?>> source : optionalSources) {
+          if (!source.getValue().isNormal()) {
+            hasErrors = true;
+            break;
+          }
+        }
+
+        if (hasErrors) {
+          Set<Message> errors = new LinkedHashSet<Message>(0);
+          for (ValueSource<? extends Optional<?>> source : optionalSources) {
+            if (!source.getValue().isNormal()) {
+              errors.addAll(source.getValue().errorMessages());
+            }
+          }
+          return createErrorOptional(errors);
+        } else {
+          return expression.calculate();
+        }
+      }
+    };
+  }
+
+  public static ValueSource<? extends Optional<?>> [] dependencies(
+      ValueSource<? extends Optional<?>> ... sources) {
+    return sources;
+  }
+
 
   /*
    * Part 3. Various utils.
@@ -345,35 +614,38 @@ public class DialogUtils {
       dialogElements.getOkButton().setEnabled(enabled);
       String errorMessage;
       int type;
-      if (messages.isEmpty()) {
-        errorMessage = null;
-        type = IMessageProvider.NONE;
-      } else {
-        Message visibleMessage = Collections.max(messages, messageComparatorBySeverity);
-        errorMessage = visibleMessage.getText();
-        type = visibleMessage.getPriority().getMessageProviderType();
-      }
-      dialogElements.setMessage(errorMessage, type);
+      Message visibleMessage = chooseImportantMessage(messages);
+      dialogElements.setMessage(visibleMessage.getText(),
+          visibleMessage.getPriority().getMessageProviderType());
     }
 
-    private static final Comparator<Message> messageComparatorBySeverity =
-        new Comparator<Message>() {
-      public int compare(Message o1, Message o2) {
-        int ordinal1 = o1.getPriority().ordinal();
-        int ordinal2 = o2.getPriority().ordinal();
-        if (ordinal1 < ordinal2) {
-          return +1;
-        } else if (ordinal1 == ordinal2) {
-          return 0;
-        } else {
-          return -1;
-        }
-      }
-    };
   }
 
+  public static final Message NULL_MESSAGE = new Message(null, MessagePriority.NONE);
+
+  public static Message chooseImportantMessage(Collection<? extends Message> messages) {
+    if (messages.isEmpty()) {
+      return NULL_MESSAGE;
+    }
+    return Collections.max(messages, messageComparatorBySeverity);
+  }
+
+  private static final Comparator<Message> messageComparatorBySeverity =
+      new Comparator<Message>() {
+    public int compare(Message o1, Message o2) {
+      int ordinal1 = o1.getPriority().ordinal();
+      int ordinal2 = o2.getPriority().ordinal();
+      if (ordinal1 < ordinal2) {
+        return +1;
+      } else if (ordinal1 == ordinal2) {
+        return 0;
+      } else {
+        return -1;
+      }
+    }
+  };
   /**
-   * A basic interface to elements of the dialog window from dialog logic part. The user may extend
+   * A basic access to elements of the dialog window from dialog logic part. The user may extend
    * this interface with more elements.
    */
   public interface DialogElements {
@@ -400,5 +672,273 @@ public class DialogUtils {
     }
     public abstract E getSelected();
     public abstract void setSelected(E element);
+  }
+
+  public static <T> ValueProcessor<T> createProcessor(final Getter<T> expression) {
+    return new ValueProcessor<T>() {
+      public void update(Updater updater) {
+        T newValue = expression.getValue();
+        T oldValue = getValue();
+        boolean same = (newValue == null) ? oldValue == null : newValue.equals(oldValue);
+        setCurrentValue(newValue);
+        if (!same) {
+          updater.reportChanged(this);
+        }
+      }
+    };
+  }
+
+
+  /*
+   * Part 4. Implementation stuff.
+   *
+   */
+
+  private static abstract class SwitcherBaseImpl<T> implements SwitchBase<T> {
+    private final ScopeImpl outerScope;
+    private final Map<T, ScopeImpl> innerScopes = new LinkedHashMap<T, ScopeImpl>(2);
+    private ScopeImpl currentScope = null;
+    private final ValueConsumer consumer = new ValueConsumer() {
+      public void update(Updater updater) {
+        updateScopes();
+        updater.reportChanged(getSourceForMerge());
+      }
+    };
+    ScopeImpl getScopeForTag(T tag) {
+      return innerScopes.get(tag);
+    }
+    abstract void updateScopes();
+
+    abstract ValueSource<?> getSourceForMerge();
+
+    void setCurrentScope(ScopeImpl scope) {
+      if (scope == currentScope) {
+        return;
+      }
+      if (currentScope != null) {
+        currentScope.setEnabled(false);
+      }
+      currentScope = scope;
+      if (currentScope != null) {
+        currentScope.setEnabled(true);
+      }
+    }
+
+    ScopeImpl getCurrentScope() {
+      return currentScope;
+    }
+    SwitcherBaseImpl(ScopeImpl outerScope) {
+      this.outerScope = outerScope;
+    }
+
+    public Scope addScope(T tag, ScopeEnabler scopeEnabler) {
+      ScopeImpl scope = new ScopeImpl(this, scopeEnabler, outerScope.getUpdater());
+      Object conflict = innerScopes.put(tag, scope);
+      if (conflict != null) {
+        throw new IllegalStateException();
+      }
+      return scope;
+    }
+
+    public ValueConsumer getValueConsumer() {
+      return consumer;
+    }
+
+    ScopeImpl getOuterScope() {
+      return outerScope;
+    }
+
+    <V extends ValueSource<?>> Map<T,V> sortSources(List<V> sources) {
+      if (innerScopes.size() != sources.size()) {
+        throw new IllegalArgumentException();
+      }
+      Map<T,V> result = new HashMap<T, V>();
+      Updater updater = outerScope.getUpdater();
+      int i = 0;
+      for (Map.Entry<T, ScopeImpl> en : innerScopes.entrySet()) {
+        V source = sources.get(i);
+        updater.checkSourceVisibleInScope(source, en.getValue());
+        result.put(en.getKey(), source);
+        i++;
+      }
+      return result;
+    }
+  }
+
+  private static class SwitcherImpl<T> extends SwitcherBaseImpl<T> implements Switcher<T> {
+    private final Getter<? extends T> expression;
+    private final ValueSource<T> sourceForMerge = new ValueSource<T>() {
+      public T getValue() {
+        return expression.getValue();
+      }
+    };
+    SwitcherImpl(ScopeImpl outerScope, Getter<T> expression) {
+      super(outerScope);
+      this.expression = expression;
+    }
+    @Override
+    ValueSource<?> getSourceForMerge() {
+      return sourceForMerge;
+    }
+
+    @Override
+    void updateScopes() {
+      T tag = expression.getValue();
+      ScopeImpl newScope = getScopeForTag(tag);
+      setCurrentScope(newScope);
+    }
+    public <P> ValueSource<P> createMerge(ValueSource<? extends P> ... sources) {
+
+      final Map<T, ValueSource<? extends P>> map = sortSources(Arrays.asList(sources));
+
+      ValueProcessor<P> result = new ValueProcessor<P>() {
+        public void update(Updater updater) {
+          setCurrentValue(calculate());
+          updater.reportChanged(this);
+        }
+        private P calculate() {
+          T tag = sourceForMerge.getValue();
+          ValueSource<? extends P> oneSource = map.get(tag);
+          return oneSource.getValue();
+        }
+      };
+      ScopeImpl outerScope = getOuterScope();
+      Updater updater = outerScope.getUpdater();
+      updater.addConsumer(outerScope, result);
+      updater.addDependency(result, getSourceForMerge());
+      for (ValueSource<?> source : sources) {
+        updater.addDependencyNoCheck(result, source); // AddNoCheck
+      }
+
+      outerScope.getUpdater().addSource(outerScope, result);
+
+      return result;
+    }
+  }
+
+  private static class OptionalSwitcherImpl<T> extends SwitcherBaseImpl<T> implements OptionalSwitcher<T> {
+    private final Getter<? extends Optional<? extends T>> expression;
+    private final ValueSource<Optional<? extends T>> sourceForMerge = new ValueSource<Optional<? extends T>>() {
+      public Optional<? extends T> getValue() {
+        return expression.getValue();
+      }
+    };
+    OptionalSwitcherImpl(ScopeImpl outerScope, Getter<? extends Optional<? extends T>> expression) {
+      super(outerScope);
+      this.expression = expression;
+    }
+
+    @Override
+    ValueSource<?> getSourceForMerge() {
+      return sourceForMerge;
+    }
+
+    @Override
+    void updateScopes() {
+      ScopeImpl newScope;
+      Optional<? extends T> control = expression.getValue();
+      if (control.isNormal()) {
+        T tag = control.getNormal();
+        newScope = getScopeForTag(tag);
+      } else {
+        newScope = null;
+      }
+      setCurrentScope(newScope);
+    }
+
+    public <P> ValueSource<? extends Optional<P>> createOptionalMerge(
+        ValueSource<? extends Optional<P>>... sources) {
+
+      final Map<T, ValueSource<? extends Optional<P>>> map = sortSources(Arrays.asList(sources));
+
+      ValueProcessor<? extends Optional<P>> result = new ValueProcessor<Optional<P>>() {
+        public void update(Updater updater) {
+          setCurrentValue(calculate());
+          updater.reportChanged(this);
+        }
+        private Optional<P> calculate() {
+          Optional<? extends T> control = sourceForMerge.getValue();
+          if (control.isNormal()) {
+            ValueSource<? extends Optional<P>> oneSource = map.get(control.getNormal());
+            return oneSource.getValue();
+          } else {
+            return createErrorOptional(control.errorMessages());
+          }
+        }
+      };
+      ScopeImpl outerScope = getOuterScope();
+      Updater updater = outerScope.getUpdater();
+      updater.addConsumer(outerScope, result);
+      updater.addDependency(result, getSourceForMerge());
+      for (ValueSource<?> source : sources) {
+        updater.addDependencyNoCheck(result, source); // AddNoCheck
+      }
+
+      outerScope.getUpdater().addSource(outerScope, result);
+
+      return result;
+    }
+  }
+
+  private static class ScopeImpl implements Scope {
+    private final Updater updater;
+    private final SwitcherBaseImpl<?> switcher;
+    private final ScopeEnabler scopeEnabler;
+    private final Set<ValueConsumer> delayedConsumers = new HashSet<ValueConsumer>(0);
+    ScopeImpl(Updater updater) {
+      this(null, null, updater);
+    }
+    public boolean isActive() {
+      if (switcher == null) {
+        return true;
+      }
+      return switcher.getOuterScope().isActive() && switcher.getCurrentScope() == this;
+    }
+
+    public void addDelayedConsumer(ValueConsumer consumer) {
+      delayedConsumers.add(consumer);
+    }
+    public void setEnabled(boolean enabled) {
+      if (enabled) {
+        for (ValueConsumer consumer : delayedConsumers) {
+          updater.addConsumerToUpdate(consumer);
+        }
+        delayedConsumers.clear();
+      }
+      if (scopeEnabler != null) {
+        scopeEnabler.setEnabled(enabled, false);
+      }
+    }
+    Updater getUpdater() {
+      return updater;
+    }
+    ScopeImpl(SwitcherBaseImpl<?> switcher, ScopeEnabler scopeEnabler, Updater updater) {
+      this.switcher = switcher;
+      this.scopeEnabler = scopeEnabler;
+      this.updater = updater;
+    }
+
+    public <P> OptionalSwitcher<P> addOptionalSwitch(Getter<? extends Optional<P>> expression) {
+      OptionalSwitcherImpl<P> switcher = new OptionalSwitcherImpl<P>(this, expression);
+      updater.addConsumer(this, switcher.getValueConsumer());
+      updater.addSource(this, switcher.getSourceForMerge());
+      updater.addDependency(switcher.getValueConsumer(), switcher.getSourceForMerge());
+      return switcher;
+    }
+
+    public <P> Switcher<P> addSwitch(Getter<P> expression) {
+      SwitcherImpl<P> switcher = new SwitcherImpl<P>(this, expression);
+      updater.addConsumer(this, switcher.getValueConsumer());
+      updater.addSource(this, switcher.getSourceForMerge());
+      updater.addDependency(switcher.getValueConsumer(), switcher.getSourceForMerge());
+      return switcher;
+    }
+
+    public Scope getOuterScope() {
+      if (switcher == null) {
+        return null;
+      }
+      return switcher.getOuterScope();
+    }
   }
 }

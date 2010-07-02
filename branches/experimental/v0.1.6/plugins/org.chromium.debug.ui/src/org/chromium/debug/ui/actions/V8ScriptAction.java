@@ -18,6 +18,7 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IActionDelegate2;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
@@ -27,10 +28,13 @@ import org.eclipse.ui.IWorkbenchPart;
  * It makes all necessary checks and prepares data in form of {@link ScriptTargetMapping} class.
  * The concrete actions implement the {@link #execute(ScriptTargetMapping)} method.
  */
-abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2 {
+public abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2 {
+
   private Runnable currentRunnable = null;
+  private Shell currentShell = null;
 
   public void setActivePart(IAction action, IWorkbenchPart targetPart) {
+    currentShell = targetPart.getSite().getShell();
   }
 
   public void run(IAction action) {
@@ -96,18 +100,18 @@ abstract class V8ScriptAction implements IObjectActionDelegate, IActionDelegate2
 
   private void execute(IFile file) {
     List<? extends ScriptTargetMapping> filePairList = getFilePairs(file);
-    ScriptTargetMapping filePair = getSingleFilePair(filePairList);
-    execute(filePair);
+    execute(filePairList, currentShell);
   }
 
-  protected abstract void execute(ScriptTargetMapping filePair);
+  protected abstract void execute(
+      List<? extends ScriptTargetMapping> filePairList, Shell shell);
 
   /**
    * A temporary method that excludes all cases when there are more than one file pair for a
    * user file. The proper solution ought to provide a UI for user so that he could review
    * which debug sessions should be included in action.
    */
-  private static ScriptTargetMapping getSingleFilePair(List<? extends ScriptTargetMapping> pairs) {
+  protected static ScriptTargetMapping getSingleFilePair(List<? extends ScriptTargetMapping> pairs) {
     if (pairs.size() == 0) {
       throw new RuntimeException("File is not associated with any V8 VM");
     }
