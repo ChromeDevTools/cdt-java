@@ -148,6 +148,14 @@ class StateManager {
       });
     }
 
+    public void scriptCollected(final Script script) {
+      processEvent(new Event() {
+        public <RES> RES accept(EventVisitor<RES> visitor) throws SmokeException {
+          return visitor.visitScriptCollected(script);
+        }
+      });
+    }
+
     public void suspended(final DebugContext context) {
       processEvent(new Event() {
         public <RES> RES accept(EventVisitor<RES> visitor) throws SmokeException {

@@ -107,6 +107,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     resourceManager.addScript(newScript);
   }
 
+  public void scriptCollected(Script script) {
+    resourceManager.scriptCollected(script);
+  }
+
   public void reloadScriptsAtStart() {
     javascriptVm.getScripts(new ScriptsCallback() {
       public void failure(String errorMessage) {

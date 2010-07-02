@@ -31,6 +31,7 @@ public enum DebuggerCommand {
   BREAK("break"),
   EXCEPTION("exception"),
   AFTER_COMPILE("afterCompile"),
+  SCRIPT_COLLECTED("scriptCollected"),
   ;
 
   public final String value;

@@ -395,6 +395,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       workspaceRelations.scriptLoaded(newScript);
     }
 
+    public void scriptCollected(Script script) {
+      listenerBlock.waitUntilReady();
+      workspaceRelations.scriptCollected(script);
+    }
+
     public void scriptContentChanged(UpdatableScript newScript) {
       listenerBlock.waitUntilReady();
       workspaceRelations.reloadScript(newScript);
