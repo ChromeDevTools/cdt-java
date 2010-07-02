@@ -70,4 +70,8 @@ class StubListener implements DebugEventListener, TabDebugEventListener {
     }
     return debugContext;
   }
+
+  public VmStatusListener getVmStatusListener() {
+    return null;
+  }
 }

@@ -44,4 +44,25 @@ public interface DebugEventListener {
    * Reports that the script has been collected and is no longer used in VM.
    */
   void scriptCollected(Script script);
+
+  /**
+   * Gets {@link VmStatusListener} that is considered a part of {@link DebugEventListener}.
+   * The value this method returns may be cached by caller.
+   * @return {@link VmStatusListener} or null
+   */
+  VmStatusListener getVmStatusListener();
+
+  /**
+   * A specialized listener for status of remote VM command queue. After we have sent a request and
+   * before VM answered, it is considered busy processing this request.
+   */
+  interface VmStatusListener {
+    /**
+     * Reports a new status of remote VM
+     * @param currentRequest name of the oldest request that hasn't been answered yet or null
+     * @param numberOfEnqueued number of requests that are expected to be waiting in VM queue; does
+     *   not make sense if currentRequest is null
+     */
+    void busyStatusChanged(String currentRequest, int numberOfEnqueued);
+  }
 }

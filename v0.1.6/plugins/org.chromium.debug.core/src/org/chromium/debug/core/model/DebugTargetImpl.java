@@ -32,6 +32,7 @@ import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * An IDebugTarget implementation for remote JavaScript debugging.
@@ -137,8 +138,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
   }
 
-  public String getName() throws DebugException {
-    return workspaceBridgeFactory.getLabelProvider().getTargetLabel(this);
+  public String getName() {
+    JavascriptVmEmbedder vmEmbedder = getJavascriptEmbedder();
+    if (vmEmbedder == null) {
+      return ""; //$NON-NLS-1$
+    }
+    return vmEmbedder.getTargetName();
+  }
+
+  public String getVmStatus() {
+    return vmStatusListener.getStatusString();
   }
 
   public IProcess getProcess() {
@@ -425,6 +434,30 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
         alreadyResumedOrSuspended = true;
       }
+    }
+
+    public VmStatusListener getVmStatusListener() {
+      return vmStatusListener;
+    }
+  }
+
+  private final VmStatusListenerImpl vmStatusListener = new VmStatusListenerImpl();
+
+  private class VmStatusListenerImpl implements DebugEventListener.VmStatusListener {
+    private String currentRequest = null;
+    private int numberOfEnqueued;
+
+    public synchronized void busyStatusChanged(String currentRequest, int numberOfEnqueued) {
+      this.currentRequest = currentRequest;
+      this.numberOfEnqueued = numberOfEnqueued;
+      fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE));
+    }
+
+    public synchronized String getStatusString() {
+      if (currentRequest == null) {
+        return null;
+      }
+      return NLS.bind(Messages.DebugTargetImpl_BUSY_WITH, currentRequest, numberOfEnqueued);
     }
   }
 
