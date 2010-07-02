@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 
 import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -28,7 +29,7 @@ import org.eclipse.swt.graphics.Image;
  */
 public class CompareChangesAction extends V8ScriptAction {
   @Override
-  protected void execute(FilePair filePair) {
+  protected void execute(ScriptTargetMapping filePair) {
     LiveEditCompareInput input = new LiveEditCompareInput(filePair.getFile(), filePair.getVmResource());
     CompareUI.openCompareEditor(input);
   }

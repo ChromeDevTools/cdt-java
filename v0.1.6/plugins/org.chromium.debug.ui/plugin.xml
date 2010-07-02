@@ -312,7 +312,7 @@
   <extension
          point="org.eclipse.ui.propertyPages">
     <page
-        name="Breakpoint Properties"
+        name="%BreakpointProperties.name"
         class="org.chromium.debug.ui.propertypages.JsLineBreakpointPage"
         id="org.chromium.debug.ui.propertypages.LineBreakpoints">
       <enabledWhen>
@@ -326,6 +326,17 @@
         </or>
       </enabledWhen>
     </page>
+    <page
+        name="%V8JsScriptProperties.name"
+        class="org.chromium.debug.ui.propertypages.ScriptFilePage"
+        id="org.chromium.debug.ui.propertypages.ScriptFilePage">
+      <enabledWhen>
+        <and>
+          <adapt type="org.eclipse.core.resources.IFile"/>
+          <test property="org.chromium.debug.core.isJsFile" value="true"/>
+        </and>  
+      </enabledWhen>
+    </page>
   </extension>
   
 
@@ -337,4 +348,5 @@
             id="org.chromium.debug.ui.SourceNameMapperContainerPresentation">
       </sourceContainerPresentation>
   </extension>
+  
 </plugin>
