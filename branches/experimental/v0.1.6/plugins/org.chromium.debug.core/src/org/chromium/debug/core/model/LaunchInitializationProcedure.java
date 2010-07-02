@@ -12,6 +12,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.ILaunch;
@@ -70,15 +71,15 @@ class LaunchInitializationProcedure {
       WorkPlan.PREINIT.start(monitorWrapper);
       debugTarget.resumeSessionByDefault();
       WorkPlan.PREINIT.finish(monitorWrapper);
-
+      checkIsCanceled(monitorWrapper);
       WorkPlan.SET_OPTIONS.start(monitorWrapper);
       // Not implemented yet
       WorkPlan.SET_OPTIONS.finish(monitorWrapper);
-
+      checkIsCanceled(monitorWrapper);
       WorkPlan.LOAD_SCRIPTS.start(monitorWrapper);
       workspaceBridge.reloadScriptsAtStart();
       WorkPlan.LOAD_SCRIPTS.finish(monitorWrapper);
-
+      checkIsCanceled(monitorWrapper);
       synchronizeBreakpoints(
           WorkPlan.SYNCHRONIZE_BREAKPOINTS.createSubMonitorWrapper(monitorWrapper));
 
@@ -126,6 +127,7 @@ class LaunchInitializationProcedure {
         }
       };
       workspaceBridge.getBreakpointSynchronizer().syncBreakpoints(direction, callback);
+      checkIsCanceled(monitor);
 
       BreakpointsWorkPlan.ANALYZE.finish(monitor);
 
@@ -135,6 +137,12 @@ class LaunchInitializationProcedure {
 
     } finally {
       monitor.done();
+    }
+  }
+
+  private static void checkIsCanceled(MonitorWrapper monitor) {
+    if (monitor.isCanceled()) {
+      throw new OperationCanceledException();
     }
   }
 }
