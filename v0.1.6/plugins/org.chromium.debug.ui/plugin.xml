@@ -237,7 +237,7 @@
          </action>
       </objectContribution>
       <!-- Experimental actions, temporary disabled. -->
-      <!-- objectContribution
+      <objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
             id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
@@ -249,20 +249,27 @@
             </separator>
          </menu>
          <action
-               label="Compare with VM Source"
-               class="org.chromium.debug.ui.actions.CompareChangesAction"
+               label="Push LiveEdit Changes to VM..."
+               class="org.chromium.debug.ui.actions.LiveeditWizardAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
-               id="org.chromium.debug.ui.actions.CompareChangesAction">
+               id="org.chromium.debug.ui.actions.LiveeditWizardAction">
          </action>
          <action
-               label="Push Changes to VM"
+               label="Silently Push Changes"
                class="org.chromium.debug.ui.actions.PushChangesAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
-      </objectContribution -->
+         <!-- action
+               label="Compare with VM Source"
+               class="org.chromium.debug.ui.actions.CompareChangesAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.CompareChangesAction">
+         </action -->
+      </objectContribution>
   </extension>
 
    <extension

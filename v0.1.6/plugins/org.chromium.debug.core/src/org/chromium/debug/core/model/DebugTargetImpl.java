@@ -554,6 +554,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       if (target instanceof DebugTargetImpl == false) {
         continue;
       }
+      if (target.getLaunch().isTerminated()) {
+        continue;
+      }
       DebugTargetImpl debugTargetImpl = (DebugTargetImpl) target;
       result.add(debugTargetImpl);
     }

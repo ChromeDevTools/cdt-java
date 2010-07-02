@@ -6,7 +6,7 @@ package org.chromium.debug.ui.actions;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ScriptTargetMapping;
@@ -22,6 +22,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Shell;
 
 /**
  * A very preliminary implementation of action that should let user compare his script with
@@ -29,16 +30,18 @@ import org.eclipse.swt.graphics.Image;
  */
 public class CompareChangesAction extends V8ScriptAction {
   @Override
-  protected void execute(ScriptTargetMapping filePair) {
-    LiveEditCompareInput input = new LiveEditCompareInput(filePair.getFile(), filePair.getVmResource());
+  protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell) {
+    ScriptTargetMapping filePair = getSingleFilePair(filePairList);
+    LiveEditCompareInput input =
+        new LiveEditCompareInput(filePair.getFile(), filePair.getVmResource());
     CompareUI.openCompareEditor(input);
   }
 
-  private static class LiveEditCompareInput extends CompareEditorInput {
+  public static class LiveEditCompareInput extends CompareEditorInput {
     private final IFile file;
     private final VmResource script;
 
-    LiveEditCompareInput(IFile file, VmResource vmResource) {
+    public LiveEditCompareInput(IFile file, VmResource vmResource) {
       super(createCompareConfiguration());
       this.file = file;
       this.script = vmResource;
@@ -49,8 +52,7 @@ public class CompareChangesAction extends V8ScriptAction {
     }
 
     @Override
-    protected Object prepareInput(IProgressMonitor monitor) throws InvocationTargetException,
-        InterruptedException {
+    public DiffNode prepareInput(IProgressMonitor monitor) {
 
       abstract class CompareItem implements ITypedElement, IStreamContentAccessor,
           IModificationDate {
@@ -77,9 +79,13 @@ public class CompareChangesAction extends V8ScriptAction {
           return "File in VM " + script.getFileName(); //$NON-NLS-1$
         }
         public InputStream getContents() throws CoreException {
-          return new ByteArrayInputStream(script.getScript().getSource().getBytes());
+          String source = script.getScript().getSource();
+//          int pos = source.length() / 2;
+//          source = source.substring(0, pos) + " extra " + source.substring(pos);
+          return new ByteArrayInputStream(source.getBytes());
         }
       };
+
       DiffNode diffNode = new DiffNode(null, Differencer.PSEUDO_CONFLICT, null, left, right);
       return diffNode;
     }

@@ -5,10 +5,15 @@
 package org.chromium.debug.core.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -316,6 +321,39 @@ public class ChromiumDebugPluginUtil {
    */
   public static IContainer getSourceContainer(IProject project) {
     return project;
+  }
+
+  public static byte[] readFileContents(IFile file) throws IOException, CoreException {
+    InputStream inputStream = file.getContents();
+    try {
+      return readBytes(inputStream);
+    } finally {
+      inputStream.close();
+    }
+  }
+
+  public static byte[] readBytes(InputStream inputStream) throws IOException {
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    byte[] array = new byte[1024];
+    while (true) {
+      int len = inputStream.read(array);
+      if (len == -1) {
+        break;
+      }
+      buffer.write(array, 0, len);
+    }
+    return buffer.toByteArray();
+  }
+
+
+  public static <T> T[] toArray(Collection<T> collection, Class<T> clazz) {
+    T[] result = (T[])Array.newInstance(clazz, collection.size());
+    collection.toArray(result);
+    return result;
+  }
+
+  public static <T> T throwUnsupported() {
+    throw new UnsupportedOperationException();
   }
 
   private ChromiumDebugPluginUtil() {
