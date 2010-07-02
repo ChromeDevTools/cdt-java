@@ -19,4 +19,7 @@ public interface EventNotificationBody {
 
   @JsonSubtypeCasting
   AfterCompileBody asAfterCompileBody() throws JsonProtocolParseException;
+
+  @JsonSubtypeCasting
+  ScriptCollectedBody asScriptCollectedBody() throws JsonProtocolParseException;
 }

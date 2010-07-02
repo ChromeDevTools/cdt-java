@@ -39,4 +39,9 @@ public interface DebugEventListener {
    * @param newScript loaded into the tab
    */
   void scriptLoaded(Script newScript);
+
+  /**
+   * Reports that the script has been collected and is no longer used in VM.
+   */
+  void scriptCollected(Script script);
 }

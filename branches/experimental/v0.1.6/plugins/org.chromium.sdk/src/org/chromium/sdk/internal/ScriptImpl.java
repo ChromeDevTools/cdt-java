@@ -115,6 +115,8 @@ public class ScriptImpl implements Script, UpdatableScript {
 
   private volatile String source = null;
 
+  private volatile boolean collected = false;
+
   private final DebugSession debugSession;
 
   /**
@@ -150,6 +152,10 @@ public class ScriptImpl implements Script, UpdatableScript {
     return descriptor.id;
   }
 
+  public boolean isCollected() {
+    return collected;
+  }
+
   public String getSource() {
     return source;
   }
@@ -160,6 +166,10 @@ public class ScriptImpl implements Script, UpdatableScript {
 
   public void setSource(String source) {
     this.source = source;
+  }
+
+  public void setCollected() {
+    collected = true;
   }
 
   public void setSourceOnRemote(String newSource, UpdateCallback callback,

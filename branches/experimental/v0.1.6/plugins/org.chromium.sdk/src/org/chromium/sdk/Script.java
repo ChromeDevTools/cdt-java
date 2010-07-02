@@ -70,4 +70,8 @@ public interface Script {
    */
   boolean hasSource();
 
+  /**
+   * @return whether the script has been collected on remote
+   */
+  boolean isCollected();
 }

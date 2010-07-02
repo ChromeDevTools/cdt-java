@@ -74,6 +74,20 @@ public class ScriptManager {
     return theScript;
   }
 
+
+  public void scriptCollected(long scriptId) {
+    ScriptImpl script;
+    synchronized (this) {
+      script = idToScript.remove(scriptId);
+      if (script == null) {
+        return;
+      }
+      script.setCollected();
+    }
+    debugSession.getDebugEventListener().scriptCollected(script);
+  }
+
+
   /**
    * Associates a source received in a "source" V8 response with the given
    * script.

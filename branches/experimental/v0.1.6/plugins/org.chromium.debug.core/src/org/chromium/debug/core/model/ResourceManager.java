@@ -4,9 +4,8 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -72,13 +71,17 @@ public class ResourceManager {
       file2Info.put(scriptFile, info);
 
       info.scripts.add(newScript);
-      writeScriptSource(info.scripts, info.file);
+      writeScriptSource(info.scripts.asCollection(), info.file);
     } else {
       // TODO(peter.rybin): support adding scripts to one resource at once not to rewrite file
       // every time.
       info.scripts.add(newScript);
-      writeScriptSource(info.scripts, info.file);
+      writeScriptSource(info.scripts.asCollection(), info.file);
     }
+  }
+
+  public void scriptCollected(Script script) {
+    // Nothing to do. We only use it for generating resource from several scripts.
   }
 
   public synchronized void reloadScript(Script script) {
@@ -87,10 +90,8 @@ public class ResourceManager {
     if (info == null) {
       throw new RuntimeException("Script file not found"); //$NON-NLS-1$
     }
-    if (!info.scripts.contains(script)) {
-      throw new RuntimeException("Script not found in internal list"); //$NON-NLS-1$
-    }
-    writeScriptSource(info.scripts, info.file);
+    info.scripts.add(script);
+    writeScriptSource(info.scripts.asCollection(), info.file);
   }
 
   public synchronized void clear() {
@@ -113,7 +114,7 @@ public class ResourceManager {
     return id.createFileNameTemplate(true);
   }
 
-  private static void writeScriptSource(List<Script> scripts, IFile file) {
+  private static void writeScriptSource(Collection<Script> scripts, IFile file) {
     String fileSource = MockUpResourceWriter.writeScriptSource(scripts);
 
     try {
@@ -126,7 +127,7 @@ public class ResourceManager {
   private class VmResourceInfo {
     final IFile file;
     final VmResourceId id;
-    final ArrayList<Script> scripts = new ArrayList<Script>(1);
+    final ScriptSet scripts = new ScriptSet();
     VmResourceInfo(IFile file, VmResourceId id) {
       this.file = file;
       this.id = id;
@@ -139,16 +140,34 @@ public class ResourceManager {
 
       public Script getScript() {
         synchronized (ResourceManager.this) {
-          if (scripts.size() != 1) {
-            throw new UnsupportedOperationException(
-                "Not supported for complex resources"); //$NON-NLS-1$
-          }
-          return scripts.get(0);
+          return scripts.getSingle();
         }
       }
       public String getFileName() {
         return file.getName();
       }
     };
+  }
+  private static class ScriptSet {
+    private final Map<Long, Script> idToScript = new HashMap<Long, Script>(2);
+
+    Script getSingle() {
+      if (idToScript.size() != 1) {
+        throw new UnsupportedOperationException(
+            "Not supported for complex resources"); //$NON-NLS-1$
+      }
+      return idToScript.values().iterator().next();
+    }
+
+    /**
+     * Overwrites old script with the same id.
+     */
+    public void add(Script newScript) {
+      idToScript.put(newScript.getId(), newScript);
+    }
+
+    public Collection<Script> asCollection() {
+      return idToScript.values();
+    }
   }
 }

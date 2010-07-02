@@ -10,6 +10,7 @@ import org.chromium.sdk.internal.protocol.EventNotification;
 import org.chromium.sdk.internal.protocol.IncomingMessage;
 import org.chromium.sdk.internal.tools.v8.processor.AfterCompileProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.BreakpointProcessor;
+import org.chromium.sdk.internal.tools.v8.processor.ScriptCollectedProcessor;
 import org.chromium.sdk.internal.tools.v8.processor.V8EventProcessor;
 
 public class DefaultResponseHandler {
@@ -23,9 +24,12 @@ public class DefaultResponseHandler {
   /** The "afterCompile" event processor. */
   private final AfterCompileProcessor afterCompileProcessor;
 
+  private final ScriptCollectedProcessor scriptCollectedProcessor;
+
   public DefaultResponseHandler(DebugSession debugSession) {
     this.bpp = new BreakpointProcessor(debugSession);
     this.afterCompileProcessor = new AfterCompileProcessor(debugSession);
+    this.scriptCollectedProcessor = new ScriptCollectedProcessor(debugSession);
   }
 
   public BreakpointProcessor getBreakpointProcessor() {
@@ -80,6 +84,13 @@ public class DefaultResponseHandler {
       @Override
       AfterCompileProcessor get(DefaultResponseHandler instance) {
         return instance.afterCompileProcessor;
+      }
+    });
+    command2EventProcessorGetter.put(DebuggerCommand.SCRIPT_COLLECTED /* event */,
+        new ProcessorGetter() {
+      @Override
+      ScriptCollectedProcessor get(DefaultResponseHandler instance) {
+        return instance.scriptCollectedProcessor;
       }
     });
   }

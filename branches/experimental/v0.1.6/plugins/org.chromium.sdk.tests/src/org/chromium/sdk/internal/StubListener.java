@@ -44,6 +44,9 @@ class StubListener implements DebugEventListener, TabDebugEventListener {
   public void scriptLoaded(Script newScript) {
   }
 
+  public void scriptCollected(Script script) {
+  }
+
   void expectSuspendedEvent() {
     if (semaphore != null) {
       throw new IllegalStateException();
