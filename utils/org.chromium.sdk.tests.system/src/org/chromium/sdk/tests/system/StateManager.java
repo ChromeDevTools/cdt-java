@@ -155,6 +155,10 @@ class StateManager {
         }
       });
     }
+
+    public VmStatusListener getVmStatusListener() {
+      return null;
+    }
   };
 
   /**

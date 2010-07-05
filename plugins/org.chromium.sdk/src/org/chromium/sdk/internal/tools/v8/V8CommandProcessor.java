@@ -8,8 +8,10 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.CloseableMap;
+import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.IncomingMessage;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -61,11 +63,14 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
 
   private final DefaultResponseHandler defaultResponseHandler;
 
+  private final DebugSession debugSession;
+
 
   public V8CommandProcessor(V8CommandOutput messageOutput,
-      DefaultResponseHandler defaultResponseHandler) {
+      DefaultResponseHandler defaultResponseHandler, DebugSession debugSession) {
     this.messageOutput = messageOutput;
     this.defaultResponseHandler = defaultResponseHandler;
+    this.debugSession = debugSession;
   }
 
   public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
@@ -75,10 +80,11 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       // TODO(peter.rybin): should we handle IllegalStateException better than rethrowing it?
       try {
         callbackMap.put(message.getSeq(), new CallbackEntry(v8HandlerCallback,
-            syncCallback));
+            syncCallback, message.getCommand()));
       } catch (IllegalStateException e) {
         throw new IllegalStateException("Connection is closed", e);
       }
+      reportVmStatus();
     }
     try {
       messageOutput.send(message, isImmediate);
@@ -109,6 +115,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
             Level.FINE,
             "Request-response roundtrip: {0}ms",
             getCurrentMillis() - callbackEntry.commitMillis);
+        reportVmStatus();
 
         CallbackCaller caller = new CallbackCaller() {
           @Override
@@ -125,6 +132,28 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
     }
 
     defaultResponseHandler.handleResponseWithHandler(response);
+  }
+
+  private final Object vmStatusReportMonitor = new Object();
+  private void reportVmStatus() {
+    DebugEventListener.VmStatusListener statusListener =
+        debugSession.getDebugEventListener().getVmStatusListener();
+    if (statusListener == null) {
+      return;
+    }
+    // We synchronize, because one thread may be delivering obsolete message while a more
+    // recent message has already been delivered by other thread.
+    synchronized (vmStatusReportMonitor) {
+      int size = callbackMap.size();
+      CallbackEntry firstEntry = callbackMap.peekFirst();
+      // Those 2 variables above might be not in synch, so for a brief moment user may see
+      // a wrong message (when size == 0 and firstEntry is null). This is OK.
+      if (firstEntry == null) {
+        statusListener.busyStatusChanged(null, 0);
+      } else {
+        statusListener.busyStatusChanged(firstEntry.requestName, size - 1);
+      }
+    }
   }
 
   public void processEos() {
@@ -187,10 +216,14 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
 
     final long commitMillis;
 
-    CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
+    final String requestName;
+
+    CallbackEntry(V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback,
+        String requestName) {
       this.v8HandlerCallback = v8HandlerCallback;
       this.commitMillis = getCurrentMillis();
       this.syncCallback = syncCallback;
+      this.requestName = requestName;
     }
   }
 

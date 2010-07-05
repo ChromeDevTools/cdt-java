@@ -76,4 +76,18 @@ public class CloseableMap<K, V> {
     }
     map.put(key, value);
   }
+
+  public int size() {
+    return map.size();
+  }
+
+  /**
+   * @return a first value in (ordered) map or null if map is empty
+   */
+  public synchronized V peekFirst() {
+    if (map.isEmpty()) {
+      return null;
+    }
+    return map.values().iterator().next();
+  }
 }
