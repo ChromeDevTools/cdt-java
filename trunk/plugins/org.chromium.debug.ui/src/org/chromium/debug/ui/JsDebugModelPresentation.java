@@ -4,10 +4,14 @@
 
 package org.chromium.debug.ui;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
+import org.chromium.debug.core.model.WorkspaceBridge.JsLabelProvider;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.ILineBreakpoint;
 import org.eclipse.debug.core.model.IValue;
@@ -36,6 +40,17 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
 
   @Override
   public String getText(Object element) {
+    if (element instanceof DebugTargetImpl) {
+      DebugTargetImpl debugTargetImpl = (DebugTargetImpl) element;
+      JsLabelProvider labelProvider = debugTargetImpl.getLabelProvider();
+      try {
+        return labelProvider.getTargetLabel(debugTargetImpl);
+      } catch (DebugException e) {
+        ChromiumDebugPlugin.log(
+            new Exception("Failed to read debug target label", e)); //$NON-NLS-1$
+        // fall through
+      }
+    }
     // use default label text
     return null;
   }

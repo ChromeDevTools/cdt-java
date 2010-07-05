@@ -304,11 +304,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   private final static JsLabelProvider LABEL_PROVIDER = new JsLabelProvider() {
     public String getTargetLabel(DebugTargetImpl debugTarget) {
-      JavascriptVmEmbedder vmEmbedder = debugTarget.getJavascriptEmbedder();
-      if (vmEmbedder == null) {
-        return ""; //$NON-NLS-1$
+      String name = debugTarget.getName();
+      String status = debugTarget.getVmStatus();
+      if (status == null) {
+        return name;
+      } else {
+        return NLS.bind(Messages.DebugTargetImpl_TARGET_NAME_PATTERN, name, status);
       }
-      return vmEmbedder.getTargetName();
     }
 
     public String getThreadLabel(JavascriptThread thread) {

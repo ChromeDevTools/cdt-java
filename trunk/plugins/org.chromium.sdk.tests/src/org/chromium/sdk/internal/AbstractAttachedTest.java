@@ -155,4 +155,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
     assertNull(suspendContext);
   }
 
+  public VmStatusListener getVmStatusListener() {
+    return null;
+  }
 }
