@@ -41,6 +41,11 @@ public interface DebugEventListener {
   void scriptLoaded(Script newScript);
 
   /**
+   * Reports that the script has been collected and is no longer used in VM.
+   */
+  void scriptCollected(Script script);
+
+  /**
    * Gets {@link VmStatusListener} that is considered a part of {@link DebugEventListener}.
    * The value this method returns may be cached by caller.
    * @return {@link VmStatusListener} or null

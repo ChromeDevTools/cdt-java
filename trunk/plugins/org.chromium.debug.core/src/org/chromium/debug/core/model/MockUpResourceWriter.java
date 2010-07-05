@@ -5,9 +5,9 @@
 package org.chromium.debug.core.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
 import org.chromium.sdk.Script;
 import org.eclipse.osgi.util.NLS;
@@ -17,8 +17,14 @@ import org.eclipse.osgi.util.NLS;
  * to their line numbers and the whitespace is filled with text pattern).
  */
 class MockUpResourceWriter {
-  static String writeScriptSource(List<Script> scripts) {
-    ArrayList<Script> sortedScriptsArrayList = new ArrayList<Script>(scripts);
+  static String writeScriptSource(Collection<Script> scripts) {
+    ArrayList<Script> sortedScriptsArrayList = new ArrayList<Script>();
+    for (Script script : scripts) {
+      if (script.isCollected()) {
+        continue;
+      }
+      sortedScriptsArrayList.add(script);
+    }
     Collections.sort(sortedScriptsArrayList, scriptPositionComparator);
     MockUpResourceWriter writer = new MockUpResourceWriter();
     for (Script script : sortedScriptsArrayList) {
@@ -130,11 +136,10 @@ class MockUpResourceWriter {
       int line2 = o2.getStartLine();
       if (line1 < line2) {
         return -1;
-      } else if (line1 == line2) {
-        return 0;
-      } else {
+      } else if (line1 > line2) {
         return 1;
       }
+      return 0;
     }
   };
 }

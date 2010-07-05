@@ -324,6 +324,9 @@ public class Main {
     public RES visitScriptLoaded(Script newScript) throws SmokeException {
       return handleDefault();
     }
+    public RES visitScriptCollected(Script script) throws SmokeException {
+      return handleDefault();
+    }
     public RES visitSuspended(DebugContext context) throws SmokeException {
       return handleDefault();
     }
@@ -343,6 +346,10 @@ public class Main {
   private static class IgnoreScriptsVisitor<RES> extends EventVisitorBase<RES> {
     @Override
     public RES visitScriptLoaded(Script newScript) {
+      return null;
+    }
+    @Override
+    public RES visitScriptCollected(Script script) {
       return null;
     }
   }

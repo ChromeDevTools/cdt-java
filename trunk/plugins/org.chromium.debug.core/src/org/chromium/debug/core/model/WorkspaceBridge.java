@@ -68,6 +68,11 @@ public interface WorkspaceBridge {
   void scriptLoaded(Script newScript);
 
   /**
+   * Reports about the script having been collected and disposed in JavaScript VM.
+   */
+  void scriptCollected(Script script);
+
+  /**
    * Handles reset event in JavaScript VM (e.g. Chromium tab reload or navigate event).
    * The whole context changes.
    */

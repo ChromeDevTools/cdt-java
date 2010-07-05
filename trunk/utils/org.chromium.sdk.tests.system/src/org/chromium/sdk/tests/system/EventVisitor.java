@@ -19,4 +19,5 @@ interface EventVisitor<RES> {
   RES visitScriptLoaded(Script newScript) throws SmokeException;
   RES visitSuspended(DebugContext context) throws SmokeException;
   RES visitResumed() throws SmokeException;
+  RES visitScriptCollected(Script script) throws SmokeException;
 }
