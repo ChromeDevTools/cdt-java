@@ -5,10 +5,16 @@
 package org.chromium.debug.core;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.chromium.debug.core.model.BreakpointMap;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
+import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.util.ScriptTargetMapping;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterManager;
 import org.eclipse.core.runtime.IStatus;
@@ -64,6 +70,29 @@ public class ChromiumDebugPlugin extends Plugin {
    */
   public static ChromiumDebugPlugin getDefault() {
     return plugin;
+  }
+
+  /**
+   * Finds all file pairs for a user working file. One working file may correspond to several
+   * scripts if there are more than one debug sessions.
+   */
+  public static List<? extends ScriptTargetMapping> getScriptTargetMapping(IFile localFile) {
+    List<DebugTargetImpl> targetList = DebugTargetImpl.getAllDebugTargetImpls();
+    ArrayList<ScriptTargetMapping> result = new ArrayList<ScriptTargetMapping>(targetList.size());
+
+    for (DebugTargetImpl target : targetList) {
+      VmResource script;
+      try {
+        script = target.getVmResource(localFile);
+      } catch (CoreException e) {
+        throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
+      }
+      if (script == null) {
+        continue;
+      }
+      result.add(new ScriptTargetMapping(localFile, script, target));
+    }
+    return result;
   }
 
   public static boolean isDebug() {

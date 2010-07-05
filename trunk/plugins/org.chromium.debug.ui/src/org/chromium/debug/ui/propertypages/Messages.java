@@ -28,6 +28,12 @@ public class Messages extends NLS {
   public static String JsLineBreakpointPage_ResourceLabel;
 
   public static String JsLineBreakpointPage_UnknownLineNumber;
+
+  public static String ScriptFilePage_CURRENTLY_LINKED_TO_LABEL;
+
+  public static String ScriptFilePage_NAME_IN_VPROJECT;
+
+  public static String ScriptFilePage_SCRIPT_NAME;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
