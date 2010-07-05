@@ -126,6 +126,9 @@ public abstract class AbstractAttachedTest<T extends Connection>
     }
   }
 
+  public void scriptCollected(Script script) {
+  }
+
   protected CountDownLatch expectSuspend() {
     final CountDownLatch latch = new CountDownLatch(1);
     suspendCallback = new Runnable() {

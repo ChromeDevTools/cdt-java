@@ -30,6 +30,7 @@ import org.chromium.sdk.internal.protocol.IncomingMessage;
 import org.chromium.sdk.internal.protocol.ListBreakpointsBody;
 import org.chromium.sdk.internal.protocol.ScopeBody;
 import org.chromium.sdk.internal.protocol.ScopeRef;
+import org.chromium.sdk.internal.protocol.ScriptCollectedBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.VersionBody;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
@@ -42,6 +43,7 @@ import org.chromium.sdk.internal.protocol.data.PropertyWithRef;
 import org.chromium.sdk.internal.protocol.data.PropertyWithValue;
 import org.chromium.sdk.internal.protocol.data.RefWithDisplayData;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.ScriptWithId;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
 import org.chromium.sdk.internal.protocol.data.SomeSerialized;
@@ -372,6 +374,7 @@ public class V8ProtocolUtil {
           AfterCompileBody.class,
           ChangeLiveBody.class,
           ListBreakpointsBody.class,
+          ScriptCollectedBody.class,
 
           SomeHandle.class,
           ScriptHandle.class,
@@ -387,6 +390,7 @@ public class V8ProtocolUtil {
           ContextHandle.class,
           ContextData.class,
           BreakpointInfo.class,
+          ScriptWithId.class,
       });
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
