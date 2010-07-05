@@ -76,5 +76,14 @@
     </sourceContainerType>
    </extension>
   
+  <extension point="org.eclipse.core.expressions.propertyTesters">
+    <propertyTester
+       namespace="org.chromium.debug.core"
+       id="org.chromium.debug.core.FilePropertyTester"
+       properties="isJsFile"
+       type="org.eclipse.core.resources.IFile"
+       class="org.chromium.debug.core.FilePropertyTester">
+     </propertyTester>
+  </extension>
 
 </plugin>
