@@ -115,6 +115,10 @@ public class ProgressUtil {
       clearTaskName();
       progressMonitor.done();
     }
+
+    public boolean isCanceled() {
+      return progressMonitor.isCanceled();
+    }
   }
 
   private static final int LAYOUT_TOTAL_STEPS = 1000;
