@@ -7,8 +7,6 @@ package org.chromium.sdk.internal.tools.v8.processor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JavascriptVm;
@@ -92,11 +90,6 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
       FrameObject frame = jsonFrames.get(frameIdx);
       JSONObject func = frame.getFunc();
 
-      String text = frame.getText().replace('\r', ' ').replace('\n', ' ');
-      Matcher m = FRAME_TEXT_PATTERN.matcher(text);
-      m.matches();
-      String url = m.group(1);
-
       int currentLine = (int) frame.getLine();
 
       // If we stopped because of the debuggerword then we're on the next
@@ -125,7 +118,7 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
         }
       }
       frameMirrors[index] =
-          new FrameMirror(frameObject, url, currentLine, scriptId,
+          new FrameMirror(frameObject, currentLine, scriptId,
               V8ProtocolUtil.getFunctionName(func));
     }
 
@@ -142,12 +135,4 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
   }
 
   private static final String DEBUGGER_RESERVED = "debugger";
-
-  /** Regex for the "text" field of the "backtrace" element response. */
-  private static final String FRAME_TEXT_REGEX =
-      "^(?:.+) ([^\\s]+) line (.+) column (.+)" + " (?:\\(position (.+)\\))?";
-
-  /** A pattern for the frame "text" regex. */
-  private static final Pattern FRAME_TEXT_PATTERN = Pattern.compile(FRAME_TEXT_REGEX);
-
 }
