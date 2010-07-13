@@ -16,11 +16,6 @@ import org.chromium.sdk.internal.tools.v8.V8Helper;
 public class FrameMirror {
 
   /**
-   * A name of the script associated with the frame.
-   */
-  private final String scriptName;
-
-  /**
    * 0-based line number in the entire script resource.
    */
   private final int lineNumber;
@@ -45,17 +40,11 @@ public class FrameMirror {
    */
   private final FrameObject frameObject;
 
-  public FrameMirror(FrameObject frameObject,
-      String scriptName, int line, long scriptId, String frameFunction) {
+  public FrameMirror(FrameObject frameObject, int line, long scriptId, String frameFunction) {
     this.frameObject = frameObject;
-    this.scriptName = scriptName;
     this.lineNumber = line;
     this.scriptId = scriptId;
     this.frameFunction = frameFunction;
-  }
-
-  public String getScriptName() {
-    return scriptName;
   }
 
   public long getScriptId() {

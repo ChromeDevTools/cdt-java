@@ -75,7 +75,7 @@ public class JsArrayImplTest {
 
     FrameMirror frameMirror = new FrameMirror(
         null,
-        "fooscript", 12, FixtureChromeStub.getScriptId(),
+        12, FixtureChromeStub.getScriptId(),
         "foofunction");
     this.callFrame = new CallFrameImpl(frameMirror, 0, internalContext);
   }
