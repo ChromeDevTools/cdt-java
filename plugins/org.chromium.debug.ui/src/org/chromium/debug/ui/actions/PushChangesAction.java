@@ -4,18 +4,19 @@
 
 package org.chromium.debug.ui.actions;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.sdk.LiveEditExtension;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.swt.widgets.Shell;
 
 /**
  * The main action of LiveEdit feature. It gets the current state of a working file and pushes
@@ -23,7 +24,28 @@ import org.eclipse.core.runtime.Status;
  */
 public class PushChangesAction extends V8ScriptAction {
   @Override
-  protected void execute(final ScriptTargetMapping filePair) {
+  protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell) {
+    for (ScriptTargetMapping pair : filePairList) {
+      execute(pair);
+    }
+  }
+
+  private void execute(ScriptTargetMapping filePair) {
+    UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
+      public void success(Object report, UpdatableScript.ChangeDescription previewDescription) {
+        ChromiumDebugPlugin.log(new Status(IStatus.OK, ChromiumDebugPlugin.PLUGIN_ID,
+            "Script has been successfully updated on remote: " + report)); //$NON-NLS-1$
+      }
+      public void failure(String message) {
+        ChromiumDebugPlugin.log(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            "Failed to change script on remote: " + message)); //$NON-NLS-1$
+      }
+    };
+    execute(filePair, callback, null, false);
+  }
+
+  public static void execute(final ScriptTargetMapping filePair,
+      UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
     UpdatableScript updatableScript =
         LiveEditExtension.castToUpdatableScript(filePair.getVmResource().getScript());
 
@@ -33,7 +55,7 @@ public class PushChangesAction extends V8ScriptAction {
 
     byte[] fileData;
     try {
-      fileData = readFileContents(filePair.getFile());
+      fileData = ChromiumDebugPluginUtil.readFileContents(filePair.getFile());
     } catch (IOException e) {
       throw new RuntimeException(e);
     } catch (CoreException e) {
@@ -43,40 +65,10 @@ public class PushChangesAction extends V8ScriptAction {
     // We are using default charset here like usually.
     String newSource = new String(fileData);
 
-    UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
-      public void success(Object report) {
-        ChromiumDebugPlugin.log(new Status(IStatus.OK, ChromiumDebugPlugin.PLUGIN_ID,
-            "Script has been successfully updated on remote: " + report)); //$NON-NLS-1$
-      }
-      public void failure(String message) {
-        ChromiumDebugPlugin.log(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-            "Failed to change script on remote: " + message)); //$NON-NLS-1$
-      }
-    };
-
-    updatableScript.setSourceOnRemote(newSource, callback, null);
-  }
-
-
-  private static byte[] readFileContents(IFile file) throws IOException, CoreException {
-    InputStream inputStream = file.getContents();
-    try {
-      return readBytes(inputStream);
-    } finally {
-      inputStream.close();
+    if (previewOnly) {
+      updatableScript.previewSetSource(newSource, callback, syncCallback);
+    } else {
+      updatableScript.setSourceOnRemote(newSource, callback, syncCallback);
     }
-  }
-
-  private static byte[] readBytes(InputStream inputStream) throws IOException {
-    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    byte[] array = new byte[1024];
-    while (true) {
-      int len = inputStream.read(array);
-      if (len == -1) {
-        break;
-      }
-      buffer.write(array, 0, len);
-    }
-    return buffer.toByteArray();
   }
 }
