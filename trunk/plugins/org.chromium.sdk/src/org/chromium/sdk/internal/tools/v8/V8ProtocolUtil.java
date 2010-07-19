@@ -37,6 +37,7 @@ import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 import org.chromium.sdk.internal.protocol.data.ContextData;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
+import org.chromium.sdk.internal.protocol.data.LiveEditResult;
 import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
 import org.chromium.sdk.internal.protocol.data.PropertyObject;
 import org.chromium.sdk.internal.protocol.data.PropertyWithRef;
@@ -391,6 +392,11 @@ public class V8ProtocolUtil {
           ContextData.class,
           BreakpointInfo.class,
           ScriptWithId.class,
+          LiveEditResult.class,
+          LiveEditResult.OldTreeNode.class,
+          LiveEditResult.NewTreeNode.class,
+          LiveEditResult.Positions.class,
+          LiveEditResult.TextualDiff.class,
       });
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);

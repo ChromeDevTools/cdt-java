@@ -13,6 +13,10 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.ui.actions.messages"; //$NON-NLS-1$
 
+  public static String ChooseVmControl_LAUNCH;
+
+  public static String ChooseVmControl_TARGET;
+
   public static String ExpressionEvaluator_CannotEvaluateWhenNotSuspended;
 
   public static String ExpressionEvaluator_ErrorEvaluatingExpression;

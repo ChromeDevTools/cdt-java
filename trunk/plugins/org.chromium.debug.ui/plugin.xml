@@ -236,7 +236,7 @@
                id="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression">
          </action>
       </objectContribution>
-      <!-- Experimental actions, temporary disabled. -->
+      <!-- Experimental actions, temporarily disabled. -->
       <!-- objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
@@ -249,14 +249,14 @@
             </separator>
          </menu>
          <action
-               label="Compare with VM Source"
-               class="org.chromium.debug.ui.actions.CompareChangesAction"
+               label="Push Source Changes to VM..."
+               class="org.chromium.debug.ui.actions.LiveEditWizardAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
-               id="org.chromium.debug.ui.actions.CompareChangesAction">
+               id="org.chromium.debug.ui.actions.LiveEditWizardAction">
          </action>
          <action
-               label="Push Changes to VM"
+               label="Push Source Changes to VM"
                class="org.chromium.debug.ui.actions.PushChangesAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
