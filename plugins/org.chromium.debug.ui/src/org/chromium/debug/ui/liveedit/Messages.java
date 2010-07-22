@@ -11,6 +11,7 @@ public class Messages extends NLS {
   public static String LiveEditResultDialog_FRAMES_DROPPED;
   public static String LiveEditResultDialog_OK;
   public static String LiveEditResultDialog_OLD_SCRIPT;
+  public static String LiveEditResultDialog_SCRIPT_CREATED;
   public static String LiveEditResultDialog_SEVERAL_VMS;
   public static String LiveEditResultDialog_STATUS;
   public static String LiveEditResultDialog_SUCCESS;
