@@ -17,6 +17,7 @@ import org.chromium.debug.ui.DialogUtils.Message;
 import org.chromium.debug.ui.DialogUtils.MessagePriority;
 import org.chromium.debug.ui.DialogUtils.OkButtonControl;
 import org.chromium.debug.ui.DialogUtils.Optional;
+import org.chromium.debug.ui.DialogUtils.Scope;
 import org.chromium.debug.ui.DialogUtils.Updater;
 import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueProcessor;
@@ -51,6 +52,7 @@ abstract class SourceNameMapperContainerDialogLogic {
       final Elements elements, final ISourceLookupDirector director,
       final PresetFieldValues initialParams) {
     final Updater updater = new Updater();
+    Scope rootScope = updater.rootScope();
 
     final List<ValueSource<String>> warningSources = new ArrayList<ValueSource<String>>(2);
 
@@ -73,6 +75,7 @@ abstract class SourceNameMapperContainerDialogLogic {
         elements.getPrefixField().addModifyListener(listener);
       }
     };
+    updater.addSource(rootScope, prefixEditor);
 
     // Represents prefix value after it has been validated.
     final ValueProcessor<Optional<String>> prefixValue = new ExpressionProcessor<String>(
@@ -90,7 +93,9 @@ abstract class SourceNameMapperContainerDialogLogic {
         }
       }
     };
-    updater.addConsumer(prefixValue, prefixEditor);
+    updater.addSource(rootScope, prefixValue);
+    updater.addConsumer(rootScope, prefixValue);
+    updater.addDependency(prefixValue, prefixEditor);
 
     // Represents possible warning about prefix value having no trailing slash.
     ValueProcessor<String> noSlashWarning = new ValueProcessor<String>() {
@@ -106,7 +111,9 @@ abstract class SourceNameMapperContainerDialogLogic {
         updater.reportChanged(this);
       }
     };
-    updater.addConsumer(noSlashWarning, prefixValue);
+    updater.addSource(rootScope, noSlashWarning);
+    updater.addConsumer(rootScope, noSlashWarning);
+    updater.addDependency(noSlashWarning, prefixValue);
     warningSources.add(noSlashWarning);
 
     // Represents prefix rule example printer.
@@ -128,7 +135,8 @@ abstract class SourceNameMapperContainerDialogLogic {
         elements.getPrefixExampleLine2Label().setText(line2);
       }
     };
-    updater.addConsumer(prefixExample, prefixValue);
+    updater.addConsumer(rootScope, prefixExample);
+    updater.addDependency(prefixExample, prefixValue);
 
     // Represents container type combo box.
     final ValueSource<ISourceContainerType> selectedTypeValue =
@@ -152,6 +160,7 @@ abstract class SourceNameMapperContainerDialogLogic {
         elements.getContainerTypeCombo().addSelectionListener(listener);
       }
     };
+    updater.addSource(rootScope, selectedTypeValue);
 
     // Represents "Configure" button that acts like a container factory.
     final ValueProcessor<ISourceContainer> containerFactoryButtonValue =
@@ -190,7 +199,9 @@ abstract class SourceNameMapperContainerDialogLogic {
         elements.getConfigureButton().setEnabled(preparedAction != null);
       }
     };
-    updater.addConsumer(containerFactoryButtonValue, selectedTypeValue);
+    updater.addSource(rootScope, containerFactoryButtonValue);
+    updater.addConsumer(rootScope, containerFactoryButtonValue);
+    updater.addDependency(containerFactoryButtonValue, selectedTypeValue);
 
     // Represents printer that shows type and name of the created container.
     ValueConsumer showContainerTypeValue = new ValueConsumer() {
@@ -220,7 +231,8 @@ abstract class SourceNameMapperContainerDialogLogic {
         group.layout();
       }
     };
-    updater.addConsumer(showContainerTypeValue, containerFactoryButtonValue);
+    updater.addConsumer(rootScope, showContainerTypeValue);
+    updater.addDependency(showContainerTypeValue, containerFactoryButtonValue);
 
     // Represents expression that constructs dialog window result.
     final ValueProcessor<? extends Optional<Result>> resultValue =
@@ -246,11 +258,15 @@ abstract class SourceNameMapperContainerDialogLogic {
             return createOptional(result);
           }
     };
-    updater.addConsumer(resultValue, prefixValue, containerFactoryButtonValue);
+    updater.addSource(rootScope, resultValue);
+    updater.addConsumer(rootScope, resultValue);
+    updater.addDependency(resultValue, prefixValue);
+    updater.addDependency(resultValue, containerFactoryButtonValue);
 
     // Represents controller that updates state of OK button and error messages.
     OkButtonControl okButtonControl = new OkButtonControl(resultValue, warningSources, elements);
-    updater.addConsumer(okButtonControl, okButtonControl.getDependencies());
+    updater.addConsumer(rootScope, okButtonControl);
+    updater.addDependency(okButtonControl, okButtonControl.getDependencies());
 
     return new SourceNameMapperContainerDialogLogic() {
       @Override
