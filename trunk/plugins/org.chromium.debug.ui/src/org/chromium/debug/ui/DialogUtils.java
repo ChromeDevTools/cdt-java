@@ -157,6 +157,16 @@ public class DialogUtils {
     }
 
     /**
+     * Adds a dependency of consumer on several sources.
+     * See {@link #addDependency(ValueConsumer, ValueSource)}.
+     */
+    public void addDependency(ValueConsumer consumer, List<? extends ValueSource<?>> sourceList) {
+      for (ValueSource<?> source : sourceList) {
+        addDependency(consumer, source);
+      }
+    }
+
+    /**
      * Reports about sources that have been changed and plans future update of consumers. This
      * method may be called at any time.
      */
