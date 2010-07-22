@@ -142,6 +142,8 @@ class LiveEditResultDialog extends Dialog {
 
     final OldScriptData withOldScript = successResult.getOldScriptData();
     if (withOldScript != null) {
+      Label new_script_label = new Label(parent, SWT.NONE);
+      new_script_label.setText(Messages.LiveEditResultDialog_SCRIPT_CREATED);
       LiveEditDiffViewer.Configuration configuration =
           new LiveEditDiffViewer.Configuration() {
             public String getNewLabel() {
