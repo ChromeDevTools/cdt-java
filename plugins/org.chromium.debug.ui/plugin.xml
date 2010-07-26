@@ -237,32 +237,32 @@
          </action>
       </objectContribution>
       <!-- Experimental actions, temporarily disabled. -->
-      <!-- objectContribution
+      <objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
             id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
          <menu id="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId"
-               label="V8 Debugging"
+               label="%ChromiumSourceFileActionsId.menu.label"
          >
             <separator
                   name="group0">
             </separator>
          </menu>
          <action
-               label="Push Source Changes to VM..."
+               label="%LiveEditWizardAction.label"
                class="org.chromium.debug.ui.actions.LiveEditWizardAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.LiveEditWizardAction">
          </action>
          <action
-               label="Push Source Changes to VM"
+               label="%PushChangesAction.label"
                class="org.chromium.debug.ui.actions.PushChangesAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
-      </objectContribution -->
+      </objectContribution>
   </extension>
 
    <extension
