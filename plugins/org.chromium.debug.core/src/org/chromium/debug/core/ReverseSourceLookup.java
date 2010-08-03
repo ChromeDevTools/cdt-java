@@ -8,6 +8,7 @@ import org.chromium.debug.core.model.VmResourceId;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.containers.ContainerSourceContainer;
@@ -81,10 +82,12 @@ public class ReverseSourceLookup {
     if (container instanceof ContainerSourceContainer) {
       ContainerSourceContainer containerSourceContainer = (ContainerSourceContainer) container;
       IContainer resourceContainer = containerSourceContainer.getContainer();
-      if (resourceContainer.getFullPath().isPrefixOf(resource.getFullPath())) {
-        String name = resource.getFullPath().makeRelativeTo(
-            resourceContainer.getFullPath()).toPortableString();
-        return name;
+      IPath resourceFullPath = resource.getFullPath();
+      IPath containerFullPath = resourceContainer.getFullPath();
+      if (containerFullPath.isPrefixOf(resourceFullPath)) {
+        int offset = containerFullPath.segmentCount();
+        IPath newPath = resourceFullPath.removeFirstSegments(offset);
+        return newPath.toPortableString();
       }
     } else if (container instanceof SourceNameMapperContainer) {
       SourceNameMapperContainer mappingContainer =
