@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.sdk"
       label="%featureName"
-      version="0.1.5.qualifier"
+      version="0.1.6.qualifier"
       provider-name="%providerName">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk">
