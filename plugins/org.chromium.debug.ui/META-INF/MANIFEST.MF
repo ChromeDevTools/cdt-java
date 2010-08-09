@@ -18,3 +18,4 @@ Require-Bundle: org.eclipse.ui,
  org.chromium.sdk;bundle-version="0.1.5"
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Export-Package: org.chromium.debug.ui
