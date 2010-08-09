@@ -1,11 +1,11 @@
 #summary Release 0.1.6 notes
 
 =Google Chrome Developer Tools. Release 0.1.6.=
-As usual this release contains 2 parts: independent Java library [ChromeDevToolsSdk “SDK”] that implements Chrome/V8 debug protocol client and Eclipse feature [EclipseDebugger “Debugger”] that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explaining on source code level and are not mentioned here.
+As usual this release contains 2 parts: independent Java library [ChromeDevToolsSdk “SDK”] that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse feature [EclipseDebugger “Debugger”] that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explaining on source code level and are not mentioned here.
 
 
 ==Overview==
-In this release we continued our efforts to develop our debugger and to better integrate it with Eclipse IDE ecosystem. One of our main goals was to link our debugger with source files in Eclipse workspace. However at the moment we only normally work with system Text Editor, and are not really integrated with JSDT.
+In this release we continued our efforts to develop our debugger and to better integrate it with Eclipse IDE ecosystem. One of our main goals was to link our debugger with source files in Eclipse workspace. However at the moment we only normally work with system Text Editor, and are not really integrated with [http://wiki.eclipse.org/index.php/ATF/JSDT JSDT].
 
 ==Workspace Source Files==
 When you connect to a remote !JavaScript VM, debugger automatically downloads all scripts and shows them under temporary virtual project. However you typically not only debug a code, but in parallel fix or develop it. You may have all your script source files on the local machine and even have them open in Eclipse under some project. In this case it is especially reasonable to have debugger use that (working) copy of your scripts instead of scripts in temporary project: you edit the same files that you debug.
