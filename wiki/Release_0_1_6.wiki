@@ -1,14 +1,14 @@
 #summary Release 0.1.6 notes
 
 =Google Chrome Developer Tools. Release 0.1.6.=
-As usual this release contains 2 parts: independent Java [ChromeDevToolsSdk SDK] library that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse [EclipseDebugger “Debugger”] feature that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explaining on source code level and are not mentioned here.
+As usual this release contains 2 parts: independent Java [ChromeDevToolsSdk SDK] library that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse [EclipseDebugger “Debugger”] feature that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explanatory in the source code and are not mentioned here.
 
 
 ==Overview==
-In this release we continued our efforts to develop our debugger and to better integrate it with Eclipse IDE ecosystem. One of our main goals was to link our debugger with source files in Eclipse workspace. However at the moment we only normally work with system Text Editor, and are not really integrated with [http://wiki.eclipse.org/index.php/ATF/JSDT JSDT].
+For this release we continued our efforts to develop our debugger and to better integrate it with Eclipse IDE ecosystem. One of our main goals was to link our debugger with source files in Eclipse workspace. However at the moment debugger only works with system Text Editor, and is not really integrated with [http://wiki.eclipse.org/index.php/ATF/JSDT JSDT].
 
 ==Workspace Source Files==
-When you connect to a remote !JavaScript VM, debugger automatically downloads all scripts and shows them under temporary virtual project. However you typically not only debug a code, but in parallel fix or develop it. You may have all your script source files on the local machine and even have them open in Eclipse under some project. In this case it is especially reasonable to have debugger use that (working) copy of your scripts instead of scripts in temporary project: you edit the same files that you debug.
+When you connect to a remote !JavaScript VM, debugger automatically downloads all scripts and shows them under temporary virtual project. However you typically not only want to debug a code, but in parallel to fix or develop it. You may have all your script source files on the local machine and even have them open in Eclipse under some project. In this case it is especially useful to have debugger use that (working) copy of your scripts instead of scripts in temporary project; so that you edit the same files that you debug.
 
 You can configure this starting from the current release. First let’s see how V8 identifies those remote scripts. While debugging a script in the virtual project open “Properties” (context menu on file in “Project Explorer” or with Alt+Enter in an editor).
 
@@ -20,36 +20,37 @@ You can configure this in “Source” tab of your debug launch configuration.
 
 http://chromedevtools.googlecode.com/svn/wiki/rel016-debug-configurations-source.png
 
-Add a new source container with identifier mapping and make sure it is above “Default” container (here “Default” container represents the virtual project that holds downloaded scripts). In the dialog window, choose “!JavaScript Source Name Mapper” from the list. This container converts URL (or any id) into a file name and looks it up in another container, here called “target container”.
+Add a new source container with identifier mapping and make sure it is above the “Default” container (here “Default” container represents the virtual project that holds downloaded scripts). In the dialog window, choose “!JavaScript Source Name Mapper” from the list. This container converts URL (or any id) into a file name and looks it up in another container, here called “target container”.
 
 http://chromedevtools.googlecode.com/svn/wiki/rel016-source-name-mapper.png
 
 Depending on your configuration, enter the common URL prefix (e.g. {{{http://server:8080/}}}) and specify the target container (choose type and configure it). Note that you may need to restart your debug launch after this.
 
 ==Multiple Debug Sessions Case==
-Eclipse allows simultaneous debug launches. E.g. in your browser, you may open the web page in 2 tabs and start debugging both tabs. This comprises an interesting scenario if you have configured sources for working files. A single working file may be associated with the script in several VMs at the same time. E.g. when you set a breakpoint in your file, both VMs react. In some cases UI has to explicitly support the multiple debug launches case.
+Eclipse allows simultaneous debug launches. For example in your browser, you may open the web page in 2 tabs and start debugging both tabs. This comprises an interesting scenario if you have configured sources for working files. A single working file may be associated with the script in several VMs at the same time. E.g. when you set a breakpoint in your file, both VMs react. In some cases UI has to explicitly support multiple debug launches.
 
 ==Breakpoints in Workspace==
-Now you can set a breakpoint in your working files. Unlike files in virtual projects, the working files are persistent and so are their breakpoints. If you restart your V8 VM, Debugger will restore your breakpoints on connecting to it. Note that in an exotic case, the VM you are connecting to may have its own set of breakpoints if it has some history before this debug session. You may specify what should happen in this case in the launch configuration (under “Breakpoints sync of launch”):
+Now you can set a breakpoint in your working files. Unlike files in virtual projects, the working files are persistent and so are their breakpoints. If you restart your V8 VM or reload page in Chromium, Debugger will restore your breakpoints upon connecting to it. Note that in an exotic case, the VM you are connecting to may have its own set of breakpoints if it has some history before this debug session. You may specify what should happen in this case in the launch configuration (under “Breakpoints sync on launch”):
 
 http://chromedevtools.googlecode.com/svn/wiki/rel016-debug-configurations-remote.png
 
 Additionally, you may synchronize the breakpoints at any time you want from the context menu of your launch (in “Debug” view): “Synchronize !JavaScript Breakpoints”.
 
-Another thing is that with a working file and its counterpart in the virtual project you have 2 copies/representations of your script. While you can set a breakpoint on any copy of the script file, Debugger will always prefer only one representation (according to settings in Source tab of the launch configuration) when it needs to highlight the current line of code. This means that debugger may stop on a breakpoint, but the breakpoint itself won’t be visible, because it was set in the other copy of the script file.
+Another important point is that with a working file and its counterpart in the virtual project you have 2 copies/representations of your script. While you can set a breakpoint on any copy of the script file, Debugger will always prefer only one representation (according to priority setting in Source tab of the launch configuration) when it needs to highlight the current line of code. This means that debugger may stop on a breakpoint, but the breakpoint itself won’t be visible, because it was set in the other copy of the script file.
 
-This release comes with a significant limitation, which allows dealing with working file breakpoints only from system Text Editor. In particular it means that should you open the file in JSDT editor (“!JavaScript Editor”), you won’t be able to operate with breakpoints (more precisely, JSDT has its own breakpoints, that are not supported yet). This problem should be fixed in future releases.
+This release comes with a significant limitation, which allows dealing with working file breakpoints only from system Text Editor. In particular it means that should you open a file in JSDT editor (“!JavaScript Editor”), you won’t be able to operate with breakpoints (more precisely, JSDT has its own breakpoints, that are not supported yet). This problem should be fixed in future releases.
 
 ==Variables View Features==
 There are just some minor changes here.
-  # With array values now you can see non-index properties. E.g. you may create an array an add property “foo” to it. Now such properties become visible.
+  # With array values now you can see non-index properties. E.g. you may create an array and add property “foo” to it. Now such properties become visible.
   # If your value has type “Function” now you can navigate to this function from the context menu item “Open Function”.
 
-==Live Edit==
-This is a highly experimental feature that allows you to edit your script while it is being executed by V8. After you have edited your script you may try to push the changes to VM and see whether it has succeeded. To do it, in editor context menu choose “V8 Debugging” -> “Push Source Changes to VM”. An additional menu item “Preview and Push Source Changes to VM…” gives you a more verbose UI that should help understand what is happening.
+==Live Editing==
+This is a highly experimental feature that allows you to edit your script while it is being executed by V8. After you have edited your script you may try to push the changes back to VM and see whether it has succeeded. Iin editor context menu choose “V8 Debugging” -> “Push Source Changes to VM”. An additional menu item “Preview and Push Source Changes to VM…” gives you a more verbose UI that should help understand what is happening.
 
-Obviously, there are some limitations to this feature. First, the principal limitations: !JavaScript features very few kinds of declarations which you could edit, e.g. you can’t edit a script and add a new field to a type because there is no place where fields are actually declared. Second, this feature is still under development so there are many things that may be not implemented yet.
-The best use of live edit is to change function algorithms by editing function body:
+Obviously, there are some limitations to this feature. First, the principal limitations: !JavaScript allows only a few kinds of declarations that you can edit, e.g. you can’t edit a script and add a new field to a type because there is no place where fields are actually declared. Second, this feature is still under development so there are many things that may not be implemented yet.
+
+The best use of live editing is to change function algorithms by editing function body:
 
 Before:
 {{{
@@ -65,7 +66,7 @@ After:
 }}}
 
 ==JSDT Integration Status==
-As we are making steps towards linking with source files in workspace, we believe that it should imply integration with JSDT. However we are not there yet and the integration is left for future releases. As of 0.1.6 there are several incompatibilities with JSDT, most notably you won’t be able to work with breakpoints from inside JSDT source editor.
+As we are making steps towards linking with source files in a workspace, we believe that it should imply integration with JSDT. However we are not there yet and the integration is left for future releases. As of 0.1.6 there are several incompatibilities with JSDT, most notably you won’t be able to work with breakpoints from inside JSDT source editor.
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
