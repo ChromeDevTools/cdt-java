@@ -1,7 +1,7 @@
 #summary Release 0.1.6 notes
 
 =Google Chrome Developer Tools. Release 0.1.6.=
-As usual this release contains 2 parts: independent Java library [ChromeDevToolsSdk “SDK”] that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse feature [EclipseDebugger “Debugger”] that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explaining on source code level and are not mentioned here.
+As usual this release contains 2 parts: independent Java [ChromeDevToolsSdk SDK] library that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse [EclipseDebugger “Debugger”] feature that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse. Naturally, Debugger uses SDK. In this document we cover only the changes in Debugger. SDK changes should be self-explaining on source code level and are not mentioned here.
 
 
 ==Overview==
