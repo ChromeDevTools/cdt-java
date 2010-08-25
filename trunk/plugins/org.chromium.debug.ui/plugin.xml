@@ -118,13 +118,8 @@
           label="Inspect"
           tooltip="Inspect Result of Evaluating Selected Text">
         <enablement>
-          <and>
-            <systemProperty
-                name="org.chromium.debug.ui.debuggerActive"
-                value="true"/>
             <objectClass
                 name="org.eclipse.jface.text.ITextSelection"/>
-          </and>
         </enablement>
       </action>
     </editorContribution>
