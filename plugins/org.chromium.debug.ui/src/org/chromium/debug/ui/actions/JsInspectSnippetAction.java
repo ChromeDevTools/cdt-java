@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,12 +6,13 @@ package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.EvaluateContext;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
-import org.chromium.debug.ui.JsEvalContextManager;
 import org.chromium.debug.ui.editors.JavascriptUtil;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.model.IExpression;
 import org.eclipse.debug.ui.DebugPopup;
+import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.InspectPopupDialog;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.text.ITextSelection;
@@ -25,114 +26,28 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorActionDelegate;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IPartListener;
-import org.eclipse.ui.IViewActionDelegate;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * Action for inspecting a JavaScript snippet.
  */
-public class JsInspectSnippetAction implements IEditorActionDelegate,
-    IWorkbenchWindowActionDelegate, IPartListener, IViewActionDelegate,
-    JsEvaluateContext.EvaluateCallback {
+public class JsInspectSnippetAction implements IEditorActionDelegate {
 
   private static final String ACTION_DEFINITION_ID = "org.chromium.debug.ui.commands.Inspect"; //$NON-NLS-1$
-
-  private IWorkbenchWindow window;
-
-  private IWorkbenchPart targetPart;
-
-  private IAction action;
-
-  private String selectedText;
-
-  private IExpression expression;
-
-  private ITextEditor textEditor;
-
-  private ISelection originalSelection;
+  
+  private IEditorPart activeEditorPart;
 
   public void setActiveEditor(IAction action, IEditorPart targetEditor) {
-    this.action = action;
-    setTargetPart(targetEditor);
-  }
-
-  public void run(IAction action) {
-    updateAction();
-    run();
+    activeEditorPart = targetEditor;
   }
 
   public void selectionChanged(IAction action, ISelection selection) {
-    this.action = action;
   }
 
-  public void dispose() {
-    IWorkbenchWindow win = getWindow();
-    if (win != null) {
-      win.getPartService().removePartListener(this);
-    }
-  }
-
-  private IWorkbenchWindow getWindow() {
-    return window;
-  }
-
-  public void init(IWorkbenchWindow window) {
-    this.window = window;
-    IWorkbenchPage page = window.getActivePage();
-    if (page != null) {
-      setTargetPart(page.getActivePart());
-    }
-    window.getPartService().addPartListener(this);
-  }
-
-  public void partActivated(IWorkbenchPart part) {
-    setTargetPart(part);
-  }
-
-  public void partBroughtToTop(IWorkbenchPart part) {
-
-  }
-
-  public void partClosed(IWorkbenchPart part) {
-    if (part == getTargetPart()) {
-      setTargetPart(null);
-    }
-  }
-
-  private IWorkbenchPart getTargetPart() {
-    return targetPart;
-  }
-
-  public void partDeactivated(IWorkbenchPart part) {
-  }
-
-  public void partOpened(IWorkbenchPart part) {
-  }
-
-  private void setTargetPart(IWorkbenchPart part) {
-    this.targetPart = part;
-  }
-
-  public void init(IViewPart view) {
-    setTargetPart(view);
-  }
-
-  private void updateAction() {
-    if (action != null) {
-      retrieveSelection();
-    }
-  }
-
-  protected ISelection getTargetSelection() {
-    IWorkbenchPart part = getTargetPart();
-    if (part != null) {
-      ISelectionProvider provider = part.getSite().getSelectionProvider();
+  private static ISelection getTargetSelection(IWorkbenchPart targetPart) {
+    if (targetPart != null) {
+      ISelectionProvider provider = targetPart.getSite().getSelectionProvider();
       if (provider != null) {
         return provider.getSelection();
       }
@@ -140,126 +55,130 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     return null;
   }
 
-  private EvaluateContext getStackFrameContext() {
-    // TODO(peter.rybin): consider simply using DebugUITools.getDebugContext()
-    IWorkbenchPart part = getTargetPart();
-    return getEvaluateContextForPart(part);
-  }
-
-  private EvaluateContext getEvaluateContextForPart(IWorkbenchPart part) {
-    EvaluateContext frame = part == null
-        ? JsEvalContextManager.getStackFrameFor(getWindow())
-        : JsEvalContextManager.getStackFrameFor(part);
-    return frame;
-  }
-
-  private void run() {
-    getStackFrameContext().getJsEvaluateContext().evaluateAsync(getSelectedText(), this, null);
-  }
-
-  protected String getSelectedText() {
-    return selectedText;
-  }
-
-  protected Shell getShell() {
-    if (getTargetPart() != null) {
-      return getTargetPart().getSite().getShell();
+  public void run(IAction action) {
+    IAdaptable context = DebugUITools.getDebugContext();
+    if (context == null) { // debugger not active
+      return;
     }
-    return ChromiumDebugUIPlugin.getActiveWorkbenchShell();
+    EvaluateContext evaluateContext = (EvaluateContext) context.getAdapter(EvaluateContext.class);
+    if (evaluateContext == null) {
+      return;
+    }
+    IEditorPart editorPart = activeEditorPart;
+    String currentSelectedText = retrieveSelection(editorPart);
+    EvaluateCallbackImpl callback = new EvaluateCallbackImpl(evaluateContext, editorPart, currentSelectedText);
+    evaluateContext.getJsEvaluateContext().evaluateAsync(currentSelectedText, callback, null);
   }
 
-  private void retrieveSelection() {
-    ISelection targetSelection = getTargetSelection();
+  private static String retrieveSelection(IWorkbenchPart targetPart) {
+    ISelection targetSelection = getTargetSelection(targetPart);
     if (targetSelection instanceof ITextSelection) {
       ITextSelection ts = (ITextSelection) targetSelection;
       String text = ts.getText();
       if (textHasContent(text)) {
-        selectedText = text;
-      } else if (getTargetPart() instanceof IEditorPart) {
-        IEditorPart editor = (IEditorPart) getTargetPart();
+        return text;
+      } else if (targetPart instanceof IEditorPart) {
+        IEditorPart editor = (IEditorPart) targetPart;
         if (editor instanceof ITextEditor) {
-          selectedText = extractSurroundingWord(ts, (ITextEditor) editor);
+          return extractSurroundingWord(ts, (ITextEditor) editor);
         }
       }
     }
+    return null;
   }
-
-  private String extractSurroundingWord(ITextSelection targetSelection, ITextEditor editor) {
+  
+  private static String extractSurroundingWord(ITextSelection targetSelection, ITextEditor editor) {
     return JavascriptUtil.extractSurroundingJsIdentifier(
         editor.getDocumentProvider().getDocument(editor.getEditorInput()),
         targetSelection.getOffset());
   }
 
-  private boolean textHasContent(String text) {
+  private static boolean textHasContent(String text) {
     return text != null && JavascriptUtil.ID_PATTERN.matcher(text).find();
   }
 
-  public void success(JsVariable var) {
-    if (ChromiumDebugUIPlugin.getDefault() == null) {
-      return;
+  private static class EvaluateCallbackImpl implements JsEvaluateContext.EvaluateCallback  {
+    private final EvaluateContext evaluateContext;
+    private final IEditorPart editorPart;
+    private final String selectedText;
+
+    EvaluateCallbackImpl(EvaluateContext evaluateContext, IEditorPart editorPart, String selectedText) {
+      this.evaluateContext = evaluateContext;
+      this.editorPart = editorPart;
+      this.selectedText = selectedText;
     }
-    if (var != null) {
-      if (ChromiumDebugUIPlugin.getDisplay().isDisposed()) {
+
+    public void success(JsVariable var) {
+      if (ChromiumDebugUIPlugin.getDefault() == null) {
         return;
       }
-      displayResult(var, null);
-    }
-  }
-
-  public void failure(String errorMessage) {
-    displayResult(null, errorMessage);
-  }
-
-  protected void displayResult(final JsVariable var, String errorMessage) {
-    IWorkbenchPart part = getTargetPart();
-    final StyledText styledText = getStyledText(part);
-    if (styledText == null) {
-      return; // TODO(apavlov): fix this when adding inspected variables
-    } else {
-      expression = new JsInspectExpression(getStackFrameContext(), selectedText, var, errorMessage);
-      ChromiumDebugUIPlugin.getDisplay().asyncExec(new Runnable() {
-        public void run() {
-          showPopup(styledText);
+      if (var != null) {
+        if (ChromiumDebugUIPlugin.getDisplay().isDisposed()) {
+          return;
         }
-      });
-    }
-  }
-
-  protected void showPopup(StyledText textWidget) {
-    IWorkbenchPart part = getTargetPart();
-    if (part instanceof ITextEditor) {
-      textEditor = (ITextEditor) part;
-      originalSelection = getTargetSelection();
-    }
-    DebugPopup displayPopup =
-        new InspectPopupDialog(getShell(), getPopupAnchor(textWidget), ACTION_DEFINITION_ID,
-            expression) {
-          @Override
-          public boolean close() {
-            boolean returnValue = super.close();
-            if (textEditor != null && originalSelection != null) {
-              textEditor.getSelectionProvider().setSelection(originalSelection);
-              textEditor = null;
-              originalSelection = null;
-            }
-            return returnValue;
-          }
-        };
-    displayPopup.open();
-  }
-
-  private StyledText getStyledText(IWorkbenchPart part) {
-    ITextViewer viewer = (ITextViewer) part.getAdapter(ITextViewer.class);
-    StyledText textWidget = null;
-    if (viewer == null) {
-      Control control = (Control) part.getAdapter(Control.class);
-      if (control instanceof StyledText) {
-        textWidget = (StyledText) control;
+        displayResult(var, null);
       }
-    } else {
-      textWidget = viewer.getTextWidget();
     }
-    return textWidget;
+
+    public void failure(String errorMessage) {
+      displayResult(null, errorMessage);
+    }
+
+    private void displayResult(final JsVariable var, String errorMessage) {
+      final StyledText styledText = getStyledText(editorPart);
+      if (styledText == null) {
+        return; // TODO(apavlov): fix this when adding inspected variables
+      } else {
+        final IExpression expression = new JsInspectExpression(evaluateContext, selectedText, var, errorMessage);
+        ChromiumDebugUIPlugin.getDisplay().asyncExec(new Runnable() {
+          public void run() {
+            showPopup(styledText, expression);
+          }
+        });
+      }
+    }
+
+    private void showPopup(StyledText textWidget, IExpression expression) {
+      final ITextEditor textEditor;
+      final ISelection originalSelection;
+
+      IWorkbenchPart part = editorPart;
+      if (part instanceof ITextEditor) {
+        textEditor = (ITextEditor) part;
+        originalSelection = getTargetSelection(editorPart);
+      } else {
+        textEditor = null;
+        originalSelection = null;
+      }
+      Shell shell = editorPart.getSite().getShell();
+      DebugPopup displayPopup =
+          new InspectPopupDialog(shell, getPopupAnchor(textWidget), ACTION_DEFINITION_ID,
+              expression) {
+            @Override
+            public boolean close() {
+              boolean returnValue = super.close();
+              if (textEditor != null && originalSelection != null) {
+                textEditor.getSelectionProvider().setSelection(originalSelection);
+              }
+              return returnValue;
+            }
+          };
+      displayPopup.open();
+    }
+
+    private StyledText getStyledText(IWorkbenchPart part) {
+      ITextViewer viewer = (ITextViewer) part.getAdapter(ITextViewer.class);
+      StyledText textWidget = null;
+      if (viewer == null) {
+        Control control = (Control) part.getAdapter(Control.class);
+        if (control instanceof StyledText) {
+          textWidget = (StyledText) control;
+        }
+      } else {
+        textWidget = viewer.getTextWidget();
+      }
+      return textWidget;
+    }
   }
 
   private static Point getPopupAnchor(StyledText textWidget) {
@@ -281,5 +200,4 @@ public class JsInspectSnippetAction implements IEditorActionDelegate,
     gc.dispose();
     return height;
   }
-
 }
