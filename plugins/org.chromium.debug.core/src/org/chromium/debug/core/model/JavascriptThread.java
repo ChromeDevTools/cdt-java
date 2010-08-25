@@ -10,6 +10,7 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
+import org.chromium.sdk.InvalidContextException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -53,8 +54,12 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   public StackFrame[] getStackFrames() throws DebugException {
-    ensureStackFrames(getDebugTarget().getDebugContext());
-    return stackFrames;
+    try {
+      ensureStackFrames(getDebugTarget().getDebugContext());
+      return stackFrames;
+    } catch (InvalidContextException e) {
+      return new StackFrame[0];
+    }
   }
 
   public void reset() {

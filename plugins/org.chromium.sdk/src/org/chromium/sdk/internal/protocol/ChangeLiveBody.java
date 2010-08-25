@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.protocol;
 import org.chromium.sdk.internal.protocol.data.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
+import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 
@@ -18,4 +19,7 @@ public interface ChangeLiveBody extends JsonSubtype<CommandResponseBody>  {
   @JsonNullable
   @JsonField(jsonLiteralName="result")
   LiveEditResult getResultDescription();
+
+  @JsonOptionalField
+  Boolean stepin_recommended();
 }

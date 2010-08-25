@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.LiveEditDebugEventListener;
 import org.chromium.sdk.LiveEditExtension;
 import org.chromium.sdk.Script;
@@ -20,15 +21,15 @@ import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.internal.protocol.ChangeLiveBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.LiveEditResult;
+import org.chromium.sdk.internal.protocol.data.LiveEditResult.OldTreeNode;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
-import org.chromium.sdk.internal.protocol.data.LiveEditResult.OldTreeNode;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8Helper.ScriptLoadCallback;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.ChangeLiveMessage;
 
 /**
@@ -221,8 +222,16 @@ public class ScriptImpl implements Script, UpdatableScript {
           V8Helper.reloadScriptAsync(debugSession, Collections.singletonList(getId()),
               scriptCallback, null);
 
-          if (resultDescription != null) {
-            if (resultDescription.stack_modified()) {
+          if (body.stepin_recommended() == Boolean.TRUE) {
+            DebugContext debugContext = debugSession.getContextBuilder().getCurrentDebugContext();
+            if (debugContext == null) {
+              // We may have already issued 'continue' since the moment that change live command
+              // was sent so the context was dropped. Ignore this case.
+            } else {
+              debugContext.continueVm(DebugContext.StepAction.IN, 0, null);
+            }
+          } else {
+            if (resultDescription != null && resultDescription.stack_modified()) {
               debugSession.recreateCurrentContext();
             }
           }
