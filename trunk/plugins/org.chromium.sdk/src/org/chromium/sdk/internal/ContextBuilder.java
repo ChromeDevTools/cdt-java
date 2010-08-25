@@ -418,16 +418,35 @@ public class ContextBuilder {
   }
 
   /**
-   * Drops the current context and initiates reading data and building a new one.
    * Must be called from Dispatch thread.
-   * @return ExpectingBacktraceStep or null if there is no active context currently
    */
-  ExpectingBacktraceStep startRebuildCurrentContext() {
+  private PreContext.UserContext getCurrentUserContext() {
     // We can use currentStep as long as we are being operated from Dispatch thread.
     if (currentStep instanceof PreContext.UserContext == false) {
       return null;
     }
     PreContext.UserContext userContext = (PreContext.UserContext) currentStep;
+    return userContext;
+  }
+
+  /**
+   * Must be called from Dispatch thread.
+   * @return current context instance or null if there's no active context at the moment
+   */
+  DebugContext getCurrentDebugContext() {
+    return getCurrentUserContext();
+  }
+
+  /**
+   * Drops the current context and initiates reading data and building a new one.
+   * Must be called from Dispatch thread.
+   * @return ExpectingBacktraceStep or null if there is no active context currently
+   */
+  ExpectingBacktraceStep startRebuildCurrentContext() {
+    PreContext.UserContext userContext = getCurrentUserContext();
+    if (userContext == null) {
+      return null;
+    }
     if (!userContext.continueLocally()) {
       return null;
     }
