@@ -26,4 +26,4 @@ The !JavaScript debugger exposes the following capabilities:
 = Known issues =
   * Duplicate scripts can be loaded from V8 for the same resource.
   * Only V8-provided scripts are shown rather than actual resources loaded by the browser (the resources are not exposed through the V8 debugger protocol).
-  * Old debugger version 0.1.4 requires has more strict requirements for Java version: JRE 6. Version 0.1.6 works with JRE 5.
+  * Old Debugger version 0.1.4 requires has more strict requirements for Java version: JRE 6. Version 0.1.6 works with JRE 5.
