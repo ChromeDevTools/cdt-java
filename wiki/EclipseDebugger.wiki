@@ -19,8 +19,9 @@ The !JavaScript debugger exposes the following capabilities:
   * Stack context when suspended
   * Mouse on-hover identifier evaluation
   * Text selection evaluation
-  * In-memory browser script storage
+  * Script sources in workspace files and downloaded from server
   * Exception events reported into the Error Log
+  * Script live editing (experimental)
 
 = Known issues =
   * Duplicate scripts can be loaded from V8 for the same resource.
