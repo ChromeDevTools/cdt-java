@@ -343,5 +343,15 @@
             id="org.chromium.debug.ui.SourceNameMapperContainerPresentation">
       </sourceContainerPresentation>
   </extension>
+
+   <extension
+         point="org.eclipse.ui.ide.projectNatureImages">
+      <image
+            icon="res/nature_decorator_16.png"
+            natureId="org.chromium.debug.core.jsnature"
+            id="org.chromium.debug.core.jsnature.image">
+      </image>
+   </extension>
+
   
 </plugin>
