@@ -7,6 +7,8 @@ plugins/org.chromium.sdk.tests/bin
 plugins/org.chromium.sdk/.settings
 plugins/org.chromium.sdk/bin
 plugins/org.chromium.sdk/build-output
+plugins/org.chromium.debug.jsdtbridge/.settings
+plugins/org.chromium.debug.jsdtbridge/bin
 utils/org.chromium.sdk.tests.system/.settings
 utils/org.chromium.sdk.tests.system/bin
 utils/org.chromium.sdk.tests.system/build-output
