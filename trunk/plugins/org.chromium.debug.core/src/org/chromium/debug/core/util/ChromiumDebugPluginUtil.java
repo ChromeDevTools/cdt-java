@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -331,6 +332,42 @@ public class ChromiumDebugPluginUtil {
 
   public static <T> T throwUnsupported() {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Type-safe wrapper for {@link Map#remove(Object)} method. It restricts
+   * type of key and makes sure that you do not try to remove key of wrong
+   * type.
+   */
+  public static <K, V> V removeSafe(Map<K, V> map, K key) {
+    return map.remove(key);
+  }
+
+  /**
+   * Type-safe wrapper for {@link Map#get(Object)} method. It restricts
+   * type of key and makes sure that you do not try to get by key of wrong
+   * type.
+   */
+  public static <K, V> V getSafe(Map<K, V> map, K key) {
+    return map.get(key);
+  }
+
+  /**
+   * Type-safe wrapper for {@link Collection#contains(Object)} method. It restricts
+   * type of value and makes sure that you do not call method for the value
+   * wrong type.
+   */
+  public static <V> boolean containsSafe(Collection<V> collection, V value) {
+    return collection.contains(value);
+  }
+
+  /**
+   * Type-safe wrapper for {@link Collection#remove(Object)} method. It restricts
+   * type of value and makes sure that you do not call method for the value
+   * wrong type.
+   */
+  public static <V> boolean removeSafe(Collection<V> collection, V value) {
+    return collection.remove(value);
   }
 
   private ChromiumDebugPluginUtil() {

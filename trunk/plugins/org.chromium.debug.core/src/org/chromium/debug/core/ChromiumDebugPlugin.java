@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.model.BreakpointMap;
+import org.chromium.debug.core.model.BreakpointWrapManager;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.DebugTargetImpl;
@@ -17,9 +18,13 @@ import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterManager;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
+import org.eclipse.core.runtime.RegistryFactory;
 import org.eclipse.core.runtime.Status;
 import org.osgi.framework.BundleContext;
 
@@ -36,6 +41,8 @@ public class ChromiumDebugPlugin extends Plugin {
 
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
+  
+  private BreakpointWrapManager breakpointWrapManager = null;
 
   private final BreakpointMap breakpointMap = new BreakpointMap();
 
@@ -93,6 +100,13 @@ public class ChromiumDebugPlugin extends Plugin {
       result.add(new ScriptTargetMapping(localFile, script, target));
     }
     return result;
+  }
+  
+  public synchronized BreakpointWrapManager getBreakpointWrapManager() {
+    if (breakpointWrapManager == null) {
+      breakpointWrapManager = new BreakpointWrapManager();
+    }
+    return breakpointWrapManager;
   }
 
   public static boolean isDebug() {

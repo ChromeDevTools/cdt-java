@@ -5,6 +5,7 @@
 package org.chromium.debug.core.model;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
@@ -153,32 +154,34 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
     public boolean supportsBreakpoint(IBreakpoint breakpoint) {
-      return DEBUG_MODEL_ID.equals(breakpoint.getModelIdentifier()) &&
-          !debugTargetImpl.isDisconnected();
+      return tryCastBreakpoint(breakpoint) != null;
     }
 
-    public ChromiumLineBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
-      if (!supportsBreakpoint(breakpoint)) {
+    public WrappedBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
+      if (debugTargetImpl.isDisconnected()) {
         return null;
       }
-      if (breakpoint instanceof ChromiumLineBreakpoint == false) {
-        return null;
-      }
-      return (ChromiumLineBreakpoint) breakpoint;
+      return ChromiumDebugPlugin.getDefault().getBreakpointWrapManager().wrap(breakpoint);
     }
 
     public void breakpointAdded(IBreakpoint breakpoint) {
-      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
-      if (ChromiumLineBreakpoint.getIgnoreList().contains(breakpoint)) {
+      if (ChromiumLineBreakpoint.getIgnoreList().contains(lineBreakpoint)) {
         return;
       }
-      if (!lineBreakpoint.isEnabled()) {
+      boolean enabled;
+      try {
+        enabled = lineBreakpoint.getInner().isEnabled();
+      } catch (CoreException e) {
+        throw new RuntimeException(e);
+      }
+      if (!enabled) {
         return;
       }
-      IFile file = (IFile) lineBreakpoint.getMarker().getResource();
+      IFile file = (IFile) lineBreakpoint.getInner().getMarker().getResource();
       VmResourceId vmResourceId;
       try {
         vmResourceId = findVmResourceIdFromWorkspaceFile(file);
@@ -195,7 +198,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       createBreakpointOnRemote(lineBreakpoint, vmResourceId, null, null);
     }
 
-    public void createBreakpointOnRemote(final ChromiumLineBreakpoint lineBreakpoint,
+    public void createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
         final VmResourceId vmResourceId,
         final CreateCallback createCallback, SyncCallback syncCallback) {
       try {
@@ -225,7 +228,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -242,12 +245,15 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       } catch (RuntimeException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
+            getTargetNameSafe(), e));
       }
 
     }
 
     public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -291,9 +297,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
 
       for (Breakpoint sdkBreakpoint : breakpointsHit) {
-        ChromiumLineBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
+        WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
         if (uiBreakpoint != null) {
-          uiBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
+          try {
+            uiBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
+          } catch (CoreException e) {
+            throw new RuntimeException(e);
+          }
         }
       }
     }
