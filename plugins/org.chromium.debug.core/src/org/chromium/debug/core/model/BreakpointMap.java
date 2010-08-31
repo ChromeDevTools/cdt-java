@@ -7,6 +7,7 @@ package org.chromium.debug.core.model;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 
 /**
@@ -19,23 +20,23 @@ public class BreakpointMap {
    * A one-to-one map between SDK and UI breakpoints inside one debug target.
    */
   public static class InTargetMap {
-    private final Map<Breakpoint, ChromiumLineBreakpoint> sdkToUiMap =
-        new HashMap<Breakpoint, ChromiumLineBreakpoint>();
-    private final Map<ChromiumLineBreakpoint, Breakpoint> uiToSdkMap =
-      new HashMap<ChromiumLineBreakpoint, Breakpoint>();
+    private final Map<Breakpoint, WrappedBreakpoint> sdkToUiMap =
+        new HashMap<Breakpoint, WrappedBreakpoint>();
+    private final Map<WrappedBreakpoint, Breakpoint> uiToSdkMap =
+        new HashMap<WrappedBreakpoint, Breakpoint>();
 
     public InTargetMap() {
     }
 
-    public synchronized Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint chromiumLineBreakpoint) {
-      return uiToSdkMap.get(chromiumLineBreakpoint);
+    public synchronized Breakpoint getSdkBreakpoint(WrappedBreakpoint chromiumLineBreakpoint) {
+      return ChromiumDebugPluginUtil.getSafe(uiToSdkMap, chromiumLineBreakpoint);
     }
 
-    public synchronized ChromiumLineBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
-      return sdkToUiMap.get(sdkBreakpoint);
+    public synchronized WrappedBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
+      return ChromiumDebugPluginUtil.getSafe(sdkToUiMap, sdkBreakpoint);
     }
 
-    public synchronized void add(Breakpoint sdkBreakpoint, ChromiumLineBreakpoint uiBreakpoint) {
+    public synchronized void add(Breakpoint sdkBreakpoint, WrappedBreakpoint uiBreakpoint) {
       Object conflict1 = uiToSdkMap.put(uiBreakpoint, sdkBreakpoint);
       Object conflict2 = sdkToUiMap.put(sdkBreakpoint, uiBreakpoint);
       if (conflict1 != null || conflict2 != null) {
@@ -43,12 +44,12 @@ public class BreakpointMap {
       }
     }
 
-    public synchronized void remove(ChromiumLineBreakpoint lineBreakpoint) {
-      Breakpoint sdkBreakpoint = uiToSdkMap.remove(lineBreakpoint);
+    public synchronized void remove(WrappedBreakpoint lineBreakpoint) {
+      Breakpoint sdkBreakpoint = ChromiumDebugPluginUtil.removeSafe(uiToSdkMap, lineBreakpoint);
       if (sdkBreakpoint == null) {
         throw new RuntimeException();
       }
-      sdkToUiMap.remove(sdkBreakpoint);
+      ChromiumDebugPluginUtil.removeSafe(sdkToUiMap, sdkBreakpoint);
     }
 
     public synchronized void clear() {

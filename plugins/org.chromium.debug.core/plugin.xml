@@ -25,6 +25,14 @@
         id="org.chromium.debug.core.lineBreakpoint"/>
   </extension>
   
+  <extension-point id="JavaScriptBreakpointAdapter"
+      name="org.chromium.debug.core.model.JavaScriptBreakpointAdapter"/>
+
+  <extension
+      point="org.chromium.debug.core.JavaScriptBreakpointAdapter">
+      <breakpointAdapter class="org.chromium.debug.core.model.ChromiumBreakpointAdapter"/>
+  </extension>
+
   <!-- "id" value is relative to PLUGIN_ID -->
   <extension
       id="LineBP"
