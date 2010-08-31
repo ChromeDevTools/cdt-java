@@ -7,12 +7,15 @@ package org.chromium.debug.core;
 import org.chromium.debug.core.model.VmResourceId;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.containers.ContainerSourceContainer;
 import org.eclipse.debug.core.sourcelookup.containers.DefaultSourceContainer;
+import org.eclipse.debug.core.sourcelookup.containers.WorkspaceSourceContainer;
 
 /**
  * Eclipse has a standard facility for looking up source file for a debug artifact.
@@ -81,13 +84,14 @@ public class ReverseSourceLookup {
   private String tryForNonVirtualContainer(IFile resource, ISourceContainer container) {
     if (container instanceof ContainerSourceContainer) {
       ContainerSourceContainer containerSourceContainer = (ContainerSourceContainer) container;
-      IContainer resourceContainer = containerSourceContainer.getContainer();
-      IPath resourceFullPath = resource.getFullPath();
-      IPath containerFullPath = resourceContainer.getFullPath();
-      if (containerFullPath.isPrefixOf(resourceFullPath)) {
-        int offset = containerFullPath.segmentCount();
-        IPath newPath = resourceFullPath.removeFirstSegments(offset);
-        return newPath.toPortableString();
+      String res = lookupInResourceContainer(resource, containerSourceContainer.getContainer());
+      if (res != null) {
+        return res;
+      }
+    } else if (container instanceof WorkspaceSourceContainer) {
+      String res = lookupInResourceContainer(resource, ResourcesPlugin.getWorkspace().getRoot());
+      if (res != null) {
+        return res;
       }
     } else if (container instanceof SourceNameMapperContainer) {
       SourceNameMapperContainer mappingContainer =
@@ -99,5 +103,16 @@ public class ReverseSourceLookup {
     }
 
     return null;
+  }
+
+  String lookupInResourceContainer(IFile resource, IContainer resourceContainer) {
+    IPath resourceFullPath = resource.getFullPath();
+    IPath containerFullPath = resourceContainer.getFullPath();
+    if (!containerFullPath.isPrefixOf(resourceFullPath)) {
+      return null;
+    }
+    int offset = containerFullPath.segmentCount();
+    IPath newPath = resourceFullPath.removeFirstSegments(offset);
+    return newPath.toPortableString();
   }
 }

@@ -43,6 +43,8 @@ class MockUpResourceWriter {
     if (scriptLine > line) {
       fillLines(scriptLine - line);
       line = scriptLine;
+      int scriptCol = script.getStartColumn();
+      fillColumns(scriptCol);
     } else if (scriptLine < line) {
       writeLineMissMessage(scriptLine);
     } else {
