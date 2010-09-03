@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -112,7 +113,11 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       listenerBlock.unblock();
     }
 
-    DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
+    IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
+    breakpointManager.addBreakpointListener(this);
+    breakpointManager.addBreakpointManagerListener(workspaceRelations.getBreakpointHandler());
+    workspaceRelations.getBreakpointHandler().initBreakpointManagerListenerState(breakpointManager);
+
     invokeAttachCallback(attachCallback);
 
     workspaceRelations.startInitialization();
@@ -377,6 +382,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     public void disconnected() {
       if (!isDisconnected()) {
         setDisconnected(true);
+        DebugPlugin.getDefault().getBreakpointManager().removeBreakpointManagerListener(
+            workspaceRelations.getBreakpointHandler());
         DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(
             DebugTargetImpl.this);
         fireTerminateEvent();

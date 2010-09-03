@@ -13,6 +13,8 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.IBreakpointListener;
+import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.IBreakpointManagerListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
 
@@ -98,9 +100,10 @@ public interface WorkspaceBridge {
   /**
    * Breakpoint-related aspect of {@link WorkspaceBridge} interface.
    */
-  interface BreakpointHandler extends IBreakpointListener {
+  interface BreakpointHandler extends IBreakpointListener, IBreakpointManagerListener {
     boolean supportsBreakpoint(IBreakpoint breakpoint);
     void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit);
+    void initBreakpointManagerListenerState(IBreakpointManager breakpointManager);
   }
 
   /**
