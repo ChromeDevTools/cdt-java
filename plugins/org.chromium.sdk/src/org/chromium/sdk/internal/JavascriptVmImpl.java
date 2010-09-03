@@ -46,6 +46,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
     getDebugSession().getBreakpointManager().reloadBreakpoints(callback, syncCallback);
   }
 
+  public void enableBreakpoints(boolean enabled, Void callback, SyncCallback syncCallback) {
+    getDebugSession().getBreakpointManager().enableBreakpoints(enabled, callback, syncCallback);
+  }
+
   protected abstract DebugSession getDebugSession();
 
   // TODO(peter.rybin): This message will be obsolete in JavaSE-1.6.

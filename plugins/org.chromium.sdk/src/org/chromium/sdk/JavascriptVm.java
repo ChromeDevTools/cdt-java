@@ -118,4 +118,10 @@ public interface JavascriptVm {
    * is returned to callback. Already existing {@link Breakpoint} instances are preserved.
    */
   void listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
+
+  /**
+   * Asynchronously enables or disables all breakpoints on remote.
+   * @param callback argument reserved for future, should be null
+   */
+  void enableBreakpoints(boolean enabled, Void callback, SyncCallback syncCallback);
 }

@@ -26,6 +26,7 @@ public enum DebuggerCommand {
   LOOKUP("lookup"),
   SUSPEND("suspend"),
   VERSION("version"),
+  FLAGS("flags"),
 
   // Events
   BREAK("break"),

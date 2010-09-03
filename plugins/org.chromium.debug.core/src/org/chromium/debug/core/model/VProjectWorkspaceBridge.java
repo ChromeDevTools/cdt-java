@@ -24,6 +24,7 @@ import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugException;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.osgi.util.NLS;
@@ -153,6 +154,25 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
+
+    private final EnablementMonitor enablementMonitor = new EnablementMonitor();
+
+    private class EnablementMonitor {
+      synchronized void init(IBreakpointManager breakpointManager) {
+        sendRequest(breakpointManager.isEnabled());
+      }
+      synchronized void setState(boolean enabled) {
+        sendRequest(enabled);
+      }
+      private void sendRequest(boolean enabled) {
+        javascriptVm.enableBreakpoints(enabled, null, null);
+      }
+    }
+
+    public void initBreakpointManagerListenerState(IBreakpointManager breakpointManager) {
+      enablementMonitor.init(breakpointManager);
+    }
+
     public boolean supportsBreakpoint(IBreakpoint breakpoint) {
       return tryCastBreakpoint(breakpoint) != null;
     }
@@ -291,6 +311,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       breakpointInTargetMap.remove(lineBreakpoint);
     }
 
+    public synchronized void breakpointManagerEnablementChanged(boolean enabled) {
+      enablementMonitor.setState(enabled);
+    }
+
     public void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
       if (breakpointsHit.isEmpty()) {
         return;
@@ -377,5 +401,4 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   public DebugTargetImpl getDebugTarget() {
     return debugTargetImpl;
   }
-
 }

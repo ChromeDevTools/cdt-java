@@ -23,6 +23,7 @@ import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.chromium.sdk.internal.tools.v8.request.FlagsMessage;
 import org.chromium.sdk.internal.tools.v8.request.ListBreakpointsMessage;
 
 public class BreakpointManager {
@@ -176,6 +177,11 @@ public class BreakpointManager {
       }
     };
     debugSession.sendMessageAsync(new ListBreakpointsMessage(), true, v8Callback, syncCallback);
+  }
+
+  public void enableBreakpoints(boolean enabled, Void callback, SyncCallback syncCallback) {
+    Map<String, Object> flagMap = Collections.singletonMap("breakPointsActive", (Object) enabled);
+    debugSession.sendMessageAsync(new FlagsMessage(flagMap), true, null, syncCallback);
   }
 
   private static Integer toNullableInteger(int value) {
