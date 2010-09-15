@@ -25,11 +25,11 @@
         id="org.chromium.debug.core.lineBreakpoint"/>
   </extension>
   
-  <extension-point id="JavaScriptBreakpointAdapter"
+  <extension-point id="model.JavaScriptBreakpointAdapter"
       name="org.chromium.debug.core.model.JavaScriptBreakpointAdapter"/>
 
   <extension
-      point="org.chromium.debug.core.JavaScriptBreakpointAdapter">
+      point="org.chromium.debug.core.model.JavaScriptBreakpointAdapter">
       <breakpointAdapter class="org.chromium.debug.core.model.ChromiumBreakpointAdapter"/>
   </extension>
 
