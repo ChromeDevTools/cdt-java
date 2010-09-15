@@ -9,7 +9,7 @@
 
 <plugin>
    <extension
-         point="org.chromium.debug.core.JavaScriptBreakpointAdapter">
+         point="org.chromium.debug.core.model.JavaScriptBreakpointAdapter">
       <breakpointAdapter class="org.chromium.debug.jsdtbridge.JsdtBreakpointAdapter"/>
    </extension>
 
