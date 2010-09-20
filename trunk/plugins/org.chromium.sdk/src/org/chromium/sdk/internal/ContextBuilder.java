@@ -226,7 +226,7 @@ public class ContextBuilder {
       }
     }
 
-    private void sendMessageAsyncAndIvalidate(DebuggerMessage message,
+    private void sendMessageAsyncAndInvalidate(DebuggerMessage message,
         V8CommandProcessor.V8HandlerCallback commandCallback, boolean isImmediate,
         SyncCallback syncCallback) {
       synchronized (sendContextCommandsMonitor) {
@@ -322,7 +322,7 @@ public class ContextBuilder {
           }
         };
 
-        sendMessageAsyncAndIvalidate(message, commandCallback, true, null);
+        sendMessageAsyncAndInvalidate(message, commandCallback, true, null);
       }
 
       /**

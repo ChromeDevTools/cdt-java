@@ -96,6 +96,25 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
     }
   }
 
+  public void runInDispatchThread(final Runnable callback, final SyncCallback syncCallback) {
+    Runnable innerRunnable = new Runnable() {
+      public void run() {
+        RuntimeException exception = null;
+        try {
+          callback.run();
+        } catch (RuntimeException e) {
+          exception = e;
+          throw e;
+        } finally {
+          if (syncCallback != null) {
+            syncCallback.callbackDone(exception);
+          }
+        }
+      }
+    };
+    messageOutput.runInDispatchThread(innerRunnable);
+  }
+
   public void processIncomingJson(final JSONObject v8Json) {
     IncomingMessage response;
     try {

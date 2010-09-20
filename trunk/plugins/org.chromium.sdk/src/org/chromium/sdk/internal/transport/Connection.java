@@ -57,6 +57,11 @@ public interface Connection {
   void send(Message message);
 
   /**
+   * Asynchronously runs the callback in Connection's Dispatch thread.
+   */
+  void runInDispatchThread(Runnable callback);
+
+  /**
    * Starts up the transport and acquire all needed resources. Does nothing if
    * the connection has already been started.
    *

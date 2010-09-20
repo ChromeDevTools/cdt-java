@@ -241,5 +241,8 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
       outputConnection.send(message);
       // TODO(peter.rybin): support {@code immediate} in protocol
     }
+    public void runInDispatchThread(Runnable callback) {
+      outputConnection.runInDispatchThread(callback);
+    }
   }
 }
