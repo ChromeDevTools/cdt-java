@@ -5,7 +5,10 @@
 package org.chromium.debug.core.model;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
@@ -16,6 +19,7 @@ import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
@@ -154,6 +158,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
+
+    private final Map<JavascriptVm.ExceptionCatchType, Boolean> breakExceptionState =
+        Collections.synchronizedMap(new EnumMap<JavascriptVm.ExceptionCatchType, Boolean>(
+            JavascriptVm.ExceptionCatchType.class));
 
     private final EnablementMonitor enablementMonitor = new EnablementMonitor();
 
@@ -338,6 +346,27 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         return "<unknown>"; //$NON-NLS-1$
       }
     }
+
+    public Boolean getBreakExceptionState(ExceptionCatchType catchType) {
+      return breakExceptionState.get(catchType);
+    }
+
+    public void setBreakExceptionState(final ExceptionCatchType catchType,
+        boolean value) {
+      JavascriptVm.GenericCallback<Boolean> callback =
+          new JavascriptVm.GenericCallback<Boolean>() {
+            public void success(Boolean newValue) {
+              breakExceptionState.put(catchType, newValue);
+            }
+            public void failure(Exception exception) {
+              ChromiumDebugPlugin.log(new Exception(
+                  "Failed to set 'break on exception' value", exception));
+            }
+          };
+      javascriptVm.setBreakOnException(catchType, value, callback, null);
+    }
+
+
   }
 
   private final static JsLabelProvider LABEL_PROVIDER = new JsLabelProvider() {

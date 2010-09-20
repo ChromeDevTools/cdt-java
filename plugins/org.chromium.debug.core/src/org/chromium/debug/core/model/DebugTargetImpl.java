@@ -10,14 +10,14 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugContext.State;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.LiveEditDebugEventListener;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
-import org.chromium.sdk.DebugContext.State;
-import org.chromium.sdk.DebugContext.StepAction;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
@@ -592,5 +592,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
         monitor.notifyAll();
       }
     }
+  }
+
+  public WorkspaceBridge getWorkspaceRelations() {
+    return workspaceRelations;
   }
 }

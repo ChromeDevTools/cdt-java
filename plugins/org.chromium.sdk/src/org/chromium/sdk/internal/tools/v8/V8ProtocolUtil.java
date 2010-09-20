@@ -25,6 +25,7 @@ import org.chromium.sdk.internal.protocol.CommandResponseBody;
 import org.chromium.sdk.internal.protocol.EventNotification;
 import org.chromium.sdk.internal.protocol.EventNotificationBody;
 import org.chromium.sdk.internal.protocol.FailedCommandResponse;
+import org.chromium.sdk.internal.protocol.FlagsBody;
 import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.IncomingMessage;
 import org.chromium.sdk.internal.protocol.ListBreakpointsBody;
@@ -376,6 +377,8 @@ public class V8ProtocolUtil {
           ChangeLiveBody.class,
           ListBreakpointsBody.class,
           ScriptCollectedBody.class,
+          FlagsBody.class,
+          FlagsBody.FlagInfo.class,
 
           SomeHandle.class,
           ScriptHandle.class,

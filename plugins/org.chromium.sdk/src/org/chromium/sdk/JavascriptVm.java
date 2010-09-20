@@ -15,11 +15,6 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
  */
 public interface JavascriptVm {
 
-  interface GenericCallback<T> {
-    void success(T value);
-    void failure(Exception e);
-  }
-
   /**
    * A callback for breakpoint-related requests.
    */
@@ -125,8 +120,35 @@ public interface JavascriptVm {
   void listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
 
   /**
-   * Asynchronously enables or disables all breakpoints on remote.
-   * @param callback argument reserved for future, should be null
+   * A generic callback used in operations that a remote variable value.
    */
-  void enableBreakpoints(boolean enabled, Void callback, SyncCallback syncCallback);
+  interface GenericCallback<T> {
+    /**
+     * Method is called after variable has been successfully updated.
+     * @param value holds an actual new value of variable if provided or null
+     */
+    void success(T value);
+    void failure(Exception exception);
+  }
+
+  /**
+   * Asynchronously enables or disables all breakpoints on remote. Parameter
+   * 'enabled' may be null, in this case the remote value is not modified and can be
+   * obtained inside the callback.
+   */
+  void enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
+      SyncCallback syncCallback);
+
+  enum ExceptionCatchType {
+    CAUGHT, UNCAUGHT
+  }
+
+  /**
+   * Asynchronously enables or disables breaking on exception. All exception
+   * events are split into 2 categories: caught and uncaught. Parameter
+   * 'enabled' may be null, in this case the remote value is not modified and can be
+   * obtained inside the callback.
+   */
+  void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
+      GenericCallback<Boolean> callback, SyncCallback syncCallback);
 }

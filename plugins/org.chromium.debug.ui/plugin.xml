@@ -290,7 +290,7 @@
             objectClass="org.eclipse.debug.core.ILaunch"
             id="org.chromium.debug.ui.actions.actions-for-launch">
          <menu id="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId"
-               label="Synchronize JavaScript Breakpoints"
+               label="%SynchronizeBreakpoints.menu.label"
                path="launchGroup"
          >
             <separator
@@ -298,22 +298,42 @@
             </separator>
          </menu>
          <action
-               label="Reset on Remote"
+               label="%SynchronizeBreakpoints.ResetRemote.label"
                class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote"
                menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote.forLaunch">
          </action>
          <action
-               label="Reset on Local"
+               label="%SynchronizeBreakpoints.ResetLocal.label"
                class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal"
                menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal.forLaunch">
          </action>
          <action
-               label="Merge Remote and Local"
+               label="%SynchronizeBreakpoints.Merge.label"
                class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge"
                menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge.forLaunch">
+         </action>
+         <menu id="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId"
+               label="%ExceptionBreakpoints.menu.label"
+               path="launchGroup"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="%ExceptionBreakpoints.Caught.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught"
+               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
+         </action>
+         <action
+               label="%ExceptionBreakpoints.Uncaught.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught"
+               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught.forLaunch">
          </action>
       </objectContribution>
   </extension>
@@ -366,6 +386,4 @@
             id="org.chromium.debug.core.jsnature.image">
       </image>
    </extension>
-
-  
 </plugin>
