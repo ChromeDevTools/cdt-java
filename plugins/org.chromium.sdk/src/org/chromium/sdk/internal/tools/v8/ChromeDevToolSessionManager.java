@@ -436,6 +436,10 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
             V8DebuggerToolMessageFactory.evaluateJavascript(JAVASCRIPT_VOID));
       }
     }
+
+    public void runInDispatchThread(Runnable callback) {
+      toolOutput.runInDispatchThread(callback);
+    }
   }
 
   private static class V8DebuggerToolMessageFactory {

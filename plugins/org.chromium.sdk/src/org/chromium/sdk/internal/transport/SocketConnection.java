@@ -351,7 +351,29 @@ public class SocketConnection implements Connection {
   }
 
   void sendMessage(Message message) {
-    outboundQueue.add(message);
+    try {
+      outboundQueue.put(message);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void runInDispatchThread(final Runnable callback) {
+    MessageItem messageItem = new MessageItem() {
+      @Override
+      void report(NetListener listener) {
+        callback.run();
+      }
+      @Override
+      boolean isEos() {
+        return false;
+      }
+    };
+    try {
+      inboundQueue.put(messageItem);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean isAttached() {

@@ -31,6 +31,10 @@ public class FakeConnection implements Connection {
     }
   }
 
+  public void runInDispatchThread(Runnable callback) {
+    callback.run();
+  }
+
   public boolean isConnected() {
     return isRunning;
   }

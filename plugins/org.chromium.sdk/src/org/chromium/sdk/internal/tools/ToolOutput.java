@@ -18,4 +18,9 @@ public interface ToolOutput {
    * @param content of message (without header)
    */
   void send(String content);
+
+  /**
+   * Asynchronously runs the callback in Connection's Dispatch thread.
+   */
+  void runInDispatchThread(Runnable callback);
 }

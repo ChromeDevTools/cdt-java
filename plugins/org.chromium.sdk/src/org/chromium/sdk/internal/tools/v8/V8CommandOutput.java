@@ -13,4 +13,9 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
  */
 public interface V8CommandOutput {
   void send(DebuggerMessage debuggerMessage, boolean immediate);
+
+  /**
+   * Asynchronously runs the callback in Connection's Dispatch thread.
+   */
+  void runInDispatchThread(Runnable callback);
 }

@@ -137,11 +137,14 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
       this.connection = connection;
     }
 
-
     public void send(String content) {
       Message message =
           MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, destination, content);
       connection.send(message);
+    }
+
+    public void runInDispatchThread(Runnable callback) {
+      connection.runInDispatchThread(callback);
     }
   }
 

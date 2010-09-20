@@ -235,6 +235,9 @@ public class BrowserImpl implements Browser {
             MessageFactory.createMessage(ToolName.DEVTOOLS_SERVICE.value, null, content);
         sessionConnection.send(message);
       }
+      public void runInDispatchThread(Runnable callback) {
+        sessionConnection.runInDispatchThread(callback);
+      }
     };
 
     public BrowserImpl getBrowser() {
