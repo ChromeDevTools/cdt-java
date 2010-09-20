@@ -21,6 +21,7 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -191,6 +192,15 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       }
       public String getRefId() {
         return null;
+      }
+      public boolean isTruncated() {
+        return false;
+      }
+      public void reloadHeavyValue(ReloadBiggerCallback callback,
+          SyncCallback syncCallback) {
+        if (syncCallback != null) {
+          syncCallback.callbackDone(null);
+        }
       }
     }
     return new ScopeObjectVariable();

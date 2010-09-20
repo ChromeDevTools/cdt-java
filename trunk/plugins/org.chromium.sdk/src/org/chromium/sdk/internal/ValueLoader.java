@@ -10,7 +10,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.protocol.ScopeBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
@@ -18,11 +22,14 @@ import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.LoadableString;
 import org.chromium.sdk.internal.tools.v8.V8BlockingCallback;
+import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.chromium.sdk.internal.tools.v8.request.LookupMessage;
 import org.json.simple.JSONObject;
 
 /**
@@ -35,10 +42,18 @@ public class ValueLoader {
   private final ConcurrentMap<Long, ValueMirror> refToMirror =
       new ConcurrentHashMap<Long, ValueMirror>();
   private final InternalContext context;
+  private final LoadableString.Factory loadableStringFactory;
 
   ValueLoader(InternalContext context) {
     this.context = context;
+    this.loadableStringFactory = new StringFactory();
   }
+
+  LoadableString.Factory getLoadableStringFactory() {
+    return loadableStringFactory;
+  }
+
+
 
   /**
    * Receives {@link ValueMirror} and makes sure it has its properties loaded.
@@ -156,7 +171,7 @@ public class ValueLoader {
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
-      mirror = V8Helper.createValueMirrorOptional(valueHandle);
+      mirror = V8Helper.createValueMirrorOptional(valueHandle, loadableStringFactory);
     } else {
       DataWithRef handleFromProperty = propertyReference.getValueObject();
 
@@ -205,8 +220,19 @@ public class ValueLoader {
 
   private List<PropertyHoldingValueMirror> readResponseFromLookup(
       SuccessCommandResponse successResponse, List<Long> propertyRefIds) {
+    List<ValueHandle> handles = readResponseFromLookupRaw(successResponse, propertyRefIds);
     List<PropertyHoldingValueMirror> result =
         new ArrayList<PropertyHoldingValueMirror>(propertyRefIds.size());
+    for (int i = 0; i < propertyRefIds.size(); i++) {
+      int ref = propertyRefIds.get(i).intValue();
+      result.add(readMirrorFromLookup(ref, handles.get(i)));
+    }
+    return result;
+  }
+
+  private List<ValueHandle> readResponseFromLookupRaw(SuccessCommandResponse successResponse,
+      List<Long> propertyRefIds) {
+    List<ValueHandle> result = new ArrayList<ValueHandle>(propertyRefIds.size());
     JSONObject body;
     try {
       body = successResponse.getBody().asLookupMap();
@@ -219,15 +245,14 @@ public class ValueLoader {
       if (value == null) {
         throw new ValueLoadException("Failed to find value for ref=" + ref);
       }
-      SomeHandle smthHandle = context.getHandleManager().put((long)ref, value);
+      SomeHandle smthHandle = context.getHandleManager().put((long) ref, value);
       ValueHandle valueHandle;
       try {
         valueHandle = smthHandle.asValueHandle();
       } catch (JsonProtocolParseException e) {
         throw new ValueLoadException(e);
       }
-
-      result.add(readMirrorFromLookup(ref, valueHandle));
+      result.add(valueHandle);
     }
     return result;
   }
@@ -242,7 +267,8 @@ public class ValueLoader {
    *         from handle, or {@code null} if {@code handle} is not a handle
    */
   private PropertyHoldingValueMirror readMirrorFromLookup(int ref, ValueHandle jsonValue) {
-    PropertyHoldingValueMirror propertiesMirror = V8Helper.createMirrorFromLookup(jsonValue);
+    PropertyHoldingValueMirror propertiesMirror =
+        V8Helper.createMirrorFromLookup(jsonValue, loadableStringFactory);
     ValueMirror newMirror = propertiesMirror.getValueMirror();
 
     ValueMirror oldMirror = refToMirror.putIfAbsent((long)ref, newMirror);
@@ -254,5 +280,118 @@ public class ValueLoader {
 
   private static void mergeMirrors(ValueMirror baseMirror, ValueMirror alternativeMirror) {
     baseMirror.mergeFrom(alternativeMirror);
+  }
+
+  private void relookupValue(long handleId, Long maxLength,
+      final JavascriptVm.GenericCallback<ValueHandle> callback,
+      SyncCallback syncCallback) throws ContextDismissedCheckedException {
+    final List<Long> ids = Collections.singletonList(handleId);
+    DebuggerMessage message = new LookupMessage(ids, false, maxLength);
+
+    V8CommandCallbackBase innerCallback = new V8CommandCallbackBase() {
+      @Override
+      public void success(SuccessCommandResponse successResponse) {
+        List<ValueHandle> handleList = readResponseFromLookupRaw(successResponse, ids);
+        callback.success(handleList.get(0));
+      }
+      @Override
+      public void failure(String message) {
+        callback.failure(new Exception(message));
+      }
+    };
+
+    this.context.sendV8CommandAsync(message, true, innerCallback, syncCallback);
+  }
+
+  private class StringFactory implements LoadableString.Factory {
+    public LoadableString create(ValueHandle handle) {
+      final long handleId = handle.handle();
+      final LoadedValue initialValue = new LoadedValue(handle);
+
+      return new LoadableString() {
+        private final AtomicReference<LoadedValue> valueRef =
+            new AtomicReference<LoadedValue>(initialValue);
+
+        public String getCurrentString() {
+          return valueRef.get().stringValue;
+        }
+        public boolean needsReload() {
+          LoadedValue loadedValue = valueRef.get();
+          return loadedValue.loadedSize < loadedValue.actualSize;
+        }
+        public void reloadBigger(final GenericCallback<Void> callback,
+            SyncCallback syncCallback) {
+
+          long currentlyLoadedSize = valueRef.get().actualSize;
+          long newRequstedSize = chooseNewMaxStringLength(currentlyLoadedSize);
+
+          JavascriptVm.GenericCallback<ValueHandle> innerCallback =
+              new JavascriptVm.GenericCallback<ValueHandle>() {
+            public void success(ValueHandle handle) {
+              LoadedValue newLoadedValue = new LoadedValue(handle);
+              replaceValue(handle, newLoadedValue);
+              if (callback != null) {
+                callback.success(null);
+              }
+            }
+            public void failure(Exception e) {
+              if (callback != null) {
+                callback.failure(new Exception(e));
+              }
+            }
+          };
+
+          try {
+            relookupValue(handleId, newRequstedSize, innerCallback, syncCallback);
+          } catch (final ContextDismissedCheckedException e) {
+            DebugSession debugSession = context.getDebugSession();
+            debugSession.maybeRethrowContextException(e);
+            // or
+            debugSession.sendLoopbackMessage(new Runnable() {
+              public void run() {
+                if (callback != null) {
+                  callback.failure(e);
+                }
+              }
+            }, syncCallback);
+          }
+        }
+
+        private void replaceValue(ValueHandle handle, LoadedValue newValue) {
+          while (true) {
+            LoadedValue currentValue = valueRef.get();
+            if (currentValue.loadedSize >= newValue.loadedSize) {
+              return;
+            }
+            boolean updated = valueRef.compareAndSet(currentValue, newValue);
+            if (updated) {
+              return;
+            }
+          }
+        }
+        private long chooseNewMaxStringLength(long currentSize) {
+          // Simple strategy.
+          return currentSize * 10;
+        }
+      };
+    }
+
+    private class LoadedValue {
+      final String stringValue;
+      final long loadedSize;
+      final long actualSize;
+
+      LoadedValue(ValueHandle handle) {
+        this.stringValue = (String) handle.value();
+        Long toIndex = handle.toIndex();
+        if (toIndex == null) {
+          this.loadedSize = this.stringValue.length();
+          this.actualSize = this.loadedSize;
+        } else {
+          this.loadedSize = toIndex;
+          this.actualSize = (long) handle.length();
+        }
+      }
+    }
   }
 }

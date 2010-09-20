@@ -4,7 +4,10 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsValue;
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.tools.v8.LoadableString;
 
 /**
  * A base class that represents a JavaScript VM variable value (compound values
@@ -33,6 +36,34 @@ class JsValueImpl implements JsValue {
 
   public ValueMirror getMirror() {
     return this.valueData;
+  }
+
+  public boolean isTruncated() {
+    LoadableString stringValue = this.valueData.getStringValue();
+    return stringValue != null && stringValue.needsReload();
+  }
+
+  public void reloadHeavyValue(final ReloadBiggerCallback callback,
+      SyncCallback syncCallback) {
+
+    LoadableString stringValue = this.valueData.getStringValue();
+    if (stringValue != null) {
+      JavascriptVm.GenericCallback<Void> innerCallback = new JavascriptVm.GenericCallback<Void>() {
+        public void success(Void value) {
+          if (callback != null) {
+            callback.done();
+          }
+        }
+        public void failure(Exception e) {
+        }
+      };
+      stringValue.reloadBigger(innerCallback, syncCallback);
+
+    } else {
+      if (syncCallback != null) {
+        syncCallback.callbackDone(null);
+      }
+    }
   }
 
   @Override

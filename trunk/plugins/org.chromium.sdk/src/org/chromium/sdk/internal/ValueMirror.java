@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.internal.tools.v8.LoadableString;
 
 /**
  * A representation of a datum (value) in the remote JavaScript VM. Must contain all the
@@ -12,8 +13,9 @@ import org.chromium.sdk.JsValue.Type;
  */
 public class ValueMirror {
 
-  public static PropertyHoldingValueMirror createScalar(String value, Type type, String className) {
-    return new ValueMirror(value, type, className).getProperties();
+  public static PropertyHoldingValueMirror createScalar(LoadableString stringValue,
+      Type type, String className) {
+    return new ValueMirror(stringValue, type, className).getProperties();
   }
 
   public static PropertyHoldingValueMirror createObject(int refID,
@@ -32,15 +34,15 @@ public class ValueMirror {
 
   private final Type type;
 
-  private final String value;
+  private final LoadableString stringValue;
 
   private final String className;
 
   private volatile PropertyHoldingValueMirror properties = null;
 
-  private ValueMirror(String value, Type type, String className) {
+  private ValueMirror(LoadableString stringValue, Type type, String className) {
     this.type = type;
-    this.value = value;
+    this.stringValue = stringValue;
     this.ref = -1;
     this.className = className;
     this.properties = new PropertyHoldingValueMirror(this);
@@ -58,7 +60,7 @@ public class ValueMirror {
       propertiesMirror = new PropertyHoldingValueMirror(this, subpropertiesMirror);
     }
     this.properties = propertiesMirror;
-    this.value = null;
+    this.stringValue = null;
   }
 
   public Type getType() {
@@ -71,6 +73,10 @@ public class ValueMirror {
 
   public int getRef() {
     return ref;
+  }
+
+  public LoadableString getStringValue() {
+    return stringValue;
   }
 
   /**
@@ -100,9 +106,9 @@ public class ValueMirror {
       case TYPE_NUMBER:
       case TYPE_BOOLEAN:
       case TYPE_REGEXP:
-        return value == null
+        return stringValue == null
             ? ""
-            : value;
+            : stringValue.getCurrentString();
       case TYPE_OBJECT:
       case TYPE_ARRAY:
         return "[" + className + "]";

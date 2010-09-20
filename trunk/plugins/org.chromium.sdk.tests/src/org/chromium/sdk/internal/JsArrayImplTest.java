@@ -18,6 +18,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.internal.tools.v8.LoadableString;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
@@ -69,7 +70,8 @@ public class JsArrayImplTest {
     ValueHandle valueHandle =
         V8ProtocolUtil.getV8Parser().parse(valueHandleJson, ValueHandle.class);
 
-    arrayMirror = V8Helper.createMirrorFromLookup(valueHandle).getValueMirror();
+    arrayMirror = V8Helper.createMirrorFromLookup(valueHandle, LoadableString.Factory.IMMUTABLE)
+        .getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 

@@ -102,4 +102,17 @@ public interface JsValue {
    */
   JsObject asObject();
 
+  /**
+   * @return whether the value of the object has been truncated while loaded
+   */
+  boolean isTruncated();
+
+  interface ReloadBiggerCallback {
+    void done();
+  }
+
+  /**
+   * Asynchronously reloads object value with extended size limit.
+   */
+  void reloadHeavyValue(ReloadBiggerCallback callback, SyncCallback syncCallback);
 }
