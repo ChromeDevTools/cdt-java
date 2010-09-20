@@ -47,4 +47,7 @@ public interface CommandResponseBody {
 
   @JsonSubtypeCasting
   ListBreakpointsBody asListBreakpointsBody() throws JsonProtocolParseException;
+
+  @JsonSubtypeCasting
+  FlagsBody asFlagsBody() throws JsonProtocolParseException;
 }

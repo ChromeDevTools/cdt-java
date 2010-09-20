@@ -1,3 +1,7 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package org.chromium.debug.ui.actions;
 
 import java.text.MessageFormat;
@@ -75,20 +79,10 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
     final Set<DebugTargetImpl> targets = new HashSet<DebugTargetImpl>(3);
     for (Iterator<?> it = structuredSelection.iterator(); it.hasNext(); ) {
       Object element = it.next();
-      IDebugTarget debugTarget;
-      if (element instanceof ILaunch) {
-        ILaunch launch = (ILaunch) element;
-        debugTarget = launch.getDebugTarget();
-      } else if (element instanceof IDebugElement) {
-        IDebugElement debugElement = (IDebugElement) element;
-        debugTarget = debugElement.getDebugTarget();
-      } else {
+      DebugTargetImpl debugTargetImpl = getDebugTargetImpl(element);
+      if (debugTargetImpl == null) {
         continue;
       }
-      if (debugTarget instanceof DebugTargetImpl == false) {
-        continue;
-      }
-      DebugTargetImpl debugTargetImpl = (DebugTargetImpl) debugTarget;
       targets.add(debugTargetImpl);
     }
     if (targets.isEmpty()) {
@@ -124,4 +118,21 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
   }
 
   private Runnable currentRunnable;
+
+  public static DebugTargetImpl getDebugTargetImpl(Object element) {
+    IDebugTarget debugTarget;
+    if (element instanceof ILaunch) {
+      ILaunch launch = (ILaunch) element;
+      debugTarget = launch.getDebugTarget();
+    } else if (element instanceof IDebugElement) {
+      IDebugElement debugElement = (IDebugElement) element;
+      debugTarget = debugElement.getDebugTarget();
+    } else {
+      return null;
+    }
+    if (debugTarget instanceof DebugTargetImpl == false) {
+      return null;
+    }
+    return (DebugTargetImpl) debugTarget;
+  }
 }

@@ -19,7 +19,6 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
-import org.chromium.sdk.internal.FixtureChromeStub.LongValue;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;

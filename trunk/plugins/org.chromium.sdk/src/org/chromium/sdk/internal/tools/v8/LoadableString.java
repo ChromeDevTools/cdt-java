@@ -6,7 +6,6 @@ package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 
 /**
@@ -61,7 +60,7 @@ public interface LoadableString {
     public boolean needsReload() {
       return false;
     }
-    public void reloadBigger(GenericCallback<Void> callback,
+    public void reloadBigger(JavascriptVm.GenericCallback<Void> callback,
         SyncCallback syncCallback) {
       try {
         if (callback != null) {

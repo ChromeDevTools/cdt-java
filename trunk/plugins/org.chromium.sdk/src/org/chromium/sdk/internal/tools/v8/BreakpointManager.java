@@ -9,15 +9,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
 import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
+import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.protocol.BreakpointBody;
+import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.CommandResponseBody;
+import org.chromium.sdk.internal.protocol.FlagsBody;
+import org.chromium.sdk.internal.protocol.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.protocol.ListBreakpointsBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
@@ -27,6 +34,9 @@ import org.chromium.sdk.internal.tools.v8.request.FlagsMessage;
 import org.chromium.sdk.internal.tools.v8.request.ListBreakpointsMessage;
 
 public class BreakpointManager {
+  /** The class logger. */
+  private static final Logger LOGGER = Logger.getLogger(BreakpointManager.class.getName());
+
   /**
    * This map shall contain only breakpoints with valid IDs.
    */
@@ -179,9 +189,69 @@ public class BreakpointManager {
     debugSession.sendMessageAsync(new ListBreakpointsMessage(), true, v8Callback, syncCallback);
   }
 
-  public void enableBreakpoints(boolean enabled, Void callback, SyncCallback syncCallback) {
-    Map<String, Object> flagMap = Collections.singletonMap("breakPointsActive", (Object) enabled);
-    debugSession.sendMessageAsync(new FlagsMessage(flagMap), true, null, syncCallback);
+  public void enableBreakpoints(Boolean enabled, final GenericCallback<Boolean> callback,
+      SyncCallback syncCallback) {
+    setRemoteFlag("breakPointsActive", enabled, callback, syncCallback);
+  }
+
+  public void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
+      final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
+    String flagName;
+    switch (catchType) {
+      case CAUGHT:
+        flagName = "breakOnCaughtException";
+        break;
+      case UNCAUGHT:
+        flagName = "breakOnUncaughtException";
+        break;
+      default:
+        throw new RuntimeException();
+    }
+    setRemoteFlag(flagName, enabled, callback, syncCallback);
+  }
+
+  private void setRemoteFlag(final String flagName, Boolean enabled,
+      final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
+    Map<String, Object> flagMap = Collections.singletonMap(flagName, (Object) enabled);
+    V8CommandProcessor.V8HandlerCallback v8Callback;
+    if (callback == null) {
+      v8Callback = null;
+    } else {
+      v8Callback = new V8CommandCallbackBase() {
+        @Override public void success(SuccessCommandResponse successResponse) {
+          FlagsBody body;
+          try {
+            body = successResponse.getBody().asFlagsBody();
+          } catch (JsonProtocolParseException e) {
+            throw new RuntimeException(e);
+          }
+          FlagsBody.FlagInfo flag;
+          List<FlagInfo> flagList = body.flags();
+          findCorrectFlag: {
+            for (int i = 0; i < flagList.size(); i++) {
+              if (flagName.equals(flagList.get(i).name())) {
+                flag = flagList.get(i);
+                break findCorrectFlag;
+              }
+            }
+            throw new RuntimeException("Failed to find the correct flag in response");
+          }
+          Object value = flag.value();
+          Boolean resValue;
+          if (value instanceof Boolean == false) {
+            LOGGER.info("Flag value has a wrong type");
+            resValue = null;
+          } else {
+            resValue = (Boolean) value;
+          }
+          callback.success(resValue);
+        }
+        @Override public void failure(String message) {
+          callback.failure(new Exception(message));
+        }
+      };
+    }
+    debugSession.sendMessageAsync(new FlagsMessage(flagMap), true, v8Callback, syncCallback);
   }
 
   private static Integer toNullableInteger(int value) {
