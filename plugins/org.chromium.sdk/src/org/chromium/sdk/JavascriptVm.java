@@ -11,14 +11,19 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to
  * conduct debugging process. This interface does not specify attach method,
- * because it cannot be polymorphous.
+ * because it cannot be polymorphic (its signature should be type-specific).
  */
 public interface JavascriptVm {
+
+  interface GenericCallback<T> {
+    void success(T value);
+    void failure(Exception e);
+  }
 
   /**
    * A callback for breakpoint-related requests.
    */
-  public interface BreakpointCallback {
+  interface BreakpointCallback {
 
     void success(Breakpoint breakpoint);
 

@@ -14,9 +14,16 @@ public class LookupMessage extends DebuggerMessage {
    * @param inlineRefs whether to inline references
    */
   public LookupMessage(List<Long> handles, Boolean inlineRefs) {
+    this(handles, inlineRefs, null);
+  }
+
+  public LookupMessage(List<Long> handles, Boolean inlineRefs, Long maxStringLength) {
     super(DebuggerCommand.LOOKUP.value);
     putArgument("handles", handles);
     putArgument("inlineRefs", inlineRefs);
+    if (maxStringLength != null) {
+      putArgument("maxStringLength", maxStringLength);
+    }
   }
 
 }

@@ -16,12 +16,14 @@ import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.ExceptionDataImpl;
 import org.chromium.sdk.internal.InternalContext;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.protocol.BreakEventBody;
 import org.chromium.sdk.internal.protocol.EventNotification;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.BreakpointManager;
+import org.chromium.sdk.internal.tools.v8.LoadableString;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
@@ -120,8 +122,10 @@ public class BreakpointProcessor extends V8EventProcessor {
     // source column is not exposed ("sourceColumn" in "body")
     String sourceText = body.getSourceLineText();
 
+    PropertyHoldingValueMirror propertyHoldingMirror =
+        V8Helper.createMirrorFromLookup(exception, LoadableString.Factory.IMMUTABLE);
     return new ExceptionDataImpl(internalContext,
-        V8Helper.createMirrorFromLookup(exception).getValueMirror(),
+        propertyHoldingMirror.getValueMirror(),
         EXCEPTION_NAME,
         body.isUncaught(),
         sourceText,

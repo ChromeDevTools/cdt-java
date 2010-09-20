@@ -219,6 +219,13 @@
                enablesFor="1"
                id="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable">
          </action>
+         <action
+               label="%LoadFullValueAction.label"
+               class="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable">
+         </action>
       </objectContribution>
       <objectContribution
             objectClass="org.eclipse.debug.core.model.IWatchExpression"
@@ -229,6 +236,13 @@
                menubarPath="emptyNavigationGroup"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression">
+         </action>
+         <action
+               label="%LoadFullValueAction.label"
+               class="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression">
          </action>
       </objectContribution>
       <!-- Experimental actions, temporarily disabled. -->

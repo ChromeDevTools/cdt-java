@@ -315,6 +315,10 @@ public class DebugSession {
     V8Helper.callV8Sync(this.v8CommandProcessor, DebuggerMessageFactory.version(), callback);
   }
 
+  public void sendLoopbackMessage(Runnable callback, SyncCallback syncCallback) {
+    this.v8CommandProcessor.runInDispatchThread(callback, syncCallback);
+  }
+
   public void maybeRethrowContextException(ContextDismissedCheckedException e) {
     // TODO(peter.rybin): make some kind of option out of this
     final boolean strictPolicy = true;

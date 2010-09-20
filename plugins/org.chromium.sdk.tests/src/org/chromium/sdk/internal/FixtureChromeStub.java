@@ -19,6 +19,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.internal.FixtureChromeStub.LongValue;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
@@ -59,8 +60,11 @@ public class FixtureChromeStub implements ChromeStub {
   private static final String secondTabId = "2";
 
   private static final Map<Long, String> refToObjectMap;
+  private static final Map<Long, String> refToFullVersionMap;
   static {
     refToObjectMap = new HashMap<Long, String>();
+    refToFullVersionMap = new HashMap<Long, String>();
+
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
         "{\"handle\":11,\"type\":\"object\",\"className\":\"MouseEvent\"," +
@@ -156,6 +160,12 @@ public class FixtureChromeStub implements ChromeStub {
     refToObjectMap.put(Long.valueOf(getNumber3Ref()),
         "{\"handle\":" + getNumber3Ref() + ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
 
+
+    refToObjectMap.put(Long.valueOf(getLongValueRef()),
+        LongValue.createHandle(true).toJSONString());
+    refToFullVersionMap.put(Long.valueOf(getLongValueRef()),
+        LongValue.createHandle(false).toJSONString());
+
     scriptIdToScriptRefMap.put(Long.valueOf(getScriptId()), getScriptRef());
     scriptIdToScriptRefMap.put(Long.valueOf(getCompiledScriptId()), getCompiledScriptRef());
   }
@@ -175,6 +185,10 @@ public class FixtureChromeStub implements ChromeStub {
 
   public static int getNumber3Ref() {
     return 65;
+  }
+
+  public static int getLongValueRef() {
+    return 66;
   }
 
   private static int getCompiledScriptRef() {
@@ -260,6 +274,12 @@ public class FixtureChromeStub implements ChromeStub {
           for (int i = 0; i < handles.size(); i++) {
             Long ref = (Long) handles.get(i);
             String objectData = refToObjectMap.get(ref);
+            if (args.get("maxStringLength") != null ) {
+              String fullVersion = refToFullVersionMap.get(ref);
+              if (fullVersion != null) {
+                objectData = fullVersion;
+              }
+            }
             if (objectData != null) {
               try {
                 JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
@@ -273,6 +293,9 @@ public class FixtureChromeStub implements ChromeStub {
               success = false;
             }
           }
+          break;
+        case EVALUATE:
+          success = handleEvaluate(args, nameToJsonValue);
           break;
         case SETBREAKPOINT:
         case CHANGEBREAKPOINT:
@@ -460,6 +483,43 @@ public class FixtureChromeStub implements ChromeStub {
     ));
     nameToJsonValue.put("refs", getRefs(getNumber3Ref(), getMouseEventRef()));
   }
+
+  private boolean handleEvaluate(JSONObject args, Map<String, Object> nameToJsonValue) {
+    String expression = JsonUtil.getAsString(args, "expression");
+    if (!"#long_value".equals(expression)) {
+      return false;
+    }
+    nameToJsonValue.put("body", LongValue.createHandle(true));
+    return true;
+  }
+
+  private static class LongValue {
+    static final String FULL_VALUE = "A very very very very very very very long value";
+    static final int LENGTH_LIMIT = 10;
+
+    static JSONObject createHandle(boolean truncated) {
+      if (truncated) {
+        String truncatedValue = LongValue.FULL_VALUE.substring(0, LongValue.LENGTH_LIMIT) + " ...";
+        return jsonObject(
+            jsonProperty("handle", getLongValueRef()),
+            jsonProperty("type", "string"),
+            jsonProperty("value", truncatedValue),
+            jsonProperty("text", truncatedValue),
+            jsonProperty("fromIndex", 0),
+            jsonProperty("toIndex", LongValue.LENGTH_LIMIT),
+            jsonProperty("length", LongValue.FULL_VALUE.length())
+        );
+      } else {
+        return jsonObject(
+            jsonProperty("handle", getLongValueRef()),
+            jsonProperty("type", "string"),
+            jsonProperty("value", LongValue.FULL_VALUE),
+            jsonProperty("text", LongValue.FULL_VALUE)
+        );
+      }
+    }
+  }
+
 
   private JSONArray getRefs(int ... refParams) {
     JSONObject [] refHandleObjects = new JSONObject [refParams.length];

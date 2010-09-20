@@ -12,6 +12,7 @@ import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedExceptio
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.LoadableString.Factory;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
@@ -68,14 +69,12 @@ abstract class JsEvaluateContextImpl implements JsEvaluateContext {
             } catch (JsonProtocolParseException e) {
               throw new RuntimeException(e);
             }
-            JsVariable variable =
-                new JsVariableImpl(JsEvaluateContextImpl.this.getInternalContext(),
-                    V8Helper.createMirrorFromLookup(body).getValueMirror(), expression);
-            if (variable != null) {
-              callback.success(variable);
-            } else {
-              callback.failure("Evaluation failed");
-            }
+            InternalContext internalContext = getInternalContext();
+            Factory stringFactory = internalContext.getValueLoader().getLoadableStringFactory();
+            ValueMirror mirror =
+                V8Helper.createMirrorFromLookup(body, stringFactory).getValueMirror();
+            JsVariable variable = new JsVariableImpl(internalContext, mirror, expression);
+            callback.success(variable);
           }
           @Override
           public void failure(String message) {

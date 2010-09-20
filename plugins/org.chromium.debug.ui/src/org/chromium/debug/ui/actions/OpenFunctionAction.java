@@ -1,3 +1,7 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
@@ -11,6 +15,7 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.debug.core.model.IDebugElement;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ISourceLocator;
 import org.eclipse.debug.core.model.IValue;
@@ -32,56 +37,34 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
- * The action for context view in Variable view that opens selected function source text in editor.
+ * The action for context menu in Variable/Expression views that opens selected
+ * function source text in editor.
  */
-public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelegate,
+public abstract class OpenFunctionAction implements IObjectActionDelegate,
     IActionDelegate2 {
-  public static class ForVariable extends OpenFunctionAction<Variable> {
-    @Override
-    protected Variable castElement(Object element) {
-      if (element instanceof Variable == false) {
-        return null;
-      }
-      return (Variable) element;
-    }
-    @Override
-    protected JsValue getJsValue(Variable variable) {
-      JsVariable jsVariable = variable.getJsVariable();
-      return jsVariable.getValue();
-    }
-    @Override
-    protected DebugTargetImpl getDebugTarget(Variable variable) {
-      return variable.getDebugTarget();
+  public static class ForVariable extends OpenFunctionAction {
+    public ForVariable() {
+      super(VARIABLE_VIEW_ELEMENT_HANDLER);
     }
   }
-  public static class ForExpression extends OpenFunctionAction<IWatchExpression> {
-    @Override
-    protected IWatchExpression castElement(Object element) {
-      if (element instanceof IWatchExpression == false) {
-        return null;
-      }
-      return (IWatchExpression) element;
-    }
-    @Override
-    protected DebugTargetImpl getDebugTarget(IWatchExpression expression) {
-      IDebugTarget debugTarget = expression.getDebugTarget();
-      if (debugTarget instanceof DebugTargetImpl == false) {
-        return null;
-      }
-      return (DebugTargetImpl) debugTarget;
-    }
-    @Override
-    protected JsValue getJsValue(IWatchExpression expression) {
-      IValue value = expression.getValue();
-      if (value instanceof Value == false) {
-        return null;
-      }
-      Value chromiumValue = (Value) value;
-      return chromiumValue.getJsValue();
+  public static class ForExpression extends OpenFunctionAction {
+    public ForExpression() {
+      super(EXPRESSION_VIEW_ELEMENT_HANDLER);
     }
   }
 
+  interface VariableWrapper {
+    JsValue getJsValue();
+    IDebugElement getDebugElement();
+    DebugTargetImpl getDebugTarget();
+  }
+
+  private final ElementHandler elementHandler;
   private Runnable currentRunnable = null;
+
+  protected OpenFunctionAction(ElementHandler elementHandler) {
+    this.elementHandler = elementHandler;
+  }
 
   public void setActivePart(IAction action, IWorkbenchPart targetPart) {
   }
@@ -94,14 +77,20 @@ public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelega
   }
 
   public void selectionChanged(IAction action, ISelection selection) {
-    final ELEMENT variable = getElementFromSelection(selection);
-    final JsFunction jsFunction = getJsFunctionFromElement(variable);
-
-    currentRunnable = createRunnable(variable, jsFunction);
+    VariableWrapper wrapper = getElementFromSelection(selection, elementHandler);
+    currentRunnable = createRunnable(wrapper);
     action.setEnabled(currentRunnable != null);
   }
 
-  private Runnable createRunnable(final ELEMENT element, final JsFunction jsFunction) {
+  private Runnable createRunnable(VariableWrapper wrapper) {
+    if (wrapper == null) {
+      return null;
+    }
+    final DebugTargetImpl debugTarget = wrapper.getDebugTarget();
+    if (debugTarget == null) {
+      return null;
+    }
+    final JsFunction jsFunction = getJsFunctionFromElement(wrapper);
     if (jsFunction == null) {
       return null;
     }
@@ -114,10 +103,6 @@ public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelega
 
         Script script = jsFunction.getScript();
         if (script == null) {
-          return;
-        }
-        DebugTargetImpl debugTarget = getDebugTarget(element);
-        if (debugTarget == null) {
           return;
         }
         ISourceLocator sourceLocator = debugTarget.getLaunch().getSourceLocator();
@@ -160,11 +145,11 @@ public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelega
     currentRunnable.run();
   }
 
-  private JsFunction getJsFunctionFromElement(ELEMENT element) {
-    if (element == null) {
+  private JsFunction getJsFunctionFromElement(VariableWrapper wrapper) {
+    if (wrapper == null) {
       return null;
     }
-    JsValue jsValue = getJsValue(element);
+    JsValue jsValue = wrapper.getJsValue();
     if (jsValue == null) {
       return null;
     }
@@ -175,7 +160,8 @@ public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelega
     return jsObject.asFunction();
   }
 
-  private ELEMENT getElementFromSelection(ISelection selection) {
+  static VariableWrapper getElementFromSelection(ISelection selection,
+      ElementHandler elementHandler) {
     if (selection instanceof IStructuredSelection == false) {
       return null;
     }
@@ -185,13 +171,59 @@ public abstract class OpenFunctionAction<ELEMENT> implements IObjectActionDelega
       return null;
     }
     Object element = structuredSelection.getFirstElement();
-    ELEMENT typedElement = castElement(element);
-    return typedElement;
+    return elementHandler.castElement(element);
   }
 
-  protected abstract ELEMENT castElement(Object element);
+  static abstract class ElementHandler {
+    protected abstract VariableWrapper castElement(Object element);
+  }
 
-  protected abstract JsValue getJsValue(ELEMENT element);
-
-  protected abstract DebugTargetImpl getDebugTarget(ELEMENT element);
+  static final ElementHandler VARIABLE_VIEW_ELEMENT_HANDLER = new ElementHandler() {
+    @Override protected VariableWrapper castElement(Object element) {
+      if (element instanceof Variable == false) {
+        return null;
+      }
+      final Variable variable = (Variable) element;
+      return new VariableWrapper() {
+        public JsValue getJsValue() {
+          JsVariable jsVariable = variable.getJsVariable();
+          return jsVariable.getValue();
+        }
+        public IDebugElement getDebugElement() {
+          return variable;
+        }
+        public DebugTargetImpl getDebugTarget() {
+          return variable.getDebugTarget();
+        }
+      };
+    }
+  };
+  static final ElementHandler EXPRESSION_VIEW_ELEMENT_HANDLER = new ElementHandler() {
+    @Override protected VariableWrapper castElement(Object element) {
+      if (element instanceof IWatchExpression == false) {
+        return null;
+      }
+      final IWatchExpression watchExpression = (IWatchExpression) element;
+      return new VariableWrapper() {
+        public JsValue getJsValue() {
+          IValue value = watchExpression.getValue();
+          if (value instanceof Value == false) {
+            return null;
+          }
+          Value chromiumValue = (Value) value;
+          return chromiumValue.getJsValue();
+        }
+        public IDebugElement getDebugElement() {
+          return watchExpression;
+        }
+        public DebugTargetImpl getDebugTarget() {
+          IDebugTarget debugTarget = watchExpression.getDebugTarget();
+          if (debugTarget instanceof DebugTargetImpl == false) {
+            return null;
+          }
+          return (DebugTargetImpl) debugTarget;
+        }
+      };
+    }
+  };
 }

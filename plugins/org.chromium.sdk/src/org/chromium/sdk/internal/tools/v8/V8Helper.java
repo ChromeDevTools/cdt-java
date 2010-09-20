@@ -55,7 +55,8 @@ public class V8Helper {
   /**
    * Loads all scripts and stores them in ScriptManager.
    * @param callback to invoke when the script reloading has completed
-   * @param syncCallback to invoke after callback whether it normally returned or threw an exception
+   * @param syncCallback to invoke after callback whether it normally returned
+   *     or threw an exception
    */
   public static void reloadAllScriptsAsync(final DebugSession debugSession,
       final ScriptLoadCallback callback, SyncCallback syncCallback) {
@@ -188,7 +189,8 @@ public class V8Helper {
    * @return a {@link PropertyHoldingValueMirror} instance, containing data
    *         from jsonValue; not null
    */
-  public static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle) {
+  public static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle,
+      LoadableString.Factory stringFactory) {
     String text = valueHandle.text();
     if (text == null) {
       throw new ValueLoadException("Bad lookup result");
@@ -199,7 +201,7 @@ public class V8Helper {
     if (type == null) {
       throw new ValueLoadException("Bad lookup result: type field not recognized: " + typeString);
     }
-    return createMirrorFromLookup(valueHandle, type);
+    return createMirrorFromLookup(valueHandle, type, stringFactory);
   }
 
   /**
@@ -214,18 +216,30 @@ public class V8Helper {
     }
     return createValueMirror(withData);
   }
-  public static ValueMirror createValueMirrorOptional(ValueHandle valueHandle) {
-    return createValueMirror(valueHandle);
+  public static ValueMirror createValueMirrorOptional(ValueHandle valueHandle,
+      LoadableString.Factory stringFactory) {
+    return createValueMirror(valueHandle, stringFactory);
   }
 
-  private static ValueMirror createValueMirror(ValueHandle valueHandle) {
+  private static ValueMirror createValueMirror(ValueHandle valueHandle,
+      LoadableString.Factory stringFactory) {
     String className = valueHandle.className();
     Type type = JsDataTypeUtil.fromJsonTypeAndClassName(valueHandle.type(), className);
     if (type == null) {
       type = Type.TYPE_OBJECT;
     }
-    String text = valueHandle.text();
-    return createMirrorFromLookup(valueHandle, type).getValueMirror();
+    return createMirrorFromLookup(valueHandle, type, stringFactory).getValueMirror();
+  }
+
+  private static LoadableString createLoadableString(ValueHandle handle,
+      LoadableString.Factory stringFactory) {
+    Long len = handle.length();
+    Long toIndex = handle.toIndex();
+    if (len != null && toIndex != null && len.longValue() != toIndex.longValue()) {
+      // String is not fully loaded.
+      return stringFactory.create(handle);
+    }
+    return new LoadableString.Immutable(handle.text());
   }
 
   private static ValueMirror createValueMirror(RefWithDisplayData jsonValue) {
@@ -247,13 +261,15 @@ public class V8Helper {
         } else {
           valueStr = valueObj.toString();
         }
-        return ValueMirror.createScalar(valueStr, type, className).getValueMirror();
+
+        LoadableString stringValue = new LoadableString.Immutable(valueStr);
+        return ValueMirror.createScalar(stringValue, type, className).getValueMirror();
       }
     }
   }
 
   private static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle,
-      Type type) {
+      Type type, LoadableString.Factory stringFactory) {
     if (Type.isObjectType(type)) {
       ObjectValueHandle objectValueHandle = valueHandle.asObject();
       int refId = (int) valueHandle.handle();
@@ -268,7 +284,8 @@ public class V8Helper {
       }
       return ValueMirror.createObject(refId, subpropertiesMirror, type, valueHandle.className());
     } else {
-      return ValueMirror.createScalar(valueHandle.text(), type, valueHandle.className());
+      return ValueMirror.createScalar(createLoadableString(valueHandle, stringFactory), type,
+          valueHandle.className());
     }
   }
 
