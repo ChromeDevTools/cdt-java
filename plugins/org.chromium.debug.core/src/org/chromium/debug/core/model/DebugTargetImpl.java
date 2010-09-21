@@ -117,6 +117,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     breakpointManager.addBreakpointListener(this);
     breakpointManager.addBreakpointManagerListener(workspaceRelations.getBreakpointHandler());
     workspaceRelations.getBreakpointHandler().initBreakpointManagerListenerState(breakpointManager);
+    workspaceRelations.getBreakpointHandler().readBreakExceptionStateFromRemote();
 
     invokeAttachCallback(attachCallback);
 
