@@ -7,7 +7,6 @@ package org.chromium.debug.core.model;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -20,9 +19,9 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
+import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -347,12 +346,18 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
+    public void readBreakExceptionStateFromRemote() {
+      setBreakExceptionStateImpl(ExceptionCatchType.CAUGHT, null);
+      setBreakExceptionStateImpl(ExceptionCatchType.UNCAUGHT, null);
+    }
     public Boolean getBreakExceptionState(ExceptionCatchType catchType) {
       return breakExceptionState.get(catchType);
     }
 
-    public void setBreakExceptionState(final ExceptionCatchType catchType,
-        boolean value) {
+    public void setBreakExceptionState(ExceptionCatchType catchType, boolean value) {
+      setBreakExceptionStateImpl(catchType, Boolean.valueOf(value));
+    }
+    private void setBreakExceptionStateImpl(final ExceptionCatchType catchType, Boolean value) {
       JavascriptVm.GenericCallback<Boolean> callback =
           new JavascriptVm.GenericCallback<Boolean>() {
             public void success(Boolean newValue) {

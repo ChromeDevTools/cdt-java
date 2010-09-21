@@ -105,6 +105,7 @@ public interface WorkspaceBridge {
     void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit);
     void initBreakpointManagerListenerState(IBreakpointManager breakpointManager);
 
+    void readBreakExceptionStateFromRemote();
     Boolean getBreakExceptionState(JavascriptVm.ExceptionCatchType catchType);
     void setBreakExceptionState(JavascriptVm.ExceptionCatchType catchType, boolean value);
   }

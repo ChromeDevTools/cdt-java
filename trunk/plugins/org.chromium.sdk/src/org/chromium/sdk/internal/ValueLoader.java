@@ -322,7 +322,7 @@ public class ValueLoader {
         public void reloadBigger(final GenericCallback<Void> callback,
             SyncCallback syncCallback) {
 
-          long currentlyLoadedSize = valueRef.get().actualSize;
+          long currentlyLoadedSize = valueRef.get().loadedSize;
           long newRequstedSize = chooseNewMaxStringLength(currentlyLoadedSize);
 
           JavascriptVm.GenericCallback<ValueHandle> innerCallback =
@@ -370,8 +370,7 @@ public class ValueLoader {
           }
         }
         private long chooseNewMaxStringLength(long currentSize) {
-          // Simple strategy.
-          return currentSize * 10;
+          return Math.max(currentSize * 10, 64 * 1024);
         }
       };
     }
