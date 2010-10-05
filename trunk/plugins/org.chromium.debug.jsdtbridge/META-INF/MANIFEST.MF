@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.chromium.debug.jsdtbridge;singleton:=true
 Bundle-Version: 0.1.7.qualifier
+Bundle-Localization: plugin
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Require-Bundle: org.chromium.debug.core;bundle-version="0.1.7",
  org.eclipse.wst.jsdt.debug.core;bundle-version="1.0.0",
