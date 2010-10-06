@@ -4,3 +4,7 @@
 
 == Components of the system ==
 The schema depicts how Debugger/SDK communicate with Chrome or standalone V8-based application. Note that the lower part of the picture describes design that is being developed now.
+
+http://chromedevtools.googlecode.com/svn/wiki/ComponentsAndFuture.png
+
+([https://docs.google.com/drawings/edit?id=1E12s1IBmH1MA5fLMQiAPiC9PrdcjRTFLik-bEi28OSE picture source])
