@@ -1,0 +1,7 @@
+#summary Build instructions.
+
+= How to Build Debugger From Sources =
+
+Check out {{{/plugins}}} directory from {{{/trunk}}} or from branches. The directory contains several Eclipse project directories; import them in Eclipse.
+
+Eclipse should build all projects. Run or Debug them as "Eclipse Application".
