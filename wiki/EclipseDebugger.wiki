@@ -14,7 +14,7 @@ http://chromedevtools.googlecode.com/svn/update/dev/
 
 The !JavaScript debugger exposes the following capabilities:
   * Breakpoints
-    * breakpoint can be set before script is loaded
+    * breakpoint can be set before script is loaded or before debugger is connected
   * Watches
   * Step in/over/out
   * Stack context when suspended
