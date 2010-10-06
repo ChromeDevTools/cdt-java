@@ -2,6 +2,8 @@
 
 = How to Build Debugger From Sources =
 
-Check out {{{/plugins}}} directory from {{{/trunk}}} or from branches. The directory contains several Eclipse project directories; import them in Eclipse.
+You will need developer Eclipse (with JDT and PDE) and you will need target Eclipse (those 2 may be a single instance of Eclipse though).
+
+The directory {{{/plugins}}} from {{{/trunk}}} or from branches contains several Eclipse projects. Check them out and import into Eclipse.
 
 Eclipse should build all projects. Run or Debug them as "Eclipse Application".
