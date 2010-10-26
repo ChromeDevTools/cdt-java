@@ -15,9 +15,9 @@ public interface JsFunction extends JsObject {
   Script getScript();
 
   /**
-   * Returns position inside a script. The position is of opening parenthesis of
-   * function arguments, measured in unicode characters from the beginning of script text file.
-   * @return position or -1 if position is not available
+   * Returns position of opening parenthesis of function arguments. Position is absolute
+   * within resource (not relative to script start position).
+   * @return position or null if position is not available
    */
-  int getSourcePosition();
+  TextStreamPosition getOpenParenPosition();
 }

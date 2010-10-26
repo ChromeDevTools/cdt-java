@@ -14,6 +14,7 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TextStreamPosition;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.model.IDebugElement;
 import org.eclipse.debug.core.model.IDebugTarget;
@@ -126,7 +127,11 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
           return;
         }
         ITextEditor textEditor = (ITextEditor) editor;
-        textEditor.selectAndReveal(jsFunction.getSourcePosition(), 0);
+        TextStreamPosition openParenPosition = jsFunction.getOpenParenPosition();
+        if (openParenPosition == null) {
+          return;
+        }
+        textEditor.selectAndReveal(openParenPosition.getOffset(), 0);
       }
     };
   }

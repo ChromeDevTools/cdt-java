@@ -484,7 +484,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       CallFrame topFrame = callFrames.get(0);
       Script script = topFrame.getScript();
       scriptName = script != null ? script.getName() : Messages.DebugTargetImpl_Unknown;
-      lineNumber = topFrame.getLineNumber();
+      lineNumber = topFrame.getStatementStartPosition().getLine();
     } else {
       scriptName = Messages.DebugTargetImpl_Unknown;
       lineNumber = Messages.DebugTargetImpl_Unknown;

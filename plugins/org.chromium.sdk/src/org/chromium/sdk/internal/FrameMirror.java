@@ -58,6 +58,14 @@ public class FrameMirror {
     return lineNumber;
   }
 
+  public int getColumn() {
+    return frameObject.column().intValue();
+  }
+
+  public int getOffset() {
+    return frameObject.position().intValue();
+  }
+
   public String getFunctionName() {
     return frameFunction;
   }

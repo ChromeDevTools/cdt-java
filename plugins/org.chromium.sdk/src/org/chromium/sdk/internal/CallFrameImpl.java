@@ -14,6 +14,8 @@ import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.internal.tools.v8.request.FrameMessage;
 
 /**
  * A generic implementation of the CallFrame interface.
@@ -106,21 +108,8 @@ public class CallFrameImpl implements CallFrame {
     }
   }
 
-  public int getLineNumber() {
-    Script script = frameMirror.getScript();
-    // Recalculate respective to the script start
-    // (frameMirror.getLine() returns the line offset in the resource).
-    return script != null
-        ? frameMirror.getLine() - script.getStartLine()
-        : -1;
-  }
-
-  public int getCharStart() {
-    return -1;
-  }
-
-  public int getCharEnd() {
-    return -1;
+  public TextStreamPosition getStatementStartPosition() {
+    return textStreamPosition;
   }
 
   public String getFunctionName() {
@@ -171,6 +160,18 @@ public class CallFrameImpl implements CallFrame {
     @Override
     public InternalContext getInternalContext() {
       return context;
+    }
+  };
+
+  private final TextStreamPosition textStreamPosition = new TextStreamPosition() {
+    public int getOffset() {
+      return frameMirror.getOffset();
+    }
+    public int getLine() {
+      return frameMirror.getLine();
+    }
+    public int getColumn() {
+      return frameMirror.getColumn();
     }
   };
 }

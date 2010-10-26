@@ -6,11 +6,14 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.TextStreamPosition;
 
 /**
  * Generic implementation of {@link JsFunction}.
  */
 class JsFunctionImpl extends JsObjectImpl implements JsFunction {
+  private volatile TextStreamPosition openParenPosition = null;
+
   JsFunctionImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
     super(context, parentFqn, valueState);
   }
@@ -25,6 +28,25 @@ class JsFunctionImpl extends JsObjectImpl implements JsFunction {
     }
     DebugSession debugSession = getInternalContext().getDebugSession();
     return debugSession.getScriptManager().findById(Long.valueOf(scriptId));
+  }
+
+  public TextStreamPosition getOpenParenPosition() {
+    if (openParenPosition == null) {
+      final FunctionAdditionalProperties additionalProperties =
+          (FunctionAdditionalProperties) getSubpropertiesMirror().getAdditionalProperties();
+      openParenPosition = new TextStreamPosition() {
+        public int getOffset() {
+          return additionalProperties.getSourcePosition();
+        }
+        public int getLine() {
+          return additionalProperties.getLine();
+        }
+        public int getColumn() {
+          return additionalProperties.getColumn();
+        }
+      };
+    }
+    return openParenPosition;
   }
 
   public int getSourcePosition() {

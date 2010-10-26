@@ -22,7 +22,7 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.TextStreamPosition;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
@@ -166,11 +166,10 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
         // TODO(peter.rybin): should we localize it?
         return "#Scope";
       }
-      public Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException {
+      public Collection<? extends JsVariable> getProperties() {
         return jsScope.getVariables();
       }
-      public Collection<? extends JsVariable> getInternalProperties()
-          throws MethodIsBlockingException {
+      public Collection<? extends JsVariable> getInternalProperties() {
         return Collections.emptyList();
       }
       public JsVariable getProperty(String name) {
@@ -211,22 +210,25 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public int getLineNumber() throws DebugException {
-    // convert 0-based to 1-based
-    int inScriptLine = stackFrame.getLineNumber() + 1;
-    Script script = stackFrame.getScript();
-    if (script != null) {
-      return inScriptLine + script.getStartLine();
-    } else {
-      return inScriptLine;
+    TextStreamPosition statementStartPosition = stackFrame.getStatementStartPosition();
+    if (statementStartPosition == null) {
+      return -1;
     }
+    return statementStartPosition.getLine();
   }
 
   public int getCharStart() throws DebugException {
-    return stackFrame.getCharStart();
+    TextStreamPosition statementStartPosition = stackFrame.getStatementStartPosition();
+    if (statementStartPosition == null) {
+      return -1;
+    }
+    return statementStartPosition.getOffset();
   }
 
   public int getCharEnd() throws DebugException {
-    return -1;
+    // There's no default return value for this method when getCharStart() return
+    // non-default value. Let's return the same number, it's the best we have.
+    return getCharStart();
   }
 
   public String getName() throws DebugException {

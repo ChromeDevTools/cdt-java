@@ -4,23 +4,31 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
+
 /**
  * A holder for the function-specific properties.
  */
 public class FunctionAdditionalProperties {
-  private final int sourcePosition;
-  private final int scriptId;
+  private final FunctionValueHandle jsonWithProperties;
 
-  public FunctionAdditionalProperties(int sourcePosition, int scriptId) {
-    this.sourcePosition = sourcePosition;
-    this.scriptId = scriptId;
+  public FunctionAdditionalProperties(FunctionValueHandle jsonWithProperties) {
+    this.jsonWithProperties = jsonWithProperties;
   }
 
   /**
    * @return source position or {@link #NO_POSITION} if position is not available
    */
   public int getSourcePosition() {
-    return sourcePosition;
+    return castLongToInt(jsonWithProperties.position(), NO_POSITION);
+  }
+
+  public int getLine() {
+    return castLongToInt(jsonWithProperties.line(), NO_POSITION);
+  }
+
+  public int getColumn() {
+    return castLongToInt(jsonWithProperties.column(), NO_POSITION);
   }
 
   public static final int NO_POSITION = -1;
@@ -29,8 +37,15 @@ public class FunctionAdditionalProperties {
    * @return script id or {@link #NO_SCRIPT_ID} if script is not available
    */
   public int getScriptId() {
-    return scriptId;
+    return castLongToInt(jsonWithProperties.scriptId(), NO_SCRIPT_ID);
   }
 
   public static final int NO_SCRIPT_ID = -1;
+
+  private static int castLongToInt(Long l, int defaultValue) {
+    if (l == null) {
+      l = Long.valueOf(defaultValue);
+    }
+    return l.intValue();
+  }
 }
