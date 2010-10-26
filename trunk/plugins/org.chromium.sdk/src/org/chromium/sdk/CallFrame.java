@@ -30,30 +30,17 @@ public interface CallFrame {
   JsVariable getReceiverVariable();
 
   /**
-   * @return the current line number in the Script corresponding to this frame
-   *         (0-based) or {@code -1} if unknown
-   * TODO(peter.rybin): consider returning absolute line number here, not in-script number.
-   */
-  int getLineNumber();
-
-  /**
-   * @return the start character position in the line corresponding to the
-   *         current statement of this frame or {@code -1} if unknown
-   */
-  int getCharStart();
-
-  /**
-   * @return the end character position in the line corresponding to the current
-   *         statement of this frame or {@code -1} if unknown
-   */
-  int getCharEnd();
-
-  /**
    * @return the source script this call frame is associated with. {@code null}
    *         if no script is associated with the call frame (e.g. an exception
    *         could have been thrown in a native script)
    */
   Script getScript();
+
+  /**
+   * @return the start position (absolute) of the current statement in the Script corresponding
+   *     to this frame or null if position in not available
+   */
+  TextStreamPosition getStatementStartPosition();
 
   /**
    * @return the name of the current function of this frame

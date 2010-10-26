@@ -295,15 +295,7 @@ public class V8Helper {
       FUNCTION_PROPERTY_FACTORY2 =
       new SubpropertiesMirror.JsonBased.AdditionalPropertyFactory<FunctionValueHandle>() {
     public Object createAdditionalProperties(FunctionValueHandle jsonWithProperties) {
-      Long pos = jsonWithProperties.position();
-      if (pos == null) {
-        pos = Long.valueOf(FunctionAdditionalProperties.NO_POSITION);
-      }
-      Long scriptId = jsonWithProperties.scriptId();
-      if (scriptId == null) {
-        scriptId = Long.valueOf(FunctionAdditionalProperties.NO_SCRIPT_ID);
-      }
-      return new FunctionAdditionalProperties(pos.intValue(), scriptId.intValue());
+      return new FunctionAdditionalProperties(jsonWithProperties);
     }
   };
 
