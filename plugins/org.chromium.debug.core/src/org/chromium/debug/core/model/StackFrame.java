@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.sourcemap.SourcePosition;
+import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsArray;
@@ -41,6 +43,8 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   private final CallFrame stackFrame;
 
   private IVariable[] variables;
+
+  private volatile CachedUserPosition userCachedSourcePosition = null;
 
   /**
    * Constructs a stack frame for the given handler using the FrameMirror data
@@ -210,19 +214,11 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   public int getLineNumber() throws DebugException {
-    TextStreamPosition statementStartPosition = stackFrame.getStatementStartPosition();
-    if (statementStartPosition == null) {
-      return -1;
-    }
-    return statementStartPosition.getLine();
+    return getUserPosition().getLine() + 1;
   }
 
   public int getCharStart() throws DebugException {
-    TextStreamPosition statementStartPosition = stackFrame.getStatementStartPosition();
-    if (statementStartPosition == null) {
-      return -1;
-    }
-    return statementStartPosition.getOffset();
+    return -1;
   }
 
   public int getCharEnd() throws DebugException {
@@ -303,19 +299,6 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     getThread().terminate();
   }
 
-  /**
-   * Returns the name of the source file this stack frame is associated with.
-   *
-   * @return the name of the source file this stack frame is associated with
-   */
-  String getSourceName() {
-    Script script = stackFrame.getScript();
-    if (script == null) {
-      return Messages.StackFrame_UnknownScriptName;
-    }
-    return script.getName();
-  }
-
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof StackFrame) {
@@ -379,5 +362,40 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       return new EvaluateContext(getCallFrame().getEvaluateContext(), getDebugTarget());
     }
     return super.getAdapter(adapter);
+  }
+
+  private SourcePosition getUserPosition() {
+    CachedUserPosition currentCachedPosition = userCachedSourcePosition;
+    if (currentCachedPosition == null || currentCachedPosition.token.isUpdated()) {
+      VmResourceId id;
+      Script script = stackFrame.getScript();
+      if (script == null) {
+        id = null;
+      } else {
+        id = VmResourceId.forScript(script);
+      }
+      TextStreamPosition vmPosition = stackFrame.getStatementStartPosition();
+      SourcePositionMap sourceTransformationMap = getDebugTarget().getSourcePositionMap();
+      SourcePositionMap.Token token = sourceTransformationMap.getCurrentToken();
+      SourcePosition originalPosition = sourceTransformationMap.calculateUserPosition(id,
+          vmPosition.getLine(), vmPosition.getColumn());
+      currentCachedPosition = new CachedUserPosition(originalPosition, token);
+      userCachedSourcePosition = currentCachedPosition;
+    }
+    return currentCachedPosition.position;
+  }
+
+  public VmResourceId getVmResourceId() {
+    return getUserPosition().getId();
+  }
+
+  private final class CachedUserPosition {
+    final SourcePosition position;
+    final SourcePositionMap.Token token;
+
+    CachedUserPosition(SourcePosition position, SourcePositionMap.Token token) {
+      this.position = position;
+      this.token = token;
+    }
   }
 }

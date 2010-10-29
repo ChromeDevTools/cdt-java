@@ -19,6 +19,7 @@ Bundle-ClassPath: bin/,
  .
 Export-Package: org.chromium.debug.core,
  org.chromium.debug.core.model,
+ org.chromium.debug.core.sourcemap,
  org.chromium.debug.core.util
 Eclipse-LazyStart: true
 Bundle-RequiredExecutionEnvironment: J2SE-1.5

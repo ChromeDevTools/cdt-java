@@ -7,6 +7,9 @@ package org.chromium.debug.ui.actions;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.Variable;
+import org.chromium.debug.core.model.VmResourceId;
+import org.chromium.debug.core.sourcemap.SourcePosition;
+import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.ui.JsDebugModelPresentation;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.chromium.sdk.JsFunction;
@@ -23,6 +26,8 @@ import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IWatchExpression;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Event;
@@ -31,10 +36,12 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -131,7 +138,26 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         if (openParenPosition == null) {
           return;
         }
-        textEditor.selectAndReveal(openParenPosition.getOffset(), 0);
+
+        SourcePositionMap positionMap = debugTarget.getSourcePositionMap();
+        SourcePosition originalPosition = positionMap.calculateUserPosition(
+            VmResourceId.forScript(script), openParenPosition.getLine(),
+            openParenPosition.getColumn());
+        int offset = calculateOffset(textEditor, originalPosition);
+
+        textEditor.selectAndReveal(offset, 0);
+      }
+
+      private int calculateOffset(ITextEditor editor, SourcePosition originalPosition) {
+        IDocumentProvider provider = editor.getDocumentProvider();
+        IDocument document = provider.getDocument(editor.getEditorInput());
+        int lineStartOffset;
+        try {
+          lineStartOffset = document.getLineOffset(originalPosition.getLine());
+        } catch (BadLocationException e) {
+          throw new RuntimeException(e);
+        }
+        return lineStartOffset + originalPosition.getColumn();
       }
     };
   }
