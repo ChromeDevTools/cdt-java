@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.sourcemap.SourcePosition;
+import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.State;
@@ -56,6 +58,26 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private boolean isDisconnected = false;
 
   private final WorkspaceBridge.Factory workspaceBridgeFactory;
+
+  // TODO(peter.rybin): provide full-featured implementation.
+  private final SourcePositionMap trivialSourcePositionMap = new SourcePositionMap() {
+    public SourcePosition calculateVmPosition(VmResourceId id, int line,
+        int column) {
+      return new SourcePosition(id, line, column);
+    }
+    public SourcePosition calculateUserPosition(VmResourceId id, int line,
+        int column) {
+      return new SourcePosition(id, line, column);
+    }
+    public Token getCurrentToken() {
+      return token;
+    }
+    private final Token token = new Token() {
+      public boolean isUpdated() {
+        return false;
+      }
+    };
+  };
 
   private WorkspaceBridge workspaceRelations = null;
 
@@ -597,5 +619,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public WorkspaceBridge getWorkspaceRelations() {
     return workspaceRelations;
+  }
+
+  public SourcePositionMap getSourcePositionMap() {
+    return trivialSourcePositionMap;
   }
 }
