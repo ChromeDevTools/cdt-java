@@ -14,7 +14,7 @@ import org.eclipse.debug.core.model.IBreakpoint;
  * A particular implementation of adapter should be registered as an extension.
  */
 public interface JavaScriptBreakpointAdapter {
-  String EXTENSION_POINT_ID = "org.chromium.debug.core.model.JavaScriptBreakpointAdapter";
+  String EXTENSION_POINT_ID = "org.chromium.debug.core.model_JavaScriptBreakpointAdapter";
 
   WrappedBreakpoint tryWrapBreakpoint(IBreakpoint breakpoint);
 
