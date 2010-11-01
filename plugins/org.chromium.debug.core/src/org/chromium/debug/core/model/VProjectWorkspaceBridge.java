@@ -12,6 +12,7 @@ import java.util.Map;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
+import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
@@ -141,6 +142,19 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     return resourceManager.getVmResource(id);
   }
 
+  public VmResource getVProjectVmResource(IFile file) {
+    VmResourceId resourceId = resourceManager.getResourceId(file);
+    if (resourceId == null) {
+      return null;
+    }
+    return resourceManager.getVmResource(resourceId);
+  }
+
+  public VmResource createTemporaryFile(Metadata metadata,
+      String proposedFileName) {
+    return resourceManager.createTemporaryFile(metadata, proposedFileName);
+  }
+
   private VmResourceId findVmResourceIdFromWorkspaceFile(IFile resource) throws CoreException {
     return sourceDirector.getReverseSourceLookup().findVmResource(resource);
   }
@@ -228,24 +242,23 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     public void createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
         final VmResourceId vmResourceId,
         final CreateCallback createCallback, SyncCallback syncCallback) {
+      ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
+          new ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback() {
+        public void success(Breakpoint breakpoint) {
+          breakpointInTargetMap.add(breakpoint, lineBreakpoint);
+          if (createCallback != null) {
+            createCallback.success();
+          }
+        }
+        public void failure(String errorMessage) {
+          if (createCallback == null) {
+            ChromiumDebugPlugin.logError(errorMessage);
+          } else {
+            createCallback.failure(new Exception(errorMessage));
+          }
+        }
+      };
       try {
-        ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
-            new ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback() {
-          public void success(Breakpoint breakpoint) {
-            breakpointInTargetMap.add(breakpoint, lineBreakpoint);
-            if (createCallback != null) {
-              createCallback.success();
-            }
-          }
-          public void failure(String errorMessage) {
-            if (createCallback == null) {
-              ChromiumDebugPlugin.logError(errorMessage);
-            } else {
-              createCallback.failure(new Exception(errorMessage));
-            }
-          }
-        };
-
         ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceId, debugTargetImpl,
             callback, syncCallback);
       } catch (CoreException e) {

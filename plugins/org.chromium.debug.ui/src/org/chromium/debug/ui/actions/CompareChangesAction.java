@@ -6,13 +6,11 @@ package org.chromium.debug.ui.actions;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.List;
 
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.CompareEditorInput;
-import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.IModificationDate;
 import org.eclipse.compare.IStreamContentAccessor;
 import org.eclipse.compare.ITypedElement;
@@ -22,31 +20,28 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.Shell;
 
 /**
- * A very preliminary implementation of action that should let user compare his script with
- * its current state on remote VM.
- * TODO(peter.rybin): consider removing this action as its functionality is duplicated by
- * our new wizard.
+ * TODO(peter.rybin): consider removing this class as it only holds a nested class
+ * used elsewhere.
+ * TODO(peter.rybin): localize text strings properly.
  */
-public class CompareChangesAction extends V8ScriptAction {
-  @Override
-  protected void execute(List<? extends ScriptTargetMapping> pairs, Shell shell) {
-    ScriptTargetMapping filePair = getSingleFilePair(pairs);
-    LiveEditCompareInput input =
-        new LiveEditCompareInput(filePair.getFile(), filePair.getVmResource());
-    CompareUI.openCompareEditor(input);
-  }
-
+public class CompareChangesAction {
   public static class LiveEditCompareInput extends CompareEditorInput {
     private final IFile file;
     private final VmResource script;
+    private final VmResource.ScriptHolder scriptHolder;
 
-    public LiveEditCompareInput(IFile file, VmResource vmResource) {
+    public LiveEditCompareInput(ScriptTargetMapping filePair) {
+      this(filePair.getFile(), filePair.getVmResource(), filePair.getScriptHolder());
+    }
+
+    public LiveEditCompareInput(IFile file, VmResource vmResource,
+        VmResource.ScriptHolder scriptHolder) {
       super(createCompareConfiguration());
       this.file = file;
       this.script = vmResource;
+      this.scriptHolder = scriptHolder;
     }
 
     private static CompareConfiguration createCompareConfiguration() {
@@ -78,10 +73,11 @@ public class CompareChangesAction extends V8ScriptAction {
       };
       CompareItem right = new CompareItem() {
         public String getName() {
-          return "File in VM " + script.getFileName(); //$NON-NLS-1$
+          String fileInVmName = script.getId().getEclipseSourceName();
+          return "File in VM " + fileInVmName; //$NON-NLS-1$
         }
         public InputStream getContents() throws CoreException {
-          String source = script.getScript().getSource();
+          String source = scriptHolder.getSingleScript().getSource();
           return new ByteArrayInputStream(source.getBytes());
         }
       };

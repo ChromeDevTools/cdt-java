@@ -137,4 +137,15 @@ public interface WorkspaceBridge {
    */
   void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
       BreakpointSynchronizer.Callback callback);
+
+  /**
+   * @return {@link VmResource} representation of the file inside virtual project or null
+   */
+  VmResource getVProjectVmResource(IFile file);
+
+  /**
+   * Creates a temporary file associated with the debug session. The created file should be
+   * represented as a {@link VmResource}.
+   */
+  VmResource createTemporaryFile(VmResource.Metadata metadata, String proposedFileName);
 }
