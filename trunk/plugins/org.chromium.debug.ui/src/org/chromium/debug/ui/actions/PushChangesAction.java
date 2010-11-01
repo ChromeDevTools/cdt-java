@@ -47,7 +47,7 @@ public class PushChangesAction extends V8ScriptAction {
   public static void execute(final ScriptTargetMapping filePair,
       UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
     UpdatableScript updatableScript =
-        LiveEditExtension.castToUpdatableScript(filePair.getVmResource().getScript());
+        LiveEditExtension.castToUpdatableScript(filePair.getScriptHolder().getSingleScript());
 
     if (updatableScript == null) {
       throw new RuntimeException();

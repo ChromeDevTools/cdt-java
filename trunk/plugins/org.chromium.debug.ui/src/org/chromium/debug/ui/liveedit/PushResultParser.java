@@ -32,7 +32,7 @@ class PushResultParser {
   static LiveEditDiffViewer.Input createViewerInput(
       UpdatableScript.ChangeDescription changeDescription, ScriptTargetMapping filePair,
       boolean previewMode) {
-    Script script = filePair.getVmResource().getScript();
+    Script script = filePair.getScriptHolder().getSingleScript();
     IFile file = filePair.getFile();
     String newSourceTemp;
     try {

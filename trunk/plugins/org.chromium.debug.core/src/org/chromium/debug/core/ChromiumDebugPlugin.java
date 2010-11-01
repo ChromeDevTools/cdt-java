@@ -14,6 +14,7 @@ import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -41,7 +42,7 @@ public class ChromiumDebugPlugin extends Plugin {
 
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
-  
+
   private BreakpointWrapManager breakpointWrapManager = null;
 
   private final BreakpointMap breakpointMap = new BreakpointMap();
@@ -97,11 +98,16 @@ public class ChromiumDebugPlugin extends Plugin {
       if (script == null) {
         continue;
       }
-      result.add(new ScriptTargetMapping(localFile, script, target));
+      Metadata metadata = script.getMetadata();
+      if (metadata instanceof VmResource.ScriptHolder == false) {
+        continue;
+      }
+      VmResource.ScriptHolder scriptHolder = (VmResource.ScriptHolder) metadata;
+      result.add(new ScriptTargetMapping(localFile, script, scriptHolder, target));
     }
     return result;
   }
-  
+
   public synchronized BreakpointWrapManager getBreakpointWrapManager() {
     if (breakpointWrapManager == null) {
       breakpointWrapManager = new BreakpointWrapManager();

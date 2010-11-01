@@ -32,23 +32,6 @@ public abstract class V8ScriptAction extends FileBasedAction.Single<IFile> {
 
   protected abstract void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell);
 
-  /**
-   * A temporary method that excludes all cases when there are more than one file pair for a
-   * user file. The proper solution ought to provide a UI for user so that he could review
-   * which debug sessions should be included in action.
-   */
-  protected static ScriptTargetMapping getSingleFilePair(
-      List<? extends ScriptTargetMapping> pairs) {
-    if (pairs.size() == 0) {
-      throw new RuntimeException("File is not associated with any V8 VM");
-    }
-    if (pairs.size() != 1) {
-      throw new RuntimeException(
-          "File is associated with several V8 VMs, this is not supported yet.");
-    }
-    return pairs.get(0);
-  }
-
   static final FileBasedAction.FileFilter<IFile> JS_FILE_NAME_FILTER =
       new FileBasedAction.FileFilter<IFile>() {
     @Override

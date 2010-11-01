@@ -228,34 +228,28 @@ public class ChromiumDebugPluginUtil {
    * @return the result of IFile.getName(), or {@code null} if the creation
    *         has failed
    */
-  public static IFile createFile(IProject project, String filename) {
+  public static IFile createFile(final IProject project, String filename) {
     String patchedName = new File(filename).getName().replace('?', '_'); // simple name
-    String uniqueName = patchedName;
 
-    // TODO(apavlov): refactor this?
-    for (int i = 1; i < 1000; ++i) {
-      String filePathname = uniqueName + CHROMIUM_EXTENSION_SUFFIX;
-      IFile file = project.getFile(filePathname);
-
-      if (file.exists()) {
-        uniqueName = new StringBuilder(patchedName)
-            .append(" (") //$NON-NLS-1$
-            .append(i)
-            .append(')')
-            .toString();
-      } else {
+    UniqueKeyGenerator.Factory<IFile> factory =
+        new UniqueKeyGenerator.Factory<IFile>() {
+      public IFile tryCreate(String uniqueName) {
+        String filePathname = uniqueName + CHROMIUM_EXTENSION_SUFFIX;
+        IFile file = project.getFile(filePathname);
+        if (file.exists()) {
+          return null;
+        }
         try {
           file.create(new ByteArrayInputStream("".getBytes()), false, null); //$NON-NLS-1$
         } catch (CoreException e) {
-          ChromiumDebugPlugin.log(e);
-          return null;
+          throw new RuntimeException(e);
         }
         return file;
       }
-    }
+    };
 
     // Can we have 1000 same-named files?
-    return null;
+    return UniqueKeyGenerator.createUniqueKey(patchedName, 1000, factory);
   }
 
   /**

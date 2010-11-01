@@ -9,7 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.debug.core.util.UniqueKeyGenerator;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -63,22 +65,57 @@ public class ResourceManager {
   public synchronized void addScript(Script newScript) {
     VmResourceId id = VmResourceId.forScript(newScript);
     VmResourceInfo info = vmResourceId2Info.get(id);
+    ScriptSet scriptSet;
     if (info == null) {
-      String fileNameTemplate = createFileNameTemplate(id, newScript);
-      IFile scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, fileNameTemplate);
-      info = new VmResourceInfo(scriptFile, id);
-      vmResourceId2Info.put(id, info);
-      file2Info.put(scriptFile, info);
-
-      info.scripts.add(newScript);
-      writeScriptSource(info.scripts.asCollection(), info.file);
+      scriptSet = new ScriptSet();
+      info = createAndRegisterResourceFile(id, scriptSet);
     } else {
       // TODO(peter.rybin): support adding scripts to one resource at once not to rewrite file
       // every time.
-      info.scripts.add(newScript);
-      writeScriptSource(info.scripts.asCollection(), info.file);
+      scriptSet = (ScriptSet) info.metadata;
     }
+    scriptSet.add(newScript);
+    writeScriptSource(scriptSet.asCollection(), info.file);
   }
+
+  public synchronized VmResource createTemporaryFile(final Metadata metadata,
+      String proposedFileName) {
+
+    UniqueKeyGenerator.Factory<VmResourceInfo> factory =
+        new UniqueKeyGenerator.Factory<VmResourceInfo>() {
+          public VmResourceInfo tryCreate(String uniqueName) {
+            VmResourceId id = VmResourceId.forName(uniqueName);
+            VmResourceInfo info = vmResourceId2Info.get(id);
+            if (info != null) {
+              return null;
+            }
+            return createAndRegisterResourceFile(id, metadata);
+          }
+    };
+
+    // Can we have 1000 same-named files?
+    final int tryLimit = 1000;
+    VmResourceInfo info = UniqueKeyGenerator.createUniqueKey(proposedFileName, tryLimit, factory);
+    return info.vmResourceImpl;
+  }
+
+  private VmResourceInfo createAndRegisterResourceFile(VmResourceId id,
+      VmResource.Metadata metadata) {
+    String fileNameTemplate = createFileNameTemplate(id);
+    IFile scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, fileNameTemplate);
+    VmResourceInfo info = new VmResourceInfo(scriptFile, id, metadata);
+    Object conflict;
+    conflict = vmResourceId2Info.put(id, info);
+    if (conflict != null) {
+      throw new RuntimeException();
+    }
+    conflict = file2Info.put(scriptFile, info);
+    if (conflict != null) {
+      throw new RuntimeException();
+    }
+    return info;
+  }
+
 
   public void scriptCollected(Script script) {
     // Nothing to do. We only use it for generating resource from several scripts.
@@ -90,8 +127,9 @@ public class ResourceManager {
     if (info == null) {
       throw new RuntimeException("Script file not found"); //$NON-NLS-1$
     }
-    info.scripts.add(script);
-    writeScriptSource(info.scripts.asCollection(), info.file);
+    ScriptSet scriptSet = (ScriptSet) info.metadata;
+    scriptSet.add(script);
+    writeScriptSource(scriptSet.asCollection(), info.file);
   }
 
   public synchronized void clear() {
@@ -110,7 +148,7 @@ public class ResourceManager {
     }
   }
 
-  private String createFileNameTemplate(VmResourceId id, Script newScript) {
+  private String createFileNameTemplate(VmResourceId id) {
     return id.createFileNameTemplate(true);
   }
 
@@ -127,33 +165,39 @@ public class ResourceManager {
   private class VmResourceInfo {
     final IFile file;
     final VmResourceId id;
-    final ScriptSet scripts = new ScriptSet();
-    VmResourceInfo(IFile file, VmResourceId id) {
+    final VmResource.Metadata metadata;
+    VmResourceInfo(IFile file, VmResourceId id, VmResource.Metadata metadata) {
       this.file = file;
       this.id = id;
+      this.metadata = metadata;
     }
 
     final VmResource vmResourceImpl = new VmResource() {
       public VmResourceId getId() {
         return id;
       }
-
-      public Script getScript() {
-        synchronized (ResourceManager.this) {
-          return scripts.getSingle();
-        }
+      public Metadata getMetadata() {
+        return metadata;
       }
-
-      public String getFileName() {
-        return file.getName();
+      public IFile getVProjectFile() {
+        return file;
+      }
+      public String getLocalVisibleFileName() {
+        String name = file.getName();
+        if (name.endsWith(ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX)) {
+          return name.substring(0, name.length() -
+              ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX.length());
+        } else {
+          return name;
+        }
       }
     };
   }
 
-  private static class ScriptSet {
+  private static class ScriptSet implements VmResource.ScriptHolder {
     private final Map<Long, Script> idToScript = new HashMap<Long, Script>(2);
 
-    Script getSingle() {
+    public Script getSingleScript() {
       if (idToScript.size() != 1) {
         throw new UnsupportedOperationException(
             "Not supported for compound resources"); //$NON-NLS-1$

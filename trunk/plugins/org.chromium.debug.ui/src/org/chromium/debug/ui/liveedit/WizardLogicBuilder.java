@@ -224,8 +224,7 @@ class WizardLogicBuilder {
       public void update(Updater updater) {
         ScriptTargetMapping filePair = singleVmValue.getValue();
         CompareChangesAction.LiveEditCompareInput input =
-            new CompareChangesAction.LiveEditCompareInput(filePair.getFile(),
-                filePair.getVmResource());
+            new CompareChangesAction.LiveEditCompareInput(filePair);
         DiffNode diffNode = input.prepareInput(new NullProgressMonitor());
         textualDiffPage.getPageElements().getCompareViewerPane().setInput(diffNode);
       }

@@ -16,11 +16,14 @@ import org.eclipse.core.resources.IFile;
 public class ScriptTargetMapping {
   private final IFile file;
   private final VmResource vmResource;
+  private final VmResource.ScriptHolder scriptHolder;
   private final DebugTargetImpl debugTargetImpl;
 
-  public ScriptTargetMapping(IFile file, VmResource vmResource, DebugTargetImpl debugTargetImpl) {
+  public ScriptTargetMapping(IFile file, VmResource vmResource,
+      VmResource.ScriptHolder scriptHolder, DebugTargetImpl debugTargetImpl) {
     this.file = file;
     this.vmResource = vmResource;
+    this.scriptHolder = scriptHolder;
     this.debugTargetImpl = debugTargetImpl;
   }
 
@@ -30,6 +33,10 @@ public class ScriptTargetMapping {
 
   public VmResource getVmResource() {
     return vmResource;
+  }
+
+  public VmResource.ScriptHolder getScriptHolder() {
+    return scriptHolder;
   }
 
   public JavascriptVm getJavascriptVm() {
