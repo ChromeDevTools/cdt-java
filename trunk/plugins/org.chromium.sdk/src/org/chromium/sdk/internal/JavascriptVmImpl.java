@@ -37,10 +37,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   public void setBreakpoint(Breakpoint.Type type, String target, int line,
-      int position, boolean enabled, String condition, int ignoreCount,
+      int column, boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
     getDebugSession().getBreakpointManager()
-        .setBreakpoint(type, target, line, position, enabled, condition, ignoreCount, callback,
+        .setBreakpoint(type, target, line, column, enabled, condition, ignoreCount, callback,
         syncCallback);
   }
 

@@ -23,6 +23,8 @@ public interface VmResource {
    */
   String getLocalVisibleFileName();
 
+  void deleteResourceAndFile();
+
   /**
    * Defines a logic behind a particular resource. Other interfaces should extend this interface
    * and provide more data.

@@ -59,7 +59,11 @@ public class FrameMirror {
   }
 
   public int getColumn() {
-    return frameObject.column().intValue();
+    Long columnObj = frameObject.column();
+    if (columnObj == null) {
+      return -1;
+    }
+    return columnObj.intValue();
   }
 
   public int getOffset() {

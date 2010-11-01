@@ -28,21 +28,18 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   public void initializeParticipants() {
     ISourceLookupParticipant participant = new AbstractSourceLookupParticipant() {
       public String getSourceName(Object object) throws CoreException {
-        Script script = null;
         if (object instanceof Script) {
-          script = (Script) object;
+          Script script = (Script) object;
+          return VmResourceId.forScript(script).getEclipseSourceName();
         } else if (object instanceof StackFrame) {
           StackFrame jsStackFrame = (StackFrame) object;
-          script = jsStackFrame.getCallFrame().getScript();
+          return jsStackFrame.getVmResourceId().getEclipseSourceName();
         } else if (object instanceof Breakpoint) {
           Breakpoint breakpoint = (Breakpoint) object;
           return breakpoint.getScriptName();
-        }
-        if (script == null) {
+        } else {
           return null;
         }
-
-        return VmResourceId.forScript(script).getEclipseSourceName();
       }
     };
     addParticipants(new ISourceLookupParticipant[] { participant } );

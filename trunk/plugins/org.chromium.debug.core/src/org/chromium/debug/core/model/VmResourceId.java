@@ -115,4 +115,15 @@ public class VmResourceId {
       return VmResourceId.forName(name);
     }
   }
+
+  /**
+   * @return source name or null
+   */
+  public String getSourceName() {
+    if (value instanceof String) {
+      return (String) value;
+    } else {
+      return null;
+    }
+  }
 }
