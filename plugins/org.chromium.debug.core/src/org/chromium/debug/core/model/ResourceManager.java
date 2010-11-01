@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 /**
  * This object handles the mapping between {@link Script}s and their corresponding resources
@@ -181,6 +182,16 @@ public class ResourceManager {
       }
       public IFile getVProjectFile() {
         return file;
+      }
+      public void deleteResourceAndFile() {
+        ChromiumDebugPluginUtil.removeSafe(vmResourceId2Info, id);
+        ChromiumDebugPluginUtil.removeSafe(file2Info, file);
+
+        try {
+          file.delete(false, new NullProgressMonitor());
+        } catch (CoreException e) {
+          ChromiumDebugPlugin.log(e);
+        }
       }
       public String getLocalVisibleFileName() {
         String name = file.getName();

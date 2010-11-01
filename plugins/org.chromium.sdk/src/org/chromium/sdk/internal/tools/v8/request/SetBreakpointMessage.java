@@ -28,20 +28,20 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
    * @param type ("function", "handle", or "script")
    * @param target function expression, script identification, or handle decimal number
    * @param line in the script or function
-   * @param position of the target start within the line
+   * @param column of the target start within the line
    * @param enabled whether the breakpoint is enabled initially. Nullable, default is true
    * @param condition nullable string with breakpoint condition
    * @param ignoreCount nullable number specifying the amount of break point hits to ignore.
    *        Default is 0
    */
   public SetBreakpointMessage(Breakpoint.Type type, Object target,
-      Integer line, Integer position, Boolean enabled, String condition,
+      Integer line, Integer column, Boolean enabled, String condition,
       Integer ignoreCount) {
     super(DebuggerCommand.SETBREAKPOINT.value);
     putArgument("type", typeToV8Type.get(type));
     putArgument("target", target);
     putArgument("line", line);
-    putArgument("position", position);
+    putArgument("column", column);
     putArgument("enabled", enabled);
     putArgument("condition", condition);
     putArgument("ignoreCount", ignoreCount);

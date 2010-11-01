@@ -88,7 +88,7 @@ public interface JavascriptVm {
    *        </table>
    * @param line in the script or function. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
-   * @param position of the target start within the line. If none, use
+   * @param column of the target start within the line. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
@@ -97,7 +97,7 @@ public interface JavascriptVm {
    * @param callback to invoke when the evaluation result is ready,
    *        may be {@code null}
    */
-  void setBreakpoint(Breakpoint.Type type, String target, int line, int position, boolean enabled,
+  void setBreakpoint(Breakpoint.Type type, String target, int line, int column, boolean enabled,
       String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**

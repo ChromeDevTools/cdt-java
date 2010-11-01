@@ -49,7 +49,7 @@ public class BreakpointManager {
   }
 
   public void setBreakpoint(final Breakpoint.Type type, final String target,
-      final int line, int position, final boolean enabled, final String condition,
+      final int line, int column, final boolean enabled, final String condition,
       final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
       SyncCallback syncCallback) {
 
@@ -70,7 +70,7 @@ public class BreakpointManager {
 
     debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(type, targetObject, toNullableInteger(line),
-            toNullableInteger(position), enabled, condition,
+            toNullableInteger(column), enabled, condition,
             toNullableInteger(ignoreCount)),
         true,
         callback == null

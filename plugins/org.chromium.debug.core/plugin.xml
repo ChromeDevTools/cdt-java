@@ -94,7 +94,6 @@
      </propertyTester>
   </extension>
 
-
   <extension-point id="model_JavaScriptFormatter"
       name="org.chromium.debug.core.model.JavaScriptFormatter"/>
       
