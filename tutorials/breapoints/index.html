@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Google Chrome Developer Tools Tutorial - The Chromium Projects</title>
+</head>
+<script type="text/javascript" src="script.js"></script>
+<script type="text/javascript">function f() {}</script>
+<body>
+<style>
+body {
+  font-family: Arial, Verdana, sans-serif;
+  font: normal normal normal 10pt/ normal Arial, sans-serif;
+}
+
+#content {
+  width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.test-element {
+  border: solid 2px;
+  padding: 5px;
+  margin: 5px;
+  text-align: center;
+}
+</style>
+
+<div id="content">
+
+<h1>Intro</h1>
+<div>The Scripts panel allows you to see all the scripts that are part of
+the inspected page. History buttons, a drop-down list, and standard controls to
+pause, resume, and step through code are provided below the panel selection
+icons. A button to force a pause at exceptions is located at the bottom of the
+window.</div>
+<br><img src=images/scriptsPanel.png></img><br><br>
+<div>You can set the following types of breakpoints on Scripts panel:
+<ul>
+  <li><a href="#regular">Regular JavaScript Breakpoints</a></li>
+  <li><a href="#dom">Breakpoints on DOM Mutation Events</a></li>
+  <li><a href="#xhr">Breakpoints on XHR</a></li>
+  <li><a href="#eventListener">Breakpoints on JavaScript Event
+  Listeners</a></li>
+</ul>
+</div>
+
+<h1><a name="regular">Regular JavaScript Breakpoints</a></h1>
+<ol>
+  <li>Open Scripts Panel and select "script.js" from scripts drop-down</li>
+  <li>Set breakpoint on line 19</li>
+  <li>Move your mouse over this page</li>
+  <li>You should stop on the breakpoint</li>
+  <br><img src=images/pauseOnBreakpoint.png></img><br><br>
+  <li>Delete the breakpoint by clicking the blue tag breakpoint indicator</li>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+<div>All the breakpoints you have set appear under Breakpoints in the
+right-hand sidebar. Clicking on the entry jumps to the highlighted line in the
+source file. Once you have a breakpoint set, right click on the blue tag
+breakpoint indicator to set a conditional statement for that breakpoint. Type an
+expression and the breakpoint will only pause only if the condition is true.</div>
+
+<h2>Breakpoints in Dynamic JavaScript</h2>
+<ol>
+  <li>
+  <button id="loadDynamicScriptButton" onclick="loadDynamicScript()">Load
+  dynamic script</button>
+  </li>
+  <li>On Scripts Panel select "dynamicScript.js" from scripts drop-down and
+  set breakpoint on line 2</li>
+  <li>
+  <button id="dynamicScriptFunctionButton" onclick="dynamicScriptFunction()"
+    disabled=true>Call function from dynamic script</button>
+  </li>
+  <li>You should stop on breakpoint</li>
+  <br><img src=images/pauseInDynamicScript.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+<div>Breakpoints can be set in dynamic JavaScript only if it has user
+supplied filename.</div>
+
+<h2>Pause on Next JavaScript Statement</h2>
+<ol>
+  <li>Click the Pause button</li>
+  <li>Move your mouse over this page</li>
+  <li>You should stop on mouseover handler</li>
+  <br><img src=images/pauseOnNextJavaScriptStatement.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+
+<h2>Pause on Exceptions</h2>
+<ol>
+  <li>Click on "Pause on exceptions" button at the bottom of the window to
+  switch to "Pause on all exceptions" mode</li>
+  <li>
+  <button onclick="raiseAndCatchException()">Raise exception!</button>
+  </li>
+  <li>You should stop in raiseAndCatchException function</li>
+  <br><img src=images/pauseOnException.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+
+<h2>Pause on Uncaught Exceptions</h2>
+<ol>
+  <li>Click on "Pause on exceptions" button again to switch to "Pause on
+  uncaught exceptions" mode</li>
+  <li>
+  <button onclick="raiseAndCatchException()">Raise exception!</button>
+  </li>
+  <li>You shouldn't stop in raiseAndCatchException function since exception
+  is caught</li>
+  <li>
+  <button onclick="raiseException()">Raise and don't catch!</button>
+  </li>
+  <li>You should stop in raiseException function</li>
+  <br><img src=images/pauseOnUncaughtException.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+
+<h1><a name="dom">Breakpoints on DOM Mutation Events</a></h1>
+<ol>
+  <li>Right click on "Parent Element" below and choose "Inspect Element"
+  from context menu<br>
+  <div id="parent" class="test-element" style="width: 140px">Parent
+  Element</div>
+  </li>
+  <li>Right click on element and choose "Break on Subtree Modifications"</li>
+  <li>
+  <button onclick="appendChildButtonClicked()">Append child!</button>
+  </li>
+  <li>You should stop on "appendChild" function call</li>
+  <br><img src=images/pauseInAppendChild.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+
+<h1><a name="xhr">Breakpoints on XHR</a></h1>
+<div>
+<ol>
+  <li>Click "+" button on "XHR Breakpoints" pane</li>
+  <li>Type "data.txt" in text input and hit enter</li>
+  <li>
+  <button onclick="retrieveData()">Retrieve data.txt by XHR</button>
+  </li>
+  <li>You should stop on "send" function call</li>
+  <br><img src=images/pauseOnXHR.png></img><br><br>
+  <li>Right-click on newly created breakpoint and click on "Remove
+  Breakpoint" context menu item</li>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+<div>XHR breakpoint with empty URL will match any XHR. You can also create
+XHR breakpoint from Network Panel:</div>
+<ol>
+  <li>Go to Network Panel and select XHR resource category</li>
+  <li>Right-click on "data.txt" resource and click "Set XHR Breakpoint" in context menu</li>
+  <li>XHR Breakpoint will be added to XHR Breakpoints pane</li>
+  <br><img src=images/setXHRBreakpointFromNetworkPanel.png></img><br><br>
+</ol>
+
+<h1><a name="eventListener">Breakpoints on JavaScript Event Listeners</a></h1>
+<ol>
+  <li>Expand "Event Listener Breakpoints" pane on the right side of scripts
+  panel</li>
+  <li>Click on black triangle near "Mouse" entry inside "Event Listener
+  Breakpoints" pane to expand it</li>
+  <li>Set a breakpoint by clicking on the checkbox near "mouseout" event
+  entry</li>
+  <br><img src=images/setMouseOutEventListenerBreakpoint.png></img><br><br>
+  <li>Move your mouse across the box below:</li>
+  <div id="hoverme" class="test-element" style="width: 100px">Hover me!</div>
+  <li>You should stop on mouseout event handler</li>
+  <br><img src=images/pauseInHoverHandler.png></img><br><br>
+  <li>Press play or hit F8 to resume</li>
+</ol>
+<br>
+<div>The list of supported events:
+<ol>
+  <li>Mouse
+  <ul>
+    <li>click</li>
+    <li>dblclick</li>
+    <li>mousedown</li>
+    <li>mouseup</li>
+    <li>mouseover</li>
+    <li>mousemove</li>
+    <li>mouseout</li>
+    <li>mousewheel</li>
+  </ul>
+  </li>
+  <li>Keyboard
+  <ul>
+    <li>keydown</li>
+    <li>keypress</li>
+    <li>keyup</li>
+  </ul>
+  </li>
+  <li>HTML frame/object
+  <ul>
+    <li>load</li>
+    <li>error</li>
+    <li>resize</li>
+    <li>scroll</li>
+  </ul>
+  </li>
+</ol>
+</div>
+</div>
+</body>
+</html>
