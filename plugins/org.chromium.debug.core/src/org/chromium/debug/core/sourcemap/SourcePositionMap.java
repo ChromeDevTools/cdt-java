@@ -10,6 +10,7 @@ import org.chromium.debug.core.model.VmResourceId;
  * A map between "user" and "vm" source positions. "Vm" position applies
  * to sources that are actually used inside virtual machine. "User" position
  * applies to sources that user works with.
+ * All line/column numbers are 0-based.
  */
 public interface SourcePositionMap {
   SourcePosition calculateVmPosition(VmResourceId id, int line, int column);
