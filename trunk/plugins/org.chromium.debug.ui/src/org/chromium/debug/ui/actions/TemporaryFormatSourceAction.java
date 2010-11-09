@@ -1,3 +1,7 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package org.chromium.debug.ui.actions;
 
 import java.io.IOException;
@@ -5,8 +9,12 @@ import java.util.List;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavaScriptFormatter;
+import org.chromium.debug.core.model.StringMappingData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.WorkspaceBridge;
+import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
+import org.chromium.debug.core.sourcemap.TextSectionMapping;
+import org.chromium.debug.core.sourcemap.TextSectionMappingImpl;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.ui.actions.FileBasedAction.FileFilter;
 import org.eclipse.core.resources.IFile;
@@ -38,7 +46,7 @@ public class TemporaryFormatSourceAction
   protected void execute(List<? extends ResourceData> selected, Shell shell) {
     for (ResourceData data : selected) {
       try {
-        beautifyFile(data);
+        formatFile(data);
       } catch (CoreException e) {
         throw new RuntimeException(e);
       } catch (IOException e) {
@@ -47,7 +55,7 @@ public class TemporaryFormatSourceAction
     }
   }
 
-  private void beautifyFile(ResourceData data) throws CoreException, IOException {
+  private void formatFile(ResourceData data) throws CoreException, IOException {
     byte[] sourceBytes = ChromiumDebugPluginUtil.readFileContents(data.getFile());
     String sourceString = new String(sourceBytes);
 
@@ -64,6 +72,32 @@ public class TemporaryFormatSourceAction
     MetadataImpl metadata = new MetadataImpl();
     VmResource formattedResource =
         workspaceRelations.createTemporaryFile(metadata, proposedFileName);
+
+    try {
+      SourcePositionMapBuilder builder = data.getTarget().getSourcePositionMapBuilder();
+
+      // Unformatted text is a VM text.
+      StringMappingData vmTextData = result.getInputTextData();
+
+      // Formatter text is *like* original text in our case.
+      StringMappingData originalTextData = result.getFormattedTextData();
+
+      SourcePositionMapBuilder.ResourceSection vmResourceSection =
+          new SourcePositionMapBuilder.ResourceSection(data.getVmResource().getId(), 0, 0,
+              vmTextData.getEndLine(), vmTextData.getEndColumn());
+
+      SourcePositionMapBuilder.ResourceSection originalResourceSection =
+          new SourcePositionMapBuilder.ResourceSection(formattedResource.getId(), 0, 0,
+              originalTextData.getEndLine(), originalTextData.getEndColumn());
+
+      TextSectionMapping mapTable =
+          new TextSectionMappingImpl(originalTextData, vmTextData);
+
+      builder.addMapping(originalResourceSection, vmResourceSection, mapTable);
+    } catch (SourcePositionMapBuilder.CannotAddException e) {
+      formattedResource.deleteResourceAndFile();
+      throw new RuntimeException(e);
+    }
 
     ChromiumDebugPluginUtil.writeFile(formattedResource.getVProjectFile(),
         result.getFormattedText());
