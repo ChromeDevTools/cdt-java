@@ -10,6 +10,7 @@ import org.chromium.debug.core.model.Variable;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
+import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.debug.ui.JsDebugModelPresentation;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.chromium.sdk.JsFunction;
@@ -140,9 +141,9 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         }
 
         SourcePositionMap positionMap = debugTarget.getSourcePositionMap();
-        SourcePosition originalPosition = positionMap.calculateUserPosition(
+        SourcePosition originalPosition = positionMap.translatePosition(
             VmResourceId.forScript(script), openParenPosition.getLine(),
-            openParenPosition.getColumn());
+            openParenPosition.getColumn(), TranslateDirection.VM_TO_USER);
         int offset = calculateOffset(textEditor, originalPosition);
 
         textEditor.selectAndReveal(offset, 0);

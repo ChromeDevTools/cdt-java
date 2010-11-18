@@ -10,6 +10,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
+import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
@@ -137,7 +138,8 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       };
 
       SourcePositionMap map = debugTarget.getSourcePositionMap();
-      SourcePosition vmPosition = map.calculateVmPosition(scriptId, line, 0);
+      SourcePosition vmPosition =
+          map.translatePosition(scriptId, line, 0,TranslateDirection.USER_TO_VM);
 
       javascriptVm.setBreakpoint(scriptId.getTypeForBreakpoint(),
           vmPosition.getId().getTargetForBreakpoint(),

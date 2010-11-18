@@ -6,8 +6,10 @@ package org.chromium.debug.core.sourcemap;
 
 import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -19,7 +21,7 @@ import org.chromium.debug.core.sourcemap.TextSectionMapping.TextPoint;
  */
 public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
 
-  private final Side originalSide = new Side(TextSectionMapping.Direction.DIRECT);
+  private final Side userSide = new Side(TextSectionMapping.Direction.DIRECT);
   private final Side vmSide = new Side(TextSectionMapping.Direction.REVERSE);
   private volatile TokenImpl currentToken = new TokenImpl();
 
@@ -28,12 +30,13 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
   }
 
   private final SourcePositionMap mapImpl = new SourcePositionMap() {
-    public SourcePosition calculateVmPosition(VmResourceId id, int line, int column) {
-      return originalSide.transformImpl(id, line, column);
-    }
-
-    public SourcePosition calculateUserPosition(VmResourceId id, int line, int column) {
-      return vmSide.transformImpl(id, line, column);
+    public SourcePosition translatePosition(VmResourceId id, int line,
+        int column, TranslateDirection direction) {
+      if (direction == TranslateDirection.USER_TO_VM) {
+        return userSide.transformImpl(id, line, column);
+      } else {
+        return vmSide.transformImpl(id, line, column);
+      }
     }
 
     public Token getCurrentToken() {
@@ -41,10 +44,9 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     }
   };
 
-
   public MappingHandle addMapping(ResourceSection originalSection, ResourceSection vmSection,
       TextSectionMapping fromOriginalToVmSectionMapping) throws CannotAddException {
-    RangeAdder originalSideAdder = originalSide.checkCanAddRange(originalSection);
+    RangeAdder originalSideAdder = userSide.checkCanAddRange(originalSection);
     RangeAdder vmSideAdder = vmSide.checkCanAddRange(vmSection);
 
     final RangeDeleter originalDeleter = originalSideAdder.commit(fromOriginalToVmSectionMapping,
@@ -139,18 +141,12 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
    * Defines a mapping for a resource and provides methods for modifying this mapping.
    */
   private static class ResourceData {
-    private final SortedMap<TextPoint, RangeGroup> rangeMap =
+    private final NavigableMap<TextPoint, RangeGroup> rangeMap =
         new TreeMap<TextPoint, RangeGroup>();
 
     SourcePosition transform(TextPoint point, TextSectionMapping.Direction direction) {
       RangeGroup structure = findRange(point);
       if (structure == null) {
-        return null;
-      }
-      if (structure.nonEmptyRangeMapping == null) {
-        return null;
-      }
-      if (structure.nonEmptyRangeMapping.sourceRange.end.compareTo(point) <= 0) {
         return null;
       }
       TextPoint resPoint = structure.nonEmptyRangeMapping.mapTable.transform(point, direction);
@@ -159,17 +155,19 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     }
 
     void checkCanAddRange(Range range) throws CannotAddException {
-      RangeGroup otherStructure = getSafe(rangeMap, range.start);
-      if (otherStructure != null) {
-        if (otherStructure.nonEmptyRangeMapping != null && !range.isEmpty()) {
-          throw new CannotAddException("Range overlaps");
+      Map.Entry<TextPoint, RangeGroup> previousEntry = rangeMap.lowerEntry(range.end);
+      if (previousEntry != null) {
+        TextPoint previousRangeStart = previousEntry.getKey();
+        RangeGroup previousRangeGroup = previousEntry.getValue();
+        TextPoint previousRangeEnd;
+        if (previousRangeGroup.nonEmptyRangeMapping == null) {
+          previousRangeEnd = previousRangeStart;
+        } else {
+          previousRangeEnd = previousRangeGroup.nonEmptyRangeMapping.sourceRange.end;
         }
-      }
-      SortedMap<TextPoint, RangeGroup> tailMap = rangeMap.tailMap(range.start);
-      if (!tailMap.isEmpty()) {
-        Range nextRange = tailMap.values().iterator().next().nonEmptyRangeMapping.sourceRange;
-        if (nextRange.start.compareTo(range.end) < 0) {
-          throw new CannotAddException("Range overlaps");
+        if (previousRangeEnd.compareTo(range.start) > 0) {
+          throw new CannotAddException("Ranges overlaps: " + range + " with " +
+              new Range(previousRangeStart, previousRangeEnd));
         }
       }
     }
@@ -191,26 +189,18 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     }
 
     private RangeGroup findRange(TextPoint point) {
-      // Try if we hit any range's start point.
-      RangeGroup structure = rangeMap.get(point);
-      if (structure == null) {
-        // Check the nearest range that starts before the point.
-        SortedMap<TextPoint, RangeGroup> headMap = rangeMap.headMap(point);
-        if (headMap.isEmpty()) {
-          // No range starts before the point.
-          return null;
-        } else {
-          structure = getSafe(headMap, headMap.lastKey());
-          if (structure.nonEmptyRangeMapping != null &&
-              structure.nonEmptyRangeMapping.sourceRange.end.compareTo(point) > 0) {
-            return structure;
-          } else {
-            return null;
-          }
-        }
-      } else {
-        return structure;
+      Map.Entry<TextPoint, RangeGroup> previousEntry = rangeMap.floorEntry(point);
+      if (previousEntry == null) {
+        return null;
       }
+      RangeMapping nonEmptyRangeMapping = previousEntry.getValue().nonEmptyRangeMapping;
+      if (nonEmptyRangeMapping == null) {
+        return null;
+      }
+      if (point.compareTo(nonEmptyRangeMapping.sourceRange.end) >= 0) {
+        return null;
+      }
+      return previousEntry.getValue();
     }
   }
 
@@ -268,6 +258,11 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     @Override
     public int hashCode() {
       return start.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "[" + start + " - " + end + "]";
     }
   }
 

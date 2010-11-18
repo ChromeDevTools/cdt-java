@@ -39,4 +39,26 @@ public class SourcePosition {
   public int getColumn() {
     return column;
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj instanceof SourcePosition == false) {
+      return false;
+    }
+    SourcePosition other = (SourcePosition) obj;
+    return this.id.equals(other.id) && this.line == other.line && this.column == other.column;
+  }
+
+  @Override
+  public int hashCode() {
+    return id.hashCode() + 17 * line + 31 * column;
+  }
+
+  @Override
+  public String toString() {
+    return id + ":" + line + ":" + column;
+  }
 }
