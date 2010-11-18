@@ -1,5 +1,7 @@
 plugins/org.chromium.debug.core/.settings
 plugins/org.chromium.debug.core/bin
+plugins/org.chromium.debug.core.tests/.settings
+plugins/org.chromium.debug.core.tests/bin
 plugins/org.chromium.debug.ui/.settings
 plugins/org.chromium.debug.ui/bin
 plugins/org.chromium.sdk.tests/.settings

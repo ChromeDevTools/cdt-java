@@ -13,9 +13,17 @@ import org.chromium.debug.core.model.VmResourceId;
  * All line/column numbers are 0-based.
  */
 public interface SourcePositionMap {
-  SourcePosition calculateVmPosition(VmResourceId id, int line, int column);
+  SourcePosition translatePosition(VmResourceId id, int line, int column,
+      TranslateDirection direction);
 
-  SourcePosition calculateUserPosition(VmResourceId id, int line, int column);
+  enum TranslateDirection {
+    VM_TO_USER,
+    USER_TO_VM;
+
+    public TranslateDirection opposite() {
+      return this == VM_TO_USER ? USER_TO_VM : VM_TO_USER;
+    }
+  }
 
   /**
    * @return current instance of token

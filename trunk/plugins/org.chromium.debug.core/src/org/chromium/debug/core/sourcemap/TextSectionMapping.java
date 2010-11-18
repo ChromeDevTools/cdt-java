@@ -73,5 +73,10 @@ public interface TextSectionMapping {
         }
       }
     }
+
+    @Override
+    public String toString() {
+      return line + ":" + column;
+    }
   }
 }

@@ -14,6 +14,7 @@ import java.util.Set;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
+import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsArray;
@@ -377,8 +378,8 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       TextStreamPosition vmPosition = stackFrame.getStatementStartPosition();
       SourcePositionMap sourceTransformationMap = getDebugTarget().getSourcePositionMap();
       SourcePositionMap.Token token = sourceTransformationMap.getCurrentToken();
-      SourcePosition originalPosition = sourceTransformationMap.calculateUserPosition(id,
-          vmPosition.getLine(), vmPosition.getColumn());
+      SourcePosition originalPosition = sourceTransformationMap.translatePosition(id,
+          vmPosition.getLine(), vmPosition.getColumn(), TranslateDirection.VM_TO_USER);
       currentCachedPosition = new CachedUserPosition(originalPosition, token);
       userCachedSourcePosition = currentCachedPosition;
     }
