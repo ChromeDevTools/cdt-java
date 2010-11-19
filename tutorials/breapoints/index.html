@@ -154,7 +154,6 @@ XHR breakpoint from Network Panel:</div>
   <li>Go to Network Panel and select XHR resource category</li>
   <li>Right-click on "data.txt" resource and click "Set XHR Breakpoint" in context menu</li>
   <li>XHR Breakpoint will be added to XHR Breakpoints pane</li>
-  <br><img src=images/setXHRBreakpointFromNetworkPanel.png></img><br><br>
 </ol>
 
 <h1><a name="eventListener">Breakpoints on JavaScript Event Listeners</a></h1>
@@ -169,12 +168,20 @@ XHR breakpoint from Network Panel:</div>
   <li>Move your mouse across the box below:</li>
   <div id="hoverme" class="test-element" style="width: 100px">Hover me!</div>
   <li>You should stop on mouseout event handler</li>
-  <br><img src=images/pauseInHoverHandler.png></img><br><br>
+  <br><img src=images/pauseOnMouseOut.png></img><br><br>
   <li>Press play or hit F8 to resume</li>
 </ol>
 <br>
 <div>The list of supported events:
 <ol>
+  <li>Keyboard
+  <ul>
+    <li>keydown</li>
+    <li>keypress</li>
+    <li>keyup</li>
+    <li>textInput</li>
+  </ul>
+  </li>
   <li>Mouse
   <ul>
     <li>click</li>
@@ -187,19 +194,56 @@ XHR breakpoint from Network Panel:</div>
     <li>mousewheel</li>
   </ul>
   </li>
-  <li>Keyboard
+  <li>Control
   <ul>
-    <li>keydown</li>
-    <li>keypress</li>
-    <li>keyup</li>
-  </ul>
-  </li>
-  <li>HTML frame/object
-  <ul>
-    <li>load</li>
-    <li>error</li>
     <li>resize</li>
     <li>scroll</li>
+    <li>zoom</li>
+    <li>focus</li>
+    <li>blur</li>
+    <li>select</li>
+    <li>change</li>
+    <li>submit</li>
+    <li>reset</li>
+  </ul>
+  </li>
+  <li>Clipboard
+  <ul>
+    <li>copy</li>
+    <li>cut</li>
+    <li>paste</li>
+    <li>beforecopy</li>
+    <li>beforecut</li>
+    <li>beforepaste</li>
+  </ul>
+  </li>
+  <li>Load
+  <ul>
+    <li>load</li>
+    <li>unload</li>
+    <li>abort</li>
+    <li>error</li>
+  </ul>
+  </li>
+  <li>DOM Mutation
+  <ul>
+    <li>DOMActivate</li>
+    <li>DOMFocusIn</li>
+    <li>DOMFocusOut</li>
+    <li>DOMAttrModified</li>
+    <li>DOMCharacterDataModified</li>
+    <li>DOMNodeInserted</li>
+    <li>DOMNodeInsertedIntoDocument</li>
+    <li>DOMNodeRemoved</li>
+    <li>DOMNodeRemovedFromDocument</li>
+    <li>DOMSubtreeModified</li>
+    <li>DOMContentLoaded</li>
+  </ul>
+  </li>
+  <li>Device
+  <ul>
+    <li>deviceorientation</li>
+    <li>devicemotion</li>
   </ul>
   </li>
 </ol>
