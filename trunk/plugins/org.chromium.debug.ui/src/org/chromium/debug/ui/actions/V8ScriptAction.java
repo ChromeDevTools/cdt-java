@@ -11,6 +11,7 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * A base class for all LiveEdit actions that are scoped to a working file from user workspace.
@@ -24,13 +25,20 @@ public abstract class V8ScriptAction extends FileBasedAction.Single<IFile> {
   }
 
   @Override
-  protected void execute(IFile file, Shell shell) {
-    List<? extends ScriptTargetMapping> filePairList =
-        ChromiumDebugPlugin.getScriptTargetMapping(file);
-    execute(filePairList, shell);
+  protected ActionRunnable createRunnable(final IFile file) {
+    return new ActionRunnable() {
+      public void adjustAction() {
+      }
+      public void run(Shell shell, IWorkbenchPart workbenchPart) {
+        List<? extends ScriptTargetMapping> filePairList =
+            ChromiumDebugPlugin.getScriptTargetMapping(file);
+        execute(filePairList, shell, workbenchPart);
+      }
+    };
   }
 
-  protected abstract void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell);
+  protected abstract void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell,
+      IWorkbenchPart workbenchPart);
 
   static final FileBasedAction.FileFilter<IFile> JS_FILE_NAME_FILTER =
       new FileBasedAction.FileFilter<IFile>() {

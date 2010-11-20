@@ -6,11 +6,9 @@ package org.chromium.debug.core.sourcemap;
 
 import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
 
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.chromium.debug.core.model.VmResourceId;
@@ -112,11 +110,15 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
             resourceMap.put(resourceId, commitData);
           }
 
-          commitData.addRange(range, mapTable, destinationResource);
+          final ResourceData commitDataFinal = commitData;
+          commitDataFinal.addRange(range, mapTable, destinationResource);
 
           return new RangeDeleter() {
             public void delete() {
-              throw new UnsupportedOperationException();
+              commitDataFinal.removeRange(range);
+              if (commitDataFinal.isEmpty()) {
+                resourceMap.remove(resourceId);
+              }
             }
           };
         }
@@ -187,6 +189,30 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
         structure.nonEmptyRangeMapping = new RangeMapping(range, destinationResource, mapTable);
       }
     }
+
+    boolean isEmpty() {
+      return rangeMap.isEmpty();
+    }
+
+    public void removeRange(Range range) {
+      RangeGroup rangeGroup = rangeMap.get(range.start);
+      if (range.isEmpty()) {
+        if (rangeGroup.emptyRangesAtStart <= 0) {
+          throw new IllegalStateException();
+        }
+        rangeGroup.emptyRangesAtStart--;
+      } else {
+        if (rangeGroup.nonEmptyRangeMapping == null ||
+            !range.equals(rangeGroup.nonEmptyRangeMapping.sourceRange)) {
+          throw new IllegalStateException();
+        }
+        rangeGroup.nonEmptyRangeMapping = null;
+      }
+      if (rangeGroup.nonEmptyRangeMapping == null && rangeGroup.emptyRangesAtStart == 0) {
+        rangeMap.remove(range.start);
+      }
+    }
+
 
     private RangeGroup findRange(TextPoint point) {
       Map.Entry<TextPoint, RangeGroup> previousEntry = rangeMap.floorEntry(point);

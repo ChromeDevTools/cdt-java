@@ -245,7 +245,7 @@
                id="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression">
          </action>
       </objectContribution>
-      <!-- Experimental actions, temporarily disabled. -->
+
       <objectContribution
             objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
             adaptable="true"
@@ -272,7 +272,7 @@
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
          <action
-               label="(under construction) Temporary Format Source"
+               label="%TemporaryFormatAction.label"
                class="org.chromium.debug.ui.actions.TemporaryFormatSourceAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
