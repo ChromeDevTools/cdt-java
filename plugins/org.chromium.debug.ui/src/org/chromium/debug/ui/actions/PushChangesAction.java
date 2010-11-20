@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchPart;
 
 /**
  * The main action of LiveEdit feature. It gets the current state of a working file and pushes
@@ -24,7 +25,8 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class PushChangesAction extends V8ScriptAction {
   @Override
-  protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell) {
+  protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell,
+      IWorkbenchPart workbenchPart) {
     for (ScriptTargetMapping pair : filePairList) {
       execute(pair);
     }

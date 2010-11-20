@@ -75,47 +75,67 @@ abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IAction
   static abstract class Multiple<T> extends SelectionBasedAction<List<? extends T>> {
   }
 
-  private Runnable currentRunnable = null;
+  private ActionRunnable currentRunnable = null;
   private Shell currentShell = null;
-
-  protected abstract void execute(S selected, Shell shell);
+  private String originalActionText = null;
+  private IWorkbenchPart currentTargetPart = null;
+  private IAction action;
 
   protected abstract S readSelection(IStructuredSelection selection);
 
   public void setActivePart(IAction action, IWorkbenchPart targetPart) {
     currentShell = targetPart.getSite().getShell();
+    currentTargetPart = targetPart;
   }
 
   public void run(IAction action) {
     if (currentRunnable == null) {
       return;
     }
-    currentRunnable.run();
+    currentRunnable.run(currentShell, currentTargetPart);
     currentRunnable = null;
   }
 
-  public void selectionChanged(IAction action, ISelection selection) {
-    currentRunnable = createRunnable(selection);
-    action.setEnabled(currentRunnable != null);
+  public void selectionChanged(IAction actionParam, ISelection selection) {
+    currentRunnable = createRunnableFromRawSelection(selection);
+    this.action.setEnabled(currentRunnable != null);
+    if (currentRunnable == null) {
+      restoreActionText();
+    } else {
+      currentRunnable.adjustAction();
+    }
   }
 
-  private Runnable createRunnable(ISelection selection) {
+  private ActionRunnable createRunnableFromRawSelection(ISelection selection) {
     if (selection instanceof IStructuredSelection == false) {
       return null;
     }
     IStructuredSelection structured = (IStructuredSelection) selection;
     final S selectedElements = readSelection(structured);
-    return new Runnable() {
-      public void run() {
-        // TODO(peter.rybin): put in background!
-        try {
-          execute(selectedElements, currentShell);
-        } catch (RuntimeException e) {
-          // TODO(peter.rybin): Handle it.
-          throw e;
-        }
-      }
-    };
+    return createRunnable(selectedElements);
+  }
+
+  protected abstract ActionRunnable createRunnable(S selectedElements);
+
+  protected interface ActionRunnable {
+    void adjustAction();
+    void run(Shell shell, IWorkbenchPart workbenchPart);
+  }
+
+  protected void modifyActionText(String newText) {
+    if (originalActionText == null) {
+      originalActionText = action.getText();
+    }
+    action.setText(newText);
+  }
+  protected void restoreActionText() {
+    if (originalActionText != null) {
+      action.setText(originalActionText);
+      originalActionText = null;
+    }
+  }
+  protected IAction getAction() {
+    return action;
   }
 
   public void dispose() {
@@ -123,6 +143,7 @@ abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IAction
   }
 
   public void init(IAction action) {
+    this.action = action;
   }
 
   public void runWithEvent(IAction action, Event event) {

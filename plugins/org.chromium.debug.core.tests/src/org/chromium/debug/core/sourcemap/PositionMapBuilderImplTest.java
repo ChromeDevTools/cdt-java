@@ -16,6 +16,7 @@ import org.chromium.debug.core.model.StringMappingData;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder.CannotAddException;
+import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder.MappingHandle;
 import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder.ResourceSection;
 import org.junit.Test;
 
@@ -92,12 +93,12 @@ public class PositionMapBuilderImplTest {
    */
   @Test
   public void testAddMappingOverlaps() throws CannotAddException {
-    OverlappingMapTestFramework.run();
+    new OverlappingMapTestFramework().run();
   }
 
-  private static class OverlappingMapTestFramework {
-    private static final VmResourceId COMPILED_JS_ID = VmResourceId.forName("compiled.js");
-    private static ResourceSection[] GOOD_SECTIONS = {
+  private static abstract class MultiRangeMapTestFrameworkBase {
+    static final VmResourceId COMPILED_JS_ID = VmResourceId.forName("compiled.js");
+    static ResourceSection[] GOOD_SECTIONS = {
       new ResourceSection(COMPILED_JS_ID, 1, 0, 2, 0),
       new ResourceSection(COMPILED_JS_ID, 3, 0, 3, 0),
       new ResourceSection(COMPILED_JS_ID, 5, 0, 5, 0),
@@ -105,6 +106,52 @@ public class PositionMapBuilderImplTest {
       new ResourceSection(COMPILED_JS_ID, 5, 0, 8, 0),
       new ResourceSection(COMPILED_JS_ID, 8, 0, 8, 0),
     };
+    private static final int SHUFFLE_TRIES = 10;
+
+    void run() throws CannotAddException {
+      // We get all good sections and add them in a random order. Then we check
+      // that each of conflict section will not add.
+
+      Random random = new Random(0);
+      for (int i = 0; i < SHUFFLE_TRIES; i++) {
+        runOneShuffle(random);
+      }
+    }
+
+    protected abstract void runOneShuffle(Random random) throws CannotAddException;
+
+    protected ArrayList<MappingHandle> addGoodRanges(SourcePositionMapBuilder builder,
+        Random random) throws CannotAddException {
+      List<ResourceSection> vmSections =
+          new ArrayList<SourcePositionMapBuilder.ResourceSection>(Arrays.asList(GOOD_SECTIONS));
+      Collections.shuffle(vmSections, random);
+      ArrayList<MappingHandle> result =
+          new ArrayList<SourcePositionMapBuilder.MappingHandle>(vmSections.size());
+      // Add all good sections.
+      int index = 0;
+      for (ResourceSection section : vmSections) {
+        addSection(builder, section, index);
+        index++;
+      }
+      return result;
+    }
+
+    protected static MappingHandle addSection(SourcePositionMapBuilder builder,
+        ResourceSection vmSection, int index) throws CannotAddException {
+      ResourceSection originalSection =
+          new ResourceSection(VmResourceId.forName("source" + index + ".js"), 0, 0, 5, 0);
+
+      TextSectionMappingImpl textMapping = new TextSectionMappingImpl(
+          new StringMappingData(
+              new int [] { vmSection.getStart().getLine(), vmSection.getStart().getColumn() },
+              vmSection.getEnd().getLine(), vmSection.getEnd().getColumn()),
+          new StringMappingData((new int [] { 0, 0 }), 5, 0));
+
+      return builder.addMapping(originalSection, vmSection, textMapping);
+    }
+  }
+
+  private static class OverlappingMapTestFramework extends MultiRangeMapTestFrameworkBase {
     private static ResourceSection[] CONFLICT_SECTIONS = {
       new ResourceSection(COMPILED_JS_ID, 1, 0, 2, 0),
       new ResourceSection(COMPILED_JS_ID, 0, 1, 1, 1),
@@ -116,32 +163,13 @@ public class PositionMapBuilderImplTest {
       new ResourceSection(COMPILED_JS_ID, 7, 0, 9, 0),
     };
 
-    private static final int SHUFFLE_TRIES = 10;
-
-    static void run() throws CannotAddException {
-      // We get all good sections and add them in a random order. Then we check
-      // that each of conflict section will not add.
-
-      Random random = new Random(0);
-      for (int i = 0; i < SHUFFLE_TRIES; i++) {
-        runOneShuffle(random);
-      }
-    }
-    private static void runOneShuffle(Random random) throws CannotAddException {
-      List<ResourceSection> vmSections =
-          new ArrayList<SourcePositionMapBuilder.ResourceSection>(Arrays.asList(GOOD_SECTIONS));
-      Collections.shuffle(vmSections, random);
+    protected void runOneShuffle(Random random) throws CannotAddException {
 
       final SourcePositionMapBuilder builder = new PositionMapBuilderImpl();
 
-      // Add all good sections.
-      int index = 0;
-      for (ResourceSection section : vmSections) {
-        addSection(builder, section, index);
-        index++;
-      }
+      List<MappingHandle> goodRangeHandles = addGoodRanges(builder, random);
 
-      final int conflict_section_index = index;
+      final int conflict_section_index = goodRangeHandles.size();
       // Now try to add conflict sections.
       for (final ResourceSection section : CONFLICT_SECTIONS) {
         assertThrowsAddException(new RunnableWithCannotAddException() {
@@ -151,19 +179,29 @@ public class PositionMapBuilderImplTest {
         });
       }
     }
+  }
 
-    private static void addSection(SourcePositionMapBuilder builder,
-        ResourceSection vmSection, int index) throws CannotAddException {
-      ResourceSection originalSection =
-          new ResourceSection(VmResourceId.forName("source" + index + ".js"), 0, 0, 5, 0);
+  /**
+   * Checks that {@link SourcePositionMapBuilder} can add mappings and delete them
+   * in different order.
+   */
+  @Test
+  public void testAddAndDeleteMapping() throws CannotAddException {
+    new AddAndDeleteMapTestFramework().run();
+  }
 
-      TextSectionMappingImpl textMapping = new TextSectionMappingImpl(
-          new StringMappingData(
-              new int [] { vmSection.getStart().getLine(), vmSection.getStart().getColumn() },
-              vmSection.getEnd().getLine(), vmSection.getEnd().getColumn()),
-          new StringMappingData((new int [] { 0, 0 }), 5, 0));
+  private static class AddAndDeleteMapTestFramework extends MultiRangeMapTestFrameworkBase {
+    protected void runOneShuffle(Random random) throws CannotAddException {
+      final SourcePositionMapBuilder builder = new PositionMapBuilderImpl();
 
-      builder.addMapping(originalSection, vmSection, textMapping);
+      ArrayList<MappingHandle> goodRangeHandles = addGoodRanges(builder, random);
+
+      // Delete ranges in other order.
+      Collections.shuffle(goodRangeHandles, random);
+
+      for (MappingHandle handle : goodRangeHandles) {
+        handle.delete();
+      }
     }
   }
 
