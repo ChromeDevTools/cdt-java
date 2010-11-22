@@ -7,17 +7,17 @@ function onLoad() {
   hovermeElement.addEventListener("mouseout", hovermeMouseOut, true);
 }
 
-function hovermeMouseOver() {
+function hovermeMouseOver(event) {
   event.target.style.backgroundColor = "grey";
 }
 
-function hovermeMouseOut() {
+function hovermeMouseOut(event) {
   event.target.style.backgroundColor = "white";
 }
 
-function onMouseOver() {
-  var time = new Date();
-  return "onMouseOver: " + time;
+function onMouseOver(event) {
+  var target = event.target;
+  return "onMouseOver: " + target;
 }
 
 function raiseAndCatchException() {
