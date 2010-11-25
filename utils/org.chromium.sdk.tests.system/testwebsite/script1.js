@@ -25,3 +25,6 @@ function Fibonacci(number) {
 }
 
 periodic_run_id = window.setInterval(PeriodicRun, 1000);
+
+// Additional test element: unicode symbols in script source.
+var unicode_symbols = "Хорошо";
