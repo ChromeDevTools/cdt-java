@@ -4,15 +4,19 @@
 
 package org.chromium.sdk.internal.transport;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,7 +24,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.LineReader;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
 /**
@@ -61,7 +64,7 @@ public class SocketConnection implements Connection {
   /**
    * Character encoding used in the socket data interchange.
    */
-  private static final String SOCKET_CHARSET = "UTF-8";
+  private static final Charset SOCKET_CHARSET = Charset.forName("UTF-8");
 
   /**
    * A thread writing client-supplied messages into the debugger socket.
@@ -72,6 +75,7 @@ public class SocketConnection implements Connection {
 
     public WriterThread(ConnectionLogger.LoggableWriter writer) {
       super("WriterThread");
+      // Wrap writer into a buffered writer.
       this.writer = writer;
     }
 
@@ -89,7 +93,8 @@ public class SocketConnection implements Connection {
     private void handleOutboundMessage(Message message) {
       try {
         LOGGER.log(Level.FINER, "-->{0}", message);
-        message.sendThrough(writer.getWriter());
+        message.sendThrough(writer.getOutputStream(), SOCKET_CHARSET);
+        writer.getOutputStream().flush();
         writer.markSeparatorForLog();
       } catch (IOException e) {
         SocketConnection.this.shutdown(e, false);
@@ -154,7 +159,9 @@ public class SocketConnection implements Connection {
           connectionLogger.start();
         }
 
-        handshaker.perform(reader.getReader(), handshakeWriter.getWriter());
+        LineReader lineReader = new LineReader(reader.getInputStream());
+
+        handshaker.perform(lineReader, handshakeWriter.getOutputStream());
 
         reader.markSeparatorForLog();
         handshakeWriter.markSeparatorForLog();
@@ -164,7 +171,7 @@ public class SocketConnection implements Connection {
         while (!isTerminated && isAttached.get()) {
           Message message;
           try {
-            message = Message.fromBufferedReader(reader.getReader());
+            message = Message.fromBufferedReader(lineReader, SOCKET_CHARSET);
           } catch (MalformedMessageException e) {
             LOGGER.log(Level.SEVERE, "Malformed protocol message", e);
             continue;
@@ -290,26 +297,12 @@ public class SocketConnection implements Connection {
   void attach() throws IOException {
     this.socket = new Socket();
     this.socket.connect(socketEndpoint, connectionTimeoutMs);
-    final Writer streamWriter = new OutputStreamWriter(socket.getOutputStream(), SOCKET_CHARSET);
-    final Reader streamReader = new InputStreamReader(socket.getInputStream(), SOCKET_CHARSET);
+    final OutputStream outputStream = socket.getOutputStream();
+    final InputStream inputStream = socket.getInputStream();
 
     ConnectionLogger.LoggableReader loggableReader = new ConnectionLogger.LoggableReader() {
-      private final LineReader lineReader;
-      {
-        final BufferedReader bufferedReader =
-            new BufferedReader(streamReader, INPUT_BUFFER_SIZE_BYTES);
-        lineReader = new LineReader() {
-          public int read(char[] cbuf, int off, int len) throws IOException {
-            return bufferedReader.read(cbuf, off, len);
-          }
-          public String readLine() throws IOException {
-            return bufferedReader.readLine();
-          }
-        };
-      }
-
-      public LineReader getReader() {
-        return lineReader;
+      public InputStream getInputStream() {
+        return inputStream;
       }
 
       public void markSeparatorForLog() {
@@ -317,9 +310,10 @@ public class SocketConnection implements Connection {
     };
 
     ConnectionLogger.LoggableWriter loggableWriter = new ConnectionLogger.LoggableWriter() {
-      private final BufferedWriter bufferedWriter = new BufferedWriter(streamWriter);
-      public Writer getWriter() {
-        return bufferedWriter;
+      private final BufferedOutputStream bufferedOutputStream =
+          new BufferedOutputStream(outputStream);
+      public OutputStream getOutputStream() {
+        return bufferedOutputStream;
       }
       public void markSeparatorForLog() {
       }
