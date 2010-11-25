@@ -4,21 +4,23 @@
 
 package org.chromium.sdk.internal.transport;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.LineReader;
 
 /**
  * A transport message encapsulating the data sent/received over the wire
  * (protocol headers and content). This class can serialize and deserialize
  * itself into a BufferedWriter according to the ChromeDevTools Protocol
- * specification.
+ * specification. Content-Length field is a transparent field: it gets
+ * added and processed on read/write phase. It is not reported to user.
  */
 public class Message {
 
@@ -53,7 +55,6 @@ public class Message {
    * can add their own headers.)
    */
   public enum Header {
-    CONTENT_LENGTH("Content-Length"),
     TOOL("Tool"),
     DESTINATION("Destination"), ;
 
@@ -72,7 +73,12 @@ public class Message {
   /**
    * The end of protocol header line.
    */
-  private static final String HEADER_TERMINATOR = "\r\n";
+  private static final byte[] HEADER_TERMINATOR_BYTES = "\r\n".getBytes();
+
+  // While normally key/value separator has additional space for readability, Chrome won't take it.
+  private static byte[] FIELD_SEPARATOR_BYTES = ":".getBytes();
+
+  private static final String CONTENT_LENGTH = "Content-Length";
 
   private final HashMap<String, String> headers;
 
@@ -81,9 +87,6 @@ public class Message {
   public Message(Map<String, String> headers, String content) {
     this.headers = new HashMap<String, String>(headers);
     this.content = content;
-    this.headers.put(Header.CONTENT_LENGTH.name, String.valueOf(content == null
-        ? 0
-        : content.length()));
   }
 
   /**
@@ -92,16 +95,23 @@ public class Message {
    * @param writer to send the message through
    * @throws IOException
    */
-  public void sendThrough(Writer writer) throws IOException {
-    String content = maskNull(this.content);
+  public void sendThrough(OutputStream outputStream, Charset charset) throws IOException {
     for (Map.Entry<String, String> entry : this.headers.entrySet()) {
-      writeNonEmptyHeader(writer, entry.getKey(), entry.getValue());
+      String headerValue = entry.getValue();
+      if (headerValue == null) {
+        break;
+      }
+      writeHeaderField(entry.getKey(), headerValue, outputStream, charset);
     }
-    writer.write(HEADER_TERMINATOR);
-    if (content.length() > 0) {
-      writer.write(content);
-    }
-    writer.flush();
+
+    String content = maskNull(this.content);
+    byte[] contentBytes = content.getBytes(charset);
+
+    writeHeaderField(CONTENT_LENGTH, String.valueOf(contentBytes.length), outputStream, charset);
+
+    outputStream.write(HEADER_TERMINATOR_BYTES);
+
+    outputStream.write(contentBytes);
   }
 
   /**
@@ -114,12 +124,17 @@ public class Message {
    * @throws MalformedMessageException if the input does not represent a valid
    *         message
    */
-  public static Message fromBufferedReader(LineReader reader)
+  public static Message fromBufferedReader(LineReader reader, Charset charset)
       throws IOException, MalformedMessageException {
-    Map<String, String> headers = new HashMap<String, String>();
-    synchronized (reader) {
+    Map<String, String> headers = new LinkedHashMap<String, String>();
+    // TODO(peter.rybin): remove this commented 'synchronized' below.
+    //    It is left for now to keep nesting to keep diff simple.
+    // synchronized (reader)
+    {
+      String contentLengthValue = null;
+
       while (true) { // read headers
-        String line = reader.readLine();
+        String line = reader.readLine(charset);
         if (line == null) {
           LOGGER.fine("End of stream");
           return null;
@@ -127,24 +142,28 @@ public class Message {
         if (line.length() == 0) {
           break; // end of headers
         }
-        String[] nameValue = line.split(":", 2);
-        if (nameValue.length != 2) {
+        int semiColonPos = line.indexOf(':');
+        if (semiColonPos == -1) {
           LOGGER.log(Level.SEVERE, "Bad header line: {0}", line);
           return null;
+        }
+        String name = line.substring(0, semiColonPos);
+        String value = line.substring(semiColonPos + 1);
+        String trimmedValue = value.trim();
+        if (CONTENT_LENGTH.equals(name)) {
+          contentLengthValue = trimmedValue;
         } else {
-          String trimmedValue = nameValue[1].trim();
-          headers.put(nameValue[0], trimmedValue);
+          headers.put(name, trimmedValue);
         }
       }
 
       // Read payload if applicable
-      String contentLengthStr = getHeader(headers, Header.CONTENT_LENGTH.name, "0");
-      int contentLength = Integer.valueOf(contentLengthStr.trim());
-      char[] content = new char[contentLength];
+      int contentLength = Integer.valueOf(contentLengthValue.trim());
+      byte[] contentBytes = new byte[contentLength];
       int totalRead = 0;
       LOGGER.log(Level.FINER, "Reading payload: {0} bytes", contentLength);
       while (totalRead < contentLength) {
-        int readBytes = reader.read(content, totalRead, contentLength - totalRead);
+        int readBytes = reader.read(contentBytes, totalRead, contentLength - totalRead);
         if (readBytes == -1) {
           // End-of-stream (browser closed?)
           LOGGER.fine("End of stream while reading content");
@@ -154,7 +173,7 @@ public class Message {
       }
 
       // Construct response message
-      String contentString = new String(content);
+      String contentString = new String(contentBytes, charset);
       return new Message(headers, contentString);
     }
   }
@@ -206,25 +225,25 @@ public class Message {
         : string;
   }
 
-  private static void writeNonEmptyHeader(Writer writer, String headerName, String headerValue)
-      throws IOException {
-    if (headerValue != null) {
-      writeHeader(writer, headerName, headerValue);
-    }
-  }
-
   @Override
   public String toString() {
-    StringWriter sw = new StringWriter();
+    ByteArrayOutputStream stream = new ByteArrayOutputStream();
     try {
-      this.sendThrough(sw);
+      this.sendThrough(stream, TO_STRING_CHARSET);
     } catch (IOException e) {
       // never occurs
+      throw new RuntimeException(e);
     }
-    return sw.toString();
+    return new String(stream.toByteArray(), TO_STRING_CHARSET);
   }
 
-  private static void writeHeader(Writer writer, String name, String value) throws IOException {
-    writer.append(name).append(':').append(value).append(HEADER_TERMINATOR);
+  private static void writeHeaderField(String name, String value, OutputStream outputStream,
+      Charset charset) throws IOException {
+    outputStream.write(name.getBytes(charset));
+    outputStream.write(FIELD_SEPARATOR_BYTES);
+    outputStream.write(value.getBytes(charset));
+    outputStream.write(HEADER_TERMINATOR_BYTES);
   }
+
+  private static final Charset TO_STRING_CHARSET = Charset.forName("UTF-8");
 }

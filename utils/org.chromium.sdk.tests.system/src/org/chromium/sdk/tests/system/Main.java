@@ -5,8 +5,13 @@
 package org.chromium.sdk.tests.system;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 
@@ -22,9 +27,9 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.LineReader;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.util.ByteToCharConverter;
 
 /**
  * A small automatic test that connects to Chromium browser using ChromeDevTools SDK and try some
@@ -255,6 +260,7 @@ public class Main {
    * Connection logger that simply prints all traffic out to System.out.
    * */
   private static class SystemOutConnectionLogger implements ConnectionLogger {
+    private static final Charset CHARSET = Charset.forName("UTF-8");
     public void handleEos() {
       System.out.println("EOS");
     }
@@ -263,21 +269,35 @@ public class Main {
     public void start() {
     }
     public LoggableReader wrapReader(final LoggableReader streamReader) {
+      final InputStream originalInputStream = streamReader.getInputStream();
+      final InputStream wrappedInputStream = new InputStream() {
+        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+        @Override
+        public int read() throws IOException {
+          byte[] buffer = new byte[0];
+          int res = readImpl(buffer, 0, 1);
+          if (res <= 0) {
+            return -1;
+          } else {
+            return buffer[0];
+          }
+        }
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+          return readImpl(b, off, len);
+        }
+        private int readImpl(byte[] buf, int off, int len) throws IOException {
+          int res = originalInputStream.read(buf, off, len);
+          if (res > 0) {
+            convertAndPrintBytes(ByteBuffer.wrap(buf, off, res), byteToCharConverter, System.out);
+          }
+          return res;
+        }
+      };
+
       return new LoggableReader() {
-        public LineReader getReader() {
-          final LineReader originalLineReader = streamReader.getReader();
-          return new LineReader() {
-            public int read(char[] cbuf, int off, int len) throws IOException {
-              int res = originalLineReader.read(cbuf, off, len);
-              System.out.print(new String(cbuf, off, res));
-              return res;
-            }
-            public String readLine() throws IOException {
-              String res = originalLineReader.readLine();
-              System.out.println(res);
-              return res;
-            }
-          };
+        public InputStream getInputStream() {
+          return wrappedInputStream;
         }
         public void markSeparatorForLog() {
           System.out.println("\n------------------");
@@ -286,21 +306,27 @@ public class Main {
     }
     public LoggableWriter wrapWriter(final LoggableWriter streamWriter) {
       return new LoggableWriter() {
-        public Writer getWriter() {
-          final Writer originalWriter = streamWriter.getWriter();
-          return new Writer() {
+        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+
+        public OutputStream getOutputStream() {
+          final OutputStream originalOutput = streamWriter.getOutputStream();
+          return new OutputStream() {
             @Override
             public void close() throws IOException {
-              originalWriter.close();
+              originalOutput.close();
             }
             @Override
             public void flush() throws IOException {
-              originalWriter.flush();
+              originalOutput.flush();
             }
             @Override
-            public void write(char[] cbuf, int off, int len) throws IOException {
-              originalWriter.write(cbuf, off, len);
-              System.out.print(new String(cbuf, off, len));
+            public void write(int b) throws IOException {
+              write(new byte[] { (byte) b });
+            }
+            @Override
+            public void write(byte[] buf, int off, int len) throws IOException {
+              originalOutput.write(buf, off, len);
+              convertAndPrintBytes(ByteBuffer.wrap(buf, off, len), byteToCharConverter, System.out);
             }
           };
         }
@@ -308,6 +334,14 @@ public class Main {
           System.out.println("\n------------------");
         }
       };
+    }
+
+    private static void convertAndPrintBytes(ByteBuffer in, ByteToCharConverter converter,
+        PrintStream out) {
+      CharBuffer res = converter.convert(in);
+      while (res.hasRemaining()) {
+        out.print(res.get());
+      }
     }
   }
 

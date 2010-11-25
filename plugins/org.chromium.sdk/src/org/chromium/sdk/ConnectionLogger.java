@@ -4,7 +4,8 @@
 
 package org.chromium.sdk;
 
-import java.io.Writer;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Logger facility for the Chromium debugger connection. It can eavesdrop both
@@ -68,9 +69,10 @@ public interface ConnectionLogger {
   /**
    * Reader that allows client to add marks to stream. These marks may become visible in log
    * console.
+   * TODO(peter.rybin): rename to LoggableInputStream to better reflect semantics.
    */
   interface LoggableReader {
-    LineReader getReader();
+    InputStream getInputStream();
 
     /**
      * Add log mark at current reader's position.
@@ -81,9 +83,10 @@ public interface ConnectionLogger {
   /**
    * Writer that allows client to add marks to stream. These marks may become visible in log
    * console.
+   * TODO(peter.rybin): rename to LoggableOutputStream to better reflect semantics.
    */
   interface LoggableWriter {
-    Writer getWriter();
+    OutputStream getOutputStream();
 
     /**
      * Add log mark at current writer's position.

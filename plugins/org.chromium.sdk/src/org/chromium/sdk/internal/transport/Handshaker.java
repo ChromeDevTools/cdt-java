@@ -5,13 +5,13 @@
 package org.chromium.sdk.internal.transport;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import org.chromium.sdk.LineReader;
 import org.chromium.sdk.internal.JavascriptVmImpl;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
 
@@ -27,15 +27,16 @@ public interface Handshaker {
    * @throws IOException if handshake process failed physically (input or output has unexpectedly
    * closed) or logically (if unexpected message came from remote).
    */
-  void perform(LineReader input, Writer output) throws IOException;
+  void perform(LineReader input, OutputStream output) throws IOException;
 
   /**
    * Implementation of handshake from Google Chrome Developer Tools Protocol. Used when we
    * connect to browser.
    */
   Handshaker CHROMIUM = new Handshaker() {
-    public void perform(LineReader input, Writer output) throws IOException {
-      output.write(OUTGOING_MESSAGE);
+    private final Charset LATIN1_CHARSET = Charset.forName("LATIN1");
+    public void perform(LineReader input, OutputStream output) throws IOException {
+      output.write(OUTGOING_MESSAGE_BYTES);
       output.flush();
 
       // TODO(prybin): expose this as a parameter or get rid of this option if we don't need it.
@@ -45,7 +46,7 @@ public interface Handshaker {
         if (Thread.interrupted()) {
           throw new IOException("Interrupted");
         }
-        String line = input.readLine();
+        String line = input.readLine(LATIN1_CHARSET);
         if (line == null) {
           throw new IOException("Connection closed");
         }
@@ -68,7 +69,7 @@ public interface Handshaker {
      * A handshake string that we send to a browser on the connection start,
      * specified by the protocol design doc (including trailing cr/lf).
      */
-    private static final String OUTGOING_MESSAGE = "ChromeDevToolsHandshake\r\n";
+    private final byte[] OUTGOING_MESSAGE_BYTES = "ChromeDevToolsHandshake\r\n".getBytes();
   };
 
   /**
@@ -90,7 +91,7 @@ public interface Handshaker {
 
     private LineReader input = null;
 
-    public void perform(LineReader input, Writer output) throws IOException {
+    public void perform(LineReader input, OutputStream output) throws IOException {
       this.input = input;
       runnableFuture.run();
 
@@ -109,7 +110,7 @@ public interface Handshaker {
       public RemoteInfo call() throws IOException {
         final Message message;
         try {
-          message = Message.fromBufferedReader(input);
+          message = Message.fromBufferedReader(input, UTF8_CHARSET);
         } catch (MalformedMessageException e) {
           throw JavascriptVmImpl.newIOException("Unrecognized handshake message from remote", e);
         }
@@ -138,5 +139,7 @@ public interface Handshaker {
         return remoteInfo;
       }
     }
+
+    private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
   }
 }
