@@ -161,4 +161,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
   public VmStatusListener getVmStatusListener() {
     return null;
   }
+
+  public void scriptContentChanged(Script newScript) {
+  }
 }

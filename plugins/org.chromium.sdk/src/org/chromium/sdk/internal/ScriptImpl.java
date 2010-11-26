@@ -13,8 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.LiveEditDebugEventListener;
-import org.chromium.sdk.LiveEditExtension;
+import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
@@ -37,7 +36,7 @@ import org.chromium.sdk.internal.tools.v8.request.ChangeLiveMessage;
  * loaded into the browser, identified by its original document URL, line offset
  * in the original document, and the line count this script spans.
  */
-public class ScriptImpl implements Script, UpdatableScript {
+public class ScriptImpl implements Script {
 
   /** The class logger. */
   private static final Logger LOGGER = Logger.getLogger(ScriptImpl.class.getName());
@@ -212,8 +211,7 @@ public class ScriptImpl implements Script, UpdatableScript {
                   "Failed to reload script after LiveEdit script update; " + message);
             }
             public void success() {
-              LiveEditDebugEventListener listener =
-                  LiveEditExtension.castToLiveEditListener(debugSession.getDebugEventListener());
+              DebugEventListener listener = debugSession.getDebugEventListener();
               if (listener != null) {
                 listener.scriptContentChanged(ScriptImpl.this);
               }

@@ -74,4 +74,7 @@ class StubListener implements DebugEventListener, TabDebugEventListener {
   public VmStatusListener getVmStatusListener() {
     return null;
   }
+
+  public void scriptContentChanged(Script newScript) {
+  }
 }
