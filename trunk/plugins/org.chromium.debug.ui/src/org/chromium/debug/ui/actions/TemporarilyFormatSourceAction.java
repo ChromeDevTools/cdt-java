@@ -35,15 +35,15 @@ import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 
 /**
- * An action delegate for "Temporary format source". It formats downloaded JavaScript source,
+ * An action delegate for "Temporarily format source". It formats downloaded JavaScript source,
  * i.e. a file under virtual project and puts the result into another file under virtual project.
  * It also registers a mapping between these 2 files.
  * <p>Additionally the action may work in another mode: "Delete formatted source". This mode
- * gets enabled when user selection contains files created in "Temporary format source".
+ * gets enabled when user selection contains files created in "Temporarily format source".
  */
-public class TemporaryFormatSourceAction
-    extends FileBasedAction.Multiple<TemporaryFormatSourceAction.ResourceData> {
-  public TemporaryFormatSourceAction() {
+public class TemporarilyFormatSourceAction
+    extends FileBasedAction.Multiple<TemporarilyFormatSourceAction.ResourceData> {
+  public TemporarilyFormatSourceAction() {
     super(RESOURCE_FILTER);
   }
 
@@ -151,7 +151,7 @@ public class TemporaryFormatSourceAction
       WorkspaceBridge workspaceRelations = data.getTarget().getWorkspaceRelations();
 
       String proposedFileName = data.getVmResource().getLocalVisibleFileName() +
-          Messages.TemporaryFormatSourceAction_FORMATTER_SUFFIX;
+          Messages.TemporarilyFormatSourceAction_FORMATTER_SUFFIX;
 
       MetadataImpl metadata = new MetadataImpl();
       VmResource formattedResource =
@@ -227,7 +227,7 @@ public class TemporaryFormatSourceAction
     }
 
     public void adjustAction() {
-      modifyActionText(Messages.TemporaryFormatSourceAction_DELETE_FORMATTER_ACTION_NAME);
+      modifyActionText(Messages.TemporarilyFormatSourceAction_DELETE_FORMATTER_ACTION_NAME);
     }
 
     @Override

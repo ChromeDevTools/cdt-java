@@ -272,8 +272,8 @@
                id="org.chromium.debug.ui.actions.PushChangesAction">
          </action>
          <action
-               label="%TemporaryFormatAction.label"
-               class="org.chromium.debug.ui.actions.TemporaryFormatSourceAction"
+               label="%TemporarilyFormatAction.label"
+               class="org.chromium.debug.ui.actions.TemporarilyFormatSourceAction"
                menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.BeautifySourceAction">
