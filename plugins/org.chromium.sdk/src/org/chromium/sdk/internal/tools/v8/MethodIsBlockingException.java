@@ -16,7 +16,7 @@ package org.chromium.sdk.internal.tools.v8;
  * Currently this exception is never actually thrown so it gets more of
  * symbolic sense. Nevertheless it's still important to keep its declaration
  * because it helps to track which ones are blocking and which are not.
- * To do this, one should temporary modify this class and make exception checked
+ * To do this, one should temporarily modify this class and make exception checked
  * (make it extend {@code java.lang.Exception}). This will enforce the proper
  * declaration of all blocking methods.
  * <p>Here are the simple rules: you never normally catch this exception, but
