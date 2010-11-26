@@ -65,4 +65,9 @@ public interface DebugEventListener {
      */
     void busyStatusChanged(String currentRequest, int numberOfEnqueued);
   }
+
+  /**
+   * Reports that script source has been altered in remote VM.
+   */
+  void scriptContentChanged(Script newScript);
 }

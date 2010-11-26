@@ -10,7 +10,7 @@ package org.chromium.sdk;
  * loaded into the browser, identified by its original document URL, line offset
  * in the original document, and the line count this script spans.
  */
-public interface Script {
+public interface Script extends UpdatableScript {
 
   /**
    * Denotes a script type.

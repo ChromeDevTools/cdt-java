@@ -10,7 +10,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
-import org.chromium.sdk.LiveEditExtension;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
 import org.eclipse.core.runtime.CoreException;
@@ -48,12 +48,7 @@ public class PushChangesAction extends V8ScriptAction {
 
   public static void execute(final ScriptTargetMapping filePair,
       UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
-    UpdatableScript updatableScript =
-        LiveEditExtension.castToUpdatableScript(filePair.getScriptHolder().getSingleScript());
-
-    if (updatableScript == null) {
-      throw new RuntimeException();
-    }
+    Script script = filePair.getScriptHolder().getSingleScript();
 
     byte[] fileData;
     try {
@@ -68,9 +63,9 @@ public class PushChangesAction extends V8ScriptAction {
     String newSource = new String(fileData);
 
     if (previewOnly) {
-      updatableScript.previewSetSource(newSource, callback, syncCallback);
+      script.previewSetSource(newSource, callback, syncCallback);
     } else {
-      updatableScript.setSourceOnRemote(newSource, callback, syncCallback);
+      script.setSourceOnRemote(newSource, callback, syncCallback);
     }
   }
 }

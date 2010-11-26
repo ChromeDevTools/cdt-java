@@ -8,10 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.sourcemap.SourcePositionMap;
-import org.chromium.debug.core.sourcemap.SourcePosition;
-import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
 import org.chromium.debug.core.sourcemap.PositionMapBuilderImpl;
+import org.chromium.debug.core.sourcemap.SourcePositionMap;
+import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.State;
@@ -19,7 +18,6 @@ import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.LiveEditDebugEventListener;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
 import org.eclipse.core.resources.IFile;
@@ -381,7 +379,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private final DebugEventListenerImpl debugEventListener = new DebugEventListenerImpl();
 
-  class DebugEventListenerImpl implements DebugEventListener, LiveEditDebugEventListener {
+  class DebugEventListenerImpl implements DebugEventListener {
     // Synchronizes calls from ReaderThread of Connection and one call from some worker thread
     private final Object suspendResumeMonitor = new Object();
     private boolean alreadyResumedOrSuspended = false;
@@ -423,7 +421,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       workspaceRelations.scriptCollected(script);
     }
 
-    public void scriptContentChanged(UpdatableScript newScript) {
+    public void scriptContentChanged(Script newScript) {
       listenerBlock.waitUntilReady();
       workspaceRelations.reloadScript(newScript);
     }

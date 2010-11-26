@@ -7,10 +7,9 @@ package org.chromium.sdk;
 import java.util.List;
 
 /**
- * This interface is a part of {@link Script} interface. It extends {@link Script} in order
- * to support experimental feature and is under development.
+ * This interface is a part of {@link Script} interface. It covers live editing support.
  */
-public interface UpdatableScript extends Script {
+public interface UpdatableScript {
   /**
    * Demands that script text should be replaced with a new one if possible.
    * @param newSource new text of script

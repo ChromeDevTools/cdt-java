@@ -167,6 +167,9 @@ class StateManager {
     public VmStatusListener getVmStatusListener() {
       return null;
     }
+
+    public void scriptContentChanged(Script newScript) {
+    }
   };
 
   /**
