@@ -36,6 +36,8 @@ public class Messages extends NLS {
   public static String TemporarilyFormatSourceAction_DELETE_FORMATTER_ACTION_NAME;
 
   public static String TemporarilyFormatSourceAction_FORMATTER_SUFFIX;
+
+  public static String TemporarilyFormatSourceAction_NO_FORMATTER_DISABLED_SUFFIX;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);

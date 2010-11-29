@@ -89,6 +89,7 @@ abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IAction
   }
 
   public void run(IAction action) {
+    assert action == getAction();
     if (currentRunnable == null) {
       return;
     }

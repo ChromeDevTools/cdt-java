@@ -90,7 +90,12 @@ public class TemporarilyFormatSourceAction
     }
 
     if (firstElementMode == ActionMode.FORMAT) {
-      return new FormatActionRunnable(resourceDataList);
+      JavaScriptFormatter formatter = JavaScriptFormatter.Access.getInstance();
+      if (formatter == null) {
+        return noFormatterActionStub;
+      } else {
+        return new FormatActionRunnable(resourceDataList, formatter);
+      }
     } else {
       return new DeleteFormattedActionRunnable(resourceDataList);
     }
@@ -128,8 +133,12 @@ public class TemporarilyFormatSourceAction
   }
 
   private class FormatActionRunnable extends ActionRunnableImpl {
-    FormatActionRunnable(List<? extends ResourceData> resourceDataList) {
+    private final JavaScriptFormatter formatter;
+
+    FormatActionRunnable(List<? extends ResourceData> resourceDataList,
+        JavaScriptFormatter formatter) {
       super(resourceDataList);
+      this.formatter = formatter;
     }
 
     public void adjustAction() {
@@ -142,10 +151,6 @@ public class TemporarilyFormatSourceAction
       byte[] sourceBytes = ChromiumDebugPluginUtil.readFileContents(data.getFile());
       String sourceString = new String(sourceBytes);
 
-      JavaScriptFormatter formatter = JavaScriptFormatter.Access.getInstance();
-      if (formatter == null) {
-        throw new RuntimeException("No formatter implementation found"); //$NON-NLS-1$
-      }
       JavaScriptFormatter.Result result = formatter.format(sourceString);
 
       WorkspaceBridge workspaceRelations = data.getTarget().getWorkspaceRelations();
@@ -239,6 +244,20 @@ public class TemporarilyFormatSourceAction
       resourceData.getVmResource().deleteResourceAndFile();
     }
   }
+
+  private final ActionRunnable noFormatterActionStub = new ActionRunnable() {
+    public void adjustAction() {
+      restoreActionText();
+      String baseText = getAction().getText();
+      modifyActionText(baseText +
+          Messages.TemporarilyFormatSourceAction_NO_FORMATTER_DISABLED_SUFFIX);
+      getAction().setEnabled(false);
+    }
+
+    public void run(Shell shell, IWorkbenchPart workbenchPart) {
+      // Should be unreachable. Do nothing.
+    }
+  };
 
   /**
    * Depending on user selection, the action may work in 2 modes: format or
