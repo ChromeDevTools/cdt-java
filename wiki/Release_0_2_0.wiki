@@ -2,4 +2,26 @@
 
 =Google Chrome Developer Tools for Java. Release 0.2.0.=
 
+As usual this release contains 2 parts: independent Java [ChromeDevToolsSdk SDK] library that implements [ChromeDevToolsProtocol Chrome/V8 debug protocol] client and Eclipse [EclipseDebugger “Debugger”] feature that allows debugging Chrome/V8 !JavaScript programs from inside Eclipse.
+
 Succeeds [Release_0_1_6 release 0.1.6].
+
+
+
+==Load Full Value==
+Usually [EclipseDebugger Debugger] does not show string values longer than 80 chars. They will be truncated instead; you can tell it by a typical cut-off in the end of string: {{{... (length: <actual length>)}}}. However, since this release the full string value may be loaded on demand. In _Variables_ or _Expressions_ view select string value and choose _“Load Full Value”_ from its context menu. Note that the implementation is somewhat cautious: it will reload a string, but with a new limit on length of 65536 chars. If that’s not enough, simply repeat the action once or twice.
+
+However, Eclipse may be not very usable with a string of enormous lengths. If only a specific part of the string is needed, you can try to manually add helper expression. E.g. {{{“value.substring(2978 - 100, 2978 + 100)”}}} to see a small snippet around interesting point.
+
+==Miscellaneous Small Changes==
+===Virtual Project Icon===
+Since this release [VirtualProject] folder is made visually distinguishable by adding a small [Chromium] logo to its icon.
+
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.4 minimum, Eclipse 3.5 and Eclipse 3.6 are tested. ||
+|| *Java:* || J2SE-1.5 or newer. ||
+
+Optional:
+|| *JSDT version:* ||  1.0 or newer. ||
