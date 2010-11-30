@@ -1,0 +1,5 @@
+#summary (Upcoming) release 0.2.0 notes
+
+=Google Chrome Developer Tools for Java. Release 0.2.0.=
+
+Succeeds [Release_0.1.6 release 0.1.6].
