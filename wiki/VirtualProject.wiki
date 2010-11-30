@@ -1,0 +1,13 @@
+#summary What Virtual Project is.
+
+= Virtual Project =
+
+An Eclipse project that is created by [Debugger] for each debug session (called launch in Eclipse) and gets deleted once the debug session is dismissed. The virtual project can be found among other regular projects. Since [Release_0_2_0 release 0.2.0] it looks as a folder icon with a small [http://www.chromium.org Chromium] logo on it. The project serves as a container for !JavaScript scripts downloaded from a remote VM. Those scripts are never saved in any files and get gone together with the project.
+
+== Why do we need it? ==
+
+For a languages like C++ or Java all the source files are gathered at developer's box. Quite contrary for JavaScript case all sources are gathered in running VM (including those generated on-the-fly). That's why !JavaScript debugger first has to download them to user environment. Virtual Project is a storage where Debugger puts them to.
+
+== Virtual Project vs. local files from workspace ==
+
+The Virtual Project is useful because it contains all actual sources and you don't have to care about checking them out from somewhere else. It also contains sources that are generated on the fly and is irreplaceable in this aspect. However there are cases ... TBD
