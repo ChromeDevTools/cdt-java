@@ -15,7 +15,7 @@ However, Eclipse may be not very usable with a string of enormous lengths. If on
 
 ==Miscellaneous Small Changes==
 ===Virtual Project Icon===
-Since this release [VirtualProject] folder is made visually distinguishable by adding a small [Chromium] logo to its icon.
+Since this release [VirtualProject] folder is made visually distinguishable by adding a small [http://www.chromium.org Chromium] logo to its icon.
 
 
 ==System Requirements==
