@@ -13,10 +13,24 @@ Usually [EclipseDebugger Debugger] does not show string values longer than 80 ch
 
 However, Eclipse may be not very usable with a string of enormous lengths. If only a specific part of the string is needed, you can try to manually add helper expression. E.g. {{{“value.substring(2978 - 100, 2978 + 100)”}}} to see a small snippet around interesting point.
 
+==Break On Exception==
+A !JavaScript VM may now be instructed to stop on each exception thrown. All exceptions are divided into 2 groups:
+  * _caught_ means exceptions that are going to be caught by a {{{catch}}} clause somewhere in the script and
+  * _uncaught_ means exceptions that are about to terminate script running and return control to the calling application.
+
+Both types of exceptions are controlled from 'Break on !JavaScript Exception' item in launch context menu. (Launch -- often called _"debug session"_ -- is a top-level element in _Debug_ view).
+
+==JSDT Basic Integration==
+The previous release expanded out of a VirtualProject premises and allowed to work with regular workspace source files directly. However the default !JavaScript editor from JSDT project could not be really used: all breakpoints set in the editor made no effect on running VM. Now we fix this problem. The breakpoints added from !JavaScript editor should work. However you may notice that still they are slightly different breakpoints; this shouldn't make any trouble though.
+
+Note that this integration is deployed as a separate Eclipse feature: _"Chromium !JavaScript Debugger Bridge to JSDT"_. This feature comes together with others but you have to manually select it when installing/upgrading. The separate feature is needed to keep core Debugger deployable independently of JSDT installation.
+
 ==Miscellaneous Small Changes==
 ===Virtual Project Icon===
 Since this release [VirtualProject] folder is made visually distinguishable by adding a small [http://www.chromium.org Chromium] logo to its icon.
 
+===Skip All Breakpoints===
+A standard 'Skip All Breakpoints' mode (see a button in _Breakpoints_ view) is now supported by [EclipseDebugger Debugger]. It disables breakpoints directly in VM so all breaks get skipped without invoking the debugger.
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
