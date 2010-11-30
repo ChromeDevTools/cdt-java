@@ -25,12 +25,23 @@ The previous release expanded out of a VirtualProject premises and allowed to wo
 
 Note that this integration is deployed as a separate Eclipse feature: _"Chromium !JavaScript Debugger Bridge to JSDT"_. This feature comes together with others but you have to manually select it when installing/upgrading. The separate feature is needed to keep core Debugger deployable independently of JSDT installation.
 
+==Temporarily Format Source==
+A new experimental feature that adjoins JSDT integration works with JavaScript scripts that lack formatting. One can use JSDT formatter manually on his work files when it needs formatting. A new feature works for scripts from VirtualProject. Open a context menu on a script under VirtualProject and choose _V8 Debugging -> Temporarily Format Source_ action. 
+It will call JSDT formatter with default settings and put a result into a new script beside. This script is called temporary because it will be gone when debug session is finished. Before that happened you can step over it and set breakpoints.
+
+This feature is still experimental and may not always work properly. In particular the formatter may fail on some scripts. Currently there is an fall-back which is a secondary extremely simplistic formatter. Its output may be of extremely poor quality and be no longer compilable.
+
 ==Miscellaneous Small Changes==
-===Virtual Project Icon===
+====Virtual Project Icon====
 Since this release [VirtualProject] folder is made visually distinguishable by adding a small [http://www.chromium.org Chromium] logo to its icon.
 
-===Skip All Breakpoints===
+====Skip All Breakpoints====
 A standard 'Skip All Breakpoints' mode (see a button in _Breakpoints_ view) is now supported by [EclipseDebugger Debugger]. It disables breakpoints directly in VM so all breaks get skipped without invoking the debugger.
+
+==Protocol Change==
+Since 7.0.511.4 (revision #58796) Chromium/Google Chrome changed its debug protocol in handling non-ASCII symbols. All previous versions of Debugger/SDK will not work with a new protocol if there are non-ASCII symbols in scripts or in variable values. This release has all necessary changes and should work with both old and new revisions of the protocol. 
+
+This release is currently recommended for use with any version of Chromium/Google Chrome.
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
