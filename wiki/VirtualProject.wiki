@@ -1,17 +1,17 @@
-#summary What Virtual Project is.
+#summary Virtual Projects.
 
-= Virtual Project =
+== What is it? ==
 
-An Eclipse project that is created by [EclipseDebugger Debugger] for each debug session (called _launch_ in Eclipse) and gets deleted once the debug session is dismissed. The virtual project can be found among other regular projects. Since [Release_0_2_0 release 0.2.0] its folder icon is decorated by a small [http://www.chromium.org Chromium] logo sign. The Virtual Project serves as a container for !JavaScript scripts downloaded from a remote VM. Those scripts are never saved in any files and get gone together with the virtual project.
+A "virtual project" is an Eclipse project created by the [EclipseDebugger Debugger] for every debug session (called _"a launch"_ in Eclipse) and deleted once the debug session is over. Virtual projects can be found among other regular projects. Since [Release_0_2_0 release 0.2.0], the virtual project icon is decorated by a small [http://www.chromium.org Chromium] logo. A virtual project serves as a container for !JavaScript scripts downloaded from a remote VM. Those scripts are never saved on disk and get deleted together with the virtual project.
 
 == Why do we need it? ==
 
-For a languages like C++ or Java all the source files are gathered on developer's work directory. Quite contrary for JavaScript case all sources are gathered in running VM (including those that are generated on the fly). That's why !JavaScript debugger first has to download them from VM into Eclipse. Virtual Project is a storage where Debugger puts them to.
+For languages like C++ or Java, all source files reside in a developer's working directory. The !JavaScript case is quite different: all source scripts reside inside a running !JavaScript virtual machine (VM), including those generated on the fly. That's why a !JavaScript debugger has to download the scripts from a VM into Eclipse first. A virtual project is the way the Debugger stores them.
 
-== Virtual Project vs. local files from workspace ==
+== Virtual project vs. Workspace local files ==
 
-The Virtual Project is useful because it contains all actual sources and you don't have to care about checking them out from somewhere else. It also contains sources that are generated on the fly and is irreplaceable in this aspect.
+A virtual project is useful because it contains all up-to-date sources, so you don't have to care about checking them out elsewhere. It also contains sources that are generated on the fly, and is irreplaceable in this aspect.
 
-Unfortunately this is not very useful for a !JavaScript developer: a developer may want to _edit_ files, not only debug them. (Actually scripts from Virtual Project _are_ editable, which is used for _live editing_ feature; but all changes will be lost with VM exiting). The more common developer set-up would be to link debug session with his workspace source files -- a feature first introduced and described in [Release_0_1_6 release 0.1.6].
+Unfortunately, a virtual project is not very useful for a !JavaScript developer who may want to _edit_ files, not only debug them. (Actually, scripts from virtual projects _are_ editable, which is used for the _live editing_ feature, but all changes are lost once the VM stops). In a more common setting, a developer will link a debug session to the workspace source files -- a feature first introduced and described in [Release_0_1_6 release 0.1.6].
 
-Note that a Virtual Project exists for each debug session whether workspace source files are configured or not.
+Once again, remember that a virtual project exists for every debug session, regardless of whether the workspace source files are configured for the respective debug session or not.
