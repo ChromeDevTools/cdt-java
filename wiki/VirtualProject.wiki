@@ -1,4 +1,4 @@
-#summary Virtual Projects.
+#summary Virtual project basics.
 
 == What is it? ==
 
