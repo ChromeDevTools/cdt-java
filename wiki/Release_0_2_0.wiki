@@ -7,6 +7,8 @@ As usual this release contains 2 parts: independent Java [ChromeDevToolsSdk SDK]
 Succeeds [Release_0_1_6 release 0.1.6].
 
 
+==Overview==
+In this release we added several long wanted features. The SDK API got a number of technical changes so we decided to reflect compatibility breakage in version number change.
 
 ==Load Full Value==
 Usually [EclipseDebugger Debugger] does not show string values longer than 80 chars. They will be truncated instead; you can tell it by a typical cut-off in the end of string: {{{... (length: <actual length>)}}}. However, since this release the full string value may be loaded on demand. In _Variables_ or _Expressions_ view select string value and choose _“Load Full Value”_ from its context menu. Note that the implementation is somewhat cautious: it will reload a string, but with a new limit on length of 65536 chars. If that’s not enough, simply repeat the action once or twice.
@@ -18,30 +20,36 @@ A !JavaScript VM may now be instructed to stop on each exception thrown. All exc
   * _caught_ means exceptions that are going to be caught by a {{{catch}}} clause somewhere in the script and
   * _uncaught_ means exceptions that are about to terminate script running and return control to the calling application.
 
-Both types of exceptions are controlled from 'Break on !JavaScript Exception' item in launch context menu. (Launch -- often called _"debug session"_ -- is a top-level element in _Debug_ view).
+Both types of exceptions are controlled from _"Break on !JavaScript Exception"_ item in launch context menu. (Launch -- often called _"debug session"_ -- is a top-level element in _Debug_ view).
 
 ==JSDT Basic Integration==
-The previous release expanded out of a VirtualProject premises and allowed to work with regular workspace source files directly. However the default !JavaScript editor from JSDT project could not be really used: all breakpoints set in the editor made no effect on running VM. Now we fix this problem. The breakpoints added from !JavaScript editor should work. However you may notice that still they are slightly different breakpoints; this shouldn't make any trouble though.
+The previous release expanded out of a VirtualProject premises and allowed to work with regular workspace source files directly. However the default !JavaScript editor from JSDT project could not really be used: all breakpoints set in the editor made no effect on running VM. Now we fix this problem. The breakpoints added from !JavaScript editor should be working. However you may notice that still they are slightly different from ones in VirtualProject; this shouldn't make any trouble though.
 
 Note that this integration is deployed as a separate Eclipse feature: _"Chromium !JavaScript Debugger Bridge to JSDT"_. This feature comes together with others but you have to manually select it when installing/upgrading. The separate feature is needed to keep core Debugger deployable independently of JSDT installation.
 
 ==Temporarily Format Source==
-A new experimental feature that adjoins JSDT integration works with JavaScript scripts that lack formatting. One can use JSDT formatter manually on his work files when it needs formatting. A new feature works for scripts from VirtualProject. Open a context menu on a script under VirtualProject and choose _V8 Debugging -> Temporarily Format Source_ action. 
-It will call JSDT formatter with default settings and put a result into a new script beside. This script is called temporary because it will be gone when debug session is finished. Before that happened you can step over it and set breakpoints.
+A new experimental feature that adjoins JSDT integration works with JavaScript scripts that lack formatting. For his regular work files one can use JSDT formatter manually when they need formatting. And the new feature is for using with scripts from a VirtualProject. Open a context menu on a script under VirtualProject and choose _V8 Debugging -> Temporarily Format Source_ action. 
+It will call JSDT formatter with default settings and put a result into a new script beside the old one. This script is called temporary because it will be gone when debug session is finished. Before that happened you can step over it or set breakpoints.
 
-This feature is still experimental and may not always work properly. In particular the formatter may fail on some scripts. Currently there is an fall-back which is a secondary extremely simplistic formatter. Its output may be of extremely poor quality and be no longer compilable.
+This feature is still experimental and may not always work properly. In particular the formatter may fail on some scripts. Currently there is a fall-back: a secondary extremely simplistic formatter. Its output may be of extremely poor quality and be no longer compilable.
 
 ==Miscellaneous Small Changes==
 ====Virtual Project Icon====
 Since this release [VirtualProject] folder is made visually distinguishable by adding a small [http://www.chromium.org Chromium] logo to its icon.
 
 ====Skip All Breakpoints====
-A standard 'Skip All Breakpoints' mode (see a button in _Breakpoints_ view) is now supported by [EclipseDebugger Debugger]. It disables breakpoints directly in VM so all breaks get skipped without invoking the debugger.
+A standard 'Skip All Breakpoints' mode (see a button in _Breakpoints_ view) is now supported by [EclipseDebugger Debugger]. It disables breakpoints directly in VM so all breaks get skipped without calling back the debugger.
 
 ==Protocol Change==
-Since 7.0.511.4 (revision #58796) Chromium/Google Chrome changed its debug protocol in handling non-ASCII symbols. All previous versions of Debugger/SDK will not work with a new protocol if there are non-ASCII symbols in scripts or in variable values. This release has all necessary changes and should work with both old and new revisions of the protocol. 
+Since 7.0.511.4 (revision #58796) Chromium/Google Chrome changed its debug protocol in handling non-ASCII symbols. All previous versions of Debugger/SDK will not work with a new protocol if there are any non-ASCII symbols in scripts or in variable values -- session hangs or fails abruptly. This release has all necessary changes and should work with both old and new revisions of the protocol. 
 
-This release is currently recommended for use with any version of Chromium/Google Chrome.
+This release is recommended for use with any version of Chromium/Google Chrome.
+
+==SDK Changes==
+SDK changes reflect new features described above. Some most noticeable changes are:
+  * source position API refactored,
+  * live editing interfaces made regular,
+  * connection logging API switched to bytes from characters.
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
