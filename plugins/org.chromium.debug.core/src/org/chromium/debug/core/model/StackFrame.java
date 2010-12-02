@@ -386,6 +386,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return currentCachedPosition.position;
   }
 
+  /**
+   * @return nullable
+   */
   public VmResourceId getVmResourceId() {
     return getUserPosition().getId();
   }

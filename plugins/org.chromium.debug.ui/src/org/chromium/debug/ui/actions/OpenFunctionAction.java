@@ -110,16 +110,33 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         IWorkbench workbench = PlatformUI.getWorkbench();
         final IWorkbenchWindow activeWorkbenchWindow = workbench.getActiveWorkbenchWindow();
 
-        Script script = jsFunction.getScript();
-        if (script == null) {
-          return;
-        }
         ISourceLocator sourceLocator = debugTarget.getLaunch().getSourceLocator();
         if (sourceLocator instanceof ISourceLookupDirector == false) {
           return;
         }
         ISourceLookupDirector director = (ISourceLookupDirector) sourceLocator;
-        Object sourceObject = director.getSourceElement(script);
+
+
+        SourcePositionMap positionMap = debugTarget.getSourcePositionMap();
+        SourcePosition userPosition;
+        {
+          // First get VM positions.
+          Script script = jsFunction.getScript();
+          if (script == null) {
+            return;
+          }
+          TextStreamPosition functionOpenParenPosition = jsFunction.getOpenParenPosition();
+          if (functionOpenParenPosition == null) {
+            return;
+          }
+
+          // Convert them to user positions.
+          userPosition = positionMap.translatePosition(
+              VmResourceId.forScript(script), functionOpenParenPosition.getLine(),
+              functionOpenParenPosition.getColumn(), TranslateDirection.VM_TO_USER);
+        }
+
+        Object sourceObject = director.getSourceElement(userPosition.getId());
         if (sourceObject instanceof IFile == false) {
           return;
         }
@@ -135,30 +152,22 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
           return;
         }
         ITextEditor textEditor = (ITextEditor) editor;
-        TextStreamPosition openParenPosition = jsFunction.getOpenParenPosition();
-        if (openParenPosition == null) {
-          return;
-        }
 
-        SourcePositionMap positionMap = debugTarget.getSourcePositionMap();
-        SourcePosition originalPosition = positionMap.translatePosition(
-            VmResourceId.forScript(script), openParenPosition.getLine(),
-            openParenPosition.getColumn(), TranslateDirection.VM_TO_USER);
-        int offset = calculateOffset(textEditor, originalPosition);
+        int offset = calculateOffset(textEditor, userPosition);
 
         textEditor.selectAndReveal(offset, 0);
       }
 
-      private int calculateOffset(ITextEditor editor, SourcePosition originalPosition) {
+      private int calculateOffset(ITextEditor editor, SourcePosition userPosition) {
         IDocumentProvider provider = editor.getDocumentProvider();
         IDocument document = provider.getDocument(editor.getEditorInput());
         int lineStartOffset;
         try {
-          lineStartOffset = document.getLineOffset(originalPosition.getLine());
+          lineStartOffset = document.getLineOffset(userPosition.getLine());
         } catch (BadLocationException e) {
           throw new RuntimeException(e);
         }
-        return lineStartOffset + originalPosition.getColumn();
+        return lineStartOffset + userPosition.getColumn();
       }
     };
   }

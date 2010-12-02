@@ -33,10 +33,17 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
           return VmResourceId.forScript(script).getEclipseSourceName();
         } else if (object instanceof StackFrame) {
           StackFrame jsStackFrame = (StackFrame) object;
-          return jsStackFrame.getVmResourceId().getEclipseSourceName();
+          VmResourceId vmResourceId = jsStackFrame.getVmResourceId();
+          if (vmResourceId == null) {
+            return null;
+          }
+          return vmResourceId.getEclipseSourceName();
         } else if (object instanceof Breakpoint) {
           Breakpoint breakpoint = (Breakpoint) object;
           return breakpoint.getScriptName();
+        } else if (object instanceof VmResourceId) {
+          VmResourceId resourceId = (VmResourceId) object;
+          return resourceId.getEclipseSourceName();
         } else {
           return null;
         }
