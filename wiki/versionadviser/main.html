@@ -1,0 +1,104 @@
+<html>
+<head>
+<title>Version Adviser</title>
+<script src="main.js"></script>
+
+<style type="text/css">
+  TD.inputbox {
+    vertical-align: top;
+    background-color: #fffff0;
+    padding: 1em 1em 1em 1em; 
+    border: solid thin;
+    border-color: #ffffa0;
+  }
+  DIV.resultbox {
+    padding: 1em 1em 1em 1em; 
+    border: solid thin;
+    border-color: #ffffa0;
+  }
+</style>
+
+</head>
+<body>
+<h1>Version Adviser</h1>
+
+Please, enter your version of either <i>Google Chrome/Chromium</i> or <i>Chrome Developer Tools for Java</i>:
+<p> 
+
+
+
+<table>
+<tr>
+<td class="inputbox">
+<b>Google Chrome/Chromium version:</b>
+<img src="chromium_16.png"></img>
+<input value="" type="text" id="chromeInputId">
+<br>
+<div style="color: grey; font-size: smaller;">
+Only numbers: DD.DD.DD.DD
+</div>
+<div style="padding: 0.5em 0 0;"></div>
+<div style="padding: 0.5em 0 0 0; border-top: solid thin;"></div>
+<img src="eclipse.gif"></img>
+<input value="Calculate ChromeDevTools for Java versions" type="button" onclick="javascript:adviserImpl.CalculateAndPrintToolsVersions(document.getElementById('chromeInputId').value, resultOutputDiv)">
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td class="inputbox">
+<b>ChromeDevTools for Java version:</b>
+<img src="eclipse.gif"></img>
+<input value="" type="text" id="toolsInputId">
+<br>
+<div style="color: grey; font-size: smaller;">
+Known versions:
+<script>
+  toolsInputTextField = document.getElementById('toolsInputId');
+  function HandleKnowVersionClick(version_str) {
+    toolsInputTextField.value = version_str;
+    var button = document.getElementById('toolsCalculateButton');
+    button.click();
+  }
+  
+  (function AddKnownVersionsText() {
+	  
+	  var first = true;
+	  adviserImpl.GetKnownToolsVersions().forEach(function(version_str) {
+	    if (!first) {
+	      document.write(", ");
+	    }
+	    document.write(" <a style='color: grey;' href='#' onclick=\"javascript:HandleKnowVersionClick('" + version_str + "')\">" + version_str + "</a>");
+	    first = false;
+	  });
+  })(); 
+</script>
+</div>
+</div>
+<div style="padding: 0.5em 0 0;"></div>
+<div style="padding: 0.5em 0 0 0; border-top: solid thin;"></div>
+<img src="chromium_16.png"></img>
+<input id="toolsCalculateButton" value="Calculate Google Chrome/Chromium versions" type="button" onclick="javascript:adviserImpl.CalculateAndPrintChromeVersions(toolsInputTextField.value, resultOutputDiv)">
+</td>
+</tr>
+</table>
+<p>
+<h3>Result:</h3>
+<div class="resultbox" id="result">
+<div style="padding: 5em 0 0 0;"></div>
+</div>
+
+
+<script>
+  resultOutputDiv = document.getElementById('result');
+</script>
+
+
+<div style="color: grey;">
+<h4>All known limitations in raw list:</h4>
+<div style="font-size: smaller;">
+<script>
+document.write(adviserImpl.DumpAllLimitations());
+</script>
+</div>
+</div>
+
+</body>
+</html>
