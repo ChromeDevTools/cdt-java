@@ -18,8 +18,19 @@ import org.eclipse.wst.jsdt.core.formatter.CodeFormatter;
 public class JsdtFormatterBridge implements JavaScriptFormatter {
   public Result format(String sourceString) {
     TextEdit textEdit = jsdtFormat(sourceString);
+
     if (textEdit == null) {
-      throw new RuntimeException("Formatter failed");
+      final boolean useFallbackFormatter = true;
+      if (useFallbackFormatter) {
+        // While JSDT formatter has chances to fail
+        // (see https://bugs.eclipse.org/bugs/show_bug.cgi?id=329716),
+        // there is a fall-back implementation, that only insert new-lines in some places
+        // thus making a source a bit more readable.
+        String header = Messages.JsdtFormatterBridge_FALLBACK_COMMENT;
+        textEdit = AdHocFormatter.format(sourceString, header);
+      } else {
+        throw new RuntimeException("Formatter failed"); //$NON-NLS-1$
+      }
     }
     return convertResult(sourceString, textEdit);
   }
@@ -209,5 +220,5 @@ public class JsdtFormatterBridge implements JavaScriptFormatter {
   }
 
   private static final char LINE_END_CHAR = '\n';
-  private static final String LINE_END_STRING = LINE_END_CHAR + "";
+  private static final String LINE_END_STRING = LINE_END_CHAR + ""; //$NON-NLS-1$
 }
