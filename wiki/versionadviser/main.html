@@ -1,5 +1,12 @@
 <html>
 <head>
+
+<!--
+  Copyright (c) 2010 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
 <title>Version Adviser</title>
 <script src="main.js"></script>
 
@@ -36,11 +43,28 @@ Please, enter your version of either <i>Google Chrome/Chromium</i> or <i>Chrome 
 <br>
 <div style="color: grey; font-size: smaller;">
 Only numbers: DD.DD.DD.DD
+<script>
+  chromeInputTextField = document.getElementById('chromeInputId');
+  function HandleChromeVersionClick(version_str) {
+    chromeInputTextField.value = version_str;
+    var button = document.getElementById('chromeCalculateButtonId');
+    button.click();
+  }
+  (function PrintChromeVersion() {
+    var appVersion = navigator.appVersion;
+    var pattern = /Chrome\/(\d+\.\d+\.\d+\.\d+)/;
+    var matchRes = appVersion.match(pattern);
+    if (matchRes) {
+      var version = matchRes[1];
+      document.write(" &nbsp;Current browser version is <a style='color: grey;' href='' onclick=\"javascript: HandleChromeVersionClick('"+ version +"'); return false\">" + version + "</a>");
+    }
+  })();
+</script>
 </div>
 <div style="padding: 0.5em 0 0;"></div>
 <div style="padding: 0.5em 0 0 0; border-top: solid thin;"></div>
 <img src="eclipse.gif"></img>
-<input value="Calculate ChromeDevTools for Java versions" type="button" onclick="javascript:adviserImpl.CalculateAndPrintToolsVersions(document.getElementById('chromeInputId').value, resultOutputDiv)">
+<input id="chromeCalculateButtonId" value="Calculate ChromeDevTools for Java versions" type="button" onclick="javascript:adviserImpl.CalculateAndPrintToolsVersions(document.getElementById('chromeInputId').value, resultOutputDiv)">
 </td>
 <td>&nbsp;&nbsp;&nbsp;</td>
 <td class="inputbox">
@@ -65,7 +89,7 @@ Known versions:
 	    if (!first) {
 	      document.write(", ");
 	    }
-	    document.write(" <a style='color: grey;' href='#' onclick=\"javascript:HandleKnowVersionClick('" + version_str + "')\">" + version_str + "</a>");
+	    document.write(" <a style='color: grey;' href='' onclick=\"javascript:HandleKnowVersionClick('" + version_str + "'); return false\">" + version_str + "</a>");
 	    first = false;
 	  });
   })(); 

@@ -1,4 +1,43 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 var adviserImpl = (function() {
+	function Data() {
+		this.chromiumVersions = [
+				new VersionRange(new Version([ 1 ]), new Version(
+						[ 8, Infinity ])),
+				new VersionRange(new Version([ 9 ]), new Version(
+						[ 9, Infinity ])),
+				new VersionRange(new Version([ 10 ]),
+						new Version([ Infinity ]), "future versions"), ]
+				.sort(VersionRange.compareStrict);
+
+		this.toolsRealVersions = [ new Version([ 0, 1, 0 ]),
+				new Version([ 0, 1, 2 ]), new Version([ 0, 1, 4 ]),
+				new Version([ 0, 1, 6 ]), new Version([ 0, 2, 0 ]) ];
+
+		var toolsVersions = [
+				new VersionRange(new Version([ 0, 2, 1 ]),
+						new Version([ Infinity ]), "future versions"), ];
+		this.toolsRealVersions.forEach(function(version) {
+			toolsVersions.push(createPointRange(version));
+		});
+		toolsVersions.sort(VersionRange.compareStrict);
+		this.toolsVersions = toolsVersions;
+
+		this.constraints = [
+				new Constraint(new VersionRange(new Version([ 5, 0, 342, 0 ]),
+						new Version([ 5, 0, 366, 2 ])), new VersionRange(
+						new Version([ 0 ]), new Version([ Infinity ])),
+						"Debug protocol is broken in Chrome", false),
+				new Constraint(new VersionRange(new Version([ 7, 0, 511, 4 ]),
+						new Version([ Infinity ])), new VersionRange(
+						new Version([ 0 ]), new Version([ 0, 2, 0 ])),
+						"Protocol is uncompatible for non-ASCII characters",
+						false), ];
+	}
+
 	function Version(components) {
 		this.components_ = components;
 	}
@@ -95,12 +134,17 @@ var adviserImpl = (function() {
 		return this.start + " - " + this.end;
 	};
 	VersionRange.prototype.getHtmlText = function(versionFormat) {
+		var res = "";
 		if (Version.compare(this.start, this.end) == 0) {
-			return this.start.getHtmlText(versionFormat);
+			res += this.start.getHtmlText(versionFormat);
 		} else {
-			return this.start.getHtmlText(versionFormat) + " &mdash; "
+			res += this.start.getHtmlText(versionFormat) + " &mdash; "
 					+ this.end.getHtmlText(versionFormat);
 		}
+		if (this.codeName_) {
+			res += " (" + this.codeName_ + ")";
+		}
+		return res;
 	};
 
 	VersionRange.prototype.contains = function(version) {
@@ -194,7 +238,8 @@ var adviserImpl = (function() {
 		};
 	};
 	VersionRange.prototype.mergeWith = function(next) {
-		if (this.end.adjoinsWith(next.start) && this.codeName == next.codeName) {
+		if (this.end.adjoinsWith(next.start) && this.codeName == next.codeName &&
+				this.codeName_ == next.codeName_) {
 			return new VersionRange(this.start, next.end);
 		}
 	};
@@ -220,7 +265,7 @@ var adviserImpl = (function() {
 	}
 	Constraint.prototype.getRawDescriptionHtml = function(chromeVersionFormat,
 			toolsVersionFormat) {
-		return "chromeVersions=" + this.chromeRange + " toolsVersions="
+		return "chromeVersions=" + this.chromeRange + " data.toolsVersions="
 				+ this.toolRange + " explanation='" + this.explanation + "'";
 	};
 
@@ -254,33 +299,7 @@ var adviserImpl = (function() {
 				+ " </th><th>Status</th><th>Comments</th></tr>\n";
 	};
 
-	var chromiumVersions = [
-			new VersionRange(new Version([ 1 ]), new Version([ 8, Infinity ])),
-			new VersionRange(new Version([ 9 ]), new Version([ 9, Infinity ])),
-			new VersionRange(new Version([ 10 ]), new Version([ Infinity ],
-					"Future versions")), ].sort(VersionRange.compareStrict);
-
-	var toolsRealVersions = [ new Version([ 0, 1, 0 ]),
-			new Version([ 0, 1, 2 ]), new Version([ 0, 1, 4 ]),
-			new Version([ 0, 1, 6 ]), new Version([ 0, 2, 0 ]) ];
-
-	var toolsVersions = [
-			new VersionRange(new Version([ 0, 2, 1 ]), new Version(
-					[ Infinity ], "Future versions")), ];
-	toolsRealVersions.forEach(function(version) {
-		toolsVersions.push(createPointRange(version));
-	});
-	toolsVersions.sort(VersionRange.compareStrict);
-
-	var constraints = [
-			new Constraint(new VersionRange(new Version([ 5, 0, 342, 0 ]),
-					new Version([ 5, 0, 366, 2 ])), new VersionRange(
-					new Version([ 0 ]), new Version([ Infinity ])),
-					"Debug protocol is broken in Chrome", false),
-			new Constraint(new VersionRange(new Version([ 7, 0, 511, 4 ]),
-					new Version([ Infinity ])), new VersionRange(new Version(
-					[ 0 ]), new Version([ 0, 2, 0 ])),
-					"Protocol is uncompatible for non-ASCII characters", false), ];
+	var data = new Data();
 
 	var fromChromeToToolsHandlers = {
 		getFromConstraintRange : function(constraint) {
@@ -290,10 +309,10 @@ var adviserImpl = (function() {
 			return constraint.toolRange;
 		},
 		getFromRangeList : function() {
-			return chromiumVersions;
+			return data.chromiumVersions;
 		},
 		getToRangeList : function() {
-			return toolsVersions;
+			return data.toolsVersions;
 		},
 		versionFormat : {
 			length : 3
@@ -311,10 +330,10 @@ var adviserImpl = (function() {
 			return constraint.chromeRange;
 		},
 		getFromRangeList : function() {
-			return toolsVersions;
+			return data.toolsVersions;
 		},
 		getToRangeList : function() {
-			return chromiumVersions;
+			return data.chromiumVersions;
 		},
 		versionFormat : {
 			length : 4
@@ -331,7 +350,7 @@ var adviserImpl = (function() {
 			result.push(new UseReport(range));
 		});
 
-		constraints.forEach(function(constr) {
+		data.constraints.forEach(function(constr) {
 			if (handlers.getFromConstraintRange(constr).contains(fromVersion)) {
 				var newResult = [];
 				result.forEach(function(useReport) {
@@ -422,7 +441,7 @@ var adviserImpl = (function() {
 
 	function getAllLimitationsHtml() {
 		var res = "";
-		constraints.forEach(function(constr) {
+		data.constraints.forEach(function(constr) {
 			res += constr.getRawDescriptionHtml(
 					fromChromeToToolsHandlers.versionFormat,
 					fromToolsToChromeHandlers.versionFormat);
@@ -432,11 +451,15 @@ var adviserImpl = (function() {
 	}
 	function getKnownToolsVersions() {
 		var result = [];
-		toolsRealVersions.forEach(function(version) {
+		data.toolsRealVersions.forEach(function(version) {
 			result.push(version
 					.getHtmlText(fromChromeToToolsHandlers.versionFormat));
 		});
 		return result;
+	}
+
+	function runTests() {
+
 	}
 
 	return {
@@ -449,6 +472,7 @@ var adviserImpl = (function() {
 					fromToolsToChromeHandlers);
 		},
 		GetKnownToolsVersions : getKnownToolsVersions,
-		DumpAllLimitations : getAllLimitationsHtml
+		DumpAllLimitations : getAllLimitationsHtml,
+		RunTest : runTests()
 	};
 })();
