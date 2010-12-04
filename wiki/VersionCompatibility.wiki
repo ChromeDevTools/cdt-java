@@ -2,18 +2,4 @@
 
 = Version Compatibility =
 
-The table below shows the compatibility status of various Chrome/Chromium versions with versions of !ChromeDevTools that have been released or manually built from the repository HEAD source.
-
-|| *Chrome version* || *!ChromeDevTools release version* || *Sources in the repository HEAD* ||
-|| Windows rel 4.1.249.1045 ||  0.1.4	|| OK || 
-|| Windows beta 5.0.342.8 || doesn't work	|| doesn't work || 
-|| Windows dev 5.0.366.2 ||  0.1.4	|| OK || 
-|| Linux beta 5.0.342.7 || doesn't work	|| doesn't work || 
-|| Linux dev 5.0.366.2 || 0.1.4	|| not checked || 
-|| Mac beta 5.0.342.7 || doesn't work	|| not checked || 
-|| Mac dev 5.0.366.0 || 0.1.4	|| not checked || 
-
-Notes:
-  * "Doesn't work" mean that there is an issue with the current beta build; it should be fixed in a later builds.
-  * "rel" stands for release, "beta" is the beta channel and "dev" is the development channel; Linux and Mac platforms do not currently have release version available.
-  * Please keep in mind that with frequent Chrome releases this table is risks becoming outdated.
+For the version compatibility status please refer to a [http://chromedevtools.googlecode.com/svn/wiki/versionadviser/main.html table].
