@@ -150,7 +150,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     try {
       json = JsonUtil.jsonObjectFromJson(message.getContent());
     } catch (ParseException e) {
-      LOGGER.log(Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
+      LOGGER.log(Level.SEVERE, "Invalid JSON received: " + message.getContent(), e);
       return;
     }
     String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
