@@ -34,7 +34,7 @@ var adviserImpl = (function() {
 				new Constraint(new VersionRange(new Version([ 7, 0, 511, 4 ]),
 						new Version([ Infinity ])), new VersionRange(
 						new Version([ 0 ]), new Version([ 0, 2, 0 ])),
-						"Protocol is uncompatible for non-ASCII characters",
+						"Protocol is incompatible for non-ASCII characters",
 						false), ];
 	}
 
@@ -253,6 +253,10 @@ var adviserImpl = (function() {
 			throw "Overlapping ranges: " + range1 + " - " + range2;
 		}
 	};
+	VersionRange.compareStrict = function(range1, range2) {
+		return Version.compare(range1.start, range2.start) == 0 &&
+            Version.compare(range1.end, range2.end);
+	};
 	function createPointRange(version, opt_codeName) {
 		return new VersionRange(version, version, opt_codeName);
 	}
@@ -265,7 +269,7 @@ var adviserImpl = (function() {
 	}
 	Constraint.prototype.getRawDescriptionHtml = function(chromeVersionFormat,
 			toolsVersionFormat) {
-		return "chromeVersions=" + this.chromeRange + " data.toolsVersions="
+		return "chromeVersions=" + this.chromeRange + " toolsVersions="
 				+ this.toolRange + " explanation='" + this.explanation + "'";
 	};
 
