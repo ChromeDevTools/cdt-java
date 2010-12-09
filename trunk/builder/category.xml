@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.chromium.debug_0.1.7.qualifier.jar" id="org.chromium.debug" version="0.1.7.qualifier">
-      <category name="Google Chrome Developer Tools"/>
+   <feature id="org.chromium.debug">
+      <category name="chromedevtools.main"/>
    </feature>
-   <feature url="features/org.chromium.sdk_0.1.7.qualifier.jar" id="org.chromium.sdk" version="0.1.7.qualifier">
-      <category name="Google Chrome Developer Tools"/>
+   <feature id="org.chromium.sdk">
+      <category name="chromedevtools.advanced"/>
    </feature>
-   <feature url="features/org.chromium.debug.jsdtbridge_0.1.7.qualifier.jar" id="org.chromium.debug.jsdtbridge" version="0.1.7.qualifier">
-      <category name="Google Chrome Developer Tools"/>
+   <feature id="org.chromium.debug.jsdtbridge">
+      <category name="chromedevtools.main"/>
    </feature>
-   <feature url="features/org.chromium.source_0.1.7.qualifier.jar" id="org.chromium.source" version="0.1.7.qualifier">
-      <category name="Google Chrome Developer Tools"/>
+   <feature id="org.chromium.source">
+      <category name="chromedevtools.advanced"/>
    </feature>
-   <category-def name="Google Chrome Developer Tools" label="Google Chrome Developer Tools"/>
+   <category-def name="chromedevtools.main" label="Google Chrome Developer Tools"/>
+   <category-def name="chromedevtools.advanced" label="Google Chrome Developer Tools (Advanced)"/>
 </site>

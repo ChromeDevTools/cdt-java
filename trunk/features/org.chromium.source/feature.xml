@@ -8,7 +8,8 @@
       id="org.chromium.source"
       label="%featureName"
       version="0.1.7.qualifier"
-      provider-name="%providerName">
+      provider-name="%providerName"
+      plugin="org.chromium.debug">
 
    <description>
       %description
@@ -22,12 +23,21 @@
       %licenseAgreement
    </license>
 
+   <url>
+      <update label="ChromeDevTools Update Site" url="http://chromedevtools.googlecode.com/svn/update/dev/"/>
+      <discovery label="Google Chrome Developer Tools for Java" url="http://code.google.com/p/chromedevtools"/>
+   </url>
+
    <includes
          id="org.chromium.sdk.source"
          version="0.0.0"/>
 
    <includes
          id="org.chromium.debug.source"
+         version="0.0.0"/>
+
+   <includes
+         id="org.chromium.debug.jsdtbridge.source"
          version="0.0.0"/>
 
 </feature>

@@ -22,4 +22,4 @@ Export-Package: org.chromium.debug.core,
  org.chromium.debug.core.sourcemap,
  org.chromium.debug.core.util
 Eclipse-LazyStart: true
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
