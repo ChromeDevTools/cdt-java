@@ -24,7 +24,6 @@
 
    <url>
       <update label="ChromeDevTools Update Site" url="http://chromedevtools.googlecode.com/svn/update/dev/"/>
-      <discovery label="Google Chrome Developer Tools for Java" url="http://code.google.com/p/chromedevtools"/>
    </url>
 
    <plugin
