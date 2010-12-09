@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Chromium JavaScript Remote Debugger Core Tests
 Bundle-SymbolicName: org.chromium.debug.core.tests
-Bundle-Version: 0.1.7.0
+Bundle-Version: 0.2.0.0
 Fragment-Host: org.chromium.debug.core;bundle-version="0.1.0.0"
 Require-Bundle: org.eclipse.core.runtime,
- org.chromium.debug.core;bundle-version="0.1.7",
+ org.chromium.debug.core;bundle-version="0.2.0",
  org.junit4;bundle-version="4.8.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
