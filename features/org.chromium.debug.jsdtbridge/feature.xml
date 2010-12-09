@@ -8,7 +8,8 @@
       id="org.chromium.debug.jsdtbridge"
       label="%featureName"
       version="0.1.7.qualifier"
-      provider-name="%providerName">
+      provider-name="%providerName"
+      plugin="org.chromium.debug">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/EclipseDebugger">
       %description
@@ -21,6 +22,11 @@
    <license url="%licenseUrl">
       %licenseAgreement
    </license>
+
+   <url>
+      <update label="ChromeDevTools Update Site" url="http://chromedevtools.googlecode.com/svn/update/dev/"/>
+      <discovery label="Google Chrome Developer Tools for Java" url="http://code.google.com/p/chromedevtools"/>
+   </url>
 
    <requires>
       <import feature="org.chromium.debug" version="0.1.7.qualifier"/>
