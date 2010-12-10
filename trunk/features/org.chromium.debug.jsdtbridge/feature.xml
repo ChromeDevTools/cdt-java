@@ -8,8 +8,7 @@
       id="org.chromium.debug.jsdtbridge"
       label="%featureName"
       version="0.2.0.qualifier"
-      provider-name="%providerName"
-      plugin="org.chromium.debug">
+      provider-name="%providerName">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/EclipseDebugger">
       %description
