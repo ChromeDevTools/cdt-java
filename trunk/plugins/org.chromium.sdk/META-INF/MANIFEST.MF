@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Google Chrome Developer Tools SDK
 Bundle-SymbolicName: org.chromium.sdk
-Bundle-Version: 0.2.0.qualifier
+Bundle-Version: 0.2.1.qualifier
 Bundle-Vendor: The Chromium Authors
 Bundle-ClassPath: lib/json_simple/json_simple-1.1.jar,
  .
