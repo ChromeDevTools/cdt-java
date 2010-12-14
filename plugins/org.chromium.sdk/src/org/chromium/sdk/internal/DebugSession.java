@@ -57,6 +57,8 @@ public class DebugSession {
 
   private final DefaultResponseHandler defaultResponseHandler;
 
+  private volatile Version vmVersion = null;
+
   public DebugSession(DebugSessionManager sessionManager, V8ContextFilter contextFilter,
       V8CommandOutput v8CommandOutput) {
     this.scriptManager = new ScriptManager(contextFilter, this);
@@ -102,6 +104,10 @@ public class DebugSession {
    */
   public void navigated() {
     getScriptManager().reset();
+  }
+
+  Version getVmVersion() {
+    return vmVersion;
   }
 
   /**
@@ -289,6 +295,7 @@ public class DebugSession {
           return null;
         }
         Version vmVersion = V8ProtocolUtil.parseVersionResponse(successResponse);
+        DebugSession.this.vmVersion = vmVersion;
 
         if (V8VersionMilestones.isRunningAccurate(vmVersion)) {
           Boolean running = successResponse.running();
