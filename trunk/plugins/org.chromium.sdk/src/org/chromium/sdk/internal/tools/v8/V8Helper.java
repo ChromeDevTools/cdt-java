@@ -33,6 +33,7 @@ import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
 import org.chromium.sdk.internal.protocol.data.PropertyObject;
 import org.chromium.sdk.internal.protocol.data.RefWithDisplayData;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeRef;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
@@ -140,9 +141,8 @@ public class V8Helper {
 
     {
       // Receiver ("this")
-      RefWithDisplayData receiverObject = frame.getReceiver().asWithDisplayData();
-      V8ProtocolUtil.putMirror(localRefs, receiverObject,
-          V8ProtocolUtil.PropertyNameGetter.THIS);
+      SomeRef receiverObject = frame.getReceiver();
+      V8ProtocolUtil.putMirror(localRefs, receiverObject, V8ProtocolUtil.PropertyNameGetter.THIS);
     }
 
     // Arguments
@@ -177,7 +177,7 @@ public class V8Helper {
   }
 
   public static PropertyReference computeReceiverRef(FrameObject frame) {
-    RefWithDisplayData receiverObject = frame.getReceiver().asWithDisplayData();
+    SomeRef receiverObject = frame.getReceiver();
     return V8ProtocolUtil.extractProperty(receiverObject,
         V8ProtocolUtil.PropertyNameGetter.THIS);
   }
