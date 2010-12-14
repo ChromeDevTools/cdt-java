@@ -10,8 +10,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
 /**
@@ -57,6 +56,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
       GenericCallback<Boolean> callback, SyncCallback syncCallback) {
     getDebugSession().getBreakpointManager().setBreakOnException(catchType, enabled,
         callback, syncCallback);
+  }
+
+  public Version getVersion() {
+    return getDebugSession().getVmVersion();
   }
 
   protected abstract DebugSession getDebugSession();

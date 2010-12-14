@@ -151,4 +151,9 @@ public interface JavascriptVm {
    */
   void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
       GenericCallback<Boolean> callback, SyncCallback syncCallback);
+
+  /**
+   * @return version of JavaScript VM or null if not available
+   */
+  Version getVersion();
 }
