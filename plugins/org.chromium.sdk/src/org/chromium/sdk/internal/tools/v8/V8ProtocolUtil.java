@@ -123,14 +123,12 @@ public class V8ProtocolUtil {
       ObjectValueHandle handle) {
     List<PropertyReference> objProps = new ArrayList<PropertyReference>(3);
     SomeRef protoObject = handle.protoObject();
-    RefWithDisplayData protoObjectRef = protoObject.asWithDisplayData();
-    if (protoObjectRef != null) {
-      putMirror(objProps, protoObjectRef, PropertyNameGetter.PROTO_OBJECT);
+    if (protoObject != null) {
+      putMirror(objProps, protoObject, PropertyNameGetter.PROTO_OBJECT);
     }
     SomeRef constructorFunction = handle.constructorFunction();
-    RefWithDisplayData constructorFunctionRef = constructorFunction.asWithDisplayData();
-    if (constructorFunctionRef != null) {
-      putMirror(objProps, constructorFunctionRef, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
+    if (constructorFunction != null) {
+      putMirror(objProps, constructorFunction, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
     }
     return objProps;
   }
@@ -179,21 +177,21 @@ public class V8ProtocolUtil {
   }
 
   static abstract class PropertyNameGetter<OBJ> {
-    static class SimpleNameGetter extends PropertyNameGetter<RefWithDisplayData> {
+    static class SimpleNameGetter extends PropertyNameGetter<SomeRef> {
       private final String name;
       SimpleNameGetter(String name) {
         this.name = name;
       }
       @Override
-      String getName(RefWithDisplayData ref) {
+      String getName(SomeRef ref) {
         return name;
       }
       @Override
-      DataWithRef getRef(RefWithDisplayData prop) {
-        return DataWithRef.fromSomeRef(prop.getSuper());
+      DataWithRef getRef(SomeRef someRef) {
+        return DataWithRef.fromSomeRef(someRef);
       }
       @Override
-      Long getPropertyType(RefWithDisplayData prop) {
+      Long getPropertyType(SomeRef someRef) {
         return null;
       }
     }
@@ -209,10 +207,10 @@ public class V8ProtocolUtil {
       }
     };
     /** The name of the "this" object to report as a variable name. */
-    static final PropertyNameGetter<RefWithDisplayData> THIS = new SimpleNameGetter("this");
-    static final PropertyNameGetter<RefWithDisplayData> PROTO_OBJECT =
+    static final PropertyNameGetter<SomeRef> THIS = new SimpleNameGetter("this");
+    static final PropertyNameGetter<SomeRef> PROTO_OBJECT =
         new SimpleNameGetter("__proto__");
-    static final PropertyNameGetter<RefWithDisplayData> CONSTRUCTOR_FUNCTION =
+    static final PropertyNameGetter<SomeRef> CONSTRUCTOR_FUNCTION =
         new SimpleNameGetter("constructor");
 
     static final PropertyNameGetter<PropertyObject> SUBPROPERTY = new SubpropertyNameGetter();
