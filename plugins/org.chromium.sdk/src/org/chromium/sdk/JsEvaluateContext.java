@@ -9,6 +9,8 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 /**
  * A context in which watch expressions may be evaluated. Typically corresponds to stack frame
  * of suspended process, but may also be detached from any stack frame.
+ *
+ * @see {@link EvaluateWithContextExtension}
  */
 public interface JsEvaluateContext {
 

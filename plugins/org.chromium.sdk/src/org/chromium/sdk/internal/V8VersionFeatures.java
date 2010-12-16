@@ -9,10 +9,16 @@ import org.chromium.sdk.Version;
 /**
  * Stores milestone version numbers that marks when a particular feature was implemented.
  */
-public class V8VersionMilestones {
+public class V8VersionFeatures {
   private final static Version ACCURATE_RUNNING_FIELD = new Version(1, 3, 16);
 
   public static boolean isRunningAccurate(Version vmVersion) {
     return vmVersion != null && ACCURATE_RUNNING_FIELD.compareTo(vmVersion) <= 0;
+  }
+
+  private final static Version EVALUATE_WITH_CONTEXT = new Version(3, 0, 0, 1);
+
+  public static boolean isEvaluateWithContextSupported(Version vmVersion) {
+    return vmVersion != null && EVALUATE_WITH_CONTEXT.compareTo(vmVersion) < 0;
   }
 }

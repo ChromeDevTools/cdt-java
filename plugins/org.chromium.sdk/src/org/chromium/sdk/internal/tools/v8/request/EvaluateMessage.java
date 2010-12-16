@@ -4,7 +4,12 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
+import java.util.List;
+import java.util.Map;
+
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  * Represents an "evaluate" V8 request message.
@@ -16,9 +21,10 @@ public class EvaluateMessage extends DebuggerMessage {
    * @param frame number (top is 0).
    * @param global nullable. Default is false
    * @param disableBreak nullable. Default is true
+   * @param additionalContext nullable
    */
   public EvaluateMessage(String expression, Integer frame,
-      Boolean global, Boolean disableBreak) {
+      Boolean global, Boolean disableBreak, List<Map.Entry<String, Integer>> additionalContext) {
     super(DebuggerCommand.EVALUATE.value);
     putArgument("expression", expression);
     if (frame != null) {
@@ -27,5 +33,15 @@ public class EvaluateMessage extends DebuggerMessage {
     putArgument("global", global);
     putArgument("disable_break", disableBreak);
     putArgument("inlineRefs", Boolean.TRUE);
+    if (additionalContext != null) {
+      JSONArray contextParam = new JSONArray();
+      for (Map.Entry<String, Integer> en : additionalContext) {
+        JSONObject mapping = new JSONObject();
+        mapping.put("name", en.getKey());
+        mapping.put("handle", en.getValue());
+        contextParam.add(mapping);
+      }
+      putArgument("additional_context", contextParam);
+    }
   }
 }
