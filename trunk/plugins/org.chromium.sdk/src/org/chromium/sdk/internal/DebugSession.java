@@ -297,7 +297,7 @@ public class DebugSession {
         Version vmVersion = V8ProtocolUtil.parseVersionResponse(successResponse);
         DebugSession.this.vmVersion = vmVersion;
 
-        if (V8VersionMilestones.isRunningAccurate(vmVersion)) {
+        if (V8VersionFeatures.isRunningAccurate(vmVersion)) {
           Boolean running = successResponse.running();
           if (running == Boolean.FALSE) {
             ContextBuilder.ExpectingBreakEventStep step1 = contextBuilder.buildNewContextWhenIdle();

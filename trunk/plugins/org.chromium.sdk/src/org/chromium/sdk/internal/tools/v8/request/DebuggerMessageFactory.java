@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8.request;
 
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext.StepAction;
@@ -25,8 +26,8 @@ public class DebuggerMessageFactory {
   }
 
   public static DebuggerMessage evaluate(String expression, Integer frame, Boolean global,
-      Boolean disableBreak) {
-    return new EvaluateMessage(expression, frame, global, disableBreak);
+      Boolean disableBreak, List<Map.Entry<String, Integer>> additionalContext) {
+    return new EvaluateMessage(expression, frame, global, disableBreak, additionalContext);
   }
 
   public static DebuggerMessage frame(Integer frameNumber) {

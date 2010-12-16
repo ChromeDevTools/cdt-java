@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
@@ -60,6 +61,13 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   public Version getVersion() {
     return getDebugSession().getVmVersion();
+  }
+
+  public EvaluateWithContextExtension getEvaluateWithContextExtension() {
+    if (!V8VersionFeatures.isEvaluateWithContextSupported(getVersion())) {
+      return null;
+    }
+    return JsEvaluateContextImpl.EVALUATE_WITH_CONTEXT_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

@@ -59,6 +59,10 @@ class JsObjectImpl extends JsValueImpl implements JsObject {
     }
   }
 
+  public static int parseRefId(String value) {
+    return Integer.parseInt(value);
+  }
+
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();

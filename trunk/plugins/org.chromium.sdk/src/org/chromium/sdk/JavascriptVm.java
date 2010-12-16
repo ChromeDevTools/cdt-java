@@ -156,4 +156,10 @@ public interface JavascriptVm {
    * @return version of JavaScript VM or null if not available
    */
   Version getVersion();
+
+  /**
+   * @return extension to evaluate operations with additional context support or null if VM
+   *     does not support this feature
+   */
+  EvaluateWithContextExtension getEvaluateWithContextExtension();
 }
