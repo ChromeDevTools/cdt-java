@@ -5,6 +5,7 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.actions.OpenFunctionAction.VariableWrapper;
 import org.chromium.sdk.JsValue;
 import org.eclipse.debug.core.DebugEvent;
@@ -65,26 +66,23 @@ public abstract class LoadFullValueAction implements IObjectActionDelegate,
     if (debugTarget == null) {
       return null;
     }
+    final Value value = wrapper.getValue();
 
-    final JsValue value = wrapper.getJsValue();
     if (!value.isTruncated()) {
       return null;
     }
     return new Runnable() {
-
       public void run() {
-        final String currentValue = value.getValueString();
-        JsValue.ReloadBiggerCallback callback = new JsValue.ReloadBiggerCallback() {
-          public void done() {
-            String newValue = value.getValueString();
-            if (!currentValue.equals(newValue)) {
+        Value.ReloadValueCallback callback = new Value.ReloadValueCallback() {
+          public void done(boolean changed) {
+            if (changed) {
               DebugEvent event =
                   new DebugEvent(wrapper.getDebugElement(), DebugEvent.CHANGE, DebugEvent.CONTENT);
               debugTarget.fireEvent(event);
             }
           }
         };
-        value.reloadHeavyValue(callback, null);
+        value.reloadBiggerValue(callback);
       }
     };
   }

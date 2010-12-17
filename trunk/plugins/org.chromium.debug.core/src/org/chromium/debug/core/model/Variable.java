@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -19,6 +21,7 @@ import org.eclipse.debug.ui.actions.IWatchExpressionFactoryAdapter;
 public class Variable extends DebugElementImpl implements IVariable {
 
   private final JsVariable variable;
+  private final AtomicReference<Value> valueRef = new AtomicReference<Value>(null);
 
   /**
    * Specifies whether this variable is internal property (__proto__ etc).
@@ -40,14 +43,24 @@ public class Variable extends DebugElementImpl implements IVariable {
     return variable.getValue().getType().toString();
   }
 
-  public IValue getValue() throws DebugException {
+  public Value getValue() {
+    Value result = valueRef.get();
+    if (result != null) {
+      return result;
+    }
+    // Only set a value if it hasn't be set already (by a concurrent thread).
+    valueRef.compareAndSet(null, createValue());
+    return valueRef.get();
+  }
+
+  private Value createValue() {
     JsValue value = variable.isReadable()
         ? variable.getValue()
         : null;
     if (value == null) {
       return null;
     }
-    return wrapValue(value);
+    return Value.create(getDebugTarget(), value);
   }
 
   public boolean hasValueChanged() throws DebugException {
@@ -100,12 +113,7 @@ public class Variable extends DebugElementImpl implements IVariable {
     return verifyValue(value.getValueString());
   }
 
-  private IValue wrapValue(JsValue value) {
-    return Value.create(getDebugTarget(), value);
-  }
-
   public JsVariable getJsVariable() {
     return variable;
   }
-
 }

@@ -10,6 +10,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.ArrayList;
@@ -362,6 +364,14 @@ public class ChromiumDebugPluginUtil {
    */
   public static <V> boolean removeSafe(Collection<V> collection, V value) {
     return collection.remove(value);
+  }
+
+  public static String getStacktraceString(Exception exception) {
+    StringWriter stringWriter = new StringWriter();
+    PrintWriter printWriter = new PrintWriter(stringWriter);
+    exception.printStackTrace(printWriter);
+    printWriter.close();
+    return stringWriter.toString();
   }
 
   private ChromiumDebugPluginUtil() {
