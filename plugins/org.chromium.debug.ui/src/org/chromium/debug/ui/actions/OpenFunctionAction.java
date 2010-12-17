@@ -63,7 +63,7 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
   }
 
   interface VariableWrapper {
-    JsValue getJsValue();
+    Value getValue();
     IDebugElement getDebugElement();
     DebugTargetImpl getDebugTarget();
   }
@@ -190,7 +190,7 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     if (wrapper == null) {
       return null;
     }
-    JsValue jsValue = wrapper.getJsValue();
+    JsValue jsValue = wrapper.getValue().getJsValue();
     if (jsValue == null) {
       return null;
     }
@@ -226,9 +226,8 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
       }
       final Variable variable = (Variable) element;
       return new VariableWrapper() {
-        public JsValue getJsValue() {
-          JsVariable jsVariable = variable.getJsVariable();
-          return jsVariable.getValue();
+        public Value getValue() {
+          return variable.getValue();
         }
         public IDebugElement getDebugElement() {
           return variable;
@@ -246,13 +245,13 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
       }
       final IWatchExpression watchExpression = (IWatchExpression) element;
       return new VariableWrapper() {
-        public JsValue getJsValue() {
+        public Value getValue() {
           IValue value = watchExpression.getValue();
           if (value instanceof Value == false) {
             return null;
           }
           Value chromiumValue = (Value) value;
-          return chromiumValue.getJsValue();
+          return chromiumValue;
         }
         public IDebugElement getDebugElement() {
           return watchExpression;

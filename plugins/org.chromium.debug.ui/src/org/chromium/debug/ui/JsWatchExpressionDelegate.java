@@ -57,11 +57,7 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
 
     public synchronized IValue getValue() {
       if (value == null && exception == null) {
-        try {
-          value = variable.getValue();
-        } catch (DebugException e) {
-          this.exception = e;
-        }
+        value = variable.getValue();
       }
       return value;
     }
