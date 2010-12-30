@@ -301,7 +301,7 @@ public class BrowserImpl implements Browser {
 
       BrowserTabImpl browserTab = null;
       try {
-        browserTab = new BrowserTabImpl(tabId, url, session.sessionConnection, ticket);
+        browserTab = new BrowserTabImpl(tabId, session.sessionConnection, ticket);
       } finally {
         if (browserTab == null) {
           ticket.dismiss();
@@ -309,6 +309,9 @@ public class BrowserImpl implements Browser {
       }
       // From now on browserTab is responsible for the ticket.
       browserTab.attach(listener);
+
+      browserTab.setUrl(url);
+
       return browserTab;
     }
   }

@@ -27,7 +27,7 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   private final int tabId;
 
   /** The primary tab URL. */
-  private final String url;
+  private volatile String url;
 
   private final SessionManager.Ticket<BrowserImpl.Session> connectionTicket;
 
@@ -39,10 +39,9 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
   /** The listener to report browser-related debug events to. */
   private TabDebugEventListener tabDebugEventListener = null;
 
-  public BrowserTabImpl(int tabId, String url, Connection connection,
+  public BrowserTabImpl(int tabId, Connection connection,
       SessionManager.Ticket<BrowserImpl.Session> ticket) throws IOException {
     this.tabId = tabId;
-    this.url = url;
     this.connectionTicket = ticket;
     String tabIdString = String.valueOf(tabId);
     ChromeDevToolOutput chromeDevToolOutput = new ChromeDevToolOutput(tabIdString, connection);
@@ -56,6 +55,10 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
 
   public String getUrl() {
     return url;
+  }
+
+  public void setUrl(String newUrl) {
+    url = newUrl;
   }
 
   public int getId() {
