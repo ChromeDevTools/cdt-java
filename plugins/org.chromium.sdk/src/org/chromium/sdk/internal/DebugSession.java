@@ -99,13 +99,6 @@ public class DebugSession {
         commandCallback, syncCallback);
   }
 
-  /**
-   * Gets invoked when a navigation event is reported by the browser tab.
-   */
-  public void navigated() {
-    getScriptManager().reset();
-  }
-
   Version getVmVersion() {
     return vmVersion;
   }

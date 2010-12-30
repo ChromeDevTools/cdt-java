@@ -416,7 +416,10 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   private void processNavigated(JSONObject json) {
     String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
-    debugSession.navigated();
+
+    debugSession.getScriptManager().reset();
+    browserTabImpl.setUrl(newUrl);
+
     getTabDebugEventListener().navigated(newUrl);
   }
 

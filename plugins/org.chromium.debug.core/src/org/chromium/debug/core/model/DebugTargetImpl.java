@@ -509,7 +509,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     public void reset() {
       listenerBlock.waitUntilReady();
       workspaceRelations.handleVmResetEvent();
-      fireEvent(new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.STATE));
+      fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE, DebugEvent.CONTENT));
     }
     public void closed() {
       debugEventListener.disconnected();
