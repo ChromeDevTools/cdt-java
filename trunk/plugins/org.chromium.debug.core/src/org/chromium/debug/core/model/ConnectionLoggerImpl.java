@@ -123,7 +123,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
       private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
       @Override
       public int read() throws IOException {
-        byte[] buffer = new byte[0];
+        byte[] buffer = new byte[1];
         int res = readImpl(buffer, 0, 1);
         if (res <= 0) {
           return -1;
