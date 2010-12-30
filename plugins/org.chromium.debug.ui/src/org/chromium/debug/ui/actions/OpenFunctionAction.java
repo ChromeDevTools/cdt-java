@@ -190,7 +190,12 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     if (wrapper == null) {
       return null;
     }
-    JsValue jsValue = wrapper.getValue().getJsValue();
+    final Value uiValue = wrapper.getValue();
+    if (uiValue == null) {
+      // Probably hasn't got result yet.
+      return null;
+    }
+    JsValue jsValue = uiValue.getJsValue();
     if (jsValue == null) {
       return null;
     }
