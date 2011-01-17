@@ -58,9 +58,8 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     String getStreamName();
   }
 
-  private static final Charset CHARSET = Charset.forName("UTF-8");
-
-  public LoggableWriter wrapWriter(final LoggableWriter originalLoggableWriter) {
+  public LoggableWriter wrapWriter(final LoggableWriter originalLoggableWriter,
+      final Charset charset) {
     final StreamId streamId = new StreamId() {
       public String getStreamName() {
         return Messages.ConnectionLoggerImpl_SentToChrome;
@@ -68,7 +67,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     };
     final OutputStream originalOutputStream = originalLoggableWriter.getOutputStream();
     final OutputStream wrappedOutputStream = new OutputStream() {
-      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
 
       @Override
       public void close() throws IOException {
@@ -110,7 +109,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     };
   }
 
-  public LoggableReader wrapReader(final LoggableReader loggableReader) {
+  public LoggableReader wrapReader(final LoggableReader loggableReader, final Charset charset) {
     final StreamId streamId = new StreamId() {
       public String getStreamName() {
         return Messages.ConnectionLoggerImpl_ReceivedFromChrome;
@@ -120,7 +119,7 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     final InputStream originalInputStream = loggableReader.getInputStream();
 
     final InputStream wrappedInputStream = new InputStream() {
-      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
       @Override
       public int read() throws IOException {
         byte[] buffer = new byte[1];

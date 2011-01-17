@@ -6,6 +6,7 @@ package org.chromium.sdk;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 /**
  * Logger facility for the Chromium debugger connection. It can eavesdrop both
@@ -21,14 +22,14 @@ public interface ConnectionLogger {
    * @return new writer that should pass all data to {@code streamWriter} and
    * silently copy it elsewhere (without additional exceptions).
    */
-  LoggableWriter wrapWriter(LoggableWriter streamWriter);
+  LoggableWriter wrapWriter(LoggableWriter streamWriter, Charset charset);
 
   /**
    * @return new reader that should give access to all data
    * from {@code streamReader} and silently copy it elsewhere (without
    * additional exceptions).
    */
-  LoggableReader wrapReader(LoggableReader streamReader);
+  LoggableReader wrapReader(LoggableReader streamReader, Charset charset);
 
   /**
    * Connection may allow the logger to close it. It is nice for UI, where
