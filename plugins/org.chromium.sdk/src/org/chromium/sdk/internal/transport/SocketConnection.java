@@ -4,17 +4,7 @@
 
 package org.chromium.sdk.internal.transport;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.concurrent.BlockingQueue;
@@ -25,6 +15,8 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
+import org.chromium.sdk.util.SignalRelay;
+import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
 
 /**
  * The low-level network agent handling the reading and writing of Messages
@@ -97,7 +89,7 @@ public class SocketConnection implements Connection {
         writer.getOutputStream().flush();
         writer.markSeparatorForLog();
       } catch (IOException e) {
-        SocketConnection.this.shutdown(e, false);
+        shutdownRelay.sendSignal(false, e);
       }
     }
   }
@@ -190,7 +182,7 @@ public class SocketConnection implements Connection {
         inboundQueue.add(EOS);
       }
       if (!isInterrupted()) {
-        SocketConnection.this.shutdown(breakException, false);
+        shutdownRelay.sendSignal(false, breakException);
       }
     }
   }
@@ -252,13 +244,7 @@ public class SocketConnection implements Connection {
   private AtomicBoolean isAttached = new AtomicBoolean(false);
 
   /** The communication socket. */
-  private Socket socket;
-
-  /** The socket reader. */
-  private ConnectionLogger.LoggableReader reader;
-
-  /** The socket writer. */
-  private ConnectionLogger.LoggableWriter writer;
+  private SocketWrapper socket;
 
   private final ConnectionLogger connectionLogger;
 
@@ -295,53 +281,22 @@ public class SocketConnection implements Connection {
   }
 
   void attach() throws IOException {
-    this.socket = new Socket();
-    this.socket.connect(socketEndpoint, connectionTimeoutMs);
-    final OutputStream outputStream = socket.getOutputStream();
-    final InputStream inputStream = socket.getInputStream();
+    this.socket = new SocketWrapper(socketEndpoint, connectionTimeoutMs, connectionLogger,
+        SOCKET_CHARSET);
 
-    ConnectionLogger.LoggableReader loggableReader = new ConnectionLogger.LoggableReader() {
-      public InputStream getInputStream() {
-        return inputStream;
-      }
-
-      public void markSeparatorForLog() {
-      }
-    };
-
-    ConnectionLogger.LoggableWriter loggableWriter = new ConnectionLogger.LoggableWriter() {
-      private final BufferedOutputStream bufferedOutputStream =
-          new BufferedOutputStream(outputStream);
-      public OutputStream getOutputStream() {
-        return bufferedOutputStream;
-      }
-      public void markSeparatorForLog() {
-      }
-    };
-
-    if (connectionLogger != null) {
-      loggableWriter = connectionLogger.wrapWriter(loggableWriter);
-      loggableReader = connectionLogger.wrapReader(loggableReader);
-      connectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
-        public void closeConnection() {
-          close();
-        }
-      });
+    try {
+      shutdownRelay.bind(this.socket.getShutdownRelay(), null, null);
+    } catch (AlreadySignalledException e) {
+      throw new IOException("Unexpected: socket is already closed", e);
     }
 
-    this.writer = loggableWriter;
-    this.reader = loggableReader;
     isAttached.set(true);
 
-    this.readerThread = new ReaderThread(reader, writer);
+    this.readerThread = new ReaderThread(socket.getLoggableReader(), socket.getLoggableWriter());
     // We do not start WriterThread until handshake is done (see ReaderThread)
     this.writerThread = null;
     readerThread.setDaemon(true);
     readerThread.start();
-  }
-
-  void detach(boolean lameduckMode) {
-    shutdown(null, lameduckMode);
   }
 
   void sendMessage(Message message) {
@@ -374,65 +329,57 @@ public class SocketConnection implements Connection {
     return isAttached.get();
   }
 
-  /**
-   * The method is synchronized so that it does not get called
-   * from the {Reader,Writer}Thread when the underlying socket is
-   * closed in another invocation of this method.
-   */
-  private void shutdown(Exception cause, boolean lameduckMode) {
-    if (!isAttached.compareAndSet(true, false)) {
-      // already shut down
-      return;
+  private final SignalRelay<Boolean> shutdownRelay =
+      SignalRelay.create(new SignalRelay.Callback<Boolean>() {
+    public void onSignal(Boolean lameduckMode, Exception cause) {
+      shutdown(lameduckMode == Boolean.TRUE, cause);
     }
-    LOGGER.log(Level.INFO, "Shutdown requested", cause);
 
-    if (lameduckMode) {
-      Thread terminationThread = new Thread("ServiceThreadTerminator") {
-        @Override
-        public void run() {
-          interruptServiceThreads();
-        }
-      };
-      terminationThread.setDaemon(true);
-      terminationThread.start();
-      try {
-        terminationThread.join(LAMEDUCK_DELAY_MS);
-      } catch (InterruptedException e) {
-        // fall through
+    private void shutdown(boolean lameduckMode, Exception cause) {
+      if (!isAttached.compareAndSet(true, false)) {
+        // already shut down
+        return;
       }
-    } else {
-      interruptServiceThreads();
-    }
+      LOGGER.log(Level.INFO, "Shutdown requested", cause);
 
-    try {
-      socket.shutdownInput();
-    } catch (IOException e) {
-      // ignore
+      if (lameduckMode) {
+        Thread terminationThread = new Thread("ServiceThreadTerminator") {
+          @Override
+          public void run() {
+            interruptServiceThreads();
+          }
+        };
+        terminationThread.setDaemon(true);
+        terminationThread.start();
+        try {
+          terminationThread.join(LAMEDUCK_DELAY_MS);
+        } catch (InterruptedException e) {
+          // fall through
+        }
+      } else {
+        interruptServiceThreads();
+      }
     }
-    try {
-      socket.shutdownOutput();
-    } catch (IOException e) {
-      // ignore
+    private void interruptServiceThreads() {
+      interruptThread(writerThread);
+      interruptThread(readerThread);
     }
-
-    try {
-      socket.close();
-    } catch (IOException e) {
-      // ignore
+    private void interruptThread(Thread thread) {
+      try {
+        if (thread != null) {
+          thread.interrupt();
+        }
+      } catch (SecurityException e) {
+        // ignore
+      }
     }
-    listener.connectionClosed();
-  }
-
-  private void interruptServiceThreads() {
-    interruptThread(writerThread);
-    interruptThread(readerThread);
-  }
+  });
 
   private void startWriterThread() {
     if (writerThread != null) {
       throw new IllegalStateException();
     }
-    writerThread = new WriterThread(writer);
+    writerThread = new WriterThread(socket.getLoggableWriter());
     writerThread.setDaemon(true);
     writerThread.start();
   }
@@ -445,20 +392,8 @@ public class SocketConnection implements Connection {
     return dispatcherThread;
   }
 
-  private void interruptThread(Thread thread) {
-    try {
-      if (thread != null) {
-        thread.interrupt();
-      }
-    } catch (SecurityException e) {
-      // ignore
-    }
-  }
-
   public void close() {
-    if (isAttached()) {
-      detach(true);
-    }
+    shutdownRelay.sendSignal(true, null);
   }
 
   public boolean isConnected() {
@@ -477,6 +412,17 @@ public class SocketConnection implements Connection {
     this.listener = netListener != null
         ? netListener
         : NULL_LISTENER;
+    SignalRelay<?> listenerCloser = SignalRelay.create(new SignalRelay.Callback<Void>() {
+      public void onSignal(Void param, Exception cause) {
+        listener.connectionClosed();
+      }
+    });
+    try {
+      shutdownRelay.bind(listenerCloser, null, null);
+    } catch (AlreadySignalledException e) {
+      // ListenerCloser cannot be closing and we should not be closing at this moment of time.
+      throw new IllegalStateException(e);
+    }
   }
 
   public void start() throws IOException {

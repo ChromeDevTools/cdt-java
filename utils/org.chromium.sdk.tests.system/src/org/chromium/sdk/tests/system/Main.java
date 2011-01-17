@@ -260,7 +260,6 @@ public class Main {
    * Connection logger that simply prints all traffic out to System.out.
    * */
   private static class SystemOutConnectionLogger implements ConnectionLogger {
-    private static final Charset CHARSET = Charset.forName("UTF-8");
     public void handleEos() {
       System.out.println("EOS");
     }
@@ -268,10 +267,10 @@ public class Main {
     }
     public void start() {
     }
-    public LoggableReader wrapReader(final LoggableReader streamReader) {
+    public LoggableReader wrapReader(final LoggableReader streamReader, final Charset charset) {
       final InputStream originalInputStream = streamReader.getInputStream();
       final InputStream wrappedInputStream = new InputStream() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
         @Override
         public int read() throws IOException {
           byte[] buffer = new byte[0];
@@ -304,9 +303,9 @@ public class Main {
         }
       };
     }
-    public LoggableWriter wrapWriter(final LoggableWriter streamWriter) {
+    public LoggableWriter wrapWriter(final LoggableWriter streamWriter, final Charset charset) {
       return new LoggableWriter() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(CHARSET);
+        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
 
         public OutputStream getOutputStream() {
           final OutputStream originalOutput = streamWriter.getOutputStream();
