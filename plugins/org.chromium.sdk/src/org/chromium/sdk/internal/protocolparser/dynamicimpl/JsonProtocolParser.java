@@ -170,6 +170,12 @@ public class JsonProtocolParser {
         } else if (type == Boolean.TYPE) {
           nullableIsNotSupported(declaredNullable);
           return BOOLEAN_PARSER.getNotNullable();
+        } else if (type == Float.class) {
+          nullableIsNotSupported(declaredNullable);
+          return FLOAT_PARSER.getNullable();
+        } else if (type == Float.TYPE) {
+          nullableIsNotSupported(declaredNullable);
+          return FLOAT_PARSER.getNotNullable();
         } else if (type == Void.class) {
           nullableIsNotSupported(declaredNullable);
           return VOID_PARSER;
@@ -669,6 +675,7 @@ public class JsonProtocolParser {
 
   private static SimpleParserPair<Long> LONG_PARSER = SimpleParserPair.create(Long.class);
   private static SimpleParserPair<Boolean> BOOLEAN_PARSER = SimpleParserPair.create(Boolean.class);
+  private static SimpleParserPair<Float> FLOAT_PARSER = SimpleParserPair.create(Float.class);
   private static SimpleParserPair<String> STRING_PARSER = SimpleParserPair.create(String.class);
   private static SimpleParserPair<Object> OBJECT_PARSER = SimpleParserPair.create(Object.class);
   private static SimpleParserPair<JSONObject> JSON_PARSER =
