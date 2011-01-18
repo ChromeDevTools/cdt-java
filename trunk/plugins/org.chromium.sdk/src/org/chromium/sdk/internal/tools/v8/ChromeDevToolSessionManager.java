@@ -410,7 +410,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
 
   private void processDebuggerCommand(JSONObject json) {
     JSONObject v8Json = JsonUtil.getAsJSON(json, ChromeDevToolsProtocol.DATA.key);
-    V8CommandProcessor.checkNull(v8Json, "'data' field not found");
+    if (v8Json == null) {
+      throw new IllegalArgumentException("'data' field not found");
+    }
     debugSession.getV8CommandProcessor().processIncomingJson(v8Json);
   }
 
