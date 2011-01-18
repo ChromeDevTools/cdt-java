@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
 /**
@@ -34,7 +35,8 @@ public class ByteToCharConverter {
   }
 
   private CharBuffer convertImpl(ByteBuffer input) {
-    CharBuffer out = CharBuffer.allocate(input.remaining() + unprocessedBuffer.remaining() + 1);
+    int bytesCount = input.remaining() + unprocessedBuffer.remaining() + 1;
+    CharBuffer out = CharBuffer.allocate((int)(bytesCount*decoder.maxCharsPerByte()));
     // Process what has left from previous call.
     if (unprocessedBuffer.hasRemaining()) {
       while (true) {
