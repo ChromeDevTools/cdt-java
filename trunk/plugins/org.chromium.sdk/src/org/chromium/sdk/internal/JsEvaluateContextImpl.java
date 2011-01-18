@@ -4,22 +4,15 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
@@ -36,43 +29,7 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
  * Generic implementation of {@link JsEvaluateContext}. The abstract class leaves unspecified
  * stack frame identifier (possibly null) and reference to {@link InternalContext}.
  */
-abstract class JsEvaluateContextImpl implements JsEvaluateContext {
-  public void evaluateSync(String expression, EvaluateCallback evaluateCallback)
-      throws MethodIsBlockingException {
-    evaluateSync(expression, null, evaluateCallback);
-  }
-
-  public void evaluateAsync(final String expression, final EvaluateCallback callback,
-      SyncCallback syncCallback) {
-    evaluateAsync(expression, null, callback, syncCallback);
-  }
-
-  public void evaluateSync(String expression, Map<String, String> additionalContext,
-      EvaluateCallback evaluateCallback)
-      throws MethodIsBlockingException {
-    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    evaluateAsync(expression, additionalContext, evaluateCallback, callbackSemaphore);
-    boolean res = callbackSemaphore.tryAcquireDefault();
-    if (!res) {
-      evaluateCallback.failure("Timeout");
-    }
-  }
-
-  public void evaluateAsync(final String expression, Map<String, String> additionalContext,
-      final EvaluateCallback callback, SyncCallback syncCallback) {
-    try {
-      evaluateAsyncImpl(expression, additionalContext, callback, syncCallback);
-    } catch (ContextDismissedCheckedException e) {
-      getInternalContext().getDebugSession().maybeRethrowContextException(e);
-      // or
-      try {
-        callback.failure(e.getMessage());
-      } finally {
-        syncCallback.callbackDone(null);
-      }
-    }
-  }
-
+abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
   public void evaluateAsyncImpl(final String expression, Map<String, String> additionalContext,
       final EvaluateCallback callback, SyncCallback syncCallback)
       throws ContextDismissedCheckedException {
@@ -114,6 +71,11 @@ abstract class JsEvaluateContextImpl implements JsEvaluateContext {
     getInternalContext().sendV8CommandAsync(message, true, commandCallback,
         syncCallback);
   }
+
+  protected void maybeRethrowContextException(ContextDismissedCheckedException ex) {
+    getInternalContext().getDebugSession().maybeRethrowContextException(ex);
+  }
+
 
   private static List<Map.Entry<String, Integer>> convertAdditionalContextList(
       Map<String, String> source) {
