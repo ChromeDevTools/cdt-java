@@ -14,20 +14,23 @@ import java.util.List;
  */
 public class Version implements Comparable<Version> {
   private final List<Integer> components;
+  private final String textComponent;
 
   /**
    * Constructs an immutable Version instance given the numeric components of version.
    */
   public Version(Integer ... components) {
-    this(Arrays.asList(components));
+    this(Arrays.asList(components), null);
+  }
+  /**
+   * Constructs an immutable Version instance given the numeric components of version and optional
+   * text component.
+   */
+  public Version(List<Integer> components, String textComponent) {
+    this.components = Collections.unmodifiableList(new ArrayList<Integer>(components));
+    this.textComponent = textComponent;
   }
 
-  /**
-   * Constructs an immutable Version instance given the numeric components of version.
-   */
-  public Version(List<Integer> components) {
-    this.components = Collections.unmodifiableList(new ArrayList<Integer>(components));
-  }
 
   /**
    * @return numeric components of version in form of list of integers
@@ -70,7 +73,11 @@ public class Version implements Comparable<Version> {
 
   @Override
   public String toString() {
-    return components.toString();
+    if (textComponent == null) {
+      return components.toString();
+    } else {
+      return components.toString() + textComponent;
+    }
   }
 
   /**
@@ -99,9 +106,15 @@ public class Version implements Comparable<Version> {
         break;
       }
     }
+    String suffix;
+    if (i < text.length()) {
+      suffix = text.substring(i);
+    } else {
+      suffix = null;
+    }
     if (components.isEmpty()) {
       return null;
     }
-    return new Version(components);
+    return new Version(components, suffix);
   }
 }
