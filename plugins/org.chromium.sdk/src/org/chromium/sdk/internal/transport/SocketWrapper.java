@@ -82,7 +82,7 @@ public class SocketWrapper {
    * More a symbolic type than a really used type. Later it may gain some members.
    * It is created because we need a generic parameter for SignalRelay.
    */
-  private interface ShutdownSignal {
+  public interface ShutdownSignal {
   }
 
   private final SignalRelay<ShutdownSignal> shutdownRelay =
