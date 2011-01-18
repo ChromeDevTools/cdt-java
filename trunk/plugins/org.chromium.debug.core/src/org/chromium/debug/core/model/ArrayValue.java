@@ -6,6 +6,7 @@ package org.chromium.debug.core.model;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.JsArray;
 import org.eclipse.debug.core.DebugException;
@@ -18,11 +19,10 @@ import org.eclipse.debug.core.model.IVariable;
  */
 public class ArrayValue extends Value implements IIndexedValue {
 
-  private final IVariable[] elements;
+  private final AtomicReference<IVariable[]> elementsRef = new AtomicReference<IVariable[]>(null);
 
   public ArrayValue(DebugTargetImpl debugTarget, JsArray array) {
     super(debugTarget, array);
-    this.elements = createElements();
   }
 
   private IVariable[] createElements() {
@@ -33,32 +33,43 @@ public class ArrayValue extends Value implements IIndexedValue {
         null);
   }
 
+  private IVariable[] getElements() {
+    IVariable[] result = elementsRef.get();
+    if (result == null) {
+      result = createElements();
+      elementsRef.compareAndSet(null, result);
+      return elementsRef.get();
+    } else {
+      return result;
+    }
+  }
+
   public int getInitialOffset() {
     return 0;
   }
 
   public int getSize() throws DebugException {
-    return elements.length;
+    return getElements().length;
   }
 
   public IVariable getVariable(int offset) throws DebugException {
-    return elements[offset];
+    return getElements()[offset];
   }
 
   public IVariable[] getVariables(int offset, int length) throws DebugException {
     IVariable[] result = new IVariable[length];
-    System.arraycopy(elements, offset, result, 0, length);
+    System.arraycopy(getElements(), offset, result, 0, length);
     return result;
   }
 
   @Override
   public IVariable[] getVariables() throws DebugException {
-    return elements;
+    return getElements();
   }
 
   @Override
   public boolean hasVariables() throws DebugException {
-    return elements.length > 0;
+    return getElements().length > 0;
   }
 
   private static final Set<String> ARRAY_HIDDEN_PROPERTY_NAMES = Collections.singleton("length");
