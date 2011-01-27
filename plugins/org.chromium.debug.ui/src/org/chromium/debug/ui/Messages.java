@@ -19,6 +19,10 @@ public class Messages extends NLS {
 
   public static String ChromiumDebugUIPlugin_Warning;
 
+  public static String ChromiumToggleBreakpointTargetFactory_TOGGLE_TARGET_DESCRIPTION;
+
+  public static String ChromiumToggleBreakpointTargetFactory_TOGGLE_TARGET_NAME;
+
   public static String JsWatchExpressionDelegate_BadStackStructureWhileEvaluating;
 
   public static String JsWatchExpressionDelegate_ErrorEvaluatingExpression;

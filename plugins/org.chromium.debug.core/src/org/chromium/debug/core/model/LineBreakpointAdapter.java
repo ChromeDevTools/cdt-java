@@ -24,6 +24,10 @@ public abstract class LineBreakpointAdapter implements IToggleBreakpointsTarget 
   public static class ForVirtualProject extends LineBreakpointAdapter {
     @Override
     protected ITextEditor getEditor(IWorkbenchPart part) {
+      return getEditorStatic(part);
+    }
+
+    public static ITextEditor getEditorStatic(IWorkbenchPart part) {
       if (part instanceof ITextEditor) {
         ITextEditor editorPart = (ITextEditor) part;
         IResource resource = (IResource) editorPart.getEditorInput().getAdapter(IResource.class);

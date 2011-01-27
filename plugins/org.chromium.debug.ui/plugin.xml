@@ -99,6 +99,27 @@
     </editor>
   </extension>
 
+ <extension point="org.eclipse.debug.ui.toggleBreakpointsTargetFactories">
+    <toggleTargetFactory
+            id="org.chromium.debug.ui.ChromiumToggleBreakpointTargetFactory"
+            class="org.chromium.debug.ui.ChromiumToggleBreakpointTargetFactory">
+        <enablement>
+          <or>
+             <!-- Applicable for any text editor (java code additionally checks extension) -->
+             <instanceof value="org.eclipse.ui.texteditor.ITextEditor"/>
+             <!-- or when our debug element is in context -->
+             <with variable="debugContext">
+                <iterate>
+                  <test property="org.eclipse.debug.ui.getModelIdentifier"
+                        value="org.chromium.debug"/>
+                </iterate>
+             </with>
+          </or>
+        </enablement>
+    </toggleTargetFactory>
+ </extension>
+
+
   <extension point="org.eclipse.ui.editorActions">
     <editorContribution
         targetID="org.chromium.debug.ui.editors.JsEditor"
