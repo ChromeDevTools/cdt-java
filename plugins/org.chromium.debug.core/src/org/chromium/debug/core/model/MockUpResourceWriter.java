@@ -108,20 +108,26 @@ class MockUpResourceWriter {
   }
 
   private void fillColumns(int number) {
-    if (number < NOT_A_JAVASCRIPT_FILLER.length()) {
-      if (number < 1) {
-        // Nothing.
-      } else if (number == 1) {
+    if (number >= NOT_A_JAVASCRIPT_FILLER.length()) {
+      builder.append(NOT_A_JAVASCRIPT_FILLER.substring(0, NOT_A_JAVASCRIPT_FILLER.length() - 1));
+      int fill = number - NOT_A_JAVASCRIPT_FILLER.length();
+      for (int i = 0; i < fill; i++) {
         builder.append('*');
-        col += 1;
-      } else {
-        builder.append('{');
-        for (int i = 2; i < number; i++) {
-          builder.append('*');
-        }
-        builder.append('}');
-        col += number;
       }
+      builder.append(NOT_A_JAVASCRIPT_FILLER.substring(NOT_A_JAVASCRIPT_FILLER.length() - 1));
+      col += number;
+    } else if (number < 1) {
+      // Nothing.
+    } else if (number == 1) {
+      builder.append('*');
+      col += 1;
+    } else {
+      builder.append('{');
+      for (int i = 2; i < number; i++) {
+        builder.append('*');
+      }
+      builder.append('}');
+      col += number;
     }
   }
 
@@ -139,6 +145,13 @@ class MockUpResourceWriter {
       if (line1 < line2) {
         return -1;
       } else if (line1 > line2) {
+        return 1;
+      }
+      int col1 = o1.getStartColumn();
+      int col2 = o2.getStartColumn();
+      if (col1 < col2) {
+        return -1;
+      } else if (col1 > col2) {
         return 1;
       }
       return 0;
