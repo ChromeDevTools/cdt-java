@@ -26,11 +26,11 @@ import java.io.Writer;
 
 public class ChromiumLaunchType extends LaunchTypeBase {
   @Override
-  protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
+  protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(String host, int port,
       ILaunch launch, boolean addConsoleLogger) throws CoreException {
     NamedConnectionLoggerFactory consoleFactory =
         addConsoleLogger ? getLoggerFactory() : NO_CONNECTION_LOGGER_FACTORY;
-    return JavascriptVmEmbedderFactory.connectToChromeDevTools(port, consoleFactory,
+    return JavascriptVmEmbedderFactory.connectToChromeDevTools(host, port, consoleFactory,
         new DialogBasedTabSelector());
   }
 

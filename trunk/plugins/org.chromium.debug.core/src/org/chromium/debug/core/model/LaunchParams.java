@@ -14,6 +14,9 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 
 public class LaunchParams {
 
+  /** Launch configuration attribute (debug host). */
+  public static final String CHROMIUM_DEBUG_HOST = "debug_host"; //$NON-NLS-1$
+
   /** Launch configuration attribute (debug port). */
   public static final String CHROMIUM_DEBUG_PORT = "debug_port"; //$NON-NLS-1$
 

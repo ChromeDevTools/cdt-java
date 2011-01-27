@@ -14,6 +14,9 @@ import org.eclipse.core.variables.VariablesPlugin;
 class PluginVariablesUtil {
 
   /** The default server port variable id. */
+  public static final String DEFAULT_HOST =
+      ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_debug_host"; //$NON-NLS-1$
+
   public static final String DEFAULT_PORT =
       ChromiumDebugUIPlugin.PLUGIN_ID + ".chromium_debug_port"; //$NON-NLS-1$
 

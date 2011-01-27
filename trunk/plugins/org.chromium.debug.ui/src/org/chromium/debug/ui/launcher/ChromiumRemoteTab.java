@@ -5,11 +5,14 @@
 package org.chromium.debug.ui.launcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
+import org.chromium.debug.core.model.LaunchParams;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
@@ -19,8 +22,10 @@ import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceStore;
+import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
@@ -37,7 +42,7 @@ import org.eclipse.swt.widgets.Group;
  * The "Remote" tab for the Chromium JavaScript launch tab group.
  */
 public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
-
+  private static final String HOST_FIELD_NAME = "host_field"; //$NON-NLS-1$
   private static final String PORT_FIELD_NAME = "port_field"; //$NON-NLS-1$
   private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
       "add_network_console_field"; //$NON-NLS-1$
@@ -46,12 +51,40 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   private static final int minimumPortValue = 0;
   private static final int maximumPortValue = 65535;
 
-  private IntegerFieldEditor debugPort;
-  private BooleanFieldEditor addNetworkConsole;
-  private RadioButtonsLogic breakpointRadioButtons;
-  private final PreferenceStore store = new PreferenceStore();
+  private final HostChecker hostChecker;
+  private TabElements tabElements = null;
+
+  /**
+   * Possibly checks host property in config.
+   */
+  public static abstract class HostChecker {
+    public abstract String getWarning(ILaunchConfiguration config) throws CoreException;
+
+    public static HostChecker FOR_CHROME = new HostChecker() {
+      @Override
+      public String getWarning(ILaunchConfiguration config) throws CoreException {
+        String host = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_HOST, ""); //$NON-NLS-1$
+        if (!LOCAL_HOST_NAMES.contains(host.toLowerCase())) {
+          return Messages.ChromiumRemoteTab_CONNECTION_FROM_LOCALHOST_WARNING;
+        }
+        return null;
+      }
+    };
+
+    private static final Collection<String> LOCAL_HOST_NAMES =
+        Arrays.asList("localhost", "127.0.0.1"); //$NON-NLS-1$ //$NON-NLS-2$
+  }
+
+
+  ChromiumRemoteTab(HostChecker hostChecker) {
+    this.hostChecker = hostChecker;
+  }
 
   public void createControl(Composite parent) {
+    tabElements = createControlImpl(parent);
+  }
+
+  private TabElements createControlImpl(Composite parent) {
     Composite composite = createDefaultComposite(parent);
 
     IPropertyChangeListener modifyListener = new IPropertyChangeListener() {
@@ -67,15 +100,22 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
     Composite propertiesComp = createInnerComposite(connectionGroup, 2);
 
+    PreferenceStore store = new PreferenceStore();
+    // Host text field
+    final StringFieldEditor debugHost = new StringFieldEditor(HOST_FIELD_NAME,
+        Messages.ChromiumRemoteTab_HostLabel, propertiesComp);
+    debugHost.setPropertyChangeListener(modifyListener);
+    debugHost.setPreferenceStore(store);
+
     // Port text field
-    debugPort = new IntegerFieldEditor(PORT_FIELD_NAME, Messages.ChromiumRemoteTab_PortLabel,
-        propertiesComp);
+    final IntegerFieldEditor debugPort = new IntegerFieldEditor(PORT_FIELD_NAME,
+        Messages.ChromiumRemoteTab_PortLabel, propertiesComp);
     debugPort.setPropertyChangeListener(modifyListener);
     debugPort.setPreferenceStore(store);
 
-    addNetworkConsole = new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
-        Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication,
-        propertiesComp);
+    final BooleanFieldEditor addNetworkConsole =
+        new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
+            Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication, propertiesComp);
     addNetworkConsole.setPreferenceStore(store);
     addNetworkConsole.setPropertyChangeListener(modifyListener);
 
@@ -101,7 +141,23 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
             updateLaunchConfigurationDialog();
           }
         };
-    breakpointRadioButtons = new RadioButtonsLogic(radioButtons, radioButtonsListener);
+    final RadioButtonsLogic breakpointRadioButtons =
+        new RadioButtonsLogic(radioButtons, radioButtonsListener);
+
+    return new TabElements() {
+      @Override public StringFieldEditor getHost() {
+        return debugHost;
+      }
+      @Override public IntegerFieldEditor getPort() {
+        return debugPort;
+      }
+      @Override public BooleanFieldEditor getAddNetworkConsole() {
+        return addNetworkConsole;
+      }
+      @Override public RadioButtonsLogic getBreakpointRadioButtons() {
+        return breakpointRadioButtons;
+      }
+    };
   }
 
   public String getName() {
@@ -109,63 +165,77 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   }
 
   public void initializeFrom(ILaunchConfiguration config) {
-    int debugPortDefault = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
-
-    String breakpointOptionStr;
-    String defaultBreakpointOptionStr = Direction.MERGE.toString();
-    try {
-      store.setDefault(PORT_FIELD_NAME, config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT,
-          debugPortDefault));
-      store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, config.getAttribute(
-          LaunchParams.ADD_NETWORK_CONSOLE, false));
-      breakpointOptionStr =
-          config.getAttribute(LaunchParams.BREAKPOINT_SYNC_DIRECTION, defaultBreakpointOptionStr);
-    } catch (CoreException e) {
-      ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
-      store.setDefault(PORT_FIELD_NAME, debugPortDefault);
-      store.setDefault(ADD_NETWORK_CONSOLE_FIELD_NAME, false);
-      breakpointOptionStr = defaultBreakpointOptionStr;
+    for (TabField<?> field : TAB_FIELDS) {
+      field.initializeFrom(tabElements, config);
     }
-
-    debugPort.loadDefault();
-    addNetworkConsole.loadDefault();
-
-    int breakpointOptionIndex = LaunchParams.findBreakpointOption(breakpointOptionStr);
-    breakpointRadioButtons.select(breakpointOptionIndex);
   }
 
   public void performApply(ILaunchConfigurationWorkingCopy config) {
-    storeEditor(debugPort, "-1"); //$NON-NLS-1$
-    storeEditor(addNetworkConsole, ""); //$NON-NLS-1$
-
-    config.setAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, store.getInt(PORT_FIELD_NAME));
-    config.setAttribute(LaunchParams.ADD_NETWORK_CONSOLE,
-        store.getBoolean(ADD_NETWORK_CONSOLE_FIELD_NAME));
-    int breakpointOption = breakpointRadioButtons.getSelected();
-    config.setAttribute(LaunchParams.BREAKPOINT_SYNC_DIRECTION,
-        LaunchParams.BREAKPOINT_OPTIONS.get(breakpointOption).getDirectionStringValue());
+    for (TabField<?> field : TAB_FIELDS) {
+      field.saveToConfig(tabElements, config);
+    }
   }
 
   @Override
   public boolean isValid(ILaunchConfiguration config) {
+    MessageData messageData;
     try {
-      int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, -1);
-      if (port < minimumPortValue || port > maximumPortValue) {
-        setErrorMessage(Messages.ChromiumRemoteTab_InvalidPortNumberError);
-        return false;
-      }
+      messageData = isValidImpl(config);
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
+      messageData = new MessageData(true, "Internal error " + e.getMessage()); //$NON-NLS-1$
     }
 
-    setErrorMessage(null);
-    return true;
+    if (messageData.isValid) {
+      setMessage(messageData.message);
+      setErrorMessage(null);
+    } else {
+      setMessage(null);
+      setErrorMessage(messageData.message);
+    }
+    return messageData.isValid;
+  }
+
+  /**
+   * Tries to check whether config is valid and return message or fails with exception.
+   */
+  private MessageData isValidImpl(ILaunchConfiguration config) throws CoreException {
+    int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, -1);
+    if (port < minimumPortValue || port > maximumPortValue) {
+      return new MessageData(false, Messages.ChromiumRemoteTab_InvalidPortNumberError);
+    }
+    final String message = getWarning(config);
+
+    return new MessageData(true, message);
+  }
+
+  /**
+   * Checks config for warnings and returns first found or null.
+   */
+  private String getWarning(ILaunchConfiguration config) throws CoreException {
+    if (hostChecker != null) {
+      String hostWarning = hostChecker.getWarning(config);
+      if (hostWarning != null) {
+        return hostWarning;
+      }
+    }
+    return null;
+  }
+
+  private static class MessageData {
+    MessageData(boolean isValid, String message) {
+      this.isValid = isValid;
+      this.message = message;
+    }
+    final boolean isValid;
+    final String message;
   }
 
 
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
-    int port = PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
-    config.setAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, port);
+    for (TabField<?> field : TAB_FIELDS) {
+      field.setDefault(config);
+    }
   }
 
   @Override
@@ -243,5 +313,249 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     interface Listener {
       void selectionChanged();
     }
+  }
+
+  private interface TabElements {
+    StringFieldEditor getHost();
+    IntegerFieldEditor getPort();
+    BooleanFieldEditor getAddNetworkConsole();
+    RadioButtonsLogic getBreakpointRadioButtons();
+  }
+
+  /**
+   * A dialog window tab field description. It is a static description -- it has no reference to
+   * a particular element instance.
+   * @param <T> type of field as stored in config; used internally
+   */
+  private static class TabField<T> {
+    private final String configAttributeName;
+    private final TypedMethods<T> typedMethods;
+    private final FieldAccess<T> fieldAccess;
+    private final DefaultsProvider<T> defaultsProvider;
+
+    TabField(String configAttributeName, TypedMethods<T> typedMethods,
+        FieldAccess<T> fieldAccess, DefaultsProvider<T> defaultsProvider) {
+      this.typedMethods = typedMethods;
+      this.defaultsProvider = defaultsProvider;
+      this.configAttributeName = configAttributeName;
+      this.fieldAccess = fieldAccess;
+    }
+
+    void saveToConfig(TabElements tabElements, ILaunchConfigurationWorkingCopy config) {
+      T value = fieldAccess.getValue(tabElements);
+      typedMethods.setConfigAttribute(config, configAttributeName, value);
+    }
+
+    void initializeFrom(TabElements tabElements, ILaunchConfiguration config) {
+      T fallbackValue = defaultsProvider.getFallbackValue();
+      T value;
+      try {
+        value = typedMethods.getConfigAttribute(config, configAttributeName, fallbackValue);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
+        value = fallbackValue;
+      }
+      fieldAccess.setValue(value, tabElements);
+    }
+
+    public void setDefault(ILaunchConfigurationWorkingCopy config) {
+      T value = defaultsProvider.getInitialConfigValue();
+      if (value != null) {
+        typedMethods.setConfigAttribute(config, configAttributeName, value);
+      }
+    }
+  }
+
+  private static abstract class FieldAccess<T> {
+    abstract void setValue(T value, TabElements tabElements);
+    abstract T getValue(TabElements tabElements);
+  }
+
+  private static abstract class FieldEditorAccess<T> extends FieldAccess<T> {
+    private final TypedMethods<T> fieldType;
+
+    FieldEditorAccess(TypedMethods<T> fieldType) {
+      this.fieldType = fieldType;
+    }
+
+    @Override
+    void setValue(T value, TabElements tabElements) {
+      FieldEditor fieldEditor = getFieldEditor(tabElements);
+      fieldType.setStoreDefaultValue(fieldEditor.getPreferenceStore(),
+          fieldEditor.getPreferenceName(), value);
+      fieldEditor.loadDefault();
+    }
+
+    @Override
+    T getValue(TabElements tabElements) {
+      FieldEditor fieldEditor = getFieldEditor(tabElements);
+      storeEditor(fieldEditor, getEditorErrorValue());
+      return fieldType.getStoreValue(fieldEditor.getPreferenceStore(),
+          fieldEditor.getPreferenceName());
+    }
+
+    abstract FieldEditor getFieldEditor(TabElements tabElements);
+    abstract String getEditorErrorValue();
+  }
+
+  private static abstract class DefaultsProvider<T> {
+    abstract T getFallbackValue();
+    abstract T getInitialConfigValue();
+  }
+
+  /**
+   * Provides uniform access to various signatures of config and store methods.
+   */
+  private static abstract class TypedMethods<T> {
+    abstract T getConfigAttribute(ILaunchConfiguration config, String attributeName,
+        T defaultValue) throws CoreException;
+    abstract void setConfigAttribute(ILaunchConfigurationWorkingCopy config, String attributeName,
+        T value);
+
+    abstract T getStoreValue(IPreferenceStore store, String preferenceName);
+    abstract void setStoreDefaultValue(IPreferenceStore store, String propertyName, T value);
+
+    static final TypedMethods<String> STRING = new TypedMethods<String>() {
+      String getConfigAttribute(ILaunchConfiguration config, String attributeName,
+          String defaultValue) throws CoreException {
+        return config.getAttribute(attributeName, defaultValue);
+      }
+      public void setConfigAttribute(ILaunchConfigurationWorkingCopy config, String attributeName,
+          String value) {
+        config.setAttribute(attributeName, value);
+      }
+      void setStoreDefaultValue(IPreferenceStore store, String propertyName, String value) {
+        store.setDefault(propertyName, value);
+      }
+      String getStoreValue(IPreferenceStore store, String preferenceName) {
+        return store.getString(preferenceName);
+      }
+    };
+
+    static final TypedMethods<Integer> INT = new TypedMethods<Integer>() {
+      public void setConfigAttribute(ILaunchConfigurationWorkingCopy config, String attributeName,
+          Integer value) {
+        config.setAttribute(attributeName, value);
+      }
+      Integer getConfigAttribute(ILaunchConfiguration config, String attributeName,
+          Integer defaultValue) throws CoreException {
+        return config.getAttribute(attributeName, defaultValue);
+      }
+      void setStoreDefaultValue(IPreferenceStore store, String propertyName, Integer value) {
+        store.setDefault(propertyName, value);
+      }
+      Integer getStoreValue(IPreferenceStore store, String preferenceName) {
+        return store.getInt(preferenceName);
+      }
+    };
+
+    static final TypedMethods<Boolean> BOOL = new TypedMethods<Boolean>() {
+      public void setConfigAttribute(ILaunchConfigurationWorkingCopy config, String attributeName,
+          Boolean value) {
+        config.setAttribute(attributeName, value);
+      }
+      Boolean getConfigAttribute(ILaunchConfiguration config, String attributeName,
+          Boolean defaultValue) throws CoreException {
+        return config.getAttribute(attributeName, defaultValue);
+      }
+      void setStoreDefaultValue(IPreferenceStore store, String propertyName, Boolean value) {
+        store.setDefault(propertyName, value);
+      }
+      Boolean getStoreValue(IPreferenceStore store, String preferenceName) {
+        return store.getBoolean(preferenceName);
+      }
+    };
+  }
+
+  private static final List<TabField<?>> TAB_FIELDS;
+  static {
+    List<TabField<?>> list = new ArrayList<ChromiumRemoteTab.TabField<?>>(4);
+
+    list.add(new TabField<String>(
+        LaunchParams.CHROMIUM_DEBUG_HOST, TypedMethods.STRING,
+        new FieldEditorAccess<String>(TypedMethods.STRING) {
+          @Override
+          FieldEditor getFieldEditor(TabElements tabElements) {
+            return tabElements.getHost();
+          }
+          String getEditorErrorValue() {
+            return ""; //$NON-NLS-1$
+          }
+        },
+        new DefaultsProvider<String>() {
+          @Override String getFallbackValue() {
+            return PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_HOST);
+          }
+          @Override
+          String getInitialConfigValue() {
+            return getFallbackValue();
+          }
+        }));
+
+    list.add(new TabField<Integer>(
+        LaunchParams.CHROMIUM_DEBUG_PORT, TypedMethods.INT,
+        new FieldEditorAccess<Integer>(TypedMethods.INT) {
+          @Override
+          FieldEditor getFieldEditor(TabElements tabElements) {
+            return tabElements.getPort();
+          }
+          String getEditorErrorValue() {
+            return "-1"; //$NON-NLS-1$
+          }
+        },
+        new DefaultsProvider<Integer>() {
+          @Override Integer getFallbackValue() {
+            return PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
+          }
+          @Override
+          Integer getInitialConfigValue() {
+            return getFallbackValue();
+          }
+        }));
+
+    list.add(new TabField<Boolean>(
+        LaunchParams.ADD_NETWORK_CONSOLE, TypedMethods.BOOL,
+        new FieldEditorAccess<Boolean>(TypedMethods.BOOL) {
+          FieldEditor getFieldEditor(TabElements tabElements) {
+            return tabElements.getAddNetworkConsole();
+          }
+          String getEditorErrorValue() {
+            return ""; //$NON-NLS-1$
+          }
+        },
+        new DefaultsProvider<Boolean>() {
+          @Override Boolean getFallbackValue() {
+            return false;
+          }
+          @Override
+          Boolean getInitialConfigValue() {
+            return null;
+          }
+        }));
+
+    list.add(new TabField<String>(
+        LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING, new FieldAccess<String>() {
+          @Override
+          void setValue(String value, TabElements tabElements) {
+            int breakpointOptionIndex = LaunchParams.findBreakpointOption(value);
+            tabElements.getBreakpointRadioButtons().select(breakpointOptionIndex);
+          }
+          @Override
+          String getValue(TabElements tabElements) {
+            int breakpointOption = tabElements.getBreakpointRadioButtons().getSelected();
+            return LaunchParams.BREAKPOINT_OPTIONS.get(breakpointOption).getDirectionStringValue();
+          }
+        },
+        new DefaultsProvider<String>() {
+          @Override String getFallbackValue() {
+            return Direction.MERGE.toString();
+          }
+          @Override
+          String getInitialConfigValue() {
+            return null;
+          }
+        }));
+
+    TAB_FIELDS = Collections.unmodifiableList(list);
   }
 }

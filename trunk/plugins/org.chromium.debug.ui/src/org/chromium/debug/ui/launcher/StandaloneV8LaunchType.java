@@ -10,7 +10,7 @@ import org.eclipse.debug.core.ILaunch;
 
 public class StandaloneV8LaunchType extends LaunchTypeBase {
   @Override
-  protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
+  protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(String host, int port,
       final ILaunch launch, boolean addConsoleLogger) {
     NamedConnectionLoggerFactory consoleFactory;
     if (addConsoleLogger) {
@@ -22,6 +22,6 @@ public class StandaloneV8LaunchType extends LaunchTypeBase {
     } else {
       consoleFactory = NO_CONNECTION_LOGGER_FACTORY;
     }
-    return JavascriptVmEmbedderFactory.connectToStandalone(port, consoleFactory);
+    return JavascriptVmEmbedderFactory.connectToStandalone(host, port, consoleFactory);
   }
 }
