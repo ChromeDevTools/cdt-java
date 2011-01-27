@@ -16,6 +16,11 @@
 
   <extension point="org.eclipse.core.variables.valueVariables">
     <variable
+        initialValue="localhost"
+        name="org.chromium.debug.ui.chromium_debug_host"
+        description="ChromeDevTools Protocol connection target host">
+    </variable>
+    <variable
         initialValue="9222"
         name="org.chromium.debug.ui.chromium_debug_port"
         description="ChromeDevTools Protocol connection port">

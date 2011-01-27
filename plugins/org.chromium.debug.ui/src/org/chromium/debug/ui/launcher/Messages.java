@@ -15,11 +15,15 @@ public class Messages extends NLS {
 
   public static String ChromiumRemoteTab_BREAKPOINT_GROUP;
 
+  public static String ChromiumRemoteTab_CONNECTION_FROM_LOCALHOST_WARNING;
+
   public static String ChromiumRemoteTab_CONNECTION_GROUP;
 
   public static String ChromiumRemoteTab_ShowDebuggerNetworkCommunication;
 
   public static String ChromiumRemoteTab_PortLabel;
+
+  public static String ChromiumRemoteTab_HostLabel;
 
   public static String ChromiumRemoteTab_RemoteTabName;
 

@@ -38,14 +38,18 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
       return;
     }
 
-    int port =
-        config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT,
-            PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
+    String host = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_HOST, (String) null);
+
+    int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, -1);
+
+    if (host == null && port == -1) {
+      throw new RuntimeException("Missing parameters in launch config");
+    }
 
     boolean addNetworkConsole = config.getAttribute(LaunchParams.ADD_NETWORK_CONSOLE, false);
 
     JavascriptVmEmbedder.ConnectionToRemote remoteServer =
-        createConnectionToRemote(port, launch, addNetworkConsole);
+        createConnectionToRemote(host, port, launch, addNetworkConsole);
     try {
 
       final String projectNameBase = config.getName();
@@ -95,8 +99,8 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
     }
   }
 
-  protected abstract JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(int port,
-      ILaunch launch, boolean addConsoleLogger) throws CoreException;
+  protected abstract JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(String host,
+      int port, ILaunch launch, boolean addConsoleLogger) throws CoreException;
 
   private static void terminateTarget(DebugTargetImpl target) {
     target.setDisconnected(true);

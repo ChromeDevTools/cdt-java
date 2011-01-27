@@ -23,14 +23,11 @@ import org.eclipse.core.runtime.Status;
 
 
 public class JavascriptVmEmbedderFactory {
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToChromeDevTools(String host,
+      int port, NamedConnectionLoggerFactory connectionLoggerFactory,
+      final TabSelector tabSelector) throws CoreException {
 
-  private static final String LOCALHOST = "127.0.0.1"; //$NON-NLS-1$
-
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToChromeDevTools(int port,
-      NamedConnectionLoggerFactory connectionLoggerFactory, final TabSelector tabSelector)
-      throws CoreException {
-
-    SocketAddress address = new InetSocketAddress(LOCALHOST, port);
+    SocketAddress address = new InetSocketAddress(host, port);
     final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
 
     final TabFetcher tabFetcher;
@@ -105,9 +102,9 @@ public class JavascriptVmEmbedderFactory {
     }
   }
 
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToStandalone(int port,
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToStandalone(String host, int port,
       NamedConnectionLoggerFactory connectionLoggerFactory) {
-    SocketAddress address = new InetSocketAddress(LOCALHOST, port);
+    SocketAddress address = new InetSocketAddress(host, port);
     ConnectionLogger connectionLogger =
       connectionLoggerFactory.createLogger(address.toString());
     final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(address,

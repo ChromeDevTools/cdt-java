@@ -13,16 +13,25 @@ import org.eclipse.debug.ui.sourcelookup.SourceLookupTab;
 /**
  * The Chromium JavaScript debugger launch configuration tab group.
  */
-public class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
+public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
   public static class Chromium extends LaunchTabGroup {
+    @Override
+    protected ChromiumRemoteTab createRemoteTab() {
+      return new ChromiumRemoteTab(ChromiumRemoteTab.HostChecker.FOR_CHROME);
+    }
   }
 
   public static class StandaloneV8 extends LaunchTabGroup {
+    @Override
+    protected ChromiumRemoteTab createRemoteTab() {
+      return new ChromiumRemoteTab(null);
+    }
   }
 
   public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
-    setTabs(new ILaunchConfigurationTab[] { new ChromiumRemoteTab(),
+    setTabs(new ILaunchConfigurationTab[] { createRemoteTab(),
         new SourceLookupTab(), new CommonTab() });
   }
 
+  protected abstract ChromiumRemoteTab createRemoteTab();
 }
