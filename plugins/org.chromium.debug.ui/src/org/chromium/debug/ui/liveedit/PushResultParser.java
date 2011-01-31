@@ -20,6 +20,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.NewFunctionNode;
 import org.chromium.sdk.UpdatableScript.OldFunctionNode;
+import org.chromium.sdk.UpdatableScript.TextualDiff;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 
@@ -28,9 +29,9 @@ import org.eclipse.core.runtime.CoreException;
  * It is also responsible for providing user-visible explanations about situation with each
  * function.
  */
-class PushResultParser {
+public class PushResultParser {
   static LiveEditDiffViewer.Input createViewerInput(
-      UpdatableScript.ChangeDescription changeDescription, ScriptTargetMapping filePair,
+      final UpdatableScript.ChangeDescription changeDescription, ScriptTargetMapping filePair,
       boolean previewMode) {
     Script script = filePair.getScriptHolder().getSingleScript();
     IFile file = filePair.getFile();
@@ -75,8 +76,14 @@ class PushResultParser {
           }
         };
       }
+
       public FunctionNode getRootFunction() {
         return rootFunction;
+      }
+
+      @Override
+      public TextualDiff getTextualDiff() {
+        return changeDescription.getTextualDiff();
       }
     };
   }

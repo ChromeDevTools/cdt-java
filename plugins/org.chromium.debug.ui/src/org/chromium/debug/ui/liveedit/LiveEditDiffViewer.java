@@ -4,9 +4,15 @@
 
 package org.chromium.debug.ui.liveedit;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
+import org.chromium.debug.core.util.RangeBinarySearch;
+import org.chromium.sdk.UpdatableScript;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.TextPresentation;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -20,8 +26,15 @@ import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.LineBackgroundEvent;
+import org.eclipse.swt.custom.LineBackgroundListener;
+import org.eclipse.swt.custom.StyleRange;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -65,6 +78,7 @@ public class LiveEditDiffViewer {
     FunctionNode getRootFunction();
     SourceText getOldSource();
     SourceText getNewSource();
+    UpdatableScript.TextualDiff getTextualDiff();
   }
 
   public interface SourceText {
@@ -105,8 +119,11 @@ public class LiveEditDiffViewer {
   private final SideControls newSideView;
   private final TreeLinkMonitor linkMonitor;
   private final Text functionStatusText;
+  private final Colors colors;
+  private InputData currentInput = null;
 
   private LiveEditDiffViewer(Composite parent, Configuration configuration) {
+    colors = new Colors(parent.getDisplay());
     Composite composite = new Composite(parent, SWT.NONE);
     {
       composite.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -190,10 +207,20 @@ public class LiveEditDiffViewer {
     oldSideView.label.setText(configuration.getOldLabel());
     newSideView.label.setText(configuration.getNewLabel());
 
-    configureTreeViewer(oldSideView.treeViewer, newSideView.treeViewer, Side.OLD);
-    configureTreeViewer(newSideView.treeViewer, oldSideView.treeViewer, Side.NEW);
+    configureSide(oldSideView, newSideView, Side.OLD);
+    configureSide(newSideView, oldSideView, Side.NEW);
 
     mainControl = composite;
+    mainControl.addDisposeListener(new DisposeListener() {
+      public void widgetDisposed(DisposeEvent event) {
+          handleDispose(event);
+      }
+    });
+  }
+
+  private void configureSide(SideControls sideControls, SideControls opposite, Side side) {
+    configureTreeViewer(sideControls.treeViewer, opposite.treeViewer, side);
+    configureSourceViewer(sideControls.sourceViewer, opposite.sourceViewer, side);
   }
 
   private void configureTreeViewer(TreeViewer treeViewer, TreeViewer opposite, Side side) {
@@ -202,8 +229,16 @@ public class LiveEditDiffViewer {
     treeViewer.addSelectionChangedListener(new SelectionChangeListener(opposite));
     treeViewer.addTreeListener(new TreeListenerImpl(opposite));
     treeViewer.getTree().getVerticalBar().addListener(SWT.Selection,
-        new ScrollBarListener(opposite));
+        new TreeScrollBarListener(opposite));
   }
+
+  private void configureSourceViewer(SourceViewer sourceViewer, SourceViewer opposite, Side side) {
+    sourceViewer.getTextWidget().getVerticalBar().addListener(SWT.Selection,
+        new SourceScrollBarListener(sourceViewer, opposite, side));
+
+    sourceViewer.getTextWidget().addLineBackgroundListener(new LineBackgroundListenerImpl(side));
+  }
+
 
   private static class SideControls {
     final Label label;
@@ -223,6 +258,11 @@ public class LiveEditDiffViewer {
     valueText.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
     return valueText;
   }
+
+  private void handleDispose(DisposeEvent event) {
+    colors.dispose();
+  }
+
 
   public Control getControl() {
     return mainControl;
@@ -250,9 +290,16 @@ public class LiveEditDiffViewer {
         newDocument = new Document(input.getNewSource().getText());
       }
       newSideView.sourceViewer.setDocument(newDocument);
+      if (input != null) {
+        applyDiffPresentation(oldSideView.sourceViewer, newSideView.sourceViewer,
+            input.getTextualDiff());
+      }
     } finally {
       linkMonitor.unblock();
     }
+
+    currentInput = buildInputData(input);
+
     setSelectedFunction(null);
   }
 
@@ -308,7 +355,7 @@ public class LiveEditDiffViewer {
           return Messages.LiveEditDiffViewer_SCRIPT;
         } else {
           String name = functionNode.getName();
-          if (name == null) {
+          if (name == null || name.trim().length() == 0) {
             return Messages.LiveEditDiffViewer_UNNAMED;
           } else {
             return name;
@@ -353,23 +400,186 @@ public class LiveEditDiffViewer {
     }
   }
 
-  private class ScrollBarListener implements Listener {
-    private final TreeViewer oppositeViewer;
-
-    ScrollBarListener(TreeViewer oppositeViewer) {
-      this.oppositeViewer = oppositeViewer;
-    }
-
+  private abstract class ScrollListenerBase implements Listener {
     public void handleEvent(Event e) {
       if (linkMonitor.isBlocked()) {
         return;
       }
       linkMonitor.block();
       try {
-        int vpos = ((ScrollBar)e.widget).getSelection();
-        oppositeViewer.getTree().getVerticalBar().setSelection(vpos);
+        handleScroll((ScrollBar)e.widget);
       } finally {
         linkMonitor.unblock();
+      }
+    }
+    protected abstract void handleScroll(ScrollBar scrollBar);
+  }
+
+  private class TreeScrollBarListener extends ScrollListenerBase {
+    private final TreeViewer oppositeViewer;
+
+    TreeScrollBarListener(TreeViewer oppositeViewer) {
+      this.oppositeViewer = oppositeViewer;
+    }
+
+    @Override
+    protected void handleScroll(ScrollBar scrollBar) {
+      int vpos = scrollBar.getSelection();
+      oppositeViewer.getTree().getVerticalBar().setSelection(vpos);
+    }
+  }
+
+  private class SourceScrollBarListener extends ScrollListenerBase {
+    private final SourceViewer sourceViewer;
+    private final SourceViewer opposite;
+    private final Side side;
+
+    SourceScrollBarListener(SourceViewer sourceViewer, SourceViewer opposite, Side side) {
+      this.sourceViewer = sourceViewer;
+      this.opposite = opposite;
+      this.side = side;
+    }
+
+    @Override
+    protected void handleScroll(ScrollBar scrollBar) {
+      if (currentInput == null) {
+        return;
+      }
+      int topPos = sourceViewer.getTopIndex();
+      int bottomPos = sourceViewer.getBottomIndex();
+      TextChangesMap changesMap = currentInput.getMap(side);
+      int neededOppositeTopPos = changesMap.translateLineNumber(topPos, true);
+      int neededOppositeBottomPos = changesMap.translateLineNumber(bottomPos, false);
+
+      int actualOppositeTopPos = opposite.getTopIndex();
+      int actualOppositeBottomPos = opposite.getBottomIndex();
+
+      int topFreeSpace = actualOppositeTopPos - neededOppositeTopPos;
+      int bottomFreeSpace = neededOppositeBottomPos - actualOppositeBottomPos;
+
+      if (topFreeSpace > 0 && bottomFreeSpace < 0) {
+        // Move up.
+        int moveUpValue = Math.min(topFreeSpace, -bottomFreeSpace);
+        opposite.setTopIndex(actualOppositeTopPos - moveUpValue);
+      } else if (topFreeSpace < 0 && bottomFreeSpace > 0) {
+        // Move down.
+        int moveDownValue = Math.min(-topFreeSpace, bottomFreeSpace);
+        opposite.setTopIndex(actualOppositeTopPos + moveDownValue);
+      }
+    }
+  }
+
+  private static InputData buildInputData(Input input) {
+    if (input == null) {
+      return null;
+    }
+    List<Long> chunkArray = input.getTextualDiff().getChunks();
+
+    String oldText = input.getOldSource().getText();
+    String newText = input.getNewSource().getText();
+
+    int arrayLengthExpected = chunkArray.size() / 3;
+    List<ChunkData> oldLineNumbers = new ArrayList<ChunkData>(arrayLengthExpected);
+    List<ChunkData> newLineNumbers = new ArrayList<ChunkData>(arrayLengthExpected);
+
+    {
+      int oldPos = 0;
+      int currentOldLineNumber = 0;
+      int newPos = 0;
+      int currentNewLineNumber = 0;
+
+      for (int i = 0; i < chunkArray.size(); i += 3) {
+        int oldStart = chunkArray.get(i + 0).intValue();
+        int newStart = oldStart - oldPos + newPos;
+        int oldEnd = chunkArray.get(i + 1).intValue();
+        int newEnd = chunkArray.get(i + 2).intValue();
+
+        currentOldLineNumber += countLineEnds(oldText, oldPos, oldStart);
+        currentNewLineNumber += countLineEnds(newText, newPos, newStart);
+
+        int oldLineStart = currentOldLineNumber;
+        int newLineStart = currentNewLineNumber;
+
+        currentOldLineNumber += countLineEnds(oldText, oldStart, oldEnd);
+        currentNewLineNumber += countLineEnds(newText, newStart, newEnd);
+
+        oldLineNumbers.add(new ChunkData(oldLineStart, currentOldLineNumber, oldStart, oldEnd));
+        newLineNumbers.add(new ChunkData(newLineStart, currentNewLineNumber, newStart, newEnd));
+
+        oldPos = oldEnd;
+        newPos = newEnd;
+      }
+    }
+
+    return new InputData(new TextChangesMap(oldLineNumbers, newLineNumbers),
+        new TextChangesMap(newLineNumbers, oldLineNumbers));
+  }
+
+  private static int countLineEnds(String str, int start, int end) {
+    int result = 0;
+    for (int i = start; i < end; i++) {
+      if (str.charAt(i) == '\n') {
+        result++;
+      }
+    }
+    return result;
+  }
+
+  private void applyDiffPresentation(SourceViewer oldViewer, SourceViewer newViewer,
+      UpdatableScript.TextualDiff textualDiff) {
+    TextPresentation oldPresentation = new TextPresentation();
+    TextPresentation newPresentation = new TextPresentation();
+
+    List<Long> chunkNumbers = textualDiff.getChunks();
+    int posOld = 0;
+    int posNew = 0;
+    for (int i = 0; i < chunkNumbers.size(); i += 3) {
+      int startOld = chunkNumbers.get(i + 0).intValue();
+      int endOld = chunkNumbers.get(i + 1).intValue();
+      int endNew = chunkNumbers.get(i + 2).intValue();
+      int startNew = startOld - posOld + posNew;
+
+      if (startOld == endOld) {
+        // Add
+        newPresentation.addStyleRange(new StyleRange(startNew, endNew - startNew,
+            null, colors.get(ColorName.ADDED_BACKGROUND)));
+      } else if (startNew == endNew) {
+        // Remove
+        oldPresentation.addStyleRange(new StyleRange(startOld, endOld - startOld,
+            null, colors.get(ColorName.ADDED_BACKGROUND)));
+      } else {
+        // Replace
+        newPresentation.addStyleRange(new StyleRange(startNew, endNew - startNew,
+            null, colors.get(ColorName.CHANGED_BACKGROUND)));
+        oldPresentation.addStyleRange(new StyleRange(startOld, endOld - startOld,
+            null, colors.get(ColorName.CHANGED_BACKGROUND)));
+      }
+
+      posOld = endOld;
+      posNew = endNew;
+    }
+
+    oldViewer.changeTextPresentation(oldPresentation, true);
+    newViewer.changeTextPresentation(newPresentation, true);
+  }
+
+  private class LineBackgroundListenerImpl implements LineBackgroundListener {
+    private final Side side;
+
+    LineBackgroundListenerImpl(Side side) {
+      this.side = side;
+    }
+
+    @Override
+    public void lineGetBackground(LineBackgroundEvent event) {
+      if (currentInput == null) {
+        return;
+      }
+      TextChangesMap changesMap = currentInput.getMap(side);
+      ColorName colorName =
+          changesMap.getLineColorName(event.lineOffset, event.lineText.length() + 1);
+      if (colorName != null) {
+        event.lineBackground = colors.get(colorName);
       }
     }
   }
@@ -453,11 +663,157 @@ public class LiveEditDiffViewer {
       }
       blocked = true;
     }
+
     void unblock() {
       blocked = false;
     }
+
     boolean isBlocked() {
       return blocked;
+    }
+  }
+
+  private static class InputData {
+    private final Map<Side, TextChangesMap> sideToMap;
+
+    InputData(TextChangesMap oldSideMap, TextChangesMap newSideMap) {
+      this.sideToMap = new EnumMap<Side, TextChangesMap>(Side.class);
+      sideToMap.put(Side.OLD, oldSideMap);
+      sideToMap.put(Side.NEW, newSideMap);
+    }
+
+    TextChangesMap getMap(Side side) {
+      return sideToMap.get(side);
+    }
+  }
+
+  private static class TextChangesMap {
+    private final List<ChunkData> sourceChunks;
+    private final List<ChunkData> targetChunks;
+
+    TextChangesMap(List<ChunkData> sourceChunks, List<ChunkData> targetChunks) {
+      this.sourceChunks = sourceChunks;
+      this.targetChunks = targetChunks;
+    }
+
+    public ColorName getLineColorName(int lineStartOffset, int lineLen) {
+      if (isChangedLine(lineStartOffset, lineLen)) {
+        return ColorName.CHANGED_LINE_BACKGROUND;
+      } else {
+        return null;
+      }
+    }
+
+    private boolean isChangedLine(final int lineStartOffset, int lineLen) {
+      RangeBinarySearch.Input searchInput = new RangeBinarySearch.Input() {
+        @Override public int pinPointsNumber() {
+          return sourceChunks.size();
+        }
+
+        @Override public boolean isPointXLessThanPinPoint(int pinPointIndex) {
+          return lineStartOffset <= sourceChunks.get(pinPointIndex).endPosition;
+        }
+      };
+      int chunkIndex = RangeBinarySearch.find(searchInput);
+      if (chunkIndex == sourceChunks.size()) {
+        return false;
+      }
+      return lineStartOffset + lineLen > sourceChunks.get(chunkIndex).startPosition;
+    }
+
+    int translateLineNumber(final int lineNumber, final boolean preferAboveNotBelow) {
+      // Represents chunk starts and chunk ends as one list of pin-points.
+      RangeBinarySearch.Input searchInput = new RangeBinarySearch.Input() {
+        @Override public int pinPointsNumber() {
+          return sourceChunks.size() * 2;
+        }
+
+        @Override public boolean isPointXLessThanPinPoint(int pinPointIndex) {
+          int chunkIndex = pinPointIndex / 2;
+          int number;
+          if (pinPointIndex % 2 == 0) {
+            number = sourceChunks.get(chunkIndex).startLineNumber;
+          } else {
+            number = sourceChunks.get(chunkIndex).endLineNumber;
+          }
+          return preferAboveNotBelow ? lineNumber <= number : lineNumber < number;
+        }
+      };
+
+      int pointIndex = RangeBinarySearch.find(searchInput);
+      int chunkIndex = pointIndex / 2;
+      if (pointIndex % 2 == 0) {
+        // Unmodified part of source.
+        int diff;
+        if (chunkIndex == 0) {
+          diff = 0;
+        } else {
+          diff = targetChunks.get(chunkIndex - 1).endLineNumber -
+            sourceChunks.get(chunkIndex - 1).endLineNumber;
+        }
+        return lineNumber + diff;
+      } else {
+        if (preferAboveNotBelow) {
+          return targetChunks.get(chunkIndex).startLineNumber;
+        } else {
+          return targetChunks.get(chunkIndex).endLineNumber;
+        }
+      }
+    }
+  }
+
+  private static class ChunkData {
+    final int startLineNumber;
+    final int endLineNumber;
+    final int startPosition;
+    final int endPosition;
+
+    ChunkData(int startLineNumber, int endLineNumber,
+        int startPosition, int endPosition) {
+      this.startLineNumber = startLineNumber;
+      this.endLineNumber = endLineNumber;
+      this.startPosition = startPosition;
+      this.endPosition = endPosition;
+    }
+  }
+
+  private enum ColorName {
+    ADDED_BACKGROUND(new RGB(220, 255, 220)),
+    CHANGED_BACKGROUND(new RGB(220, 220, 255)),
+    CHANGED_LINE_BACKGROUND(new RGB(240, 240, 240));
+
+    private final RGB rgb;
+
+    private ColorName(RGB rgb) {
+      this.rgb = rgb;
+    }
+
+    public RGB getRgb() {
+      return rgb;
+    }
+  }
+
+  private static class Colors {
+    private final Display display;
+    private final Map<ColorName, Color> colorMap = new EnumMap<ColorName, Color>(ColorName.class);
+
+    public Colors(Display display) {
+      this.display = display;
+    }
+
+    Color get(ColorName name) {
+      Color result = colorMap.get(name);
+      if (result == null) {
+        result = new Color(display, name.getRgb());
+        colorMap.put(name, result);
+      }
+      return result;
+    }
+
+    void dispose() {
+      for (Color color : colorMap.values()) {
+        color.dispose();
+      }
     }
   }
 }
