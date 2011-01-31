@@ -25,10 +25,6 @@ public class Messages extends NLS {
   public static String PushChangesWizard_MULTIPLE_VM;
   public static String PushChangesWizard_MULTIPLE_VM_DESCRIPTION;
   public static String PushChangesWizard_SCRIPT_IN_VM;
-  public static String PushChangesWizard_TEXT_CHANGED_SCRIPT;
-  public static String PushChangesWizard_TEXT_SCRIPT_IN_VM;
-  public static String PushChangesWizard_TEXTUAL_DIFF;
-  public static String PushChangesWizard_TEXTUAL_DIFF_DESCRIPTION;
   public static String PushChangesWizard_TITLE;
   public static String PushChangesWizard_V8_PREVIEW;
   public static String PushChangesWizard_V8_PREVIEW_DESCRIPTION;

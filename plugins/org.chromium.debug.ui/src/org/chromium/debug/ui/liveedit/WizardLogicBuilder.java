@@ -38,11 +38,8 @@ import org.chromium.debug.ui.WizardUtils.WizardFinishController;
 import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.actions.ChooseVmControl;
-import org.chromium.debug.ui.actions.CompareChangesAction;
 import org.chromium.debug.ui.liveedit.PushChangesWizard.FinisherDelegate;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
-import org.eclipse.compare.structuremergeviewer.DiffNode;
-import org.eclipse.core.runtime.NullProgressMonitor;
 
 /**
  * Creates Updater-based logic implementation of the wizard. It is responsible for proper data
@@ -195,16 +192,14 @@ class WizardLogicBuilder {
   private PreviewAndOptionPath createSingleVmPath(PageImpl<?> basePage,
       OptionalSwitcher<Boolean> switcher,
       final ValueSource<? extends Optional<? extends List<ScriptTargetMapping>>> selectedVmValue) {
-    // This path consists of 2 pages
-    final PageImpl<PushChangesWizard.TextualDiffPageElements> textualDiffPage =
-        pageSet.getTextualDiffPage();
+    // This path consists of 1 page
     final PageImpl<PushChangesWizard.V8PreviewPageElements> v8PreviewPage =
         pageSet.getV8PreviewPage();
 
     // All logic is inside a dedicated scope, which gets enabled only when user chooses exactly
     // one VM on a previous page. The scope enablement is synchronized with these pages becoming
     // available to user.
-    ScopeEnabler scopeEnabler = new NextPageEnabler(basePage, textualDiffPage);
+    ScopeEnabler scopeEnabler = new NextPageEnabler(basePage, v8PreviewPage);
     Scope scope = switcher.addScope(Boolean.TRUE, scopeEnabler);
 
     // A value of the single vm, that must be always available within this scope.
@@ -218,21 +213,6 @@ class WizardLogicBuilder {
     updater.addConsumer(scope, singleVmValue);
     updater.addSource(scope, singleVmValue);
     updater.addDependency(singleVmValue, selectedVmValue);
-
-    // A value consumer sets an input for textual diff control.
-    ValueConsumer textualDiffInputSetter = new ValueConsumer() {
-      public void update(Updater updater) {
-        ScriptTargetMapping filePair = singleVmValue.getValue();
-        CompareChangesAction.LiveEditCompareInput input =
-            new CompareChangesAction.LiveEditCompareInput(filePair);
-        DiffNode diffNode = input.prepareInput(new NullProgressMonitor());
-        textualDiffPage.getPageElements().getCompareViewerPane().setInput(diffNode);
-      }
-    };
-    updater.addConsumer(scope, textualDiffInputSetter);
-    updater.addDependency(textualDiffInputSetter, singleVmValue);
-
-    textualDiffPage.linkToNextPage(v8PreviewPage);
 
     // A complex asynchronous value source that feeds update preview data from V8.
     // The data is in raw format.
