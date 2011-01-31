@@ -22,15 +22,8 @@ import org.chromium.debug.ui.liveedit.LiveEditResultDialog.Input;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.SingleInput;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.UpdatableScript;
-import org.eclipse.compare.CompareConfiguration;
-import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.CompareViewerPane;
-import org.eclipse.compare.CompareViewerSwitchingPane;
-import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.osgi.util.NLS;
@@ -57,13 +50,6 @@ public class PushChangesWizard {
         Messages.PushChangesWizard_CHOOSE_VM,
         Messages.PushChangesWizard_CHOOSE_VM_DESCRIPTION);
 
-    final PageImpl<TextualDiffPageElements> textualDiffPage = new PageImpl<TextualDiffPageElements>(
-        "textual diff", //$NON-NLS-1$
-        TEXTUAL_DIFF_PAGE_FACTORY,
-        Messages.PushChangesWizard_TEXTUAL_DIFF,
-        // This is inaccurate because V8 and this view do their own diffs which are not necessarily
-        // same.
-        Messages.PushChangesWizard_TEXTUAL_DIFF_DESCRIPTION);
     final PageImpl<V8PreviewPageElements> v8PreviewPage = new PageImpl<V8PreviewPageElements>(
         "v8 preview", //$NON-NLS-1$
         V8_PREVIEW_PAGE_FACTORY,
@@ -77,14 +63,11 @@ public class PushChangesWizard {
 
     final PageSet pageSet = new PageSet() {
       public List<? extends PageImpl<?>> getAllPages() {
-        return Arrays.<PageImpl<?>>asList(chooseVmPage, textualDiffPage, v8PreviewPage,
+        return Arrays.<PageImpl<?>>asList(chooseVmPage, v8PreviewPage,
             multipleVmStubPage);
       }
       public PageImpl<ChooseVmPageElements> getChooseVmPage() {
         return chooseVmPage;
-      }
-      public PageImpl<TextualDiffPageElements> getTextualDiffPage() {
-        return textualDiffPage;
       }
       public PageImpl<V8PreviewPageElements> getV8PreviewPage() {
         return v8PreviewPage;
@@ -110,7 +93,6 @@ public class PushChangesWizard {
    */
   interface PageSet extends WizardPageSet {
     PageImpl<ChooseVmPageElements> getChooseVmPage();
-    PageImpl<TextualDiffPageElements> getTextualDiffPage();
     PageImpl<V8PreviewPageElements> getV8PreviewPage();
     PageImpl<PageElements> getMultipleVmStubPage();
   }
@@ -119,10 +101,6 @@ public class PushChangesWizard {
 
   interface ChooseVmPageElements extends PageElements {
     ChooseVmControl.Logic getChooseVm();
-  }
-
-  interface TextualDiffPageElements extends PageElements {
-    CompareViewerPane getCompareViewerPane();
   }
 
   interface V8PreviewPageElements extends PageElements {
@@ -143,28 +121,6 @@ public class PushChangesWizard {
         }
         public Control getMainControl() {
           return chooseVm.getControl();
-        }
-      };
-    }
-  };
-
-  private static final PageElementsFactory<TextualDiffPageElements> TEXTUAL_DIFF_PAGE_FACTORY =
-      new PageElementsFactory<TextualDiffPageElements>() {
-    public TextualDiffPageElements create(Composite parent) {
-      final Composite page = new Composite(parent, 0);
-      GridLayout topLayout = new GridLayout();
-      topLayout.numColumns = 1;
-      page.setLayout(topLayout);
-
-      final ComparePreviewer comparePreviewer = new ComparePreviewer(page);
-      comparePreviewer.setLayoutData(new GridData(GridData.FILL_BOTH));
-
-      return new TextualDiffPageElements() {
-        public Control getMainControl() {
-          return page;
-        }
-        public CompareViewerPane getCompareViewerPane() {
-          return comparePreviewer;
         }
       };
     }
@@ -212,31 +168,6 @@ public class PushChangesWizard {
           };
         }
       };
-
-  /**
-   * A very simple text compare viewer.
-   */
-  private static class ComparePreviewer extends CompareViewerSwitchingPane {
-    private CompareConfiguration configuration;
-
-    public ComparePreviewer(Composite parent) {
-        super(parent, SWT.BORDER | SWT.FLAT, true);
-        configuration = new CompareConfiguration();
-        configuration.setLeftEditable(false);
-        configuration.setLeftLabel(Messages.PushChangesWizard_TEXT_CHANGED_SCRIPT);
-        configuration.setRightEditable(false);
-        configuration.setRightLabel(Messages.PushChangesWizard_TEXT_SCRIPT_IN_VM);
-        Dialog.applyDialogFont(this);
-    }
-    @Override
-    protected Viewer getViewer(Viewer oldViewer, Object input) {
-      if (input instanceof ICompareInput == false) {
-        return null;
-      }
-      ICompareInput compareInput = (ICompareInput) input;
-      return CompareUI.findContentViewer(oldViewer, compareInput, this, configuration);
-    }
-  }
 
   interface FinisherDelegate {
     LiveEditResultDialog.Input run(IProgressMonitor monitor);
