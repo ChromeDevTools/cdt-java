@@ -280,12 +280,12 @@ public class WizardUtils {
    */
   public static class WizardFinishController implements ValueConsumer {
     private final ValueSource<? extends Optional<? extends WizardFinisher>> finisherValue;
-    private final ValueSource<? extends Optional<Void>> warningValue;
+    private final ValueSource<? extends Optional<?>> warningValue;
     private final LogicBasedWizard wizardImpl;
 
     public WizardFinishController(
         ValueSource<? extends Optional<? extends WizardFinisher>> finisherValue,
-        ValueSource<? extends Optional<Void>> warningValue,
+        ValueSource<? extends Optional<? extends Void>> warningValue,
         LogicBasedWizard wizardImpl) {
       this.finisherValue = finisherValue;
       this.warningValue = warningValue;
@@ -296,7 +296,7 @@ public class WizardUtils {
       WizardFinisher finisher;
       Set<Message> messages = new HashSet<Message>();
       if (warningValue != null) {
-        Optional<Void> warnings = warningValue.getValue();
+        Optional<?> warnings = warningValue.getValue();
         if (!warnings.isNormal()) {
           messages.addAll(warnings.errorMessages());
         }
