@@ -4,6 +4,15 @@
 
 package org.chromium.debug.ui;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -310,7 +319,7 @@ public class DialogUtils {
      * Creates a switcher that is operated by optional expression.
      * @param <T> type of expression
      */
-    <T> OptionalSwitcher<T> addOptionalSwitch(Gettable<? extends Optional<T>> expression);
+    <T> OptionalSwitcher<T> addOptionalSwitch(Gettable<? extends Optional<? extends T>> expression);
 
     /**
      * Creates a switcher that is operated by non-optional expression.
@@ -358,8 +367,8 @@ public class DialogUtils {
      * all sources have optional type and the merge source itself of optional type. The switcher
      * expression may have error value, in this case the merger also returns this error value.
      */
-    <P> ValueSource<? extends Optional<P>> createOptionalMerge(
-        ValueSource<? extends Optional<P>> ... sources);
+    <P> ValueSource<? extends Optional<? extends P>> createOptionalMerge(
+        ValueSource<? extends Optional<? extends P>> ... sources);
   }
 
   public static <T> ValueSource<T> createConstant(final T constnant, Updater updater) {
@@ -403,6 +412,28 @@ public class DialogUtils {
       public boolean isNormal() {
         return true;
       }
+      @Override
+      public boolean equals(Object obj) {
+        if (obj == null) {
+          return false;
+        }
+        if (obj == this) {
+          return true;
+        }
+        if (!obj.getClass().equals(this.getClass())) {
+          return false;
+        }
+        Optional<?> other = (Optional<?>) obj;
+        if (value == null) {
+          return other.getNormal() == null;
+        } else {
+          return value.equals(other.getNormal());
+        }
+      }
+      @Override
+      public int hashCode() {
+        return value == null ? 0 : value.hashCode();
+      }
     };
   }
 
@@ -420,6 +451,28 @@ public class DialogUtils {
       }
       public boolean isNormal() {
         return false;
+      }
+      @Override
+      public boolean equals(Object obj) {
+        if (obj == null) {
+          return false;
+        }
+        if (obj == this) {
+          return true;
+        }
+        if (!obj.getClass().equals(this.getClass())) {
+          return false;
+        }
+        Optional<?> other = (Optional<?>) obj;
+        if (messages == null) {
+          return other.errorMessages() == null;
+        } else {
+          return messages.equals(other.errorMessages());
+        }
+      }
+      @Override
+      public int hashCode() {
+        return messages.hashCode();
       }
     };
   }
@@ -502,70 +555,225 @@ public class DialogUtils {
   }
 
   /**
-   * An interface similar to {@link Gettable}, but with a quite specific contract:
-   * it may depend on some optional values, but its calculate method should only be called
-   * when all of the values are normal (non-error). This way its implementations becomes simpler.
-   * It's up to someone who calls calculate method to check that contract is held.
+   * An expression that gets calculated only when its dependencies are all non-error.
+   * The interface contains a "calculate" method and several methods that return expression
+   * dependencies.
+   * <p>
+   * The one that is using this expression is responsible for reading all sources, checking
+   * whether the optional values are normal and calling "calculate" method passing the
+   * normal values as arguments.
+   * <p>
+   * The interface is reflection-oriented, as you cannot express type schema in plain Java.
+   * The client should check the interface for a type-consistency statically on runtime and
+   * throw exception if something is wrong. All user types are explicitly declared in
+   * signature of methods. This allows accurate type checking via reflection (including
+   * generics parameters, which are otherwise erased on runtime).
+   * <p>
+   * The interface is reflection-based. It only contains annotation that method should have.
+   *
+   * @param <T> type of value this expression returns
    */
-  public interface NormalExpression<RES> {
-    RES calculate();
+  public interface NormalExpression<T> {
+    /**
+     * An annotation for a "calculate" method of the interface. There should be only one such
+     * a method in the object. Its return type should be "T" or "Optional<? extends T>" (we are
+     * flexible in this only place). It should have arguments one per its dependency
+     * (in the same order).
+     * <p>The method must be declared public for the reflection to work.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @interface Calculate {
+    }
+
+    /**
+     * An annotation for a method that returns expression dependency. It should have no arguments
+     * and return IValueSource<? extends Optional<*T*>> type ("IValueSource" is significant here).
+     * The type *T* should correspond to the type of "calculate" method argument (dependency
+     * methods should go in the same order as "calculate" arguments go).
+     * <p>The method must be declared public for the reflection to work.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface DependencyGetter {
+    }
   }
 
-  /**
-   * Creates a {@link ValueProcessor} that is backed by {@link NormalExpression}.
-   * @param optionalSources list of inputs that are optional and thus have to be checked for
-   *   {@link NormalExpression} contract.
-   */
-  public static <T> ValueProcessor<Optional<T>> createOptionalProcessor(
-      final NormalExpression<T> expression,
-      ValueSource<? extends Optional<?>> ... optionalSources) {
-    final Gettable<Optional<T>> getter = handleErrors(expression, optionalSources);
-    return createProcessor(getter);
-  }
 
   /**
-   * Implements the basic contract of {@link NormalExpression}. Wraps it as {@link Gettable} and
-   * keeps all its optional sources that are checked before each calculation.
+   * Converts {@link NormalExpression} into {@link Gettable} and takes responsibility of checking
+   * that all dependencies have only normal values. Despite {@link NormalExpression} being
+   * reflection-based interface, this method should be completely type-safe for a programmer and
+   * accurately check (statically) that its signatures are consistent (including generic types).
    */
-  public static <RES> Gettable<Optional<RES>> handleErrors(final NormalExpression<RES> expression,
-      final ValueSource<? extends Optional<?>> ... optionalSources) {
-    NormalExpression<Optional<RES>> wrapper = new NormalExpression<Optional<RES>>() {
-      public Optional<RES> calculate() {
-        return createOptional(expression.calculate());
-      }
-    };
-    return handleErrorsAddNew(wrapper, optionalSources);
-  }
+  public static <RES> Gettable<Optional<? extends RES>> handleErrors(
+      final NormalExpression<RES> expression) {
+    Class<?> expressionClass = expression.getClass();
 
-  /**
-   * Implements the basic contract of {@link NormalExpression}. Wraps it as {@link Gettable} and
-   * keeps all its optional sources that are checked before each calculation.
-   * The expression may rely on all optionalSources being of normal values, but it is allowed to
-   * return error value itself.
-   */
-  public static <RES> Gettable<Optional<RES>> handleErrorsAddNew(
-      final NormalExpression<Optional<RES>> expression,
-      final ValueSource<? extends Optional<?>> ... optionalSources) {
-    return new Gettable<Optional<RES>>() {
-      public Optional<RES> getValue() {
-        boolean hasErrors = false;
-        for (ValueSource<? extends Optional<?>> source : optionalSources) {
-          if (!source.getValue().isNormal()) {
-            hasErrors = true;
-            break;
-          }
+    // All reflection is done in generic-aware API generation.
+
+    // Read generic NormalExpression type parameter of expression class.
+    Type expressionType;
+    {
+      ParameterizedType normalExpressionType = null;
+      for (Type inter : expressionClass.getGenericInterfaces()) {
+        if (inter instanceof ParameterizedType == false) {
+          continue;
         }
+        ParameterizedType parameterizedType = (ParameterizedType) inter;
+        if (!parameterizedType.getRawType().equals(NormalExpression.class)) {
+          continue;
+        }
+        normalExpressionType = parameterizedType;
+      }
+      if (normalExpressionType == null) {
+        throw new IllegalArgumentException("Expression does not directly implement " +
+            NormalExpression.class.getName());
+      }
+      expressionType = normalExpressionType.getActualTypeArguments()[0];
+    }
 
-        if (hasErrors) {
-          Set<Message> errors = new LinkedHashSet<Message>(0);
-          for (ValueSource<? extends Optional<?>> source : optionalSources) {
-            if (!source.getValue().isNormal()) {
-              errors.addAll(source.getValue().errorMessages());
+    // Read all methods of expression class and choose annotated ones.
+    Method calculateMethodVar = null;
+    final List<Method> dependencyMethods = new ArrayList<Method>(2);
+    for (Method m : expressionClass.getMethods()) {
+      if (m.getAnnotation(NormalExpression.Calculate.class) != null) {
+        if (calculateMethodVar != null) {
+          throw new IllegalArgumentException("Class " + expressionClass.getName() +
+              " has more than one method with " +
+              NormalExpression.Calculate.class.getName() + " annotation");
+        }
+        calculateMethodVar = m;
+      }
+      if (m.getAnnotation(NormalExpression.DependencyGetter.class) != null) {
+        dependencyMethods.add(m);
+      }
+    }
+    if (calculateMethodVar == null) {
+      throw new IllegalArgumentException("Failed to found Class method with " +
+          NormalExpression.Calculate.class.getName() + " annotation in " +
+          expressionClass.getName());
+    }
+    final Method calculateMethod = calculateMethodVar;
+    Type methodReturnType = calculateMethod.getGenericReturnType();
+
+    // Method is typically in anonymous class. Making it accessible is required.
+    calculateMethod.setAccessible(true);
+
+    // Prepare handling method return value (it's either a plain value or an optional wrapper).
+    abstract class ReturnValueHandler {
+      abstract Optional<? extends RES> castResult(Object resultObject);
+    }
+
+    final ReturnValueHandler returnValueHandler;
+
+    if (methodReturnType.equals(expressionType)) {
+      returnValueHandler = new ReturnValueHandler() {
+        Optional<? extends RES> castResult(Object resultObject) {
+          // Return type in interface is RES.
+          // Type cast has been proven to be correct.
+          return createOptional((RES) resultObject);
+        }
+      };
+    } else {
+      tryUnwrapOptional: {
+        if (methodReturnType instanceof ParameterizedType) {
+          ParameterizedType parameterizedType = (ParameterizedType) methodReturnType;
+          if (parameterizedType.getRawType() == Optional.class) {
+            Type optionalParam = parameterizedType.getActualTypeArguments()[0];
+            boolean okToCast = false;
+            if (optionalParam instanceof WildcardType) {
+              WildcardType wildcardType = (WildcardType) optionalParam;
+              if (wildcardType.getUpperBounds()[0].equals(expressionType)) {
+                okToCast = true;
+              }
+            } else if (optionalParam.equals(expressionType)) {
+              okToCast = true;
+            }
+            if (okToCast) {
+              returnValueHandler = new ReturnValueHandler() {
+                Optional<? extends RES> castResult(Object resultObject) {
+                  // Return type in interface is optional wrapper around RES.
+                  // Type cast has been proven to be correct.
+                  return (Optional<? extends RES>) resultObject;
+                }
+              };
+              break tryUnwrapOptional;
             }
           }
-          return createErrorOptional(errors);
+        }
+        throw new IllegalArgumentException("Wrong return type " + methodReturnType +
+            ", expected: " + expressionType);
+      }
+    }
+
+    // Check that dependencies correspond to "calculate" method arguments.
+    Type[] methodParamTypes = calculateMethod.getGenericParameterTypes();
+    if (methodParamTypes.length != dependencyMethods.size()) {
+      throw new IllegalArgumentException("Wrong number of agruments in calculate method " +
+          calculateMethod);
+    }
+    // We depend on methods being ordered in Java reflection.
+    for (int i = 0; i < methodParamTypes.length; i++) {
+      Method depMethod = dependencyMethods.get(i);
+      try {
+        if (depMethod.getParameterTypes().length != 0) {
+          throw new IllegalArgumentException("Dependency method should not have arguments");
+        }
+        Type depType = depMethod.getGenericReturnType();
+        if (depType instanceof ParameterizedType == false) {
+          throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
+        }
+        ParameterizedType depParameterizedType = (ParameterizedType) depType;
+        if (depParameterizedType.getRawType() != ValueSource.class) {
+          throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
+        }
+        // Method is typically in anonymous class. Making it accessible is required.
+        depMethod.setAccessible(true);
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Failed to process method " + depMethod, e);
+      }
+    }
+
+    // Create implementation that will call methods via reflection.
+    return new Gettable<Optional<? extends RES>>() {
+      @Override
+      public Optional<? extends RES> getValue() {
+        Object[] params = new Object[dependencyMethods.size()];
+        Set<Message> errors = null;
+        for (int i = 0; i < params.length; i++) {
+          Object sourceObject;
+          try {
+            sourceObject = dependencyMethods.get(i).invoke(expression);
+          } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+          } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+          }
+          ValueSource<? extends Optional<?>> source =
+              (ValueSource<? extends Optional<?>>) sourceObject;
+          Optional<?> optionalValue = source.getValue();
+          if (optionalValue.isNormal()) {
+            params[i] = optionalValue.getNormal();
+          } else {
+            if (errors == null) {
+              errors = new LinkedHashSet<Message>(0);
+            }
+            errors.addAll(optionalValue.errorMessages());
+          }
+        }
+        if (errors == null) {
+          Object result;
+          try {
+            result = calculateMethod.invoke(expression, params);
+          } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+          } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+          }
+          return returnValueHandler.castResult(result);
         } else {
-          return expression.calculate();
+          return createErrorOptional(errors);
         }
       }
     };
@@ -871,21 +1079,23 @@ public class DialogUtils {
       setCurrentScope(newScope);
     }
 
-    public <P> ValueSource<? extends Optional<P>> createOptionalMerge(
-        ValueSource<? extends Optional<P>>... sources) {
+    public <P> ValueSource<? extends Optional<? extends P>> createOptionalMerge(
+        ValueSource<? extends Optional<? extends P>>... sources) {
 
-      final Map<T, ValueSource<? extends Optional<P>>> map = sortSources(Arrays.asList(sources));
+      final Map<T, ValueSource<? extends Optional<? extends P>>> map =
+          sortSources(Arrays.asList(sources));
 
-      ValueProcessor<? extends Optional<P>> result = new ValueProcessor<Optional<P>>() {
+      ValueProcessor<? extends Optional<? extends P>> result =
+          new ValueProcessor<Optional<? extends P>>() {
         public void update(Updater updater) {
           setCurrentValue(calculate());
           updater.reportChanged(this);
         }
 
-        private Optional<P> calculate() {
+        private Optional<? extends P> calculate() {
           Optional<? extends T> control = sourceForMerge.getValue();
           if (control.isNormal()) {
-            ValueSource<? extends Optional<P>> oneSource = map.get(control.getNormal());
+            ValueSource<? extends Optional<? extends P>> oneSource = map.get(control.getNormal());
             return oneSource.getValue();
           } else {
             return createErrorOptional(control.errorMessages());
@@ -952,7 +1162,8 @@ public class DialogUtils {
       this.updater = updater;
     }
 
-    public <P> OptionalSwitcher<P> addOptionalSwitch(Gettable<? extends Optional<P>> expression) {
+    public <P> OptionalSwitcher<P> addOptionalSwitch(
+        Gettable<? extends Optional<? extends P>> expression) {
       OptionalSwitcherImpl<P> switcher = new OptionalSwitcherImpl<P>(this, expression);
       updater.addConsumer(this, switcher.getValueConsumer());
       updater.addSource(this, switcher.getSourceForMerge());

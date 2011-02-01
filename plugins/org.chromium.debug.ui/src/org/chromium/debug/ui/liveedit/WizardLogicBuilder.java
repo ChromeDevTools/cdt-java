@@ -4,29 +4,14 @@
 
 package org.chromium.debug.ui.liveedit;
 
-import static org.chromium.debug.ui.DialogUtils.createConstant;
-import static org.chromium.debug.ui.DialogUtils.createErrorOptional;
-import static org.chromium.debug.ui.DialogUtils.createOptional;
-import static org.chromium.debug.ui.DialogUtils.createOptionalProcessor;
-import static org.chromium.debug.ui.DialogUtils.createProcessor;
-import static org.chromium.debug.ui.DialogUtils.dependencies;
-import static org.chromium.debug.ui.DialogUtils.handleErrors;
-import static org.chromium.debug.ui.DialogUtils.handleErrorsAddNew;
+import static org.chromium.debug.ui.DialogUtils.*;
 
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ScriptTargetMapping;
-import org.chromium.debug.ui.DialogUtils.Gettable;
-import org.chromium.debug.ui.DialogUtils.Message;
-import org.chromium.debug.ui.DialogUtils.MessagePriority;
-import org.chromium.debug.ui.DialogUtils.NormalExpression;
+import org.chromium.debug.ui.DialogUtils.*;
 import org.chromium.debug.ui.DialogUtils.Optional;
-import org.chromium.debug.ui.DialogUtils.OptionalSwitcher;
-import org.chromium.debug.ui.DialogUtils.Scope;
-import org.chromium.debug.ui.DialogUtils.ScopeEnabler;
-import org.chromium.debug.ui.DialogUtils.Updater;
-import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueProcessor;
 import org.chromium.debug.ui.DialogUtils.ValueSource;
 import org.chromium.debug.ui.WizardUtils.LogicBasedWizard;
@@ -39,6 +24,7 @@ import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.actions.ChooseVmControl;
 import org.chromium.debug.ui.liveedit.PushChangesWizard.FinisherDelegate;
+import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
 
 /**
@@ -115,13 +101,17 @@ class WizardLogicBuilder {
 
 
     // A condition value for up-coming fork between 'single vm' and 'multiple vm' paths.
-    Gettable<? extends Optional<Boolean>> singleVmSelectedExpression = handleErrors(
+    Gettable<? extends Optional<? extends Boolean>> singleVmSelectedExpression = handleErrors(
         new NormalExpression<Boolean>() {
-          public Boolean calculate() {
-            return selectedVmValue.getValue().getNormal().size() == 1;
+          @Calculate
+          public Boolean calculate(List<ScriptTargetMapping> selectedVm) {
+            return selectedVm.size() == 1;
           }
-        },
-        dependencies(selectedVmValue));
+          @DependencyGetter
+          public ValueSource<? extends Optional<List<ScriptTargetMapping>>> getSelectVmSource() {
+            return selectedVmValue;
+          }
+        });
 
     // A switch between 2 paths: 'single vm' and 'multiple vm'.
     OptionalSwitcher<Boolean> singleVmSelectedSwitch =
@@ -137,20 +127,24 @@ class WizardLogicBuilder {
         singleVmSelectedSwitch.createOptionalMerge(singleVmPath.getFinisherDelegateValue(),
             multipleVmPath.getFinisherDelegateValue());
 
-    ValueSource<? extends Optional<Void>> warningValue =
+    ValueSource<? extends Optional<? extends Void>> warningValue =
         singleVmSelectedSwitch.createOptionalMerge(singleVmPath.getWarningValue(),
             multipleVmPath.getWarningValue());
 
 
     // A simple value converter that wraps wizard delegate as UI-aware wizard finisher.
-    ValueProcessor<Optional<WizardFinisher>> finisherValue =
-        createOptionalProcessor(new NormalExpression<WizardFinisher>() {
-              public WizardFinisher calculate() {
-                return new PushChangesWizard.FinisherImpl(
-                    wizardFinisherDelegateValue.getValue().getNormal());
+    ValueProcessor<Optional<? extends WizardFinisher>> finisherValue =
+        createProcessor(handleErrors(new NormalExpression<WizardFinisher>() {
+              @Calculate
+              public WizardFinisher calculate(FinisherDelegate finisherDelegate) {
+                return new PushChangesWizard.FinisherImpl(finisherDelegate);
               }
-            },
-            dependencies(wizardFinisherDelegateValue));
+              @DependencyGetter
+              public ValueSource<? extends Optional<? extends FinisherDelegate>>
+                  getWizardFinisherDelegateSource() {
+                return wizardFinisherDelegateValue;
+              }
+            }));
     updater.addConsumer(scope, finisherValue);
     updater.addSource(scope, finisherValue);
     updater.addDependency(finisherValue, wizardFinisherDelegateValue);
@@ -181,7 +175,7 @@ class WizardLogicBuilder {
    * return additional warning messages.
    */
   private interface PreviewAndOptionPath {
-    ValueSource<? extends Optional<FinisherDelegate>> getFinisherDelegateValue();
+    ValueSource<? extends Optional<? extends FinisherDelegate>> getFinisherDelegateValue();
     ValueSource<Optional<Void>> getWarningValue();
   }
 
@@ -228,30 +222,39 @@ class WizardLogicBuilder {
 
     // Parses raw preview value and converts it into a form suitable for the viewer; also handles
     // errors that become warnings.
-    final ValueProcessor<Optional<LiveEditDiffViewer.Input>> previewValue =
-        createProcessor(handleErrorsAddNew(
-            new NormalExpression<Optional<LiveEditDiffViewer.Input>>() {
-          public Optional<LiveEditDiffViewer.Input> calculate() {
-            ScriptTargetMapping filePair = singleVmValue.getValue();
-            ChangeDescription changeDescription = previewRawResultValue.getValue().getNormal();
-            Optional<LiveEditDiffViewer.Input> result;
-            if (changeDescription == null) {
-              result = createOptional(null);
-            } else {
-              try {
-                LiveEditDiffViewer.Input viewerInput =
-                    PushResultParser.createViewerInput(changeDescription, filePair, true);
-                result = createOptional(viewerInput);
-              } catch (RuntimeException e) {
-                ChromiumDebugPlugin.log(e);
-                result = createErrorOptional(new Message(
-                    "Error in getting preview: " + e.toString(), MessagePriority.WARNING));
+    final ValueProcessor<Optional<? extends LiveEditDiffViewer.Input>> previewValue =
+      createProcessor(handleErrors(
+          new NormalExpression<LiveEditDiffViewer.Input>() {
+            @Calculate
+            public Optional<? extends LiveEditDiffViewer.Input> calculate(
+                ChangeDescription previewRawResultParam) {
+              ScriptTargetMapping filePair = singleVmValue.getValue();
+              ChangeDescription changeDescription = previewRawResultParam;
+              Optional<LiveEditDiffViewer.Input> result;
+              if (changeDescription == null) {
+                result = createOptional(null);
+              } else {
+                try {
+                  LiveEditDiffViewer.Input viewerInput =
+                      PushResultParser.createViewerInput(changeDescription, filePair, true);
+                  result = createOptional(viewerInput);
+                } catch (RuntimeException e) {
+                  ChromiumDebugPlugin.log(e);
+                  result = createErrorOptional(new Message(
+                      "Error in getting preview: " + e.toString(), MessagePriority.WARNING));
+                }
               }
+              return result;
             }
-            return result;
-          }
-        },
-        dependencies(previewRawResultValue)));
+            @DependencyGetter
+            public ValueSource<Optional<UpdatableScript.ChangeDescription>>
+                previewRawResultValueSource() {
+              return previewRawResultValue;
+            }
+          }));
+
+
+
     updater.addConsumer(scope, previewValue);
     updater.addSource(scope, previewValue);
     updater.addDependency(previewValue, previewRawResultValue);
@@ -260,7 +263,7 @@ class WizardLogicBuilder {
     // A simple consumer that sets preview data to the viewer.
     ValueConsumer v8PreviewInputSetter = new ValueConsumer() {
       public void update(Updater updater) {
-        Optional<LiveEditDiffViewer.Input> previewOptional = previewValue.getValue();
+        Optional<? extends LiveEditDiffViewer.Input> previewOptional = previewValue.getValue();
         LiveEditDiffViewer.Input viewerInput;
         if (previewOptional.isNormal()) {
           viewerInput = previewOptional.getNormal();
@@ -330,12 +333,18 @@ class WizardLogicBuilder {
 
     Scope scope = switcher.addScope(Boolean.FALSE, scopeEnabler);
 
-    final ValueProcessor<? extends Optional<FinisherDelegate>> wizardFinisher =
+    final ValueProcessor<Optional<? extends FinisherDelegate>> wizardFinisher =
         createProcessor(handleErrors(new NormalExpression<FinisherDelegate>() {
-          public FinisherDelegate calculate() {
+          @Calculate
+          public FinisherDelegate calculate(List<ScriptTargetMapping> selectedVm) {
             return new PushChangesWizard.MultipleVmFinisher(selectedVmValue.getValue().getNormal());
           }
-        }, dependencies(selectedVmValue)));
+          @DependencyGetter
+          public ValueSource<? extends Optional<? extends List<ScriptTargetMapping>>>
+              getSelectVmSource() {
+            return selectedVmValue;
+          }
+        }));
     updater.addSource(scope, wizardFinisher);
     updater.addConsumer(scope, wizardFinisher);
     updater.addDependency(wizardFinisher, selectedVmValue);
@@ -344,7 +353,8 @@ class WizardLogicBuilder {
         createConstant(createOptional((Void) null), updater);
 
     return new PreviewAndOptionPath() {
-      public ValueSource<? extends Optional<FinisherDelegate>> getFinisherDelegateValue() {
+      public ValueSource<? extends Optional<? extends FinisherDelegate>>
+          getFinisherDelegateValue() {
         return wizardFinisher;
       }
       public ValueSource<Optional<Void>> getWarningValue() {
