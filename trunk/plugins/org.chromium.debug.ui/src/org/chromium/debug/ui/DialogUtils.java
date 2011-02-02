@@ -608,175 +608,7 @@ public class DialogUtils {
    */
   public static <RES> Gettable<Optional<? extends RES>> handleErrors(
       final NormalExpression<RES> expression) {
-    Class<?> expressionClass = expression.getClass();
-
-    // All reflection is done in generic-aware API generation.
-
-    // Read generic NormalExpression type parameter of expression class.
-    Type expressionType;
-    {
-      ParameterizedType normalExpressionType = null;
-      for (Type inter : expressionClass.getGenericInterfaces()) {
-        if (inter instanceof ParameterizedType == false) {
-          continue;
-        }
-        ParameterizedType parameterizedType = (ParameterizedType) inter;
-        if (!parameterizedType.getRawType().equals(NormalExpression.class)) {
-          continue;
-        }
-        normalExpressionType = parameterizedType;
-      }
-      if (normalExpressionType == null) {
-        throw new IllegalArgumentException("Expression does not directly implement " +
-            NormalExpression.class.getName());
-      }
-      expressionType = normalExpressionType.getActualTypeArguments()[0];
-    }
-
-    // Read all methods of expression class and choose annotated ones.
-    Method calculateMethodVar = null;
-    final List<Method> dependencyMethods = new ArrayList<Method>(2);
-    for (Method m : expressionClass.getMethods()) {
-      if (m.getAnnotation(NormalExpression.Calculate.class) != null) {
-        if (calculateMethodVar != null) {
-          throw new IllegalArgumentException("Class " + expressionClass.getName() +
-              " has more than one method with " +
-              NormalExpression.Calculate.class.getName() + " annotation");
-        }
-        calculateMethodVar = m;
-      }
-      if (m.getAnnotation(NormalExpression.DependencyGetter.class) != null) {
-        dependencyMethods.add(m);
-      }
-    }
-    if (calculateMethodVar == null) {
-      throw new IllegalArgumentException("Failed to found Class method with " +
-          NormalExpression.Calculate.class.getName() + " annotation in " +
-          expressionClass.getName());
-    }
-    final Method calculateMethod = calculateMethodVar;
-    Type methodReturnType = calculateMethod.getGenericReturnType();
-
-    // Method is typically in anonymous class. Making it accessible is required.
-    calculateMethod.setAccessible(true);
-
-    // Prepare handling method return value (it's either a plain value or an optional wrapper).
-    abstract class ReturnValueHandler {
-      abstract Optional<? extends RES> castResult(Object resultObject);
-    }
-
-    final ReturnValueHandler returnValueHandler;
-
-    if (methodReturnType.equals(expressionType)) {
-      returnValueHandler = new ReturnValueHandler() {
-        Optional<? extends RES> castResult(Object resultObject) {
-          // Return type in interface is RES.
-          // Type cast has been proven to be correct.
-          return createOptional((RES) resultObject);
-        }
-      };
-    } else {
-      tryUnwrapOptional: {
-        if (methodReturnType instanceof ParameterizedType) {
-          ParameterizedType parameterizedType = (ParameterizedType) methodReturnType;
-          if (parameterizedType.getRawType() == Optional.class) {
-            Type optionalParam = parameterizedType.getActualTypeArguments()[0];
-            boolean okToCast = false;
-            if (optionalParam instanceof WildcardType) {
-              WildcardType wildcardType = (WildcardType) optionalParam;
-              if (wildcardType.getUpperBounds()[0].equals(expressionType)) {
-                okToCast = true;
-              }
-            } else if (optionalParam.equals(expressionType)) {
-              okToCast = true;
-            }
-            if (okToCast) {
-              returnValueHandler = new ReturnValueHandler() {
-                Optional<? extends RES> castResult(Object resultObject) {
-                  // Return type in interface is optional wrapper around RES.
-                  // Type cast has been proven to be correct.
-                  return (Optional<? extends RES>) resultObject;
-                }
-              };
-              break tryUnwrapOptional;
-            }
-          }
-        }
-        throw new IllegalArgumentException("Wrong return type " + methodReturnType +
-            ", expected: " + expressionType);
-      }
-    }
-
-    // Check that dependencies correspond to "calculate" method arguments.
-    Type[] methodParamTypes = calculateMethod.getGenericParameterTypes();
-    if (methodParamTypes.length != dependencyMethods.size()) {
-      throw new IllegalArgumentException("Wrong number of agruments in calculate method " +
-          calculateMethod);
-    }
-    // We depend on methods being ordered in Java reflection.
-    for (int i = 0; i < methodParamTypes.length; i++) {
-      Method depMethod = dependencyMethods.get(i);
-      try {
-        if (depMethod.getParameterTypes().length != 0) {
-          throw new IllegalArgumentException("Dependency method should not have arguments");
-        }
-        Type depType = depMethod.getGenericReturnType();
-        if (depType instanceof ParameterizedType == false) {
-          throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
-        }
-        ParameterizedType depParameterizedType = (ParameterizedType) depType;
-        if (depParameterizedType.getRawType() != ValueSource.class) {
-          throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
-        }
-        // Method is typically in anonymous class. Making it accessible is required.
-        depMethod.setAccessible(true);
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("Failed to process method " + depMethod, e);
-      }
-    }
-
-    // Create implementation that will call methods via reflection.
-    return new Gettable<Optional<? extends RES>>() {
-      @Override
-      public Optional<? extends RES> getValue() {
-        Object[] params = new Object[dependencyMethods.size()];
-        Set<Message> errors = null;
-        for (int i = 0; i < params.length; i++) {
-          Object sourceObject;
-          try {
-            sourceObject = dependencyMethods.get(i).invoke(expression);
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-          }
-          ValueSource<? extends Optional<?>> source =
-              (ValueSource<? extends Optional<?>>) sourceObject;
-          Optional<?> optionalValue = source.getValue();
-          if (optionalValue.isNormal()) {
-            params[i] = optionalValue.getNormal();
-          } else {
-            if (errors == null) {
-              errors = new LinkedHashSet<Message>(0);
-            }
-            errors.addAll(optionalValue.errorMessages());
-          }
-        }
-        if (errors == null) {
-          Object result;
-          try {
-            result = calculateMethod.invoke(expression, params);
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-          }
-          return returnValueHandler.castResult(result);
-        } else {
-          return createErrorOptional(errors);
-        }
-      }
-    };
+    return NORMAL_EXPRESSION_WRAPPER.handleErrors(expression);
   }
 
   public static ValueSource<? extends Optional<?>>[] dependencies(
@@ -832,8 +664,6 @@ public class DialogUtils {
         messages.addAll(result.errorMessages());
       }
       dialogElements.getOkButton().setEnabled(enabled);
-      String errorMessage;
-      int type;
       Message visibleMessage = chooseImportantMessage(messages);
       dialogElements.setMessage(visibleMessage.getText(),
           visibleMessage.getPriority().getMessageProviderType());
@@ -1184,6 +1014,224 @@ public class DialogUtils {
         return null;
       }
       return switcher.getOuterScope();
+    }
+  }
+
+  private static NormalExpressionWrapper NORMAL_EXPRESSION_WRAPPER = new NormalExpressionWrapper();
+
+  private static class NormalExpressionWrapper {
+    private final Map<Class<?>, GettableFactory<?>> classToFactoryMap =
+        new HashMap<Class<?>, GettableFactory<?>>();
+
+    <RES> Gettable<Optional<? extends RES>> handleErrors(
+        NormalExpression<RES> expression) {
+      return getFactoryForExpression(expression).create(expression);
+    }
+
+    private <RES> GettableFactory<RES> getFactoryForExpression(NormalExpression<RES> expression) {
+      Class<? extends NormalExpression> expressionClass = expression.getClass();
+
+      GettableFactory<?> factory = classToFactoryMap.get(expressionClass);
+      if (factory == null) {
+        factory = createFactory(expressionClass);
+        classToFactoryMap.put(expressionClass, factory);
+      }
+
+      // This should be safe, we created factory by this class.
+      return (GettableFactory<RES>) factory;
+    }
+
+    /**
+     * This method is static and needs a class only. Virtually I may be called even
+     * on build time (e.g. to check that the class implementating {@link NormalExpression}
+     * is consistent).
+     */
+    private static <RES> GettableFactory<RES> createFactory(
+        Class<? extends NormalExpression> expressionClass) {
+      // All reflection checks are done in generic-aware API generation.
+
+      // Read generic NormalExpression type parameter of expression class.
+      Type expressionType;
+      {
+        ParameterizedType normalExpressionType = null;
+        for (Type inter : expressionClass.getGenericInterfaces()) {
+          if (inter instanceof ParameterizedType == false) {
+            continue;
+          }
+          ParameterizedType parameterizedType = (ParameterizedType) inter;
+          if (!parameterizedType.getRawType().equals(NormalExpression.class)) {
+            continue;
+          }
+          normalExpressionType = parameterizedType;
+        }
+        if (normalExpressionType == null) {
+          throw new IllegalArgumentException("Expression does not directly implement " +
+              NormalExpression.class.getName());
+        }
+        expressionType = normalExpressionType.getActualTypeArguments()[0];
+      }
+
+      // Read all methods of expression class and choose annotated ones.
+      Method calculateMethod = null;
+      final List<Method> dependencyMethods = new ArrayList<Method>(2);
+      for (Method m : expressionClass.getMethods()) {
+        if (m.getAnnotation(NormalExpression.Calculate.class) != null) {
+          if (calculateMethod != null) {
+            throw new IllegalArgumentException("Class " + expressionClass.getName() +
+                " has more than one method with " +
+                NormalExpression.Calculate.class.getName() + " annotation");
+          }
+          calculateMethod = m;
+        }
+        if (m.getAnnotation(NormalExpression.DependencyGetter.class) != null) {
+          dependencyMethods.add(m);
+        }
+      }
+      if (calculateMethod == null) {
+        throw new IllegalArgumentException("Failed to found Class method with " +
+            NormalExpression.Calculate.class.getName() + " annotation in " +
+            expressionClass.getName());
+      }
+
+      Type methodReturnType = calculateMethod.getGenericReturnType();
+
+      // Method is typically in anonymous class. Making it accessible is required.
+      calculateMethod.setAccessible(true);
+
+      // Prepare handling method return value (it's either a plain value or an optional wrapper).
+      final ReturnValueHandler<RES> returnValueHandler;
+
+      if (methodReturnType.equals(expressionType)) {
+        returnValueHandler = new ReturnValueHandler<RES>() {
+          Optional<? extends RES> castResult(Object resultObject) {
+            // Return type in interface is RES.
+            // Type cast has been proven to be correct.
+            return createOptional((RES) resultObject);
+          }
+        };
+      } else {
+        tryUnwrapOptional: {
+          if (methodReturnType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) methodReturnType;
+            if (parameterizedType.getRawType() == Optional.class) {
+              Type optionalParam = parameterizedType.getActualTypeArguments()[0];
+              boolean okToCast = false;
+              if (optionalParam instanceof WildcardType) {
+                WildcardType wildcardType = (WildcardType) optionalParam;
+                if (wildcardType.getUpperBounds()[0].equals(expressionType)) {
+                  okToCast = true;
+                }
+              } else if (optionalParam.equals(expressionType)) {
+                okToCast = true;
+              }
+              if (okToCast) {
+                returnValueHandler = new ReturnValueHandler<RES>() {
+                  Optional<? extends RES> castResult(Object resultObject) {
+                    // Return type in interface is optional wrapper around RES.
+                    // Type cast has been proven to be correct.
+                    return (Optional<? extends RES>) resultObject;
+                  }
+                };
+                break tryUnwrapOptional;
+              }
+            }
+          }
+          throw new IllegalArgumentException("Wrong return type " + methodReturnType +
+              ", expected: " + expressionType);
+        }
+      }
+
+      // Check that dependencies correspond to "calculate" method arguments.
+      Type[] methodParamTypes = calculateMethod.getGenericParameterTypes();
+      if (methodParamTypes.length != dependencyMethods.size()) {
+        throw new IllegalArgumentException("Wrong number of agruments in calculate method " +
+            calculateMethod);
+      }
+      // We depend on methods being ordered in Java reflection.
+      for (int i = 0; i < methodParamTypes.length; i++) {
+        Method depMethod = dependencyMethods.get(i);
+        try {
+          if (depMethod.getParameterTypes().length != 0) {
+            throw new IllegalArgumentException("Dependency method should not have arguments");
+          }
+          Type depType = depMethod.getGenericReturnType();
+          if (depType instanceof ParameterizedType == false) {
+            throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
+          }
+          ParameterizedType depParameterizedType = (ParameterizedType) depType;
+          if (depParameterizedType.getRawType() != ValueSource.class) {
+            throw new IllegalArgumentException("Dependency has wrong return type: " + depType);
+          }
+          // Method is typically in anonymous class. Making it accessible is required.
+          depMethod.setAccessible(true);
+        } catch (IllegalArgumentException e) {
+          throw new IllegalArgumentException("Failed to process method " + depMethod, e);
+        }
+      }
+
+      return new GettableFactory<RES>(dependencyMethods, returnValueHandler, calculateMethod);
+    }
+
+    private static class GettableFactory<RES> {
+      private final List<Method> dependencyMethods;
+      private final ReturnValueHandler<RES> returnValueHandler;
+      private final Method calculateMethod;
+
+      GettableFactory(List<Method> dependencyMethods, ReturnValueHandler<RES> returnValueHandler,
+          Method calculateMethod) {
+        this.dependencyMethods = dependencyMethods;
+        this.returnValueHandler = returnValueHandler;
+        this.calculateMethod = calculateMethod;
+      }
+
+      Gettable<Optional<? extends RES>> create(final NormalExpression<RES> expression) {
+        // Create implementation that will call methods via reflection.
+        return new Gettable<Optional<? extends RES>>() {
+          @Override
+          public Optional<? extends RES> getValue() {
+            Object[] params = new Object[dependencyMethods.size()];
+            Set<Message> errors = null;
+            for (int i = 0; i < params.length; i++) {
+              Object sourceObject;
+              try {
+                sourceObject = dependencyMethods.get(i).invoke(expression);
+              } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+              } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+              }
+              ValueSource<? extends Optional<?>> source =
+                  (ValueSource<? extends Optional<?>>) sourceObject;
+              Optional<?> optionalValue = source.getValue();
+              if (optionalValue.isNormal()) {
+                params[i] = optionalValue.getNormal();
+              } else {
+                if (errors == null) {
+                  errors = new LinkedHashSet<Message>(0);
+                }
+                errors.addAll(optionalValue.errorMessages());
+              }
+            }
+            if (errors == null) {
+              Object result;
+              try {
+                result = calculateMethod.invoke(expression, params);
+              } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+              } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+              }
+              return returnValueHandler.castResult(result);
+            } else {
+              return createErrorOptional(errors);
+            }
+          }
+        };
+      }
+    }
+
+    private static abstract class ReturnValueHandler<T> {
+      abstract Optional<? extends T> castResult(Object resultObject);
     }
   }
 }
