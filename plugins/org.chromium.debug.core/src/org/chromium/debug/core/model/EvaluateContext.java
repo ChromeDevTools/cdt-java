@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsEvaluateContext;
 
 /**
@@ -24,5 +25,9 @@ public class EvaluateContext {
 
   public DebugTargetImpl getDebugTarget() {
     return debugTargetImpl;
+  }
+
+  public DebugContext getDebugContext() {
+    return jsEvaluateContext.getDebugContext();
   }
 }

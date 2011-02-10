@@ -62,7 +62,7 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     this.connection = connection;
     this.handshaker = handshaker;
     V8CommandOutputImpl v8CommandOutput = new V8CommandOutputImpl(connection);
-    this.debugSession = new DebugSession(sessionManager, CONTEXT_FILTER, v8CommandOutput);
+    this.debugSession = new DebugSession(sessionManager, CONTEXT_FILTER, v8CommandOutput, this);
   }
 
   public void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException {

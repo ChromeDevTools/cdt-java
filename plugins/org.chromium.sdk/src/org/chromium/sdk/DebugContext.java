@@ -107,4 +107,9 @@ public interface DebugContext {
    * @return evaluate context for evaluating expressions in global scope
    */
   JsEvaluateContext getGlobalEvaluateContext();
+
+  /**
+   * @return {@link JavascriptVm} instance this context was created for
+   */
+  JavascriptVm getJavascriptVm();
 }

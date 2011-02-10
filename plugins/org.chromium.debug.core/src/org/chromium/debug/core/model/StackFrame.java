@@ -43,6 +43,8 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
 
   private final CallFrame stackFrame;
 
+  private final EvaluateContext evaluateContext;
+
   private IVariable[] variables;
 
   private volatile CachedUserPosition userCachedSourcePosition = null;
@@ -59,6 +61,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     super(debugTarget);
     this.thread = thread;
     this.stackFrame = stackFrame;
+    this.evaluateContext = new EvaluateContext(stackFrame.getEvaluateContext(), debugTarget);
   }
 
   public CallFrame getCallFrame() {
@@ -72,7 +75,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
       try {
-        variables = wrapScopes(getDebugTarget(), stackFrame.getVariableScopes(),
+        variables = wrapScopes(evaluateContext, stackFrame.getVariableScopes(),
             stackFrame.getReceiverVariable());
       } catch (RuntimeException e) {
         // We shouldn't throw RuntimeException from here, because calling
@@ -85,7 +88,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
   }
 
   static IVariable[] wrapVariables(
-      DebugTargetImpl debugTarget, Collection<? extends JsVariable> jsVars,
+      EvaluateContext evaluateContext, Collection<? extends JsVariable> jsVars,
       Set<? extends String> propertyNameBlackList,
       Collection <? extends JsVariable> jsInternalProperties) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
@@ -93,34 +96,35 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       if (propertyNameBlackList.contains(jsVar.getName())) {
         continue;
       }
-      vars.add(new Variable(debugTarget, jsVar, false));
+      vars.add(new Variable(evaluateContext, jsVar, false));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
     if (jsInternalProperties != null) {
       for (JsVariable jsMetaVar : jsInternalProperties) {
-        vars.add(new Variable(debugTarget, jsMetaVar, true));
+        vars.add(new Variable(evaluateContext, jsMetaVar, true));
       }
     }
     return vars.toArray(new IVariable[vars.size()]);
   }
 
-  static IVariable[] wrapScopes(DebugTargetImpl debugTarget, List<? extends JsScope> jsScopes,
+  static IVariable[] wrapScopes(EvaluateContext evaluateContext, List<? extends JsScope> jsScopes,
       JsVariable receiverVariable) {
     List<Variable> vars = new ArrayList<Variable>();
 
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(new Variable(debugTarget, receiverVariable, false));
+          vars.add(new Variable(evaluateContext, receiverVariable, false));
           receiverVariable = null;
         }
-        vars.add(new Variable(debugTarget, wrapScopeAsVariable(scope), false));
+        vars.add(new Variable(evaluateContext, wrapScopeAsVariable(scope, evaluateContext),
+            false));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
-          vars.add(new Variable(debugTarget, var, false));
+          vars.add(new Variable(evaluateContext, var, false));
         }
         int endPos = vars.size();
         List<Variable> sublist = vars.subList(startPos, endPos);
@@ -128,7 +132,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       }
     }
     if (receiverVariable != null) {
-      vars.add(new Variable(debugTarget, receiverVariable, false));
+      vars.add(new Variable(evaluateContext, receiverVariable, false));
     }
 
     IVariable[] result = new IVariable[vars.size()];
@@ -139,7 +143,8 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return result;
   }
 
-  private static JsVariable wrapScopeAsVariable(final JsScope jsScope) {
+  private static JsVariable wrapScopeAsVariable(final JsScope jsScope,
+      EvaluateContext evaluateContext) {
     class ScopeObjectVariable implements JsVariable, JsObject {
       public String getFullyQualifiedName() {
         return getName();
@@ -360,7 +365,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       if (debugContext == null) {
         return null;
       }
-      return new EvaluateContext(getCallFrame().getEvaluateContext(), getDebugTarget());
+      return evaluateContext;
     }
     return super.getAdapter(adapter);
   }

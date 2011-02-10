@@ -22,6 +22,7 @@ public class Variable extends DebugElementImpl implements IVariable {
 
   private final JsVariable variable;
   private final AtomicReference<Value> valueRef = new AtomicReference<Value>(null);
+  private final EvaluateContext evaluateContext;
 
   /**
    * Specifies whether this variable is internal property (__proto__ etc).
@@ -29,9 +30,11 @@ public class Variable extends DebugElementImpl implements IVariable {
    */
   private final boolean isInternalProperty;
 
-  public Variable(DebugTargetImpl debugTarget, JsVariable variable, boolean isInternalProperty) {
-    super(debugTarget);
+  public Variable(EvaluateContext evaluateContext, JsVariable variable,
+      boolean isInternalProperty) {
+    super(evaluateContext.getDebugTarget());
     this.variable = variable;
+    this.evaluateContext = evaluateContext;
     this.isInternalProperty = isInternalProperty;
   }
 
@@ -60,7 +63,7 @@ public class Variable extends DebugElementImpl implements IVariable {
     if (value == null) {
       return null;
     }
-    return Value.create(getDebugTarget(), value);
+    return Value.create(evaluateContext, value);
   }
 
   public boolean hasValueChanged() throws DebugException {

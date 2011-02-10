@@ -134,8 +134,8 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
         (EvaluateContext) contextImpl.getAdapter(EvaluateContext.class);
     if (evaluateContext == null) {
       listener.watchEvaluationFinished(new BadWatchExpressionResult(
-          new DebugException(
-              new Status(Status.ERROR, ChromiumDebugUIPlugin.PLUGIN_ID, "Bad debug context")), //$NON-NLS-1$
+          new DebugException(new Status(Status.ERROR,
+              ChromiumDebugUIPlugin.PLUGIN_ID,"Bad debug context")), //$NON-NLS-1$
           expression));
       return;
     }
@@ -144,7 +144,7 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
         expression,
         new JsEvaluateContext.EvaluateCallback() {
           public void success(JsVariable variable) {
-            final Variable var = new Variable(contextImpl.getDebugTarget(), variable, false);
+            final Variable var = new Variable(evaluateContext, variable, false);
             listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
           }
 

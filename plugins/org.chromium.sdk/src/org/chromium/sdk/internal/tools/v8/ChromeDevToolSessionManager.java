@@ -130,7 +130,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     this.browserTabImpl = browserTabImpl;
     this.toolOutput = toolOutput;
     V8CommandOutputImpl v8MessageOutput = new V8CommandOutputImpl(toolOutput);
-    this.debugSession = new DebugSession(this, CONTEXT_FILTER, v8MessageOutput);
+    this.debugSession = new DebugSession(this, CONTEXT_FILTER, v8MessageOutput, browserTabImpl);
   }
 
   public DebugSession getDebugSession() {

@@ -67,8 +67,7 @@ public abstract class LoadFullValueAction implements IObjectActionDelegate,
       return null;
     }
     final Value value = wrapper.getValue();
-
-    if (!value.isTruncated()) {
+    if (value == null || !value.isTruncated()) {
       return null;
     }
     return new Runnable() {
