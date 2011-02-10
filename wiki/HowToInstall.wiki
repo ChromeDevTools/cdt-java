@@ -2,9 +2,11 @@
 
 = Eclipse Debugger =
 
-*Update site* is at http://chromedevtools.googlecode.com/svn/update/dev/. Additionally "update site in zip archive" is available on "Downloads" page.
+  * *Update site* is at http://chromedevtools.googlecode.com/svn/update/dev/. Note that Eclipse may take a chance updating other plugins at this occurrence. If this takes too long, it is recommended to temporary disable other update sites (use "Available Software Sites" preferences page).
 
-Install "Chromium !JavaScript Remote Debugger" feature.
+  * *Update site in zip archive* is available on "Downloads" page.
+
+Install "Chromium !JavaScript Remote Debugger" feature. If you have JSDT installed in your Eclipse, additional feature "Chromium !JavaScript Debugger Bridge to JSDT" is also recommended.
 
 = SDK library alone =
 
