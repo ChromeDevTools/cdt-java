@@ -264,20 +264,15 @@ abstract class SourceNameMapperContainerDialogLogic {
     updater.addDependency(resultValue, containerFactoryButtonValue);
 
     // Represents controller that updates state of OK button and error messages.
-    OkButtonControl okButtonControl = new OkButtonControl(resultValue, warningSources, elements);
+    final OkButtonControl<Result> okButtonControl =
+        new OkButtonControl<Result>(resultValue, warningSources, elements);
     updater.addConsumer(rootScope, okButtonControl);
     updater.addDependency(okButtonControl, okButtonControl.getDependencies());
 
     return new SourceNameMapperContainerDialogLogic() {
       @Override
       Result getResult() {
-        Optional<Result> optional = resultValue.getValue();
-        if (optional.isNormal()) {
-          return optional.getNormal();
-        } else {
-          // Normally should not be reachable, because UI should have disabled OK button.
-          return null;
-        }
+        return okButtonControl.getNormalValue();
       }
       @Override
       void updateAll() {

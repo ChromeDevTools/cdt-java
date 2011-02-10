@@ -13,6 +13,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
@@ -57,12 +58,15 @@ public class DebugSession {
 
   private final DefaultResponseHandler defaultResponseHandler;
 
+  private final JavascriptVm javascriptVm;
+
   private volatile Version vmVersion = null;
 
   public DebugSession(DebugSessionManager sessionManager, V8ContextFilter contextFilter,
-      V8CommandOutput v8CommandOutput) {
+      V8CommandOutput v8CommandOutput, JavascriptVm javascriptVm) {
     this.scriptManager = new ScriptManager(contextFilter, this);
     this.sessionManager = sessionManager;
+    this.javascriptVm = javascriptVm;
     this.breakpointManager = new BreakpointManager(this);
 
     this.defaultResponseHandler = new DefaultResponseHandler(this);
@@ -97,6 +101,10 @@ public class DebugSession {
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback) {
     v8CommandProcessor.sendV8CommandAsync(message, isImmediate,
         commandCallback, syncCallback);
+  }
+
+  JavascriptVm getJavascriptVm() {
+    return javascriptVm;
   }
 
   Version getVmVersion() {

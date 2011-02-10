@@ -27,11 +27,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 /**
  * A small set of utility classes that help programming dialog window logic.
@@ -212,6 +216,7 @@ public class DialogUtils {
         en.setValue(Boolean.TRUE);
       }
       update();
+      rootScope.processDisabledNested();
     }
 
     /**
@@ -343,6 +348,8 @@ public class DialogUtils {
   public interface SwitchBase<T> {
     Scope addScope(T tag, ScopeEnabler scopeEnabler);
     ValueConsumer getValueConsumer();
+    Updater getUpdater();
+    Scope getOuterScope();
   }
 
   /**
@@ -626,12 +633,12 @@ public class DialogUtils {
    * 1 result value and several warning sources. From its sources it decides whether
    * OK button should be enabled and also provides dialog messages (errors, warnings, infos).
    */
-  public static class OkButtonControl implements ValueConsumer {
-    private final ValueSource<? extends Optional<?>> resultSource;
+  public static class OkButtonControl<T> implements ValueConsumer {
+    private final ValueSource<? extends Optional<? extends T>> resultSource;
     private final List<? extends ValueSource<String>> warningSources;
     private final DialogElements dialogElements;
 
-    public OkButtonControl(ValueSource<? extends Optional<?>> resultSource,
+    public OkButtonControl(ValueSource<? extends Optional<? extends T>> resultSource,
         List<? extends ValueSource<String>> warningSources, DialogElements dialogElements) {
       this.resultSource = resultSource;
       this.warningSources = warningSources;
@@ -652,8 +659,9 @@ public class DialogUtils {
       Optional<?> result = resultSource.getValue();
       List<Message> messages = new ArrayList<Message>();
       for (ValueSource<String> warningSource : warningSources) {
-        if (warningSource.getValue() != null) {
-          messages.add(new Message(warningSource.getValue(), MessagePriority.WARNING));
+        String warningValue = warningSource.getValue();
+        if (warningValue != null) {
+          messages.add(new Message(warningValue, MessagePriority.WARNING));
         }
       }
       boolean enabled;
@@ -667,6 +675,15 @@ public class DialogUtils {
       Message visibleMessage = chooseImportantMessage(messages);
       dialogElements.setMessage(visibleMessage.getText(),
           visibleMessage.getPriority().getMessageProviderType());
+    }
+
+    public T getNormalValue() {
+      Optional<? extends T> optional = resultSource.getValue();
+      if (optional.isNormal()) {
+        return optional.getNormal();
+      } else {
+        return null;
+      }
     }
 
   }
@@ -738,6 +755,40 @@ public class DialogUtils {
     };
   }
 
+  /**
+   * Adds a standard modify listener to a text element that binds it to updater.
+   */
+  public static void addModifyListener(Text textElement, final ValueSource<?> valueSource,
+      final Updater updater) {
+    ModifyListener listener = new ModifyListener() {
+      public void modifyText(ModifyEvent e) {
+        updater.reportChanged(valueSource);
+        updater.update();
+      }
+    };
+    textElement.addModifyListener(listener);
+  }
+
+  /**
+   * Adds a standard modify listener to a button that binds it to updater.
+   */
+  public static void addModifyListener(Button button, final ValueSource<?> valueSource,
+      final Updater updater) {
+    SelectionListener listener = new SelectionListener() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        updater.reportChanged(valueSource);
+        updater.update();
+      }
+      @Override
+      public void widgetDefaultSelected(SelectionEvent e) {
+        updater.reportChanged(valueSource);
+        updater.update();
+      }
+    };
+    button.addSelectionListener(listener);
+  }
+
 
   /*
    * Part 4. Implementation stuff.
@@ -782,8 +833,13 @@ public class DialogUtils {
       return currentScope;
     }
 
+    public Updater getUpdater() {
+      return outerScope.getUpdater();
+    }
+
     SwitcherBaseImpl(ScopeImpl outerScope) {
       this.outerScope = outerScope;
+      this.outerScope.nestedSwitchers.add(this);
     }
 
     public Scope addScope(T tag, ScopeEnabler scopeEnabler) {
@@ -799,7 +855,7 @@ public class DialogUtils {
       return consumer;
     }
 
-    ScopeImpl getOuterScope() {
+    public ScopeImpl getOuterScope() {
       return outerScope;
     }
 
@@ -817,6 +873,17 @@ public class DialogUtils {
         i++;
       }
       return result;
+    }
+
+    void processDisabledScopes() {
+      for (ScopeImpl scope : innerScopes.values()) {
+        if (scope != currentScope) {
+          if (scope.scopeEnabler != null) {
+            scope.scopeEnabler.setEnabled(false, false);
+          }
+        }
+        scope.processDisabledNested();
+      }
     }
   }
 
@@ -955,6 +1022,8 @@ public class DialogUtils {
 
     private final Set<ValueConsumer> delayedConsumers = new HashSet<ValueConsumer>(0);
 
+    private final List<SwitcherBaseImpl<?>> nestedSwitchers = new ArrayList<SwitcherBaseImpl<?>>(1);
+
     ScopeImpl(Updater updater) {
       this(null, null, updater);
     }
@@ -1014,6 +1083,12 @@ public class DialogUtils {
         return null;
       }
       return switcher.getOuterScope();
+    }
+
+    void processDisabledNested() {
+      for (SwitcherBaseImpl<?> switcher : nestedSwitchers) {
+        switcher.processDisabledScopes();
+      }
     }
   }
 

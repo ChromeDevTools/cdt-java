@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8CommandSender;
@@ -49,4 +50,6 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
   }
 
   ValueLoader getValueLoader();
+
+  DebugContext getUserContext();
 }

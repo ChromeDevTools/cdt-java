@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.CallFrame;
+import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
@@ -160,6 +161,10 @@ public class CallFrameImpl implements CallFrame {
     @Override
     public InternalContext getInternalContext() {
       return context;
+    }
+    @Override
+    public DebugContext getDebugContext() {
+      return context.getUserContext();
     }
   };
 

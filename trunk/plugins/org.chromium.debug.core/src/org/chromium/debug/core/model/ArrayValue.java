@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsArray;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IIndexedValue;
@@ -21,13 +22,13 @@ public class ArrayValue extends Value implements IIndexedValue {
 
   private final AtomicReference<IVariable[]> elementsRef = new AtomicReference<IVariable[]>(null);
 
-  public ArrayValue(DebugTargetImpl debugTarget, JsArray array) {
-    super(debugTarget, array);
+  public ArrayValue(EvaluateContext evaluateContext, JsArray array) {
+    super(evaluateContext, array);
   }
 
   private IVariable[] createElements() {
     JsArray jsArray = (JsArray) getJsValue();
-    return StackFrame.wrapVariables(getDebugTarget(), jsArray.getProperties(),
+    return StackFrame.wrapVariables(getEvaluateContext(), jsArray.getProperties(),
         ARRAY_HIDDEN_PROPERTY_NAMES,
         // Do not show internal properties for arrays (this may be an option).
         null);

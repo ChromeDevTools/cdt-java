@@ -13,6 +13,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -167,6 +168,11 @@ public class ContextBuilder {
 
     public ContextBuilder getContextBuilder() {
       return ContextBuilder.this;
+    }
+
+    @Override
+    public DebugContext getUserContext() {
+      return context;
     }
 
     void assertValid() {
@@ -325,6 +331,11 @@ public class ContextBuilder {
         sendMessageAsyncAndInvalidate(message, commandCallback, true, null);
       }
 
+      @Override
+      public JavascriptVm getJavascriptVm() {
+        return debugSession.getJavascriptVm();
+      }
+
       /**
        * Behaves as continue but does not send any messages to remote VM.
        * This brings ContextBuilder to state when we are about to build a new context.
@@ -350,6 +361,10 @@ public class ContextBuilder {
         @Override
         public InternalContext getInternalContext() {
           return PreContext.this;
+        }
+        @Override
+        public DebugContext getDebugContext() {
+          return UserContext.this;
         }
       };
     }

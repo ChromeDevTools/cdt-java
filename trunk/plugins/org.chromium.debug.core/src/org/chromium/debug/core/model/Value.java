@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
+import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
@@ -37,18 +38,21 @@ public class Value extends DebugElementImpl implements IValue {
 
   private IVariable[] variables;
 
+  private final EvaluateContext evaluateContext;
+
   private final DetailBuilder detailBuilder = new DetailBuilder();
 
-  public static Value create(DebugTargetImpl debugTarget, JsValue value) {
+  public static Value create(EvaluateContext evaluateContext, JsValue value) {
     if (JsValue.Type.TYPE_ARRAY == value.getType()) {
-      return new ArrayValue(debugTarget, (JsArray) value);
+      return new ArrayValue(evaluateContext, (JsArray) value);
     }
-    return new Value(debugTarget, value);
+    return new Value(evaluateContext, value);
   }
 
-  Value(DebugTargetImpl debugTarget, JsValue value) {
-    super(debugTarget);
+  Value(EvaluateContext evaluateContext, JsValue value) {
+    super(evaluateContext.getDebugTarget());
     this.value = value;
+    this.evaluateContext = evaluateContext;
   }
 
   public String getReferenceTypeName() throws DebugException {
@@ -70,7 +74,7 @@ public class Value extends DebugElementImpl implements IValue {
     try {
       if (variables == null) {
         if (value.asObject() != null) {
-          variables = StackFrame.wrapVariables(getDebugTarget(),
+          variables = StackFrame.wrapVariables(evaluateContext,
               value.asObject().getProperties(), Collections.<String>emptySet(),
               value.asObject().getInternalProperties());
         } else {
@@ -96,6 +100,10 @@ public class Value extends DebugElementImpl implements IValue {
 
   public JsValue getJsValue() {
     return value;
+  }
+
+  public EvaluateContext getEvaluateContext() {
+    return evaluateContext;
   }
 
   /**

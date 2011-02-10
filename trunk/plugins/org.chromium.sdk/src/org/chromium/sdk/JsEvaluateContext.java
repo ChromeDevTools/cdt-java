@@ -49,4 +49,9 @@ public interface JsEvaluateContext {
    */
   void evaluateAsync(String expression, EvaluateCallback evaluateCallback,
       SyncCallback syncCallback);
+
+  /**
+   * @return {@link DebugContext} this {@link JsEvaluateContext} was created within
+   */
+  DebugContext getDebugContext();
 }
