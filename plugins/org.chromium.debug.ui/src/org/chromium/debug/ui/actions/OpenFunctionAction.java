@@ -16,7 +16,6 @@ import org.chromium.debug.ui.editors.JsEditor;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
 import org.eclipse.core.resources.IFile;
@@ -37,7 +36,6 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -62,7 +60,7 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     }
   }
 
-  interface VariableWrapper {
+  public interface VariableWrapper {
     Value getValue();
     IDebugElement getDebugElement();
     DebugTargetImpl getDebugTarget();
@@ -220,12 +218,12 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     return elementHandler.castElement(element);
   }
 
-  static abstract class ElementHandler {
-    protected abstract VariableWrapper castElement(Object element);
+  public static abstract class ElementHandler {
+    public abstract VariableWrapper castElement(Object element);
   }
 
-  static final ElementHandler VARIABLE_VIEW_ELEMENT_HANDLER = new ElementHandler() {
-    @Override protected VariableWrapper castElement(Object element) {
+  public static final ElementHandler VARIABLE_VIEW_ELEMENT_HANDLER = new ElementHandler() {
+    @Override public VariableWrapper castElement(Object element) {
       if (element instanceof Variable == false) {
         return null;
       }
@@ -243,8 +241,8 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
       };
     }
   };
-  static final ElementHandler EXPRESSION_VIEW_ELEMENT_HANDLER = new ElementHandler() {
-    @Override protected VariableWrapper castElement(Object element) {
+  public static final ElementHandler EXPRESSION_VIEW_ELEMENT_HANDLER = new ElementHandler() {
+    @Override public VariableWrapper castElement(Object element) {
       if (element instanceof IWatchExpression == false) {
         return null;
       }

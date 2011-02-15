@@ -252,6 +252,13 @@
                enablesFor="1"
                id="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable">
          </action>
+         <action
+               label="%PinPointValueAction.label"
+               class="org.chromium.debug.ui.actions.pinpoint.PinPointValueAction$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PinPointValueAction$ForVariable">
+         </action>
       </objectContribution>
       <objectContribution
             objectClass="org.eclipse.debug.core.model.IWatchExpression"
@@ -269,6 +276,13 @@
                menubarPath="emptyNavigationGroup"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression">
+         </action>
+         <action
+               label="%PinPointValueAction.label"
+               class="org.chromium.debug.ui.actions.pinpoint.PinPointValueAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PinPointValueAction$ForExpression">
          </action>
       </objectContribution>
 
