@@ -22,7 +22,7 @@ import org.eclipse.ui.IWorkbenchPart;
  * This class implements all methods of {@link IObjectActionDelegate} and {@link IActionDelegate2}.
  * @param <S> user type for data that is read from selection
  */
-abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IActionDelegate2 {
+public abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IActionDelegate2 {
 
   /**
    * Base class for actions that are enabled only for a single element in selection.
@@ -30,7 +30,7 @@ abstract class SelectionBasedAction<S> implements IObjectActionDelegate, IAction
    * to a custom type T. Action optionally may allow selections with more than 1 object,
    * but it is required that only a single object is filtered out.
    */
-  static abstract class Single<T> extends SelectionBasedAction<T> {
+  public static abstract class Single<T> extends SelectionBasedAction<T> {
     private final boolean allowMutipleSelection;
 
     /**
