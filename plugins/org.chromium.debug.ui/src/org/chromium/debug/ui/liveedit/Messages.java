@@ -18,6 +18,7 @@ public class Messages extends NLS {
   public static String LiveEditResultDialog_TITLE;
   public static String PreviewLoader_FAILED_TO_GET;
   public static String PreviewLoader_FAILED_TO_LOAD;
+  public static String PreviewLoader_WAITING_FOR_DIFF;
   public static String PushChangesWizard_CHANGED_SCRIPT;
   public static String PushChangesWizard_CHOOSE_VM;
   public static String PushChangesWizard_CHOOSE_VM_DESCRIPTION;
