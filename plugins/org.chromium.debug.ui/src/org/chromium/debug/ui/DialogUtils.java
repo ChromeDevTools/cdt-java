@@ -8,9 +8,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
@@ -624,6 +627,48 @@ public class DialogUtils {
   }
 
 
+  /**
+   * Annotates variable getter methods in interfaces that are used in
+   * {@link #mergeBranchVariables} methods.
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public @interface BranchVariableGetter {}
+
+  /**
+   * For output variables from several branches of switch creates merged variables that
+   * could be used outside of the switch. Variables are provided and returned in form
+   * of interface VARIABLES.
+   * @param <VARIABLES> an interface that should consist only of no-param getters with
+   *   {@link BranchVariableGetter} annotation that return ValueSource<...> types;
+   *   must not be a generic type
+   * @param switcher the variables get merged from
+   * @param branches output variables of all switch branches; should be in the same
+   *     order branches (aka scopes) are added to the switch
+   * @return variable sources that could be used outside switch branches
+   */
+  public static <VARIABLES> VARIABLES mergeBranchVariables(Class<VARIABLES> variablesType,
+      Switcher<?> switcher, VARIABLES ... branches) {
+    return VARIABLE_MERGER_CACHE.mergeBranches(variablesType, switcher, branches);
+  }
+
+  /**
+   * For output variables from several branches of switch creates merged variables that
+   * could be used outside of the switch. Variables are provided and returned in form
+   * of interface VARIABLES.
+   * @param <VARIABLES> an interface that should consist only of no-param getters with
+   *   {@link BranchVariableGetter} annotation that return
+   *   ValueSource< [? extends] Optional < ... > > types; must not be a generic type
+   * @param switcher the variables get merged from
+   * @param branches output variables of all switch branches; should be in the same
+   *     order branches (aka scopes) are added to the switch
+   * @return variable sources that could be used outside switch branches
+   */
+  public static <VARIABLES> VARIABLES mergeBranchVariables(Class<VARIABLES> variablesType,
+      OptionalSwitcher<?> switcher, VARIABLES ... branches) {
+    return OPTIONAL_VARIABLE_MERGER_CACHE.mergeBranches(variablesType, switcher, branches);
+  }
+
   /*
    * Part 3. Various utils.
    */
@@ -711,6 +756,7 @@ public class DialogUtils {
           }
         }
       };
+
   /**
    * A basic access to elements of the dialog window from dialog logic part. The user may extend
    * this interface with more elements.
@@ -788,7 +834,6 @@ public class DialogUtils {
     };
     button.addSelectionListener(listener);
   }
-
 
   /*
    * Part 4. Implementation stuff.
@@ -1309,4 +1354,225 @@ public class DialogUtils {
       abstract Optional<? extends T> castResult(Object resultObject);
     }
   }
+
+  /**
+   * A reflection-based merger that merges output variables
+   * via {@link Switcher#createMerge(ValueSource...)} and
+   * {@link OptionalSwitcher#createOptionalMerge(ValueSource...)} methods.
+   * @param <SW> particular type of switcher (either simple or optional)
+   */
+  private static abstract class ScopeMergerBase<SW extends SwitchBase<?>> {
+    private final Map<Class<?>, Factory<SW, ?>> cache = new HashMap<Class<?>, Factory<SW, ?>>();
+
+    <VARIABLES> VARIABLES mergeBranches(Class<VARIABLES> variablesType, SW switcher,
+        VARIABLES ... branches) {
+      Factory<SW, VARIABLES> factory = (Factory<SW, VARIABLES>) cache.get(variablesType);
+      if (factory == null) {
+        factory = createFactory(variablesType);
+        cache.put(variablesType, factory);
+      }
+
+      try {
+        return factory.create(switcher, branches);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      } catch (InvocationTargetException e) {
+        throw new RuntimeException(e);
+      } catch (SecurityException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private interface Factory<S, V> {
+      V create(S switcher, V ... branches) throws IllegalAccessException,
+          InvocationTargetException, SecurityException, NoSuchMethodException;
+    }
+
+    /**
+     * Analyzes class via reflection and prepares dynamic proxy structure for future instantiation.
+     */
+    private <VARIABLES> Factory<SW, VARIABLES> createFactory(
+        final Class<VARIABLES> variablesType) {
+      if (variablesType.getTypeParameters().length != 0) {
+        // It's more difficult to implement parameterized types.
+        // We have to make sure that parameter types are the same for all instances.
+        throw new IllegalArgumentException("Type should not be parameterized");
+      }
+
+      final List<Method> getterMethods = new ArrayList<Method>();
+      final Map<Method, Integer> methodToPosition = new HashMap<Method, Integer>();
+
+      for (Method m : variablesType.getDeclaredMethods()) {
+        if (m.getAnnotation(BranchVariableGetter.class) == null) {
+          throw new IllegalArgumentException("Method "+ m + " should have " +
+              BranchVariableGetter.class.getName() + " annotation");
+        }
+        if (m.getParameterTypes().length != 0) {
+          throw new IllegalArgumentException("Method "+ m + " should have no parameters");
+        }
+        Type returnType = m.getGenericReturnType();
+        try {
+          if (returnType instanceof ParameterizedType == false) {
+            throw new IllegalArgumentException("Method should return parameterized type " +
+                ValueSource.class);
+          }
+          ParameterizedType parameterizedType = (ParameterizedType) returnType;
+          if (parameterizedType.getRawType() != ValueSource.class) {
+            throw new IllegalArgumentException("Method should return parameterized type " +
+                ValueSource.class);
+          }
+          checkGetterType(parameterizedType.getActualTypeArguments()[0]);
+        } catch (IllegalArgumentException e) {
+          throw new IllegalArgumentException("Method "+ m + " has wrong return type", e);
+        }
+        int position = getterMethods.size();
+        getterMethods.add(m);
+        methodToPosition.put(m, position);
+      }
+      Class<?> proxyClass = Proxy.getProxyClass(this.getClass().getClassLoader(), variablesType);
+      final Constructor<?> constructor;
+      try {
+        constructor = proxyClass.getConstructor(InvocationHandler.class);
+      } catch (SecurityException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException(e);
+      }
+
+      return new Factory<SW, VARIABLES>() {
+        @Override
+        public VARIABLES create(SW switcher, VARIABLES... branches) throws IllegalAccessException,
+            InvocationTargetException, SecurityException, NoSuchMethodException {
+          final ValueSource<?> [] dataArray = new ValueSource<?>[getterMethods.size()];
+          for (int i = 0; i < dataArray.length; i++) {
+            ValueSource<?> [] allBranchesSources = new ValueSource<?>[branches.length];
+            Method interfaceGetter = getterMethods.get(i);
+            for (int j = 0; j < allBranchesSources.length; j++) {
+              if (branches[j] == null) {
+                allBranchesSources[j] = createConstant(null, switcher.getUpdater());
+              } else {
+                Method classGetter = branches[j].getClass().getMethod(interfaceGetter.getName(),
+                    interfaceGetter.getParameterTypes());
+                classGetter.setAccessible(true);
+                allBranchesSources[j] = (ValueSource<?>) classGetter.invoke(branches[j]);
+              }
+            }
+            dataArray[i] = createValueMerger(switcher, allBranchesSources);
+          }
+
+          InvocationHandler invocationHandler = new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args)
+                throws Throwable {
+              if (OBJECT_METHODS.contains(method)) {
+                return method.invoke(this, args);
+              }
+              Integer position = methodToPosition.get(method);
+              if (position == null) {
+                throw new RuntimeException("Unknown method: " + method);
+              }
+              return dataArray[position];
+            }
+            @Override
+            public String toString() {
+              return "*Merged:" + variablesType;
+            }
+          };
+          Object resultInstance;
+          try {
+            resultInstance = constructor.newInstance(invocationHandler);
+          } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+          }
+          return (VARIABLES) resultInstance;
+        }
+      };
+    }
+
+    // Switcher-specific method.
+    protected abstract ValueSource<?> createValueMerger(SW switcher,
+        ValueSource<?>[] allCasesSources);
+
+    protected abstract void checkGetterType(Type valueSourceParamType);
+
+    private static final Set<Method> OBJECT_METHODS;
+    static {
+      OBJECT_METHODS = new HashSet<Method>();
+      try {
+        OBJECT_METHODS.add(Object.class.getMethod("toString"));
+        OBJECT_METHODS.add(Object.class.getMethod("equals", Object.class));
+        OBJECT_METHODS.add(Object.class.getMethod("hashCode"));
+      } catch (SecurityException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  /**
+   * Merger specialization for simple switcher.
+   */
+  private static class ScopeMerger extends ScopeMergerBase<Switcher<?>> {
+    protected ValueSource<?> createValueMerger(Switcher<?> switcher,
+        ValueSource<?>[] allCasesSources) {
+      return switcher.createMerge(allCasesSources);
+    }
+
+    /**
+     * Getter must return ValueSource< ... >.
+     */
+    @Override
+    protected void checkGetterType(Type valueSourceParamType) {
+      // Nothing to do.
+    }
+  }
+
+  /**
+   * Merger specialization for optional switcher.
+   */
+  private static class OptionalScopeMerger extends ScopeMergerBase<OptionalSwitcher<?>> {
+    protected ValueSource<?> createValueMerger(OptionalSwitcher<?> switcher,
+        ValueSource<?>[] allCasesSources) {
+      // It's ok, we check method return type via reflection.
+      ValueSource<? extends Optional<?>>[] castedSources =
+          (ValueSource<? extends Optional<?>>[]) allCasesSources;
+      return switcher.createOptionalMerge(castedSources);
+    }
+
+    /**
+     * Getter must return ValueSource< [? extends ] Optional<...> >.
+     */
+    @Override
+    protected void checkGetterType(Type valueSourceParamType) {
+      Type innerParameter;
+      if (valueSourceParamType instanceof WildcardType) {
+        WildcardType wildcardType = (WildcardType) valueSourceParamType;
+        innerParameter = wildcardType.getUpperBounds()[0];
+        if (innerParameter == null) {
+          throw new IllegalArgumentException("Method should return parameterized type " +
+              ValueSource.class + " with Optional parameter type");
+        }
+      } else {
+        innerParameter = valueSourceParamType;
+      }
+      Type innerParameterRawType;
+      if (innerParameter instanceof ParameterizedType) {
+        ParameterizedType innerParameterParameterizedType = (ParameterizedType) innerParameter;
+        innerParameterRawType = innerParameterParameterizedType.getRawType();
+      } else {
+        innerParameterRawType = innerParameter;
+      }
+      if (!innerParameterRawType.equals(Optional.class)) {
+        throw new IllegalArgumentException("Method should return parameterized type " +
+            ValueSource.class + " with Optional parameter type");
+      }
+    }
+  }
+
+  private static final ScopeMerger VARIABLE_MERGER_CACHE = new ScopeMerger();
+  private static final OptionalScopeMerger OPTIONAL_VARIABLE_MERGER_CACHE =
+      new OptionalScopeMerger();
 }

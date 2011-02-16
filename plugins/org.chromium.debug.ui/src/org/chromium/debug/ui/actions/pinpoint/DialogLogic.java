@@ -10,6 +10,7 @@ import static org.chromium.debug.ui.DialogUtils.createErrorOptional;
 import static org.chromium.debug.ui.DialogUtils.createOptional;
 import static org.chromium.debug.ui.DialogUtils.createProcessor;
 import static org.chromium.debug.ui.DialogUtils.handleErrors;
+import static org.chromium.debug.ui.DialogUtils.mergeBranchVariables;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.DialogUtils;
+import org.chromium.debug.ui.DialogUtils.BranchVariableGetter;
 import org.chromium.debug.ui.DialogUtils.Gettable;
 import org.chromium.debug.ui.DialogUtils.Message;
 import org.chromium.debug.ui.DialogUtils.MessagePriority;
@@ -247,7 +249,7 @@ class DialogLogic {
    */
   private interface PreviewSwitchOutput {
     /** A warning that preview block may emit. */
-    ValueSource<String> warningSource();
+    @BranchVariableGetter ValueSource<String> warningSource();
   }
 
   /**
@@ -271,22 +273,15 @@ class DialogLogic {
 
     // Switch branch that corresponds to disabled preview.
     switcher.addScope(Boolean.FALSE, null);
-    final ValueSource<String> nullWarningMerged = createConstant(null, updater);
-    PreviewSwitchOutput noCheckDisplayCase = new PreviewSwitchOutput() {
-      @Override
-      public ValueSource<String> warningSource() {
-        return nullWarningMerged;
-      }
-    };
 
     // Two branches merge their output.
-    final ValueSource<String> warningMerged =
-        switcher.createMerge(checkDisplayCase.warningSource(), noCheckDisplayCase.warningSource());
+    final PreviewSwitchOutput mergedOutput = mergeBranchVariables(PreviewSwitchOutput.class,
+        switcher, checkDisplayCase, null);
 
     return new PreviewSwitchOutput() {
       @Override
       public ValueSource<String> warningSource() {
-        return warningMerged;
+        return mergedOutput.warningSource();
       }
     };
   }

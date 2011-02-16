@@ -4,14 +4,28 @@
 
 package org.chromium.debug.ui.liveedit;
 
-import static org.chromium.debug.ui.DialogUtils.*;
+import static org.chromium.debug.ui.DialogUtils.createConstant;
+import static org.chromium.debug.ui.DialogUtils.createErrorOptional;
+import static org.chromium.debug.ui.DialogUtils.createOptional;
+import static org.chromium.debug.ui.DialogUtils.createProcessor;
+import static org.chromium.debug.ui.DialogUtils.handleErrors;
 
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ScriptTargetMapping;
-import org.chromium.debug.ui.DialogUtils.*;
+import org.chromium.debug.ui.DialogUtils;
+import org.chromium.debug.ui.DialogUtils.BranchVariableGetter;
+import org.chromium.debug.ui.DialogUtils.Gettable;
+import org.chromium.debug.ui.DialogUtils.Message;
+import org.chromium.debug.ui.DialogUtils.MessagePriority;
+import org.chromium.debug.ui.DialogUtils.NormalExpression;
 import org.chromium.debug.ui.DialogUtils.Optional;
+import org.chromium.debug.ui.DialogUtils.OptionalSwitcher;
+import org.chromium.debug.ui.DialogUtils.Scope;
+import org.chromium.debug.ui.DialogUtils.ScopeEnabler;
+import org.chromium.debug.ui.DialogUtils.Updater;
+import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueProcessor;
 import org.chromium.debug.ui.DialogUtils.ValueSource;
 import org.chromium.debug.ui.WizardUtils.LogicBasedWizard;
@@ -122,15 +136,8 @@ class WizardLogicBuilder {
     final PreviewAndOptionPath multipleVmPath =
         createMultipleVmPath(chooseVmPage, singleVmSelectedSwitch, selectedVmValue);
 
-    // 2 merges for output values of 2 paths. Only the value from active path is effective.
-    final ValueSource<? extends Optional<? extends FinisherDelegate>> wizardFinisherDelegateValue =
-        singleVmSelectedSwitch.createOptionalMerge(singleVmPath.getFinisherDelegateValue(),
-            multipleVmPath.getFinisherDelegateValue());
-
-    ValueSource<? extends Optional<? extends Void>> warningValue =
-        singleVmSelectedSwitch.createOptionalMerge(singleVmPath.getWarningValue(),
-            multipleVmPath.getWarningValue());
-
+    final PreviewAndOptionPath switchBlockItems = DialogUtils.mergeBranchVariables(
+        PreviewAndOptionPath.class, singleVmSelectedSwitch, singleVmPath, multipleVmPath);
 
     // A simple value converter that wraps wizard delegate as UI-aware wizard finisher.
     ValueProcessor<Optional<? extends WizardFinisher>> finisherValue =
@@ -142,19 +149,19 @@ class WizardLogicBuilder {
               @DependencyGetter
               public ValueSource<? extends Optional<? extends FinisherDelegate>>
                   getWizardFinisherDelegateSource() {
-                return wizardFinisherDelegateValue;
+                return switchBlockItems.getFinisherDelegateValue();
               }
             }));
     updater.addConsumer(scope, finisherValue);
     updater.addSource(scope, finisherValue);
-    updater.addDependency(finisherValue, wizardFinisherDelegateValue);
+    updater.addDependency(finisherValue, switchBlockItems.getFinisherDelegateValue());
 
     // A controller that ties finisher value and other warnings to a wizard UI.
     WizardFinishController finishController =
-        new WizardFinishController(finisherValue, warningValue, wizardImpl);
+        new WizardFinishController(finisherValue, switchBlockItems.getWarningValue(), wizardImpl);
     updater.addConsumer(scope, finishController);
-    updater.addDependency(finishController, wizardFinisherDelegateValue);
-    updater.addDependency(finishController, warningValue);
+    updater.addDependency(finishController, switchBlockItems.getFinisherDelegateValue());
+    updater.addDependency(finishController, switchBlockItems.getWarningValue());
 
     return new WizardLogic() {
       public void updateAll() {
@@ -175,7 +182,10 @@ class WizardLogicBuilder {
    * return additional warning messages.
    */
   private interface PreviewAndOptionPath {
+    @BranchVariableGetter
     ValueSource<? extends Optional<? extends FinisherDelegate>> getFinisherDelegateValue();
+
+    @BranchVariableGetter
     ValueSource<Optional<Void>> getWarningValue();
   }
 
