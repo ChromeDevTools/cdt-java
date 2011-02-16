@@ -38,9 +38,12 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
       return;
     }
 
-    String host = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_HOST, (String) null);
 
-    int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, -1);
+    String host = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_HOST,
+        PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_HOST));
+
+    int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT,
+        PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT));
 
     if (host == null && port == -1) {
       throw new RuntimeException("Missing parameters in launch config");
