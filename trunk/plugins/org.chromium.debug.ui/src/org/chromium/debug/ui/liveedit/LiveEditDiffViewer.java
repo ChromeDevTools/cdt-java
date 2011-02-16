@@ -32,6 +32,8 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.FontMetrics;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
@@ -124,6 +126,17 @@ public class LiveEditDiffViewer {
 
   private LiveEditDiffViewer(Composite parent, Configuration configuration) {
     colors = new Colors(parent.getDisplay());
+
+    FontMetrics defaultFontMetrics;
+    {
+      GC gc = new GC(parent.getDisplay());
+      try {
+        defaultFontMetrics = gc.getFontMetrics();
+      } finally {
+        gc.dispose();
+      }
+    }
+
     Composite composite = new Composite(parent, SWT.NONE);
     {
       composite.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -146,9 +159,8 @@ public class LiveEditDiffViewer {
     Composite fourCells = new Composite(composite, SWT.NONE);
     {
       GridData gd = new GridData(GridData.FILL_BOTH);
-      // TODO(peter.rybin): fix magic number.
-      gd.heightHint = 500;
-      gd.widthHint = 600;
+      gd.heightHint = defaultFontMetrics.getHeight() * 30;
+      gd.widthHint = defaultFontMetrics.getAverageCharWidth() * 85;
       fourCells.setLayoutData(gd);
       FillLayout fillLayout = new FillLayout();
       fillLayout.type = SWT.VERTICAL;
@@ -183,11 +195,14 @@ public class LiveEditDiffViewer {
         new SourceViewer(sourcePairComposite, null, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
     sourceViewerRight.getTextWidget().setEditable(false);
 
-    functionStatusText = createTextField(composite);
     {
+      functionStatusText = new Text(composite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+      Display display = composite.getDisplay();
+      functionStatusText.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+
       GridData gd = new GridData(GridData.FILL_BOTH);
-      // TODO(peter.rybin): fix magic number.
-      gd.heightHint = 90;
+      gd.minimumHeight = defaultFontMetrics.getHeight() * 3;
+      gd.heightHint = gd.minimumHeight;
       gd.grabExcessHorizontalSpace = true;
       gd.horizontalAlignment = GridData.FILL;
       functionStatusText.setLayoutData(gd);
@@ -250,13 +265,6 @@ public class LiveEditDiffViewer {
       this.treeViewer = treeViewer;
       this.sourceViewer = sourceViewer;
     }
-  }
-
-  private static Text createTextField(Composite parent) {
-    Text valueText = new Text(parent, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
-    Display display = parent.getDisplay();
-    valueText.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
-    return valueText;
   }
 
   private void handleDispose(DisposeEvent event) {

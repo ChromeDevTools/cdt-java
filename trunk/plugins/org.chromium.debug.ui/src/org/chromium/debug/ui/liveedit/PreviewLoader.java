@@ -153,7 +153,8 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
     }
   }
 
-  private static final Optional<UpdatableScript.ChangeDescription> NO_DATA = createOptional(null);
+  private static final Optional<UpdatableScript.ChangeDescription> NO_DATA = createErrorOptional(
+      new Message(Messages.PreviewLoader_WAITING_FOR_DIFF, MessagePriority.NONE));
   private static final Optional<UpdatableScript.ChangeDescription> EMPTY_DATA =
       createErrorOptional(new Message(Messages.PreviewLoader_FAILED_TO_LOAD, MessagePriority.NONE));
 }
