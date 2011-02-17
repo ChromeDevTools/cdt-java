@@ -1,0 +1,15 @@
+#summary upcoming release 0.2.2 notes
+
+=Google Chrome Developer Tools for Java. Release 0.2.2.=
+
+
+This release succeeds the [Release_0_2_0 release 0.2.0].
+
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.4 minimum, Eclipse 3.5 and Eclipse 3.6 are tested. ||
+|| *Java:* || J2SE-1.6 or newer. ||
+
+Optional:
+|| *JSDT version:* ||  1.0 or newer. ||
