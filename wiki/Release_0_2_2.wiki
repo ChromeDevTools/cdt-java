@@ -12,7 +12,7 @@ In some cases exploring variables might get much easier with string representati
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-string-representation.png
 
-For all primitive values JavaScript pre-defines their string representation. For objects it is defined by programmer (like on the picture above) and usually it is mostly used for debugging purposes. Programme only has to add “toString” object method that returns string (much like in Java). Method “toString” is also good for debug print.
+For all primitive values !JavaScript pre-defines their string representation. For objects it is defined by programmer (like on the picture above) and usually it is mostly used for debugging purposes. Programme only has to add “toString” object method that returns string (much like in Java). Method “toString” is also good for debug print.
 
 ==Host/Port==
 It was actually one of the oldest requests – to allow connections to any remote host instead of compulsory localhost. Note that in practice this doesn't make a lot of changes, because both Chrome and V8 will deny non-local connections (for security reasons). Anyway this is now made possible on Debugger side:
@@ -33,7 +33,7 @@ This would save your value in a global object and you can access the it at any t
 Some time later you can look how this object has changed its data or compare it with what “getManager()” returns now: simply check expression {{{“my_debug_save.manager1 === getManager()”}}}.
 
 ==Breakpoint Types==
-Eclipse IDE may host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own a new breakpoint? Eclipse provides a UI for this case and it is now supported by ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu Run->Breakpoint Types->Chrome/V8 breakpoints.
+Eclipse IDE may host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own a new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu Run->Breakpoint Types->Chrome/V8 breakpoints.
 
 
 ==System Requirements==
