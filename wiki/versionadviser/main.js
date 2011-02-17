@@ -298,6 +298,9 @@ var adviserImpl = (function() {
 			return new UseReport(mergedRange, this.comment);
 		}
 	};
+	UseReport.prototype.toString = function() {
+		return "UseReport<" + this.range + " : " + this.comment + ">";
+	};
 	UseReport.getTableHeaderHtml = function(handlers) {
 		return "<tr><th>Version of " + handlers.opposite().fromName
 				+ " </th><th>Status</th><th>Comments</th></tr>\n";

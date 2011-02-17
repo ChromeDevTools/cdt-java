@@ -328,6 +328,164 @@
   </div>
 </div>
 
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+
+
+<div class="dialogwindow">
+  <div class="dialogtitle">
+    Debug Configurations
+  </div>
+  <div  style="width: 16em;"></div>
+
+  <div class="windowbody">
+    <div style="width: 32em;"></div>
+    <table style="width: 100%">
+      <tr>
+        <td style="border-right: solid thin; vertical-align: top; padding-right: 0.6em;">
+          <img src="new_con.gif">
+          <img src="copy_edit_co.gif">
+          <img src="rem_co.gif">
+          <li>Chromium JavaScript</li>
+          <div style="display: inline; padding-left: 2em;">localhost site 9222</div>
+          <li>Standalone V8 VM</li>
+        </td>
+        <td style="vertical-align: top; padding-left: 0.3em;">
+          <div style="padding-left: 0.2em; padding-top: 0.1em;">
+            <table>
+              <td>Name:</td>
+              <td style="width: 100%">
+              <div style="display: block;" class="inputfield">site foo 9222&nbsp;</div>
+              </td>
+            </table>
+          </div>
+          <div style="height: 0.5em;"></div>
+          <div>
+            <table class="tabs">
+              <td class="tabhead"><b>Remote</b></td>
+              <td class="tabhead">Source</td>
+              <td class="tabhead">Common</td>
+              <td  class="tabemptyhead"></td>
+            </table>
+          </div>
+          <div style="height: 0.5em;"></div>
+          Connection
+          <div style="padding: 0 10px 0 0.5em;">
+            Host:
+            <div style="display: block; margin-left: 0; width: 100%;" class="inputfield">foo.intranet</div>
+            Port:
+            <div style="display: block; margin-left: 0; width: 100%;" class="inputfield">9222</div>
+            &#x2610;Show debugger network communication console
+          </div>
+          <div style="height: 0.7em;"></div>
+          Breakpoint sync on launch
+          <div style="padding: 0 0 0 0.5em;">
+            &#x26ab; Merge local and remote breakpoints
+            <br>&#x26aa; Reset breakpoints on remote
+            <br>&#x26aa; None
+          </div>
+
+          <div style="height: 2em;"></div>
+          <div class="buttonarea">
+            <div class="button">Apply</div>
+            <div class="button">Revert</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+  <div style="height: 0.6em;"></div>
+  <div class="buttonarea">
+    <div class="button">Debug</div>
+    <div class="button">Close</div>
+  </div>
+</div>
+
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+<table style="border: solid thin; border-collapse: collapse">
+  <tr>
+    <td>
+      <table class="tabs">
+        <td class="tabhead">Variables</td>
+        <td class="tabhead">Breakpoints</td>
+        <td class="tabhead"><b>Expression</b></td>
+        <td  class="tabemptyhead"><div style="width: 4em;"></div></td>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="border: solid thin; padding: 0;">
+      <table width="100%" style="border-collapse: collapse">
+        <tr>
+          <td style="border-bottom: solid thin">Name<div style="width: 10em;"></div></td>
+          <td style="border-left: solid thin; border-bottom: solid thin">Value</td>
+        </tr>
+        <tr>
+          <td style="padding: 0.2em">&#x229e "[1, 2]"</td><td>[Array] (id=41)</td>
+        </tr>
+        <tr>
+          <td style="padding: 0.2em">&#x229e "this"</td><td>[global] (id=54)
+        </tr>
+        <tr>
+          <td style="padding: 0.2em"><div style="border: dashed
+              thin">&#x229e "getManager()"</div></td><td>[Object] (id=48)
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="border: solid thin; padding: 0.4em">
+      <i>[Manager: state=idle, id=24]</i><br>
+      <div style="height: 3em;"></div>
+    </td>
+  </tr>
+</table>
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+
+
+
+
+<div class="dialogwindow">
+  <div class="dialogtitle">
+    Pin-Point Current Value
+  </div>
+  <div  style="width: 16em;"></div>
+
+  <div class="windowbody">
+    Choose a property of the global object (possibly nested):
+    <p>
+    <table style="border-collapse: collapse">
+      <tr>
+        <td>&lt;global&gt;</td>
+        <td><div class="inputfield">.my_debug_save.manager1<div style="width: 25em"></div></div></td></tr></table>
+    <p>
+    &#x2610; Preview:
+    <p>
+    &#x2610; Add watch expression
+    <div style="height: 0.5em;"></div>
+  </div>
+  <div class="buttonarea">
+    <div class="button">OK</div>
+    <div class="button">Cancel</div>
+  </div>
+</div>
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+
 
 
 
