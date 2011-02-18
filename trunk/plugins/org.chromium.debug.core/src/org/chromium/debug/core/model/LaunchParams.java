@@ -40,7 +40,7 @@ public class LaunchParams {
 
     public String getDirectionStringValue() {
       if (direction == null) {
-        return null;
+        return "";
       } else {
         return direction.toString();
       }
@@ -80,7 +80,7 @@ public class LaunchParams {
 
   private static int findBreakpointOptionRaw(String optionText) {
     Direction direction;
-    if (optionText == null) {
+    if (optionText == null || optionText.length() == 0) {
       direction = null;
     } else {
       try {
