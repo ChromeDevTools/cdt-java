@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Google Chrome Developer Tools Breakpoints Tutorial</title>
+</head>
+<script type="text/javascript" src="script.js"></script>
+<script type="text/javascript">function f() {}</script>
+<body>
+<style>
+body {
+  font-family: Arial, Verdana, sans-serif;
+  font: normal normal normal 10pt/ normal Arial, sans-serif;
+}
+
+#content {
+  width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.test-element {
+  border: solid 2px;
+  padding: 5px;
+  margin: 5px;
+  text-align: center;
+}
+
+img.ui {
+  border: 0px;
+  position: relative;
+  top: 3px;
+}
+
+.source-code {
+  font-family: monospace;
+}
+</style>
+
+<div id="content"><a href="http://www.chromium.org/devtools">Google
+Chrome Developer Tools</a> &gt;
+<h1>Google Chrome Developer Tools Breakpoints Tutorial</h1>
+<p>This tutorial covers debugging JavaScript using regular breakpoints set on JavaScript code
+and breakpoints targeted at UI and network aspects of an application.
+
+<h3><b>Table of Contents</b></h3>
+<ul>
+  <li><a href="#regular">Regular JavaScript Breakpoints</a></li>
+  <li><a href="#dom">Breakpoints on DOM Mutation Events</a></li>
+  <li><a href="#xhr">Breakpoints on XHR</a></li>
+  <li><a href="#eventListener">Breakpoints on JavaScript Event
+  Listeners</a></li>
+  <li><a href="#moreInformation">More Information</a></li>  
+</ul>
+</p>
+
+<h3><b>Before You Start</b></h3>
+<p>If you are a Web Developer and want to get the latest version of
+Developer Tools, you should use the Google Chrome release from the <a
+  href="http://dev.chromium.org/getting-involved/dev-channel">Developer
+Channel</a>. You'll need Google Chrome 9.0.587.0 or later to work through all
+examples in this tutorial.</p>
+
+<h3><b>How to Access the Developer Tools</b></h3>
+<p>To access the Developer Tools select the <b>Wrench menu</b> <img
+  class="ui" src="images/wrench.png" /> at the top-right of your browser
+window, then select <b>Tools </b>-&gt; <b>Developer tools</b>, or use the <b>Control-Shift-I</b>
+shortcut.</p>
+
+<h3><b>How to Use Scripts Panel</b></h3>
+<p>To access the <b>Scripts</b> panel select <b>Scripts</b> icon on the
+Developer Tools window.</p>
+<br><img src=images/scriptsPanel.png></img><br><br> The 
+<b>Scripts</b> panel allows you to see all the scripts that are part of the
+inspected page. History buttons, a drop-down list, and standard controls to
+pause, resume, and step through code are provided below the panel selection
+icons. A button to force a pause at exceptions is located at the bottom of the
+window.
+
+<h1><a name="regular">Regular JavaScript Breakpoints</a></h1>
+<ol>
+  <li>Open the Developer Tools by hitting the <b>Control-Shift-I</b>
+  shortcut</li>
+  <li>Open <b>Scripts</b> panel and select "script.js" from scripts
+  drop-down</li>
+  <li>Set breakpoint on line 19 by clicking the line gutter (you can use
+  the <b>Control-G</b> shortcut to reveal a line in a large file)</li>
+  <li>Move your mouse over this page</li>
+  <li>You should stop on the breakpoint</li>
+  <li>Hover over the source code to inspect local and global variables,
+  function arguments etc.</li>
+  <li>Delete the breakpoint by clicking the blue tag breakpoint indicator</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnBreakpoint.png></img><br><br>
+</ol>
+<p>All the breakpoints you have set appear under <b>Breakpoints</b> in the
+right-hand sidebar. Clicking on the entry jumps to the highlighted line in the
+source file. Once you have a breakpoint set, right click on the blue tag
+breakpoint indicator to set a conditional statement for that breakpoint. Type an
+expression and the breakpoint will only pause only if the condition is true.</p>
+
+<h3><b>Breakpoints in Dynamic JavaScript</b></h3>
+<ol>
+  <li>
+  <button id="loadDynamicScriptButton" onclick="loadDynamicScript()">Load
+  dynamic script</button>
+  </li>
+  <li>On <b>Scripts</b> panel select "dynamicScript.js" from scripts
+  drop-down and set breakpoint on line 2</li>
+  <li>
+  <button id="dynamicScriptFunctionButton" onclick="dynamicScriptFunction()"
+    disabled=true>Call function from dynamic script</button>
+  </li>
+  <li>You should stop on the breakpoint</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseInDynamicScript.png></img><br><br>
+</ol>
+<p>Notice the "<span class="source-code" style="color: #007400">//@
+sourceURL=dynamicScript.js</span>" line at the end of dynamicScript.js file, it gives a
+name to a script created with <span class="source-code">eval</span>.<br />
+Breakpoints can be set in dynamic JavaScript only if it has user supplied
+filename.</p>
+
+<h3><b>Pause on Next JavaScript Statement</b></h3>
+<ol>
+  <li>Click <b>Pause</b> <img class="ui" src="images/debuggerPause.png" />
+  button</li>
+  <li>Move your mouse over this page</li>
+  <li>You should stop in <span class="source-code">onMouseOver</span>
+  function</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnNextJavaScriptStatement.png></img><br><br>
+</ol>
+
+<h3><b>Pause on Exceptions</b></h3>
+<ol>
+  <li>Click <b>Pause on exceptions</b> <img class="ui"
+    src="images/pauseOnExceptionsButton.png" /> button at the bottom of the
+  window to switch to <b>Pause on all exceptions</b> mode</li>
+  <li>
+  <button onclick="raiseAndCatchException()">Raise exception!</button>
+  </li>
+  <li>You should stop in <span class="source-code">raiseAndCatchException</span>
+  function</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnException.png></img><br><br>
+</ol>
+
+<h3><b>Pause on Uncaught Exceptions</b></h3>
+<ol>
+  <li>Click <b>Pause on exceptions</b> <img class="ui"
+    src="images/pauseOnUncaughtExceptionsButton.png" /> button again to switch
+  to <b>Pause on uncaught exceptions</b> mode</li>
+  <li>
+  <button onclick="raiseAndCatchException()">Raise exception!</button>
+  </li>
+  <li>You should not stop in <span class="source-code">raiseAndCatchException</span>
+  function since exception is caught</li>
+  <li>
+  <button onclick="raiseException()">Raise uncaught exception!</button>
+  </li>
+  <li>You should stop in <span class="source-code">raiseException</span>
+  function</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnUncaughtException.png></img><br><br>
+</ol>
+
+<h1><a name="dom">Breakpoints on DOM Mutation Events</a></h1>
+<ol>
+  <li>Right click on "Parent Element" below and select <b>Inspect
+  Element</b> from context menu<br>
+  <div id="parent" class="test-element" style="width: 140px">Parent
+  Element</div>
+  </li>
+  <li>Right click on <b>Elements</b>' panel <b>&ltdiv id="parent"
+  ...&gt</b> element and select <b>Break on Subtree Modifications</b></li>
+  <li>
+  <button onclick="appendChildButtonClicked()">Append child!</button>
+  </li>
+  <li>You should stop on <span class="source-code">appendChild</span>
+  function call</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseInAppendChild.png></img><br><br>
+</ol>
+
+<h1><a name="xhr">Breakpoints on XHR</a></h1>
+<ol>
+  <li>Click <b>Add</b> <img class="ui" src="images/addButton.png" />
+  button on <b>XHR Breakpoints</b> sidebar pane on the right side of <b>Scripts</b>
+  panel</li>
+  <li>Type "data.txt" in text input and hit <b>enter</b></li>
+  <li>
+  <button onclick="retrieveData()">Retrieve data.txt by XHR</button>
+  </li>
+  <li>You should stop on <span class="source-code">send</span> function
+  call</li>
+  <li>Right-click on newly created breakpoint and select <b>Remove
+  Breakpoint</b> context menu item</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnXHR.png></img><br><br>
+</ol>
+<p>To edit URL filter, double click on XHR breakpoint entry in <b>XHR
+Breakpoints</b> sidebar pane. XHR breakpoint with empty URL filter will match any
+XHR.</p>
+
+<h1><a name="eventListener">Breakpoints on JavaScript Event Listeners</a></h1>
+<ol>
+  <li>Expand <b>Event Listener Breakpoints</b> sidebar pane on the right
+  side of <b>Scripts</b> panel</li>
+  <li>Expand <b>Mouse</b> entry</li>
+  <li>Set a <span class="source-code">mouseout</span> Event Listener
+  breakpoint by clicking on the checkbox near the <b>mouseout</b> entry</li>
+  <br><img src=images/setMouseOutEventListenerBreakpoint.png></img><br><br>
+  <li>Move your mouse across the box below:</li>
+  <div id="hoverme" class="test-element" style="width: 100px">Hover me!</div>
+  <li>You should stop on <span class="source-code">mouseout</span> event
+  handler</li>
+  <li>Click <b>Continue</b> <img class="ui"
+    src="images/debuggerContinue.png" /> button or hit <b>F8</b> in Developer
+  Tools window to resume</li>
+  <br><img src=images/pauseOnMouseOut.png></img><br><br>
+</ol>
+<h3><b>List of Supported Events</b></h3>
+<ol>
+  <li><b>Keyboard:</b> keydown, keypress, keyup, textInput</li>
+  <li><b>Mouse:</b> click, dblclick, mousedown, mouseup, mouseover,
+  mousemove, mouseout, mousewheel</li>
+  <li><b>Control:</b> resize, scroll, zoom, focus, blur, select, change,
+  submit, reset</li>
+  <li><b>Clipboard:</b> copy, cut, paste, beforecopy, beforecut,
+  beforepaste</li>
+  <li><b>Load:</b> load, unload, abort, error</li>
+  <li><b>DOM Mutation:</b> DOMActivate, DOMFocusIn, DOMFocusOut,
+  DOMAttrModified, DOMCharacterDataModified, DOMNodeInserted,
+  DOMNodeInsertedIntoDocument, DOMNodeRemoved, DOMNodeRemovedFromDocument,
+  DOMSubtreeModified, DOMContentLoaded</li>
+  <li><b>Device:</b> deviceorientation, devicemotion</li>
+</ol>
+
+<h1><a name="moreInformation">More Information</a></h1>
+<div>For more information, follow the links below:</div>
+<div>
+<ul>
+  <li><span
+    style="font-family: arial, sans-serif; border-collapse: collapse">If
+  you are using Developer Tools to debug Chrome extensions, you can watch <a
+    href="http://www.youtube.com/watch?v=IP0nMv_NI1s"
+    style="color: rgb(42, 93, 176)" target="_blank">this video</a> or go to <a
+    href="http://code.google.com/chrome/extensions/tut_debugging.html"
+    style="color: rgb(42, 93, 176)" target="_blank">this page</a>.</span></li>
+  <li>To join the Chromium developer discussion groups, see <a href="http://www.chromium.org/developers/discussion-groups">http://www.chromium.org/developers/discussion-groups</a>.</li>
+  <li>To get the Chromium Blog RSS feed, see <a href="http://blog.chromium.org/feeds/posts/default"><img border="0"
+    src="http://www.chromium.org/_/rsrc/1257444060505/devtools/feed-icon16x16.png" /></a>  
+    <a href="http://blog.chromium.org/feeds/posts/default" 
+    style="color: rgb(0, 51, 204); text-decoration: underline" target="_blank">RSS feed</a>.</li>
+  <li>To submit a bug or a feature request on Developer Tools, please use
+  issue tracker at <a href="http://crbug.com" rel="nofollow">http://crbug.com</a>.
+  Please also mention "DevTools" in the bug summary.</li>
+  <li>If you know for sure that the bug or a feature should be implemented
+  as a part of WebKit Web Inspector, please submit it at <a
+    href="http://webkit.org/new-inspector-bug" rel="nofollow">http://webkit.org/new-inspector-bug</a>.</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>

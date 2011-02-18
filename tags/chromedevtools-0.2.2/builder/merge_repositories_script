@@ -1,0 +1,22 @@
+#!/bin/bash
+
+ECLIPSE_DIR=<FILL ME>
+ECLIPSE_CMD="$ECLIPSE_DIR/eclipse -vm <FILL ME>"
+DEST=<FILL ME>
+CATEGORY_FILE=<FILL ME>
+V1_BASE=<FILL ME>
+V2_BASE=<FILL ME>
+
+ECLIPSE_CMD="$ECLIPSE_CMD -nosplash"
+
+$ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher \
+   -metadataRepository file:$DEST/repository  \
+   -artifactRepository file:$DEST/repository  \
+   -bundles $V1_BASE/plugins,$V2_BASE/plugins      \
+   -features $V1_BASE/features,$V2_BASE/features      \
+   -publishArtifacts
+
+$ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.CategoryPublisher \
+   -metadataRepository file:$DEST/repository \
+   -categoryDefinition file:$CATEGORY_FILE
+
