@@ -29,7 +29,7 @@ Sometimes it is important to grip a particular object and keep it for several de
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-pinpoint-dialog.png
 
-This would save your value in a global object and you can access the it at any time as “my_debug_save.manager1” (dialog window can also add such watch expression for you).
+This would save your value in a global object and you can access it at any time as “my_debug_save.manager1” (dialog window also offers adding such watch expression for you).
 Some time later you can look how this object has changed its data or compare it with what “getManager()” returns now: {{{“my_debug_save.manager1 === getManager()”}}}.
 
 ==Breakpoint Types==
