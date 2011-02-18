@@ -1,4 +1,4 @@
-#summary upcoming release 0.2.2 notes
+#summary release 0.2.2 notes
 
 =Google Chrome Developer Tools for Java. Release 0.2.2.=
 
