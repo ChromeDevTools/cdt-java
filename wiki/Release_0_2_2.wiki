@@ -8,7 +8,7 @@ This release succeeds the [Release_0_2_0 release 0.2.0].
 This release introduces several new Debugger features. The SDK changes back these features up accordingly.
 
 ==String Representation==
-In some cases exploring variables can get much easier with their values represented as strings. A single glance at {{{“[1, 2, 3, 4, 5, 6, 7, 8]”}}} seems be a much faster way to learn that the value is an array holding 8 numbers than expanding a tree node in the UI to see its children. This release introduces the string representation of variable values in Debugger.
+In some cases exploring variables can get much easier with their values represented as strings. A single glance at {{{“[1, 2, 3, 4, 5, 6, 7, 8]”}}} seems to be a much faster way to learn that the value is an array holding 8 numbers than expanding a tree node in the UI to see its children. This release introduces the string representation of variable values in Debugger.
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-string-representation.png
 
