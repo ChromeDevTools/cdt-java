@@ -38,7 +38,7 @@ The Eclipse IDE can host several different debuggers. Such configurations often 
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
-|| *Eclipse version:* ||  Eclipse 3.4 minimum, Eclipse 3.5 and Eclipse 3.6 are tested. ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 is tested. ||
 || *Java:* || J2SE-1.6 or newer. ||
 
 Optional:
