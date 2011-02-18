@@ -12,7 +12,7 @@ In some cases exploring variables might get much easier with string representati
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-string-representation.png
 
-For all primitive values !JavaScript pre-defines their string representation. For objects it is defined by programmer (like on the picture above) and usually it is mostly used for debugging purposes. Programmer only has to add “toString” object method (much like in Java). Method “toString” is also good for debug print.
+For all primitive values !JavaScript pre-defines their string representation. For objects it is defined by programmer (see the picture above) and usually it is used for debugging purposes. Programmer only has to add “toString” object method (much like in Java). Method “toString” is also good for debug print.
 
 ==Host/Port==
 It was actually one of the oldest requests – to allow connections to any remote host instead of compulsory {{{localhost}}}. Note that in practice this doesn't make a lot of changes, because both Chrome and V8 will deny non-local connections (for security reasons). Anyway this is now made possible on Debugger side:
@@ -25,7 +25,7 @@ nc -l <proxy_port> -c “nc localhost <port>”
 }}}
 
 ==Pin-Point Value==
-Sometimes it is important to grip a particular object and keep it for several debugger steps. E.g. you may be wondering whether some function “getManager” returns the same object all the time or the objects are different. Just get the value (select in Variables or Expressions view) and pin-point it, i.e. *save it as a property of the global object*. You can do this from context menu: “Pin-Point Value...”:
+Sometimes it is important to grip a particular object and keep it for several debugger steps. E.g. you may have a watch expression "getManager()" but do you know, whether it returns the same object all the time or the objects are different? Now you can select a value in Variables or Expressions view and _pin-point_ it, which means *save it as a property of the global object*. You can do this from context menu: “Pin-Point Value...”:
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-pinpoint-dialog.png
 
