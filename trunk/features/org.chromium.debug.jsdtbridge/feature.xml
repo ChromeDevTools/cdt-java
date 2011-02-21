@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.debug.jsdtbridge"
       label="%featureName"
-      version="0.2.2.qualifier"
+      version="0.2.3.qualifier"
       provider-name="%providerName">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/EclipseDebugger">
@@ -27,7 +27,7 @@
    </url>
 
    <requires>
-      <import feature="org.chromium.debug" version="0.2.2.qualifier"/>
+      <import feature="org.chromium.debug" version="0.2.3.qualifier"/>
    </requires>
 
    <plugin
