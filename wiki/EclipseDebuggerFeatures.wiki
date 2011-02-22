@@ -5,7 +5,7 @@
 
 =Highlights=
 
-==Debugging on Files That You Are Developing==
+==Debugging on Files That You Are Developing/Source Mapping==
 By default debugger downloads all scripts and puts them under a correspoindg VirtualProject.
 However you typically not only want to debug a code, but in parallel to fix or develop it. You may have all your script source files on the local machine and even have them open in Eclipse under some project. In this case it is especially useful to have debugger use that (working) copy of your scripts instead of scripts in temporary project; so that you edit the same files that you debug.
 
@@ -29,9 +29,7 @@ See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
 
 ==Breakpoints==
 ===Provisional Breakpoints===
-breakpoint can be set before script is loaded or before debugger is connected
-
-TBD
+Breakpoint can be set before script is loaded or before debugger is connected. Just set a breakpoint on a source in your regular project. This works when source mapping is configured for your debug launch.
 
 ===Break On Exception===
 A !JavaScript VM may be instructed to stop on each exception thrown. All exceptions fall into 2 groups:
