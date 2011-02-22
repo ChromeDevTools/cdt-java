@@ -21,3 +21,10 @@ TBD
 TBD
 ==Script live editing (experimental)==
 TBD
+
+==!ToString==
+In some cases exploring variables can get much easier with their values represented as strings. A single glance at {{{“[1, 2, 3, 4, 5, 6, 7, 8]”}}} seems to be a much faster way to learn that the value is an array holding 8 numbers than expanding a tree node in the UI to see its children.
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-tostring.png
+
+For all primitive values, !JavaScript pre-defines their string representations. You can define a string representation for your objects by implementing the “toString()” method on their prototypes, much like in Java (see the picture above).
