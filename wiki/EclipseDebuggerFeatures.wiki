@@ -28,3 +28,12 @@ In some cases exploring variables can get much easier with their values represen
 http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-tostring.png
 
 For all primitive values, !JavaScript pre-defines their string representations. You can define a string representation for your objects by implementing the “toString()” method on their prototypes, much like in Java (see the picture above).
+
+
+==Pin-Point Value==
+Sometimes it is important to grip a particular object and keep it for several debugger steps. For example, you may watch the {{{getManager()}}} expression, but do you know for sure if it returns the same object every time, or the objects returned are all different? Select a value in the Variables or Expressions view and _pin-point_ it, which means *save it as a property of the global object*. You can do this from the context menu: “Pin-Point Value...”:
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-pinpoint-dialog.png
+
+This will save your value in the global object, and you can access it at any time as {{{my_debug_save.manager1}}} (a dialog window also lets you add similar watch expressions.)
+Some time later you can see how this object has changed its data or compare it with what {{{getManager()}}} returns now: {{{my_debug_save.manager1 === getManager()}}}.
