@@ -1,0 +1,23 @@
+#summary Features of Eclipse Debugger.
+
+
+<wiki:toc max_depth="2" />
+
+==Breakpoints==
+breakpoint can be set before script is loaded or before debugger is connected 
+==Watches==
+TBD
+==Step in/over/out==
+TBD
+==Stack context when suspended==
+TBD
+==Mouse on-hover identifier evaluation==
+TBD
+==Text selection evaluation==
+TBD
+==Script sources in workspace files and downloaded from server==
+TBD
+==Exception events reported into the Error Log==
+TBD
+==Script live editing (experimental)==
+TBD
