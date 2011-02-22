@@ -3,6 +3,28 @@
 
 <wiki:toc max_depth="2" />
 
+==Debugging on Files That You Are Developing==
+By default debugger downloads all scripts and puts them under a correspoindg VirtualProject.
+However you typically not only want to debug a code, but in parallel to fix or develop it. You may have all your script source files on the local machine and even have them open in Eclipse under some project. In this case it is especially useful to have debugger use that (working) copy of your scripts instead of scripts in temporary project; so that you edit the same files that you debug.
+
+You can set up debugger to do so. First let’s see how V8 identifies those remote scripts. While debugging a script in the virtual project open “Properties” (context menu on file in “Project Explorer” or with Alt+Enter in an editor).
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-script-properties.png
+
+Here we see that VM identifies your script as URL {{{ http://server:8080/misc/utils.js }}} (from this URL you seem to be running a local web server; there may be other configurations). Depending on your working files layout, URLs like this should be mapped either as {{{http://server:8080/misc/** => <your misc folder>/**}}} or as {{{http://server:8080/** => <your project folder>/**}}}
+
+You can configure this in “Source” tab of your debug launch configuration.
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-debug-configurations-source.png
+
+Add a new source container with identifier mapping and make sure it is above the “Default” container (here “Default” container represents the virtual project that holds downloaded scripts). In the dialog window, choose “!JavaScript Source Name Mapper” from the list. This container converts URL (or any id) into a file name and looks it up in another container, here called “target container”.
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-source-name-mapper.png
+
+Depending on your configuration, enter the common URL prefix (e.g. {{{http://server:8080/}}}) and specify the target container (choose type and configure it). Note that you may need to restart your debug launch after this.
+
+See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
+
 ==Breakpoints==
 TBD
 ===Provisional Breakpoints===
