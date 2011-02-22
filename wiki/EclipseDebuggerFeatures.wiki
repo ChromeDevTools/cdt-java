@@ -28,7 +28,6 @@ Depending on your configuration, enter the common URL prefix (e.g. {{{http://ser
 See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
 
 ==Breakpoints==
-TBD
 ===Provisional Breakpoints===
 breakpoint can be set before script is loaded or before debugger is connected
 
@@ -81,6 +80,7 @@ This feature is still experimental and may not always work properly. In particul
 =Boring Features=
 TBD:
 
+  * Breakpoints
   * Step in/over/out
   * Stack context when suspended
   * Mouse on-hover identifier evaluation
