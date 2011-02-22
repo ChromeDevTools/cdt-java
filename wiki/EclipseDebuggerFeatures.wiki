@@ -9,11 +9,24 @@ TBD
 breakpoint can be set before script is loaded or before debugger is connected
 
 TBD
+
+===Break On Exception===
+A !JavaScript VM may be instructed to stop on each exception thrown. All exceptions fall into 2 groups:
+  * _caught_ exceptions, which are to be caught by a {{{catch}}} clause somewhere in the script, and
+  * _uncaught_ exceptions, which terminate script execution altogether and return the control to the calling application.
+
+Both types of exceptions are controlled from the _"Break on !JavaScript Exception"_ item in the launch context menu. (a _"launch"_, a.k.a. a _"debug session"_, is each of the top-level elements in the _Debug_ view).
+
 ===Selecting Breakpoint Type===
 The Eclipse IDE can host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own the new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu {{{Run->Breakpoint Types}}} (choose "Chrome/V8 breakpoints" in a submenu.)
 
 ==Watches==
 TBD
+===Load Full Value===
+Normally, the [EclipseDebugger Debugger] truncates string values longer than 80 characters; you can tell it by a typical cut-off in the end of string: {{{... (length: <actual length>)}}}. However the full value can be loaded on demand. In the _Variables_ or _Expressions_ view, select a truncated string value and choose _“Load Full Value”_ from its context menu. Note that the implementation is somewhat cautious: it will reload the string with a new length limit of 65536 chars. If that’s not enough for you, simply repeat the action once or twice.
+
+Note that manually entering expressions is sometimes more usable, than downloading a full value: {{{“value.substring(2978 - 100, 2978 + 100)”}}}
+
 ==Step in/over/out==
 TBD
 ==Stack context when suspended==
