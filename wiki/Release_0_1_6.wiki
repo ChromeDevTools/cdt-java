@@ -46,7 +46,7 @@ There are just some minor changes here.
   # If your value has type “Function” now you can navigate to this function from the context menu item “Open Function”.
 
 ==Live Editing==
-This is a highly experimental feature that allows you to edit your script while it is being executed by V8. After you have edited your script you may try to push the changes back to VM and see whether it has succeeded. Iin editor context menu choose “V8 Debugging” -> “Push Source Changes to VM”. An additional menu item “Preview and Push Source Changes to VM…” gives you a more verbose UI that should help understand what is happening.
+This is a highly experimental feature that allows you to edit your script while it is being executed by V8. After you have edited your script you may try to push the changes back to VM and see whether it has succeeded. In editor context menu choose “V8 Debugging” -> “Push Source Changes to VM”. An additional menu item “Preview and Push Source Changes to VM…” gives you a more verbose UI that should help understand what is happening.
 
 Obviously, there are some limitations to this feature. First, the principal limitations: !JavaScript allows only a few kinds of declarations that you can edit, e.g. you can’t edit a script and add a new field to a type because there is no place where fields are actually declared. Second, this feature is still under development so there are many things that may not be implemented yet.
 
