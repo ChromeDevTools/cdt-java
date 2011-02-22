@@ -4,7 +4,14 @@
 <wiki:toc max_depth="2" />
 
 ==Breakpoints==
-breakpoint can be set before script is loaded or before debugger is connected 
+TBD
+===Provisional Breakpoints===
+breakpoint can be set before script is loaded or before debugger is connected
+
+TBD
+===Selecting Breakpoint Type===
+The Eclipse IDE can host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own the new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu {{{Run->Breakpoint Types}}} (choose "Chrome/V8 breakpoints" in a submenu.)
+
 ==Watches==
 TBD
 ==Step in/over/out==
