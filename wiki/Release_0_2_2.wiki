@@ -33,7 +33,7 @@ This will save your value in the global object, and you can access it at any tim
 Some time later you can see how this object has changed its data or compare it with what {{{getManager()}}} returns now: {{{my_debug_save.manager1 === getManager()}}}.
 
 ==Breakpoint Types==
-The Eclipse IDE can host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own the new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu {{Run->Breakpoint Types}} (choose "Chrome/V8 breakpoints" in a submenu.)
+The Eclipse IDE can host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own the new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu {{{Run->Breakpoint Types}}} (choose "Chrome/V8 breakpoints" in a submenu.)
 
 
 ==System Requirements==
