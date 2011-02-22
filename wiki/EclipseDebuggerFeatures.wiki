@@ -77,6 +77,7 @@ The JSDT formatter will be used and JSDT integration feature should be installed
 
 This feature is still experimental and may not always work properly. In particular, the formatter may fail on some scripts. Currently, there is a fall-back: a secondary, very simplistic formatter that may produce an output of extremely poor quality, which can no longer be a valid !JavaScript.
 
+<wiki:comment>
 =Boring Features=
 TBD:
 
@@ -87,3 +88,5 @@ TBD:
   * Text selection evaluation
   * Script sources in workspace files and downloaded from server
   * Exception events reported into the Error Log
+
+</wiki:comment>
