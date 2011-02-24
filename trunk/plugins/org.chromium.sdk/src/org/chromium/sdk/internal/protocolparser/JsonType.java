@@ -42,4 +42,5 @@ import org.json.simple.JSONObject;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JsonType {
   boolean subtypesChosenManually() default false;
+  boolean allowsOtherProperties() default false;
 }

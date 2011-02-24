@@ -9,12 +9,15 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.json.simple.JSONObject;
 
 /**
@@ -42,22 +45,25 @@ class TypeHandler<T> {
   private final AlgebraicCasesData algCasesData;
 
   /** Full set of allowed field names. Should be used to check that JSON object is well-formed. */
-  private final Set<String> closedNameSet = null;
+  private Set<String> closedNameSet = null;
 
   /** Subtype aspects of the type or null */
   private final SubtypeAspect subtypeAspect;
+
+  private final boolean checkLazyParsedFields;
 
   TypeHandler(Class<T> typeClass, RefToType<?> jsonSuperClass, int fieldArraySize,
       Map<Method, MethodHandler> methodHandlerMap,
       List<FieldLoader> fieldLoaders,
       List<FieldCondition> fieldConditions, EagerFieldParser eagerFieldParser,
-      AlgebraicCasesData algCasesData) {
+      AlgebraicCasesData algCasesData, boolean checkLazyParsedFields) {
     this.typeClass = typeClass;
     this.fieldArraySize = fieldArraySize;
     this.methodHandlerMap = methodHandlerMap;
     this.fieldLoaders = fieldLoaders;
     this.eagerFieldParser = eagerFieldParser;
     this.algCasesData = algCasesData;
+    this.checkLazyParsedFields = checkLazyParsedFields;
     if (jsonSuperClass == null) {
       if (!fieldConditions.isEmpty()) {
         throw new IllegalArgumentException();
@@ -109,7 +115,6 @@ class TypeHandler<T> {
 
       parseObjectSubtype(objectData, jsonProperties, input);
 
-      final boolean checkLazyParsedFields = false;
       if (checkLazyParsedFields) {
         eagerFieldParser.parseAllFields(objectData);
       }
@@ -135,10 +140,52 @@ class TypeHandler<T> {
 
   @SuppressWarnings("unchecked")
   <S> TypeHandler<S> cast(Class<S> typeClass) {
-    if (this.typeClass != this.typeClass) {
+    if (this.typeClass != typeClass) {
       throw new RuntimeException();
     }
     return (TypeHandler<S>)this;
+  }
+
+  void buildClosedNameSet() {
+    if (!this.subtypeAspect.isRoot()) {
+      return;
+    }
+    List<Set<String>> namesChain = new ArrayList<Set<String>>(3);
+    buildClosedNameSetRecursive(namesChain);
+  }
+
+  private void buildClosedNameSetRecursive(List<Set<String>> namesChain) {
+    Set<String> thisSet = new HashSet<String>();
+    eagerFieldParser.addAllFieldNames(thisSet);
+    for (FieldLoader loader : fieldLoaders) {
+      thisSet.add(loader.getFieldName());
+    }
+
+    if (algCasesData == null) {
+      JsonType jsonAnnotation = typeClass.getAnnotation(JsonType.class);
+      if (jsonAnnotation.allowsOtherProperties()) {
+        return;
+      }
+      for (Set<String> set : namesChain) {
+        thisSet.addAll(set);
+      }
+      closedNameSet = thisSet;
+    } else {
+      namesChain.add(thisSet);
+      for (RefToType<?> subtype : algCasesData.getSubtypes()) {
+        subtype.get().buildClosedNameSetRecursive(namesChain);
+      }
+      namesChain.remove(namesChain.size() - 1);
+    }
+  }
+
+  String getShortName() {
+    String name = typeClass.getName();
+    int dotPos = name.lastIndexOf('.');
+    if (dotPos != -1) {
+      name = name.substring(dotPos + 1);
+    }
+    return "[" + name + "]";
   }
 
   static abstract class SubtypeSupport {
@@ -190,6 +237,7 @@ class TypeHandler<T> {
     abstract void checkSuperObject(ObjectData superObjectData) throws JsonProtocolParseException;
     abstract ObjectData parseFromSuper(Object input) throws JsonProtocolParseException;
     abstract boolean checkConditions(Map<?, ?> jsonProperties) throws JsonProtocolParseException;
+    abstract boolean isRoot();
   }
 
   private class AbsentSubtypeAspect extends SubtypeAspect {
@@ -213,6 +261,10 @@ class TypeHandler<T> {
     @Override
     void setSubtypeCaster(SubtypeCaster subtypeCaster) throws JsonProtocolModelParseException {
       throw new JsonProtocolModelParseException("Not a subtype: " + typeClass.getName());
+    }
+    @Override
+    boolean isRoot() {
+      return true;
     }
   }
 
@@ -297,6 +349,10 @@ class TypeHandler<T> {
       }
       this.subtypeCaster = subtypeCaster;
     }
+    @Override
+    boolean isRoot() {
+      return false;
+    }
   }
 
   private void wrapInProxy(ObjectData data, Map<Method, MethodHandler> methodHandlerMap) {
@@ -331,6 +387,7 @@ class TypeHandler<T> {
 
   static abstract class EagerFieldParser {
     abstract void parseAllFields(ObjectData objectData) throws JsonProtocolParseException;
+    abstract void addAllFieldNames(Set<? super String> output);
   }
 
   static abstract class AlgebraicCasesData {
