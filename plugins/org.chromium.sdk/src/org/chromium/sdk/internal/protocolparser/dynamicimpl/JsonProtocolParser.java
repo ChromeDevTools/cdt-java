@@ -578,7 +578,7 @@ public class JsonProtocolParser {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) {
+    Object handle(ObjectData objectData, Object[] args) {
       try {
         return parse(objectData);
       } catch (JsonProtocolParseException e) {
@@ -632,7 +632,7 @@ public class JsonProtocolParser {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) throws Throwable {
+    Object handle(ObjectData objectData, Object[] args) throws Throwable {
       Object val = objectData.getFieldArray()[pos];
       if (valueFinisher != null) {
         val = valueFinisher.getValueForUser(val);
@@ -756,7 +756,7 @@ public class JsonProtocolParser {
 
   static MethodHandler RETURN_NULL_METHOD_HANDLER = new MethodHandler() {
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) throws Throwable {
+    Object handle(ObjectData objectData, Object[] args) throws Throwable {
       return null;
     }
   };
@@ -784,7 +784,7 @@ public class JsonProtocolParser {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) {
+    Object handle(ObjectData objectData, Object[] args) {
       ObjectData resData = getFieldObjectData(objectData);
       if (resData == null) {
         return null;
@@ -804,7 +804,7 @@ public class JsonProtocolParser {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args)
+    Object handle(ObjectData objectData, Object[] args)
         throws JsonProtocolParseException {
       return handle(objectData);
     }

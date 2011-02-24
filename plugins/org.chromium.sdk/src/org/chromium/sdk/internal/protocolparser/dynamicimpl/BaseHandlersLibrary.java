@@ -62,9 +62,9 @@ class BaseHandlersLibrary {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args)
+    Object handle(ObjectData objectData, Object[] args)
         throws IllegalAccessException, InvocationTargetException {
-      return getMethod().invoke(myself, args);
+      return getMethod().invoke(objectData, args);
     }
   }
 
@@ -74,7 +74,7 @@ class BaseHandlersLibrary {
     }
 
     @Override
-    JSONObject handle(Object myself, ObjectData objectData, Object[] args) {
+    JSONObject handle(ObjectData objectData, Object[] args) {
       return (JSONObject) objectData.getUnderlyingObject();
     }
   }
@@ -85,7 +85,7 @@ class BaseHandlersLibrary {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) {
+    Object handle(ObjectData objectData, Object[] args) {
       return objectData.getUnderlyingObject();
     }
   }
@@ -96,7 +96,7 @@ class BaseHandlersLibrary {
     }
 
     @Override
-    Object handle(Object myself, ObjectData objectData, Object[] args) {
+    Object handle(ObjectData objectData, Object[] args) {
       return objectData.getSuperObjectData().getProxy();
     }
   }
