@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
@@ -51,7 +52,13 @@ public class JsonProtocolParser {
    */
   public JsonProtocolParser(List<? extends Class<?>> protocolInterfaces,
       List<? extends JsonProtocolParser> basePackages) throws JsonProtocolModelParseException {
-    type2TypeHandler = readTypes(protocolInterfaces, basePackages);
+    this(protocolInterfaces, basePackages, false);
+  }
+
+  public JsonProtocolParser(List<? extends Class<?>> protocolInterfaces,
+      List<? extends JsonProtocolParser> basePackages, boolean strictMode)
+      throws JsonProtocolModelParseException {
+    type2TypeHandler = readTypes(protocolInterfaces, basePackages, strictMode);
   }
 
   /**
@@ -72,9 +79,10 @@ public class JsonProtocolParser {
 
   private static Map<Class<?>, TypeHandler<?>> readTypes(
       List<? extends Class<?>> protocolInterfaces,
-      final List<? extends JsonProtocolParser> basePackages)
+      final List<? extends JsonProtocolParser> basePackages, boolean strictMode)
       throws JsonProtocolModelParseException {
-    ReadInterfacesSession session = new ReadInterfacesSession(protocolInterfaces, basePackages);
+    ReadInterfacesSession session =
+        new ReadInterfacesSession(protocolInterfaces, basePackages, strictMode);
     session.go();
     return session.getResult();
   }
@@ -83,17 +91,23 @@ public class JsonProtocolParser {
   private static class ReadInterfacesSession {
     private final Map<Class<?>, TypeHandler<?>> type2typeHandler;
     private final List<? extends JsonProtocolParser> basePackages;
+    private final boolean strictMode;
 
     final List<RefImpl<?>> refs = new ArrayList<RefImpl<?>>();
     final List<SubtypeCaster> subtypeCasters =
         new ArrayList<SubtypeCaster>();
 
     ReadInterfacesSession(List<? extends Class<?>> protocolInterfaces,
-        List<? extends JsonProtocolParser> basePackages) {
+        List<? extends JsonProtocolParser> basePackages, boolean strictMode) {
       this.type2typeHandler = new HashMap<Class<?>, TypeHandler<?>>();
       this.basePackages = basePackages;
+      this.strictMode = strictMode;
 
       for (Class<?> typeClass : protocolInterfaces) {
+        if (type2typeHandler.containsKey(typeClass)) {
+          throw new IllegalArgumentException(
+              "Protocol interface duplicated " + typeClass.getName());
+        }
         type2typeHandler.put(typeClass, null);
       }
     }
@@ -124,6 +138,12 @@ public class JsonProtocolParser {
       for (TypeHandler<?> type : type2typeHandler.values()) {
         type.getSubtypeSupport().checkHasSubtypeCaster();
       }
+
+      if (strictMode) {
+        for (TypeHandler<?> type : type2typeHandler.values()) {
+          type.buildClosedNameSet();
+        }
+      }
     }
 
     Map<Class<?>, TypeHandler<?>> getResult() {
@@ -151,7 +171,8 @@ public class JsonProtocolParser {
 
       return new TypeHandler<T>(typeClass, superclassRef,
           fields.getFieldArraySize(), methodHandlerMap, fields.getFieldLoaders(),
-          fields.getFieldConditions(), eagerFieldParser, fields.getAlgCasesData());
+          fields.getFieldConditions(), eagerFieldParser, fields.getAlgCasesData(),
+          strictMode);
     }
 
     private SlowParser<?> getFieldTypeParser(Type type, boolean declaredNullable,
@@ -534,6 +555,12 @@ public class JsonProtocolParser {
         handler.parse(objectData);
       }
     }
+    @Override
+    void addAllFieldNames(Set<? super String> output) {
+      for (LazyParseFieldMethodHandler handler : onDemandHandlers) {
+        output.add(handler.getFieldName());
+      }
+    }
   }
 
   private static class LazyParseFieldMethodHandler extends MethodHandler {
@@ -588,6 +615,10 @@ public class JsonProtocolParser {
         }
         return null;
       }
+    }
+
+    String getFieldName() {
+      return fieldName;
     }
   }
 
