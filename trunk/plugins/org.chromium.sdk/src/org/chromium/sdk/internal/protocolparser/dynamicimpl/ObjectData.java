@@ -68,4 +68,9 @@ class ObjectData {
   Object getProxy() {
     return proxy;
   }
+
+  @Override
+  public String toString() {
+    return typeHandler.getShortName() + "/" + underlyingObject;
+  }
 }

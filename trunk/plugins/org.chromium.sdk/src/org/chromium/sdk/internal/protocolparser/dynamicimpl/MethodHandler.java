@@ -8,5 +8,5 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
  * An abstract method handler for {@link JsonInvocationHandler}.
  */
 abstract class MethodHandler {
-  abstract Object handle(Object myself, ObjectData objectData, Object[] args) throws Throwable;
+  abstract Object handle(ObjectData objectData, Object[] args) throws Throwable;
 }

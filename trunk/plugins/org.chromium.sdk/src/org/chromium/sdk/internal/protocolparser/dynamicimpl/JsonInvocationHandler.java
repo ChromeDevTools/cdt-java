@@ -30,6 +30,6 @@ class JsonInvocationHandler implements InvocationHandler {
     if (methodHandler == null) {
       throw new RuntimeException("No method handler for " + method);
     }
-    return methodHandler.handle(proxy, objectData, args);
+    return methodHandler.handle(objectData, args);
   }
 }
