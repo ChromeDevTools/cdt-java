@@ -123,7 +123,7 @@ class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     } catch (ExecutionException e) {
       throw newIOException("Failed to get version", e);
     } catch (TimeoutException e) {
-      throw newIOException("Timed out waiting for version", e);
+      throw newIOException("Timed out waiting for handshake", e);
     }
 
     String versionString = remoteInfo.getProtocolVersion();
