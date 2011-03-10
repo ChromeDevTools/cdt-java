@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,7 +13,7 @@ import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
-import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionBoolValue;
+import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.chromium.sdk.internal.rynda.protocol.BasicConstants;
 
@@ -22,35 +22,46 @@ public interface RyndaCommandResponse extends JsonObjectBased {
   @JsonField(jsonLiteralName = BasicConstants.Property.SEQ)
   Object seq();
 
-  boolean success();
-
   @JsonSubtypeCasting Success asSuccess();
   @JsonSubtypeCasting Error asError();
+  @JsonSubtypeCasting Stub asStub();
 
   @JsonType
   interface Success extends JsonSubtype<RyndaCommandResponse> {
-    @JsonOverrideField
-    @JsonSubtypeConditionBoolValue(true)
-    boolean success();
-
+    @JsonSubtypeCondition(fieldIsAbsent=true)
     @JsonOptionalField
-    Data data();
+    List<String> errors();
 
-    @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
-    String domain();
+    @JsonField(jsonLiteralName="body")
+    @JsonSubtypeCondition
+    Data data();
   }
 
   @JsonType
   interface Error extends JsonSubtype<RyndaCommandResponse> {
     @JsonOverrideField
-    @JsonSubtypeConditionBoolValue(false)
-    boolean success();
-
+    @JsonSubtypeCondition()
     List<String> errors();
 
     @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
     @JsonOptionalField
     String domain();
+  }
+
+  /**
+   * A no-data type of response containing only "seq" property.
+   */
+  @JsonType
+  interface Stub extends JsonSubtype<RyndaCommandResponse> {
+    @JsonOverrideField
+    @JsonSubtypeCondition(fieldIsAbsent = true)
+    @JsonOptionalField
+    List<String> errors();
+
+    @JsonField(jsonLiteralName="body")
+    @JsonSubtypeCondition(fieldIsAbsent = true)
+    @JsonOptionalField
+    Data data();
   }
 
 

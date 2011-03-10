@@ -21,6 +21,7 @@ public interface RyndaEvent {
 
   String type();
 
+  @JsonField(jsonLiteralName = "body")
   @JsonOptionalField
   Data data();
 

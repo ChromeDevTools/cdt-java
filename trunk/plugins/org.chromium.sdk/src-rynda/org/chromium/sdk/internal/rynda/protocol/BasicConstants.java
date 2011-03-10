@@ -7,7 +7,7 @@ package org.chromium.sdk.internal.rynda.protocol;
 public interface BasicConstants {
   interface Property {
     String DOMAIN = "domain";
-    String ARGUMENTS = "agruments";
+    String ARGUMENTS = "arguments";
     String SEQ = "seq";
     String COMMAND = "command";
     String EVENT = "event";
@@ -16,5 +16,6 @@ public interface BasicConstants {
   interface Domain {
     String DEBUGGER = "Debugger";
     String RUNTIME = "Runtime";
+    String INSPECTOR = "Inspector";
   }
 }

@@ -38,6 +38,7 @@ public class RyndaProtocol {
           RyndaScope.class,
           RyndaCommandResponse.class, RyndaCommandResponse.Data.class,
           RyndaCommandResponse.Success.class, RyndaCommandResponse.Error.class,
+          RyndaCommandResponse.Stub.class,
           ScriptSourceData.class,
           EvaluateData.class,
           ValueData.class, ValueData.Id.class,
