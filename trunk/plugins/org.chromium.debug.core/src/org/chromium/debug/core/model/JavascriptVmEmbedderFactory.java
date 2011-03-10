@@ -120,9 +120,9 @@ public class JavascriptVmEmbedderFactory {
             try {
               standaloneVm.attach(debugEventListener);
             } catch (IOException e) {
-              throw newCoreException("Failed to connect to V8 VM", e);
+              throw newCoreException("Failed to connect to Standalone V8 VM", e);
             } catch (UnsupportedVersionException e) {
-              throw newCoreException("Failed to connect to V8 VM", e);
+              throw newCoreException("Failed to connect to Standalone V8 VM", e);
             }
             return new JavascriptVmEmbedder() {
               public JavascriptVm getJavascriptVm() {
