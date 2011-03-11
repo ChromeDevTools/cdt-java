@@ -59,14 +59,16 @@ public class WsConnection {
       }
     }
 
-    return new WsConnection(socketWrapper);
+    return new WsConnection(socketWrapper, connectionLogger);
   }
 
   private final SocketWrapper socketWrapper;
+  private final ConnectionLogger connectionLogger;
   private volatile boolean gracefullyClosing = false;
 
-  private WsConnection(SocketWrapper socketWrapper) {
+  private WsConnection(SocketWrapper socketWrapper, ConnectionLogger connectionLogger) {
     this.socketWrapper = socketWrapper;
+    this.connectionLogger = connectionLogger;
     try {
       linkedCloser.bind(socketWrapper.getShutdownRelay(), null, SOCKET_TO_CONNECTION);
     } catch (AlreadySignalledException e) {
@@ -150,6 +152,9 @@ public class WsConnection {
           LOGGER.log(Level.SEVERE, "Thread interruption", e);
         } finally {
           dispatchQueue.add(EOS_MESSAGE_DISPATCHER);
+          if (connectionLogger != null) {
+            connectionLogger.handleEos();
+          }
           if (closeReason == null) {
             closeReason = CloseReason.INPUT_STREAM_PROBLEM;
           }
@@ -229,6 +234,9 @@ public class WsConnection {
     };
     Thread readThread = new Thread(listenRunnable, "WebSocket listen thread");
     readThread.start();
+    if (connectionLogger != null) {
+      connectionLogger.start();
+    }
 
     Runnable dispatchRunnable = new Runnable() {
       public void run() {
@@ -263,6 +271,7 @@ public class WsConnection {
     output.write((byte) 0);
     output.write(bytes);
     output.write((byte) 255);
+    output.flush();
     loggableWriter.markSeparatorForLog();
   }
 
@@ -303,7 +312,7 @@ public class WsConnection {
         protected CoderResult decodeLoop(ByteBuffer in, CharBuffer out) {
           while (in.hasRemaining()) {
             byte b = in.get();
-            if (b < 20 && b != 13) {
+            if (b < 20 && b != (byte) '\n') {
               if (out.remaining() < 4) {
                 return CoderResult.OVERFLOW;
               }
