@@ -9,7 +9,7 @@ import org.json.simple.JSONObject;
 
 public class GetPropertiesRequest extends JSONObject {
   public GetPropertiesRequest(long id, long injectedScriptId,
-      String groupName, boolean ignoreHasOwnProperty, boolean abbreviate) {
+      boolean ignoreHasOwnProperty, boolean abbreviate) {
     this.put(BasicConstants.Property.DOMAIN, BasicConstants.Domain.RUNTIME);
     this.put(BasicConstants.Property.COMMAND, "getProperties");
     {
@@ -18,7 +18,6 @@ public class GetPropertiesRequest extends JSONObject {
         JSONObject objectIdObject = new JSONObject();
         objectIdObject.put("id", id);
         objectIdObject.put("injectedScriptId", injectedScriptId);
-        objectIdObject.put("groupName", groupName);
         arguments.put("objectId", objectIdObject);
       }
       arguments.put("ignoreHasOwnProperty", ignoreHasOwnProperty);
