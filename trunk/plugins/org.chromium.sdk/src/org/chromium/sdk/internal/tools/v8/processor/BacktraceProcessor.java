@@ -63,7 +63,7 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
       }
     };
 
-    debugSession.getScriptLoader().loadAllScripts(afterScriptsAreLoaded, null);
+    debugSession.getScriptManagerProxy().getAllScripts(afterScriptsAreLoaded, null);
   }
 
   private DebugContext setFrames(SuccessCommandResponse response) {

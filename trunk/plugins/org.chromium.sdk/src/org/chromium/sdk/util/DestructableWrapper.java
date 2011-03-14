@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.sdk.internal.rynda;
+package org.chromium.sdk.util;
 
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.util.Destructable;
-import org.chromium.sdk.util.DestructingGuard;
 
 /**
  * A utility class that connects SyncCallback paradigm with Destructable paradigm.
@@ -15,12 +13,12 @@ import org.chromium.sdk.util.DestructingGuard;
  * for a multi-step operations (where each step may fail).
  * This wrapper is useful for multi-step SyncCallback-driven processes.
  */
-class DestructableWrapper {
+public class DestructableWrapper {
   /**
    * Wraps sync callback as {@link Destructable}, so that we could use a standard idiom
    * for making sure we call it sooner or later.
    */
-  static Destructable callbackAsDestructable(final SyncCallback syncCallback) {
+  public static Destructable callbackAsDestructable(final SyncCallback syncCallback) {
     return new Destructable() {
       @Override
       public void destruct() {
@@ -35,7 +33,7 @@ class DestructableWrapper {
    * Ties {@link DestructingGuard} with a sync callback, so that a sync callback call
    * worked as a 'finally' call to the guard.
    */
-  static SyncCallback guardAsCallback(final DestructingGuard guard) {
+  public static SyncCallback guardAsCallback(final DestructingGuard guard) {
     return new SyncCallback() {
       @Override
       public void callbackDone(RuntimeException e) {

@@ -26,6 +26,7 @@ import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.Destructable;
+import org.chromium.sdk.util.DestructableWrapper;
 import org.chromium.sdk.util.DestructingGuard;
 
 /**
