@@ -38,6 +38,7 @@ public class RyndaTabImpl implements BrowserTab {
   private final TabDebugEventListener tabListener;
   private final RyndaCommandProcessor ryndaCommandProcessor;
   private final RyndaScriptManager scriptManager = new RyndaScriptManager(this);
+  private final RyndaBreakpointManager breakpointManager = new RyndaBreakpointManager(this);
   private final RyndaContextBuilder contextBuilder = new RyndaContextBuilder(this);
 
   private volatile String url = "<no url>";
@@ -168,7 +169,8 @@ public class RyndaTabImpl implements BrowserTab {
   public void setBreakpoint(Type type, String target, int line, int column,
       boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
-    RyndaBrowserImpl.throwUnsupported();
+    breakpointManager.setBreakpoint(type, target, line, column, enabled, condition,
+        ignoreCount, callback, syncCallback);
   }
 
   public void suspend(SuspendCallback callback) {
