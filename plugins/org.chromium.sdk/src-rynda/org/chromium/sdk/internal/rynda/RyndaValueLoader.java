@@ -15,9 +15,9 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.rynda.RyndaContextBuilder.RyndaDebugContextImpl;
 import org.chromium.sdk.internal.rynda.RyndaExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.rynda.RyndaExpressionBuilder.ValueNameBuilder;
-import org.chromium.sdk.internal.rynda.RyndaTabImpl.RyndaDebugContextImpl;
 import org.chromium.sdk.internal.rynda.protocol.input.GetPropertiesData;
 import org.chromium.sdk.internal.rynda.protocol.input.GetPropertiesData.Property;
 import org.chromium.sdk.internal.rynda.protocol.input.RyndaCommandResponse;
@@ -128,8 +128,7 @@ public class RyndaValueLoader {
         ValueNameBuilder valueNameBuilder =
             RyndaExpressionBuilder.createValueOfPropertyNameBuilder(name, propertyNameBuilder);
 
-        JsValue jsValue = valueBuilder.wrap(property.value(), valueNameBuilder);
-        JsVariable variable = RyndaValueBuilder.createVariable(jsValue, name, valueNameBuilder);
+        JsVariable variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
         if (isInternal) {
           internalProperties.add(variable);
         } else {

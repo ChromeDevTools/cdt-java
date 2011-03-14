@@ -12,7 +12,6 @@ import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
@@ -39,6 +38,7 @@ public class RyndaTabImpl implements BrowserTab {
   private final TabDebugEventListener tabListener;
   private final RyndaCommandProcessor ryndaCommandProcessor;
   private final RyndaScriptManager scriptManager = new RyndaScriptManager(this);
+  private final RyndaContextBuilder contextBuilder = new RyndaContextBuilder(this);
 
   private volatile String url = "<no url>";
 
@@ -208,12 +208,8 @@ public class RyndaTabImpl implements BrowserTab {
     return this.socket;
   }
 
-  abstract class RyndaDebugContextImpl implements DebugContext {
-    private final RyndaValueLoader valueLoader = new RyndaValueLoader(this);
-
-    public RyndaCommandProcessor getCommandProcessor() {
-      return ryndaCommandProcessor;
-    }
+  RyndaContextBuilder getContextBuilder() {
+    return contextBuilder;
   }
 
   RyndaCommandProcessor getCommandProcessor() {

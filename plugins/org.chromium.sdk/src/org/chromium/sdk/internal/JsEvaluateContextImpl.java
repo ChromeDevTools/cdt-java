@@ -13,6 +13,7 @@ import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
@@ -72,7 +73,23 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
         syncCallback);
   }
 
-  protected void maybeRethrowContextException(ContextDismissedCheckedException ex) {
+  @Override
+  public void evaluateAsync(final String expression, Map<String, String> additionalContext,
+      final EvaluateCallback callback, SyncCallback syncCallback) {
+    try {
+      evaluateAsyncImpl(expression, additionalContext, callback, syncCallback);
+    } catch (ContextDismissedCheckedException e) {
+      maybeRethrowContextException(e);
+      // or
+      try {
+        callback.failure(e.getMessage());
+      } finally {
+        syncCallback.callbackDone(null);
+      }
+    }
+  }
+
+  private void maybeRethrowContextException(ContextDismissedCheckedException ex) {
     getInternalContext().getDebugSession().maybeRethrowContextException(ex);
   }
 

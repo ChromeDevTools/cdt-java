@@ -42,13 +42,18 @@ class RyndaValueBuilder {
     this.valueLoader = valueLoader;
   }
 
+  public JsVariable createVariable(ValueData valueData, ValueNameBuilder nameBuilder) {
+    JsValue jsValue = wrap(valueData, nameBuilder);
+    return createVariable(jsValue, nameBuilder);
+  }
+
   public JsValue wrap(ValueData valueData, ValueNameBuilder nameBuilder) {
     return getValueType(valueData).build(valueData, valueLoader, nameBuilder);
   }
 
-  public static JsVariable createVariable(JsValue jsValue, String name,
+  public static JsVariable createVariable(JsValue jsValue,
       ValueNameBuilder qualifiedNameBuilder) {
-    return new VariableImpl(jsValue, name, qualifiedNameBuilder);
+    return new VariableImpl(jsValue, qualifiedNameBuilder);
   }
 
   private static ValueType getValueType(ValueData valueData) {
@@ -351,14 +356,11 @@ class RyndaValueBuilder {
 
   private static class VariableImpl implements JsVariable {
     private final JsValue jsValue;
-    private final String name;
     private final ValueNameBuilder qualifiedNameBuilder;
     private volatile String qualifiedName = null;
 
-    public VariableImpl(JsValue jsValue, String name,
-        ValueNameBuilder qualifiedNameBuilder) {
+    public VariableImpl(JsValue jsValue, ValueNameBuilder qualifiedNameBuilder) {
       this.jsValue = jsValue;
-      this.name = name;
       this.qualifiedNameBuilder = qualifiedNameBuilder;
     }
 
@@ -374,7 +376,7 @@ class RyndaValueBuilder {
 
     @Override
     public String getName() {
-      return name;
+      return qualifiedNameBuilder.getShortName();
     }
 
     @Override

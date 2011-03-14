@@ -40,25 +40,6 @@ public abstract class JsEvaluateContextBase implements JsEvaluateContext {
     }
   }
 
-  public void evaluateAsync(final String expression, Map<String, String> additionalContext,
-      final EvaluateCallback callback, SyncCallback syncCallback) {
-    try {
-      evaluateAsyncImpl(expression, additionalContext, callback, syncCallback);
-    } catch (ContextDismissedCheckedException e) {
-      maybeRethrowContextException(e);
-      // or
-      try {
-        callback.failure(e.getMessage());
-      } finally {
-        syncCallback.callbackDone(null);
-      }
-    }
-  }
-
-  protected abstract void evaluateAsyncImpl(final String expression,
-      Map<String, String> additionalContext,
-      final EvaluateCallback callback, SyncCallback syncCallback)
-      throws ContextDismissedCheckedException;
-
-  protected abstract void maybeRethrowContextException(ContextDismissedCheckedException ex);
+  public abstract void evaluateAsync(final String expression, Map<String, String> additionalContext,
+      final EvaluateCallback callback, SyncCallback syncCallback);
 }
