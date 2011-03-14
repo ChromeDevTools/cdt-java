@@ -24,8 +24,8 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.rynda.RyndaBrowser;
-import org.chromium.sdk.rynda.RyndaBrowserFactory;
+import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.wip.WipBrowserFactory;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 
@@ -175,20 +175,20 @@ public class JavascriptVmEmbedderFactory {
   }
 
   /**
-   * A temporary tab selector interface for Rynda protocol.
+   * A temporary tab selector interface for Wip protocol.
    * TODO: remove when we can get list of tabs from browser.
    */
-  public interface RyndaTabSelector {
-    TabConnector selectTab(RyndaBrowser browser);
+  public interface WipTabSelector {
+    TabConnector selectTab(WipBrowser browser);
   }
 
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToRyndaBrowser(String host,
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host,
       int port, final NamedConnectionLoggerFactory browserLoggerFactory,
-      final NamedConnectionLoggerFactory tabLoggerFactory, final RyndaTabSelector tabSelector)
+      final NamedConnectionLoggerFactory tabLoggerFactory, final WipTabSelector tabSelector)
       throws CoreException {
 
     InetSocketAddress address = new InetSocketAddress(host, port);
-    RyndaBrowserFactory.LoggerFactory factory = new RyndaBrowserFactory.LoggerFactory() {
+    WipBrowserFactory.LoggerFactory factory = new WipBrowserFactory.LoggerFactory() {
       @Override
       public ConnectionLogger newBrowserConnectionLogger() {
         return browserLoggerFactory.createLogger("Connection to browser");
@@ -199,8 +199,8 @@ public class JavascriptVmEmbedderFactory {
         return browserLoggerFactory.createLogger("Connection to tab");
       }
     };
-    final RyndaBrowser browser =
-        RyndaBrowserFactory.INSTANCE.createRyndaConnected(address, factory);
+    final WipBrowser browser =
+        WipBrowserFactory.INSTANCE.createBrowser(address, factory);
 
     return new JavascriptVmEmbedder.ConnectionToRemote() {
       @Override

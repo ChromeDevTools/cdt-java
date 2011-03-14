@@ -13,6 +13,6 @@ Export-Package: org.chromium.sdk,
  org.chromium.sdk.internal.tools.v8.processor;x-internal:=true,
  org.chromium.sdk.internal.tools.v8.request;x-internal:=true,
  org.chromium.sdk.internal.transport;x-internal:=true,
- org.chromium.sdk.rynda,
- org.chromium.sdk.util
+ org.chromium.sdk.util,
+ org.chromium.sdk.wip
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
