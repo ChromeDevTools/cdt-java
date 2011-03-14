@@ -179,6 +179,7 @@ class RyndaCommandProcessor {
         commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(data);
       }
     });
+    EVENT_HANDLERS.put("restoredBreakpoint", noOpHandler);
     EVENT_HANDLERS.put("pausedScript", new EventHandler() {
       @Override
       void accept(RyndaEvent event, RyndaCommandProcessor commandProcessor) {
