@@ -4,22 +4,19 @@
 
 package org.chromium.sdk.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.Version;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.JavascriptVm.SuspendCallback;
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
@@ -35,11 +32,16 @@ import org.chromium.sdk.internal.tools.v8.request.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
+import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.Destructable;
+import org.chromium.sdk.util.DestructableWrapper;
+import org.chromium.sdk.util.DestructingGuard;
 
 /**
  * A class that holds and administers main parts of debug protocol implementation.
  */
 public class DebugSession {
+  private static final Logger LOGGER = Logger.getLogger(DebugSession.class.getName());
 
   /** The script manager for the associated tab. */
   private final ScriptManager scriptManager;
@@ -57,7 +59,7 @@ public class DebugSession {
   /** Context owns breakpoint manager. */
   private final BreakpointManager breakpointManager;
 
-  private final ScriptLoader scriptLoader = new ScriptLoader(this);
+  private final ScriptManagerProxy scriptManagerProxy = new ScriptManagerProxy(this);
 
   private final DefaultResponseHandler defaultResponseHandler;
 
@@ -125,8 +127,8 @@ public class DebugSession {
     return breakpointManager;
   }
 
-  public ScriptLoader getScriptLoader() {
-    return scriptLoader;
+  public ScriptManagerProxy getScriptManagerProxy() {
+    return scriptManagerProxy;
   }
 
   public V8Helper getV8Helper() {
@@ -184,60 +186,79 @@ public class DebugSession {
     sendMessageAsync(DebuggerMessageFactory.suspend(), true, v8Callback, null);
   }
 
-  public static class ScriptLoader {
+  /**
+   * A proxy to script manager that makes sure that all scripts have been pre-loaded from remote.
+   * This is done only once per debug session.
+   * TODO: consider loading all scripts synchronously on session start.
+   */
+  public static class ScriptManagerProxy {
     private final DebugSession debugSession;
-    private final AtomicReference<AsyncFuture<ScriptResult>> futureRef =
-        new AtomicReference<AsyncFuture<ScriptResult>>(null);
+    private final AsyncFutureRef<Void> scriptsLoadedFuture = new AsyncFutureRef<Void>();
 
-    ScriptLoader(DebugSession debugSession) {
+    ScriptManagerProxy(DebugSession debugSession) {
       this.debugSession = debugSession;
     }
 
-    public void loadAllScripts(final ScriptsCallback callback, SyncCallback syncCallback) {
-      AsyncFuture<ScriptResult> future = futureRef.get();
-      if (future == null) {
-        AsyncFuture.initializeReference(futureRef, new ScriptsRequester());
-        future = futureRef.get();
+    public void getAllScripts(final ScriptsCallback callback, SyncCallback syncCallback) {
+      if (!scriptsLoadedFuture.isInitialized()) {
+        scriptsLoadedFuture.initializeRunning(new ScriptsRequester());
       }
-      future.getAsync(new Callback<ScriptResult>() {
+
+      // Operation is multi-step, so make sure that syncCallback won't be left uncalled.
+      final Destructable operationDestructable =
+          DestructableWrapper.callbackAsDestructable(syncCallback);
+
+      // Guards operationDestructable if we fail to relay in futureCallback.
+      final DestructingGuard guard = new DestructingGuard();
+
+      Callback<Void> futureCallback = new Callback<Void>() {
+        @Override public void done(Void res) {
+          if (callback != null) {
+            getAllScriptsAsync(callback, operationDestructable);
+            guard.discharge();
+          }
+        }
+      };
+
+      guard.addValue(operationDestructable);
+      scriptsLoadedFuture.getAsync(futureCallback, DestructableWrapper.guardAsCallback(guard));
+    }
+
+    private void getAllScriptsAsync(final ScriptsCallback callback,
+        Destructable operationDestructable) {
+
+      // Construct a guard that won't be discharged and will be called in the end of async
+      // operation, because it is the end of the entire operation.
+      DestructingGuard guard = new DestructingGuard();
+      guard.addValue(operationDestructable);
+
+      // We should call the callback from Dispatch thread (so that the whole collection
+      // kept fresh during the call-back).
+      debugSession.getV8CommandProcessor().runInDispatchThread(
+          new Runnable() {
             @Override
-            public void done(ScriptResult res) {
-              if (callback != null) {
-                res.accept(callback);
-              }
+            public void run() {
+              callback.success(debugSession.getScriptManager().allScripts());
             }
           },
-          syncCallback);
+          DestructableWrapper.guardAsCallback(guard));
     }
 
-    private static abstract class ScriptResult {
-      abstract void accept(ScriptsCallback callback);
-    }
-
-    private class ScriptsRequester implements AsyncFuture.Operation<ScriptResult> {
+    private class ScriptsRequester implements AsyncFuture.Operation<Void> {
       @Override
-      public void start(final Callback<ScriptResult> requestCallback,
+      public void start(final Callback<Void> requestCallback,
           SyncCallback syncCallback) {
         V8Helper.ScriptLoadCallback scriptLoadCallback = new V8Helper.ScriptLoadCallback() {
           @Override
           public void success() {
-            final Collection<Script> scripts = debugSession.scriptManager.allScripts();
-            requestCallback.done(new ScriptResult() {
-              @Override
-              void accept(ScriptsCallback callback) {
-                callback.success(scripts);
-              }
-            });
+            requestCallback.done(null);
           }
 
           @Override
           public void failure(final String message) {
-            requestCallback.done(new ScriptResult() {
-              @Override
-              void accept(ScriptsCallback callback) {
-                callback.failure(message);
-              }
-            });
+            LOGGER.log(Level.SEVERE, null,
+                new Exception("Failed to load scripts from remote: " + message));
+            requestCallback.done(null);
           }
         };
         V8Helper.reloadAllScriptsAsync(debugSession, scriptLoadCallback, syncCallback);
