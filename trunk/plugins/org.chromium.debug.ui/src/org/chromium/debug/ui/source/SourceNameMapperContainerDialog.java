@@ -10,7 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.chromium.debug.ui.DialogUtils.ComboWrapper;
-import org.chromium.debug.ui.DialogUtils.DialogElements;
+import org.chromium.debug.ui.DialogUtils.OkButtonElements;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceContainerType;
@@ -226,13 +226,15 @@ public class SourceNameMapperContainerDialog extends TitleAreaDialog {
   /**
    * A main interface to dialog elements, that are used from logic engine.
    */
-  interface Elements extends DialogElements {
+  interface Elements extends OkButtonElements {
     Text getPrefixField();
     Label getPrefixExampleLine1Label();
     Label getPrefixExampleLine2Label();
     ComboWrapper<ISourceContainerType> getContainerTypeCombo();
     Button getConfigureButton();
     ContainerStatusGroup getContainerStatusGroup();
+
+    Shell getShell();
   }
 
   interface ContainerStatusGroup {

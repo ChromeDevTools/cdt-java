@@ -681,10 +681,10 @@ public class DialogUtils {
   public static class OkButtonControl<T> implements ValueConsumer {
     private final ValueSource<? extends Optional<? extends T>> resultSource;
     private final List<? extends ValueSource<String>> warningSources;
-    private final DialogElements dialogElements;
+    private final OkButtonElements dialogElements;
 
     public OkButtonControl(ValueSource<? extends Optional<? extends T>> resultSource,
-        List<? extends ValueSource<String>> warningSources, DialogElements dialogElements) {
+        List<? extends ValueSource<String>> warningSources, OkButtonElements dialogElements) {
       this.resultSource = resultSource;
       this.warningSources = warningSources;
       this.dialogElements = dialogElements;
@@ -758,11 +758,9 @@ public class DialogUtils {
       };
 
   /**
-   * A basic access to elements of the dialog window from dialog logic part. The user may extend
-   * this interface with more elements.
+   * An access to OK button and related elements of the dialog window from dialog logic part.
    */
-  public interface DialogElements {
-    Shell getShell();
+  public interface OkButtonElements {
     Button getOkButton();
     void setMessage(String message, int type);
   }
