@@ -6,19 +6,20 @@ var adviserImpl = (function() {
 	function Data() {
 		this.chromiumVersions = [
 				new VersionRange(new Version([ 1 ]), new Version(
-						[ 8, Infinity ])),
-				new VersionRange(new Version([ 9 ]), new Version(
 						[ 9, Infinity ])),
-				new VersionRange(new Version([ 10 ]),
+				new VersionRange(new Version([ 10 ]), new Version(
+						[ 10, Infinity ])),
+				new VersionRange(new Version([ 11 ]),
 						new Version([ Infinity ]), "future versions"), ]
 				.sort(VersionRange.compareStrict);
 
 		this.toolsRealVersions = [ new Version([ 0, 1, 0 ]),
 				new Version([ 0, 1, 2 ]), new Version([ 0, 1, 4 ]),
-				new Version([ 0, 1, 6 ]), new Version([ 0, 2, 0 ]) ];
+				new Version([ 0, 1, 6 ]), new Version([ 0, 2, 0 ]),
+				new Version([ 0, 2, 2 ]) ];
 
 		var toolsVersions = [
-				new VersionRange(new Version([ 0, 2, 1 ]),
+				new VersionRange(new Version([ 0, 2, 3 ]),
 						new Version([ Infinity ]), "future versions"), ];
 		this.toolsRealVersions.forEach(function(version) {
 			toolsVersions.push(createPointRange(version));
