@@ -8,8 +8,22 @@ import org.chromium.sdk.internal.rynda.protocol.BasicConstants;
 import org.json.simple.JSONObject;
 
 public class ContinueRequest extends JSONObject {
-  public ContinueRequest(String command) {
+  public enum StepCommand {
+    RESUME("resume"),
+    STEP_INTO("stepInto"),
+    STEP_OUT("stepOut"),
+    STEP_OVER("stepOver");
+
+    private final String jsonKey;
+
+    private StepCommand(String jsonKey) {
+      this.jsonKey = jsonKey;
+    }
+  }
+
+  public ContinueRequest(StepCommand stepCommand) {
     this.put(BasicConstants.Property.DOMAIN, BasicConstants.Domain.DEBUGGER);
+    String command = stepCommand.jsonKey;
     this.put(BasicConstants.Property.COMMAND, command);
     this.put(BasicConstants.Property.ARGUMENTS, new JSONObject());
   }

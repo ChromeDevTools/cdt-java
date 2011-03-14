@@ -19,6 +19,7 @@ import org.chromium.sdk.internal.rynda.protocol.BasicConstants;
 import org.chromium.sdk.internal.rynda.protocol.RyndaProtocol;
 import org.chromium.sdk.internal.rynda.protocol.input.InspectedUrlChangedData;
 import org.chromium.sdk.internal.rynda.protocol.input.ParsedScriptSourceData;
+import org.chromium.sdk.internal.rynda.protocol.input.PausedScriptData;
 import org.chromium.sdk.internal.rynda.protocol.input.RyndaCommandResponse;
 import org.chromium.sdk.internal.rynda.protocol.input.RyndaEvent;
 import org.chromium.sdk.internal.tools.v8.BaseCommandProcessor;
@@ -176,6 +177,25 @@ class RyndaCommandProcessor {
         }
 
         commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(data);
+      }
+    });
+    EVENT_HANDLERS.put("pausedScript", new EventHandler() {
+      @Override
+      void accept(RyndaEvent event, RyndaCommandProcessor commandProcessor) {
+        PausedScriptData data;
+        try {
+          data = event.data().asPausedScriptData();
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
+
+        commandProcessor.tabImpl.getContextBuilder().createContext(data);
+      }
+    });
+    EVENT_HANDLERS.put("resumedScript", new EventHandler() {
+      @Override
+      void accept(RyndaEvent event, final RyndaCommandProcessor commandProcessor) {
+        commandProcessor.tabImpl.getContextBuilder().onResumeReportedFromRemote();
       }
     });
   }

@@ -24,6 +24,8 @@ public class RyndaExpressionBuilder {
      *   expression
      */
     boolean needsParentheses();
+
+    String getShortName();
   }
 
   /**
@@ -51,6 +53,28 @@ public class RyndaExpressionBuilder {
 
       @Override public void append(StringBuilder output) {
         propertyNameBuilder.build(propertyName, output);
+      }
+
+      @Override public String getShortName() {
+        return propertyName;
+      }
+    };
+  }
+
+  static ValueNameBuilder createRootName(final String name, final boolean needsParentheses) {
+    return new ValueNameBuilder() {
+      @Override
+      public void append(StringBuilder output) {
+        output.append(name);
+      }
+
+      @Override
+      public boolean needsParentheses() {
+        return needsParentheses;
+      }
+
+      @Override public String getShortName() {
+        return name;
       }
     };
   }

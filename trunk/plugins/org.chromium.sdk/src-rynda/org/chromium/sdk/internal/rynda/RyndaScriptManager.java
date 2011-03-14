@@ -134,6 +134,7 @@ class RyndaScriptManager {
    /**
    * Asynchronously loads all script sources that will be referenced from a new debug context
    * (from its stack frames).
+   * Must be called from Dispatch thread.
    */
   void loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
       SyncCallback syncCallback) {
@@ -156,16 +157,9 @@ class RyndaScriptManager {
 
     // Start a chain of asynchronous operations.
     // Make sure we call this sync callback sooner or later.
-    Destructable destructable = DestructableWrapper.callbackAsDestructable(syncCallback);
+    Destructable operationDestructable = DestructableWrapper.callbackAsDestructable(syncCallback);
 
-    DestructingGuard guard = new DestructingGuard();
-    guard.addValue(destructable);
-    try {
-      loadNextScript(scripts, result, callback, destructable);
-      guard.discharge();
-    } finally {
-      guard.doFinally();
-    }
+    loadNextScript(scripts, result, callback, operationDestructable);
   }
 
   interface ScriptSourceLoadCallback {
@@ -174,42 +168,37 @@ class RyndaScriptManager {
 
   private void loadNextScript(final Queue<ScriptData> scripts,
       final Map<Long, ScriptImpl> result, final ScriptSourceLoadCallback callback,
-      final Destructable destructable) {
+      final Destructable operationDestructable) {
     final ScriptData data = scripts.poll();
     if (data == null) {
       // Terminate the chain of asynchronous loads and pass a result to the callback.
-      ryndaTabImpl.getCommandProcessor().runInDispatchThread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            if (callback != null) {
-              callback.done(result);
-            }
-          } finally {
-            destructable.destruct();
-          }
+      try {
+        if (callback != null) {
+          callback.done(result);
         }
-      });
+      } finally {
+        operationDestructable.destruct();
+      }
       return;
     }
 
-    // Create a guard for the case that we fail before issuing next #waitForTheNextScript()
-    // call.
+    // Create a guard for the case that we fail before issuing next #loadNextScript() call.
     final DestructingGuard requestGuard = new DestructingGuard();
-    requestGuard.addValue(destructable);
 
     AsyncFuture.Callback<Boolean> futureCallback = new AsyncFuture.Callback<Boolean>() {
       @Override
       public void done(Boolean res) {
-        loadNextScript(scripts, result, callback, destructable);
+        loadNextScript(scripts, result, callback, operationDestructable);
+        // We successfully relayed responsibility for operationDestructable to next async call,
+        // discharge guard.
         requestGuard.discharge();
       }
     };
 
+    requestGuard.addValue(operationDestructable);
     // The async operation will call a guard even if something failed within the AsyncFuture.
-    SyncCallback chainedSyncCallback = DestructableWrapper.guardAsCallback(requestGuard);
-
-    data.sourceLoadedFuture.getAsync(futureCallback, chainedSyncCallback);
+    data.sourceLoadedFuture.getAsync(futureCallback,
+        DestructableWrapper.guardAsCallback(requestGuard));
   }
 
   public void pageReloaded() {
