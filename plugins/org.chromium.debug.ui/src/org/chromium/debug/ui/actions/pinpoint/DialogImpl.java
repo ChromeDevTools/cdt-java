@@ -6,7 +6,7 @@ package org.chromium.debug.ui.actions.pinpoint;
 
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
-import org.chromium.debug.ui.DialogUtils.DialogElements;
+import org.chromium.debug.ui.DialogUtils.OkButtonElements;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
@@ -32,7 +32,7 @@ class DialogImpl extends TitleAreaDialog {
   /**
    * UI elements of the dialog that are important for the dialog logic.
    */
-  interface Elements extends DialogElements {
+  interface Elements extends OkButtonElements {
     Text getExpressionText();
 
     Button getPreviewCheckBox();
@@ -152,10 +152,6 @@ class DialogImpl extends TitleAreaDialog {
 
     // Getters to all logic-essential UI elements.
     Elements elements = new Elements() {
-      @Override public Shell getShell() {
-        return DialogImpl.this.getShell();
-      }
-
       @Override public Shell getParentShell() {
         return DialogImpl.this.getParentShell();
       }

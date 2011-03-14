@@ -1,3 +1,7 @@
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package org.chromium.debug.core.model;
 
 import java.io.IOException;
@@ -8,7 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.JavascriptVmEmbedder.VmConnector;
 import org.chromium.sdk.Browser;
+import org.chromium.sdk.Browser.TabConnector;
+import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.ConnectionLogger;
@@ -17,10 +24,10 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.Browser.TabFetcher;
+import org.chromium.sdk.rynda.RyndaBrowser;
+import org.chromium.sdk.rynda.RyndaBrowserFactory;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
-
 
 public class JavascriptVmEmbedderFactory {
   public static JavascriptVmEmbedder.ConnectionToRemote connectToChromeDevTools(String host,
@@ -163,6 +170,50 @@ public class JavascriptVmEmbedderFactory {
 
       public void disposeConnection() {
         // Nothing to do. We do not take connection for ConnectionToRemote.
+      }
+    };
+  }
+
+  /**
+   * A temporary tab selector interface for Rynda protocol.
+   * TODO: remove when we can get list of tabs from browser.
+   */
+  public interface RyndaTabSelector {
+    TabConnector selectTab(RyndaBrowser browser);
+  }
+
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToRyndaBrowser(String host,
+      int port, final NamedConnectionLoggerFactory browserLoggerFactory,
+      final NamedConnectionLoggerFactory tabLoggerFactory, final RyndaTabSelector tabSelector)
+      throws CoreException {
+
+    InetSocketAddress address = new InetSocketAddress(host, port);
+    RyndaBrowserFactory.LoggerFactory factory = new RyndaBrowserFactory.LoggerFactory() {
+      @Override
+      public ConnectionLogger newBrowserConnectionLogger() {
+        return browserLoggerFactory.createLogger("Connection to browser");
+      }
+
+      @Override
+      public ConnectionLogger newTabConnectionLogger() {
+        return browserLoggerFactory.createLogger("Connection to tab");
+      }
+    };
+    final RyndaBrowser browser =
+        RyndaBrowserFactory.INSTANCE.createRyndaConnected(address, factory);
+
+    return new JavascriptVmEmbedder.ConnectionToRemote() {
+      @Override
+      public VmConnector selectVm() throws CoreException {
+        Browser.TabConnector targetTabConnector = tabSelector.selectTab(browser);
+        if (targetTabConnector == null) {
+          return null;
+        }
+        return new EmbeddingTabConnector(targetTabConnector);
+      }
+
+      @Override
+      public void disposeConnection() {
       }
     };
   }
