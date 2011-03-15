@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.wip.protocol.input;
 
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
+import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
@@ -22,7 +23,9 @@ public interface ValueData {
   @JsonType
   interface Id {
     long id();
-    String groupName();
     long injectedScriptId();
+
+    @JsonOptionalField
+    String groupName();
   }
 }

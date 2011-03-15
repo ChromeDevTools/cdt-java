@@ -9,16 +9,23 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
 public interface WipScope {
-  long hasChildren();
+  boolean hasChildren();
 
   @JsonOptionalField
   ValueData thisObject();
 
   String description();
+
   ValueData.Id objectId();
 
   @JsonOptionalField
   boolean isLocal();
+
+  @JsonOptionalField
+  boolean isClosure();
+
+  @JsonOptionalField
+  boolean isWithBlock();
 
   String type();
 }
