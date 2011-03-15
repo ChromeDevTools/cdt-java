@@ -14,6 +14,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
+import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionBoolValue;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 
@@ -24,17 +25,23 @@ public interface WipCommandResponse extends JsonObjectBased {
 
   @JsonSubtypeCasting Success asSuccess();
   @JsonSubtypeCasting Error asError();
-  @JsonSubtypeCasting Stub asStub();
 
   @JsonType
   interface Success extends JsonSubtype<WipCommandResponse> {
+    @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
+    @JsonOptionalField
+    String domain();
+
     @JsonSubtypeCondition(fieldIsAbsent=true)
     @JsonOptionalField
     List<String> errors();
 
     @JsonField(jsonLiteralName="body")
-    @JsonSubtypeCondition
+    @JsonOptionalField
     Data data();
+
+    @JsonSubtypeConditionBoolValue(value = true)
+    boolean success();
   }
 
   @JsonType
@@ -46,24 +53,10 @@ public interface WipCommandResponse extends JsonObjectBased {
     @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
     @JsonOptionalField
     String domain();
+
+    @JsonSubtypeConditionBoolValue(value = false)
+    boolean success();
   }
-
-  /**
-   * A no-data type of response containing only "seq" property.
-   */
-  @JsonType
-  interface Stub extends JsonSubtype<WipCommandResponse> {
-    @JsonOverrideField
-    @JsonSubtypeCondition(fieldIsAbsent = true)
-    @JsonOptionalField
-    List<String> errors();
-
-    @JsonField(jsonLiteralName="body")
-    @JsonSubtypeCondition(fieldIsAbsent = true)
-    @JsonOptionalField
-    Data data();
-  }
-
 
   @JsonType(subtypesChosenManually=true)
   interface Data {
