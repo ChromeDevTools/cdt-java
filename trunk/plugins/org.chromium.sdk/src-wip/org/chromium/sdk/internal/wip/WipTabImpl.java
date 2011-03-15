@@ -6,8 +6,10 @@ package org.chromium.sdk.internal.wip;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
@@ -177,10 +179,13 @@ public class WipTabImpl implements BrowserTab {
     WipBrowserImpl.throwUnsupported();
   }
 
+  @Override
   public void listBreakpoints(ListBreakpointsCallback callback,
       SyncCallback syncCallback) {
     if (callback != null) {
-      callback.failure(new UnsupportedOperationException());
+      // TODO: stub result; implement the true list.
+      List<Breakpoint> stubEmptyList = Collections.emptyList();
+      callback.success(stubEmptyList);
     }
     if (syncCallback != null) {
       syncCallback.callbackDone(null);
