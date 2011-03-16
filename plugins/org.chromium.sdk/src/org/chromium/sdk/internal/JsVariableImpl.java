@@ -61,22 +61,25 @@ public class JsVariableImpl implements JsVariable {
     this.decoratedName = decoratedName;
     this.qualifiedName = qualifiedName;
 
-    Type type = this.valueData.getType();
+    this.value = createValue(context, valueData, qualifiedName);
+  }
+
+  public static JsValueImpl createValue(InternalContext context, ValueMirror valueData,
+      String qualifiedName) {
+    Type type = valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
-        this.value = new JsFunctionImpl(context, this.qualifiedName, this.valueData);
-        break;
+        return new JsFunctionImpl(context, qualifiedName, valueData);
       case TYPE_ERROR:
       case TYPE_OBJECT:
-        this.value = new JsObjectImpl(context, this.qualifiedName, this.valueData);
-        break;
+        return new JsObjectImpl(context, qualifiedName, valueData);
       case TYPE_ARRAY:
-        this.value = new JsArrayImpl(context, this.qualifiedName, this.valueData);
-        break;
+        return new JsArrayImpl(context, qualifiedName, valueData);
       default:
-        this.value = new JsValueImpl(this.valueData);
+        return new JsValueImpl(valueData);
     }
   }
+
 
   /**
    * @return a [probably compound] JsValue corresponding to this variable.

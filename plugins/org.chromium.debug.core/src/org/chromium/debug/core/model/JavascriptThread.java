@@ -4,12 +4,15 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
+import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.InvalidContextException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
@@ -19,6 +22,7 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.debug.core.model.IVariable;
 
 /**
  * This class represents the only Chromium V8 VM thread.
@@ -42,7 +46,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   /**
    * Cached stack
    */
-  private StackFrame[] stackFrames;
+  private StackFrameBase[] stackFrames;
 
   /**
    * Constructs a new thread for the given target
@@ -53,7 +57,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
     super(debugTarget);
   }
 
-  public StackFrame[] getStackFrames() throws DebugException {
+  public StackFrameBase[] getStackFrames() throws DebugException {
     try {
       ensureStackFrames(getDebugTarget().getDebugContext());
       return stackFrames;
@@ -67,19 +71,101 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   private void ensureStackFrames(DebugContext debugContext) {
-    if (debugContext == null) {
-      this.stackFrames = EMPTY_FRAMES;
-    } else {
-      this.stackFrames = wrapStackFrames(debugContext.getCallFrames());
+    if (stackFrames == null) {
+      if (debugContext == null) {
+        this.stackFrames = EMPTY_FRAMES;
+      } else {
+        this.stackFrames = wrapStackFrames(this, debugContext);
+      }
     }
   }
 
-  private StackFrame[] wrapStackFrames(List<? extends CallFrame> jsFrames) {
-    StackFrame[] frames = new StackFrame[jsFrames.size()];
-    for (int i = 0, size = frames.length; i < size; ++i) {
-      frames[i] = new StackFrame(getDebugTarget(), this, jsFrames.get(i));
+  private static StackFrameBase[] wrapStackFrames(JavascriptThread thread,
+      DebugContext debugContext) {
+    List<? extends CallFrame> jsFrames = debugContext.getCallFrames();
+    List<StackFrameBase> result = new ArrayList<StackFrameBase>(jsFrames.size() + 1);
+
+    ExceptionData exceptionData = debugContext.getExceptionData();
+    if (exceptionData != null) {
+      // Add fake 'throw exception' frame.
+      EvaluateContext evaluateContext =
+          new EvaluateContext(debugContext.getGlobalEvaluateContext(), thread.getDebugTarget());
+      result.add(new ExceptionStackFrame(thread, evaluateContext, exceptionData));
     }
-    return frames;
+    for (CallFrame jsFrame : jsFrames) {
+      result.add(new StackFrame(thread, jsFrame));
+    }
+    return ChromiumDebugPluginUtil.toArray(result, StackFrameBase.class);
+  }
+
+  /**
+   * A fake stackframe that represents 'throwing exception'. It's a frame that holds an exception
+   * as its only variable. This might be the only means to expose exception value to user because
+   * exception may be raised with no frames on stack (e.g. compile error).
+   */
+  private static class ExceptionStackFrame extends StackFrameBase {
+    private final IVariable[] variables;
+    private final EvaluateContext evaluateContext;
+    private final ExceptionData exceptionData;
+
+    private ExceptionStackFrame(JavascriptThread thread, EvaluateContext evaluateContext,
+        ExceptionData exceptionData) {
+      super(thread);
+      this.evaluateContext = evaluateContext;
+      this.exceptionData = exceptionData;
+
+      Variable variable = new Variable.ExceptionHolder(evaluateContext, exceptionData);
+      variables = new IVariable[] { variable };
+    }
+
+    @Override
+    public IVariable[] getVariables() throws DebugException {
+      return variables;
+    }
+
+    @Override
+    public boolean hasVariables() throws DebugException {
+      return variables.length > 0;
+    }
+
+    @Override
+    public int getLineNumber() throws DebugException {
+      return -1;
+    }
+
+    @Override
+    public int getCharStart() throws DebugException {
+      return -1;
+    }
+
+    @Override
+    public int getCharEnd() throws DebugException {
+      return getCharStart();
+    }
+
+    @Override
+    public String getName() throws DebugException {
+      return "<throwing exception>";
+    }
+
+    @Override
+    protected EvaluateContext getEvaluateContext() {
+      return evaluateContext;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof ExceptionStackFrame == false) {
+        return false;
+      }
+      ExceptionStackFrame other = (ExceptionStackFrame) obj;
+      return this.exceptionData.equals(other.exceptionData);
+    }
+
+    @Override
+    public int hashCode() {
+      return this.exceptionData.hashCode();
+    }
   }
 
   public boolean hasStackFrames() throws DebugException {

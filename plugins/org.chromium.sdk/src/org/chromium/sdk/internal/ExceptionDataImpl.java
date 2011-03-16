@@ -6,6 +6,7 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsValue;
 
 /**
  * An immutable implementation of the ExceptionData interface.
@@ -18,7 +19,7 @@ public class ExceptionDataImpl implements ExceptionData {
   private final String name;
   private final boolean isUncaught;
   private final String exceptionText;
-  private JsObject cachedException;
+  private JsValueImpl cachedException;
 
   public ExceptionDataImpl(InternalContext context, ValueMirror mirror, String name,
       boolean isUncaught, String sourceText, String exceptionText) {
@@ -30,24 +31,32 @@ public class ExceptionDataImpl implements ExceptionData {
     this.exceptionText = exceptionText;
   }
 
+  @Deprecated
+  @Override
   public JsObject getExceptionObject() {
+    return getExceptionValue().asObject();
+  }
+
+  @Override
+  public JsValue getExceptionValue() {
     if (cachedException == null) {
-      cachedException =
-          new JsObjectImpl(context.getTopFrameImpl().getInternalContext(), name, mirror);
+      cachedException = JsVariableImpl.createValue(context, mirror, "<exception>");
     }
     return cachedException;
   }
 
+  @Override
   public String getSourceText() {
     return sourceText;
   }
 
+  @Override
   public boolean isUncaught() {
     return isUncaught;
   }
 
+  @Override
   public String getExceptionMessage() {
     return exceptionText;
   }
-
 }
