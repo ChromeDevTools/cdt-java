@@ -16,30 +16,19 @@ import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.JsArray;
-import org.chromium.sdk.JsFunction;
-import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
-import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
-import org.eclipse.debug.core.model.IRegisterGroup;
-import org.eclipse.debug.core.model.IStackFrame;
-import org.eclipse.debug.core.model.IThread;
 import org.eclipse.debug.core.model.IVariable;
 
 /**
  * An IStackFrame implementation over a JsStackFrame instance.
  */
-public class StackFrame extends DebugElementImpl implements IStackFrame {
-
-  private final JavascriptThread thread;
+public class StackFrame extends StackFrameBase {
 
   private final CallFrame stackFrame;
 
@@ -57,19 +46,15 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
    * @param thread for which the stack frame is created
    * @param stackFrame an underlying SDK stack frame
    */
-  public StackFrame(DebugTargetImpl debugTarget, JavascriptThread thread, CallFrame stackFrame) {
-    super(debugTarget);
-    this.thread = thread;
+  public StackFrame(JavascriptThread thread, CallFrame stackFrame) {
+    super(thread);
     this.stackFrame = stackFrame;
-    this.evaluateContext = new EvaluateContext(stackFrame.getEvaluateContext(), debugTarget);
+    this.evaluateContext =
+        new EvaluateContext(stackFrame.getEvaluateContext(), thread.getDebugTarget());
   }
 
   public CallFrame getCallFrame() {
     return stackFrame;
-  }
-
-  public IThread getThread() {
-    return thread;
   }
 
   public IVariable[] getVariables() throws DebugException {
@@ -96,14 +81,14 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       if (propertyNameBlackList.contains(jsVar.getName())) {
         continue;
       }
-      vars.add(new Variable(evaluateContext, jsVar, false));
+      vars.add(new Variable.Real(evaluateContext, jsVar, false));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
     if (jsInternalProperties != null) {
       for (JsVariable jsMetaVar : jsInternalProperties) {
-        vars.add(new Variable(evaluateContext, jsMetaVar, true));
+        vars.add(new Variable.Real(evaluateContext, jsMetaVar, true));
       }
     }
     return vars.toArray(new IVariable[vars.size()]);
@@ -116,15 +101,14 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(new Variable(evaluateContext, receiverVariable, false));
+          vars.add(new Variable.Real(evaluateContext, receiverVariable, false));
           receiverVariable = null;
         }
-        vars.add(new Variable(evaluateContext, wrapScopeAsVariable(scope, evaluateContext),
-            false));
+        vars.add(new Variable.ScopeWrapper(evaluateContext, scope));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
-          vars.add(new Variable(evaluateContext, var, false));
+          vars.add(new Variable.Real(evaluateContext, var, false));
         }
         int endPos = vars.size();
         List<Variable> sublist = vars.subList(startPos, endPos);
@@ -132,7 +116,7 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       }
     }
     if (receiverVariable != null) {
-      vars.add(new Variable(evaluateContext, receiverVariable, false));
+      vars.add(new Variable.Real(evaluateContext, receiverVariable, false));
     }
 
     IVariable[] result = new IVariable[vars.size()];
@@ -141,78 +125,6 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
       result[result.length - i - 1] = vars.get(i);
     }
     return result;
-  }
-
-  private static JsVariable wrapScopeAsVariable(final JsScope jsScope,
-      EvaluateContext evaluateContext) {
-    class ScopeObjectVariable implements JsVariable, JsObject {
-      public String getFullyQualifiedName() {
-        return getName();
-      }
-      public String getName() {
-        // TODO(peter.rybin): should we localize it?
-        return "<" + jsScope.getType() + ">";
-      }
-      public JsValue getValue() throws UnsupportedOperationException {
-        return this;
-      }
-      public boolean isMutable() {
-        return false;
-      }
-      public boolean isReadable() {
-        return true;
-      }
-      public void setValue(String newValue, SetValueCallback callback)
-          throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
-      }
-      public JsArray asArray() {
-        return null;
-      }
-      public JsFunction asFunction() {
-        return null;
-      }
-      public String getClassName() {
-        // TODO(peter.rybin): should we localize it?
-        return "#Scope";
-      }
-      public Collection<? extends JsVariable> getProperties() {
-        return jsScope.getVariables();
-      }
-      public Collection<? extends JsVariable> getInternalProperties() {
-        return Collections.emptyList();
-      }
-      public JsVariable getProperty(String name) {
-        for (JsVariable var : getProperties()) {
-          if (var.getName().equals(name)) {
-            return var;
-          }
-        }
-        return null;
-      }
-      public JsObject asObject() {
-        return this;
-      }
-      public Type getType() {
-        return Type.TYPE_OBJECT;
-      }
-      public String getValueString() {
-        return getClassName();
-      }
-      public String getRefId() {
-        return null;
-      }
-      public boolean isTruncated() {
-        return false;
-      }
-      public void reloadHeavyValue(ReloadBiggerCallback callback,
-          SyncCallback syncCallback) {
-        if (syncCallback != null) {
-          syncCallback.callbackDone(null);
-        }
-      }
-    }
-    return new ScopeObjectVariable();
   }
 
   public boolean hasVariables() throws DebugException {
@@ -237,72 +149,9 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     return getDebugTarget().getLabelProvider().getStackFrameLabel(this);
   }
 
-  public IRegisterGroup[] getRegisterGroups() throws DebugException {
-    return null;
-  }
-
-  public boolean hasRegisterGroups() throws DebugException {
-    return false;
-  }
-
-  public boolean canStepInto() {
-    return getThread().canStepInto();
-  }
-
-  public boolean canStepOver() {
-    return getThread().canStepOver();
-  }
-
-  public boolean canStepReturn() {
-    return getThread().canStepReturn();
-  }
-
-  public boolean isStepping() {
-    return getThread().isStepping();
-  }
-
-  public void stepInto() throws DebugException {
-    getThread().stepInto();
-  }
-
-  public void stepOver() throws DebugException {
-    getThread().stepOver();
-  }
-
-  public void stepReturn() throws DebugException {
-    getThread().stepReturn();
-  }
-
-  public boolean canResume() {
-    return getThread().canResume();
-  }
-
-  public boolean canSuspend() {
-    return getThread().canSuspend();
-  }
-
-  public boolean isSuspended() {
-    return getThread().isSuspended();
-  }
-
-  public void resume() throws DebugException {
-    getThread().resume();
-  }
-
-  public void suspend() throws DebugException {
-    getThread().suspend();
-  }
-
-  public boolean canTerminate() {
-    return getThread().canTerminate();
-  }
-
-  public boolean isTerminated() {
-    return getThread().isTerminated();
-  }
-
-  public void terminate() throws DebugException {
-    getThread().terminate();
+  @Override
+  protected EvaluateContext getEvaluateContext() {
+    return evaluateContext;
   }
 
   @Override
@@ -356,19 +205,6 @@ public class StackFrame extends DebugElementImpl implements IStackFrame {
     // Strings go before numbers.
     private static final int COMPARE_INT_WITH_STRING = 1;
   };
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Object getAdapter(Class adapter) {
-    if (adapter == EvaluateContext.class) {
-      DebugContext debugContext = getDebugTarget().getDebugContext();
-      if (debugContext == null) {
-        return null;
-      }
-      return evaluateContext;
-    }
-    return super.getAdapter(adapter);
-  }
 
   private SourcePosition getUserPosition() {
     CachedUserPosition currentCachedPosition = userCachedSourcePosition;

@@ -434,7 +434,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
         workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
         int suspendedDetail;
         if (context.getState() == State.EXCEPTION) {
-          logExceptionFromContext(context);
           suspendedDetail = DebugEvent.BREAKPOINT;
         } else {
           if (context.getBreakpointsHit().isEmpty()) {
@@ -477,32 +476,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   public void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
       BreakpointSynchronizer.Callback callback) {
     workspaceRelations.synchronizeBreakpoints(direction, callback);
-  }
-
-
-  private void logExceptionFromContext(DebugContext context) {
-    ExceptionData exceptionData = context.getExceptionData();
-    List<? extends CallFrame> callFrames = context.getCallFrames();
-    String scriptName;
-    Object lineNumber;
-    if (callFrames.size() > 0) {
-      CallFrame topFrame = callFrames.get(0);
-      Script script = topFrame.getScript();
-      scriptName = script != null ? script.getName() : Messages.DebugTargetImpl_Unknown;
-      lineNumber = topFrame.getStatementStartPosition().getLine();
-    } else {
-      scriptName = Messages.DebugTargetImpl_Unknown;
-      lineNumber = Messages.DebugTargetImpl_Unknown;
-    }
-    ChromiumDebugPlugin.logError(
-        Messages.DebugTargetImpl_LogExceptionFormat,
-        exceptionData.isUncaught()
-            ? Messages.DebugTargetImpl_Uncaught
-            : Messages.DebugTargetImpl_Caught,
-        exceptionData.getExceptionMessage(),
-        scriptName,
-        lineNumber,
-        trim(exceptionData.getSourceText(), 80));
   }
 
   private final JavascriptVmEmbedder.Listener embedderListener =
