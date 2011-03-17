@@ -39,6 +39,16 @@
         sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
     </launchConfigurationType>
     <launchConfigurationType
+        id="org.chromium.debug.ui.LaunchType$Wip"
+        delegate="org.chromium.debug.ui.launcher.WipLaunchType"
+        modes="debug"
+        name="%wipLaunchName"
+        delegateName="Debug Chromium/Wip JavaScript"
+        delegateDescription="JavaScript debugger for Chromium via WebInspector protocol (WIP)"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
+    </launchConfigurationType>
+    <launchConfigurationType
         id="org.chromium.debug.ui.LaunchType$StandaloneV8"
         delegate="org.chromium.debug.ui.launcher.StandaloneV8LaunchType"
         modes="debug"
@@ -62,6 +72,11 @@
         icon="res/chromium_16.png">
     </launchConfigurationTypeImage>
     <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$Wip"
+        configTypeID="org.chromium.debug.ui.LaunchType$Wip"
+        icon="res/chromium_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
         id="org.chromium.debug.ui.LaunchConfigTypeImage$StandaloneV8"
         configTypeID="org.chromium.debug.ui.LaunchType$StandaloneV8"
         icon="res/standalone_v8_16.png">
@@ -78,6 +93,11 @@
         type="org.chromium.debug.ui.LaunchType$Chromium"
         class="org.chromium.debug.ui.launcher.LaunchTabGroup$Chromium"
         id="org.chromium.debug.ui.LaunchTabGroup$Chromium">
+    </launchConfigurationTabGroup>
+    <launchConfigurationTabGroup
+        type="org.chromium.debug.ui.LaunchType$Wip"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$Wip"
+        id="org.chromium.debug.ui.LaunchTabGroup$Wip">
     </launchConfigurationTabGroup>
     <launchConfigurationTabGroup
         type="org.chromium.debug.ui.LaunchType$StandaloneV8"
