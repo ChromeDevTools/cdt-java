@@ -33,5 +33,12 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
         new SourceLookupTab(), new CommonTab() });
   }
 
+  public static class Wip extends LaunchTabGroup {
+    @Override
+    protected ChromiumRemoteTab createRemoteTab() {
+      return new ChromiumRemoteTab(null);
+    }
+  }
+
   protected abstract ChromiumRemoteTab createRemoteTab();
 }
