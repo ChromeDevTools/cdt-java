@@ -4,7 +4,7 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.WorkspaceBridge.BreakpointHandler;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
@@ -50,12 +50,12 @@ public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
   }
 
   private Performer createPerformer(ISelection selection) {
-    DebugTargetImpl target = getDebugTarget(selection);
-    if (target == null) {
+    RunningTargetData targetData = getRunningTargetData(selection);
+    if (targetData == null) {
       return null;
     }
     final BreakpointHandler breakpointHandler =
-        target.getWorkspaceRelations().getBreakpointHandler();
+        targetData.getWorkspaceRelations().getBreakpointHandler();
     final Boolean state = breakpointHandler.getBreakExceptionState(catchType);
     return new Performer() {
       @Override boolean getCurrentCheckedState() {
@@ -68,7 +68,7 @@ public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
     };
   }
 
-  private DebugTargetImpl getDebugTarget(ISelection selection) {
+  private RunningTargetData getRunningTargetData(ISelection selection) {
     if (selection instanceof IStructuredSelection == false) {
       return null;
     }
@@ -76,7 +76,7 @@ public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
     if (structuredSelection.size() != 1) {
       return null;
     }
-    return SynchronizeBreakpoints.getDebugTargetImpl(structuredSelection.getFirstElement());
+    return SynchronizeBreakpoints.getRunningTargetData(structuredSelection.getFirstElement());
   }
 
   public void dispose() {

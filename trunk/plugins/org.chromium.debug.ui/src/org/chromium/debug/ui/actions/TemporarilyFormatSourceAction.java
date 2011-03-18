@@ -11,6 +11,7 @@ import java.util.List;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavaScriptFormatter;
 import org.chromium.debug.core.model.StringMappingData;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
@@ -51,12 +52,12 @@ public class TemporarilyFormatSourceAction
       new FileFilter<ResourceData>() {
     @Override
     ResourceData accept(IFile file) {
-      for (DebugTargetImpl target : DebugTargetImpl.getAllDebugTargetImpls()) {
-        VmResource vmResource = target.getWorkspaceRelations().getVProjectVmResource(file);
+      for (RunningTargetData targetData : DebugTargetImpl.getAllRunningTargetDatas()) {
+        VmResource vmResource = targetData.getWorkspaceRelations().getVProjectVmResource(file);
         if (vmResource == null) {
           continue;
         }
-        return new ResourceData(file, vmResource, target);
+        return new ResourceData(file, vmResource, targetData);
       }
       return null;
     }
@@ -153,7 +154,7 @@ public class TemporarilyFormatSourceAction
 
       JavaScriptFormatter.Result result = formatter.format(sourceString);
 
-      WorkspaceBridge workspaceRelations = data.getTarget().getWorkspaceRelations();
+      WorkspaceBridge workspaceRelations = data.getRunningTargetData().getWorkspaceRelations();
 
       String proposedFileName = data.getVmResource().getLocalVisibleFileName() +
           Messages.TemporarilyFormatSourceAction_FORMATTER_SUFFIX;
@@ -164,7 +165,8 @@ public class TemporarilyFormatSourceAction
 
       SourcePositionMapBuilder.MappingHandle mappingHandle;
       try {
-        SourcePositionMapBuilder builder = data.getTarget().getSourcePositionMapBuilder();
+        SourcePositionMapBuilder builder =
+            data.getRunningTargetData().getSourcePositionMapBuilder();
 
         // Unformatted text is a VM text.
         StringMappingData vmTextData = result.getInputTextData();
@@ -281,12 +283,12 @@ public class TemporarilyFormatSourceAction
   static class ResourceData {
     private final IFile file;
     private final VmResource vmResource;
-    private final DebugTargetImpl debugTarget;
+    private final RunningTargetData runningTargetData;
 
-    ResourceData(IFile file, VmResource vmResource, DebugTargetImpl debugTarget) {
+    ResourceData(IFile file, VmResource vmResource, RunningTargetData runningTargetData) {
       this.file = file;
       this.vmResource = vmResource;
-      this.debugTarget = debugTarget;
+      this.runningTargetData = runningTargetData;
     }
 
     IFile getFile() {
@@ -297,8 +299,8 @@ public class TemporarilyFormatSourceAction
       return vmResource;
     }
 
-    public DebugTargetImpl getTarget() {
-      return debugTarget;
+    public RunningTargetData getRunningTargetData() {
+      return runningTargetData;
     }
   }
 

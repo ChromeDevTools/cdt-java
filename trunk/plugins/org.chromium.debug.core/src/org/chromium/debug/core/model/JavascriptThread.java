@@ -27,7 +27,7 @@ import org.eclipse.debug.core.model.IVariable;
 /**
  * This class represents the only Chromium V8 VM thread.
  */
-public class JavascriptThread extends DebugElementImpl implements IThread, IAdaptable {
+public class JavascriptThread extends RunningDebugElement implements IThread, IAdaptable {
 
   private static final StackFrame[] EMPTY_FRAMES = new StackFrame[0];
 
@@ -51,15 +51,15 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   /**
    * Constructs a new thread for the given target
    *
-   * @param debugTarget this thread is created for
+   * @param runningTargetData this thread is created for
    */
-  public JavascriptThread(DebugTargetImpl debugTarget) {
-    super(debugTarget);
+  public JavascriptThread(RunningTargetData runningTargetData) {
+    super(runningTargetData);
   }
 
   public StackFrameBase[] getStackFrames() throws DebugException {
     try {
-      ensureStackFrames(getDebugTarget().getDebugContext());
+      ensureStackFrames(getRunningData().getDebugContext());
       return stackFrames;
     } catch (InvalidContextException e) {
       return new StackFrame[0];
@@ -89,7 +89,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
     if (exceptionData != null) {
       // Add fake 'throw exception' frame.
       EvaluateContext evaluateContext =
-          new EvaluateContext(debugContext.getGlobalEvaluateContext(), thread.getDebugTarget());
+          new EvaluateContext(debugContext.getGlobalEvaluateContext(), thread.getRunningData());
       result.add(new ExceptionStackFrame(thread, evaluateContext, exceptionData));
     }
     for (CallFrame jsFrame : jsFrames) {
@@ -237,7 +237,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
   }
 
   private void step(StepAction stepAction, int detail) throws DebugException {
-    DebugContext debugContext = getDebugTarget().getDebugContext();
+    DebugContext debugContext = getRunningData().getDebugContext();
     if (debugContext == null) {
       throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
           "Step attempted while not suspended")); //$NON-NLS-1$
@@ -246,7 +246,7 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
     debugContext.continueVm(stepAction, 1, null);
     // The suspend event should be fired once the backtrace is ready
     // (in BacktraceProcessor).
-    getDebugTarget().fireResumeEvent(detail);
+    getRunningData().fireResumeEvent(detail);
   }
 
   public void stepInto() throws DebugException {
@@ -280,15 +280,20 @@ public class JavascriptThread extends DebugElementImpl implements IThread, IAdap
     isStepping = stepping;
   }
 
+  EvaluateContext getEvaluateContext() {
+    RunningTargetData targetRunningData = getRunningData();
+    DebugContext debugContext = targetRunningData.getDebugContext();
+    if (debugContext == null) {
+      return null;
+    }
+    return new EvaluateContext(debugContext.getGlobalEvaluateContext(), targetRunningData);
+  }
+
   @Override
   @SuppressWarnings("unchecked")
   public Object getAdapter(Class adapter) {
     if (adapter == EvaluateContext.class) {
-      DebugContext debugContext = getDebugTarget().getDebugContext();
-      if (debugContext == null) {
-        return null;
-      }
-      return new EvaluateContext(debugContext.getGlobalEvaluateContext(), getDebugTarget());
+      return getEvaluateContext();
     }
     return super.getAdapter(adapter);
   }

@@ -5,6 +5,7 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.Variable;
 import org.chromium.debug.core.model.VmResourceId;
@@ -63,7 +64,7 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
   public interface VariableWrapper {
     Value getValue();
     IDebugElement getDebugElement();
-    DebugTargetImpl getDebugTarget();
+    RunningTargetData getRunningTargetData();
   }
 
   private final ElementHandler elementHandler;
@@ -93,8 +94,8 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     if (wrapper == null) {
       return null;
     }
-    final DebugTargetImpl debugTarget = wrapper.getDebugTarget();
-    if (debugTarget == null) {
+    final RunningTargetData runningTargetData = wrapper.getRunningTargetData();
+    if (runningTargetData == null) {
       return null;
     }
     final JsFunction jsFunction = getJsFunctionFromElement(wrapper);
@@ -108,14 +109,15 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         IWorkbench workbench = PlatformUI.getWorkbench();
         final IWorkbenchWindow activeWorkbenchWindow = workbench.getActiveWorkbenchWindow();
 
-        ISourceLocator sourceLocator = debugTarget.getLaunch().getSourceLocator();
+        ISourceLocator sourceLocator =
+            runningTargetData.getDebugTarget().getLaunch().getSourceLocator();
         if (sourceLocator instanceof ISourceLookupDirector == false) {
           return;
         }
         ISourceLookupDirector director = (ISourceLookupDirector) sourceLocator;
 
 
-        SourcePositionMap positionMap = debugTarget.getSourcePositionMap();
+        SourcePositionMap positionMap = runningTargetData.getSourcePositionMap();
         SourcePosition userPosition;
         {
           // First get VM positions.
@@ -235,14 +237,15 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         public IDebugElement getDebugElement() {
           return variable;
         }
-        public DebugTargetImpl getDebugTarget() {
-          return variable.getDebugTarget();
+        public RunningTargetData getRunningTargetData() {
+          return variable.getRunningData();
         }
       };
     }
   };
   public static final ElementHandler EXPRESSION_VIEW_ELEMENT_HANDLER = new ElementHandler() {
-    @Override public VariableWrapper castElement(Object element) {
+    @Override
+    public VariableWrapper castElement(Object element) {
       if (element instanceof IWatchExpression == false) {
         return null;
       }
@@ -259,12 +262,13 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
         public IDebugElement getDebugElement() {
           return watchExpression;
         }
-        public DebugTargetImpl getDebugTarget() {
+        public RunningTargetData getRunningTargetData() {
           IDebugTarget debugTarget = watchExpression.getDebugTarget();
           if (debugTarget instanceof DebugTargetImpl == false) {
             return null;
           }
-          return (DebugTargetImpl) debugTarget;
+          DebugTargetImpl debugTargetImpl = (DebugTargetImpl) debugTarget;
+          return debugTargetImpl.getRunningOrNull();
         }
       };
     }

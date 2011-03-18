@@ -7,7 +7,7 @@ package org.chromium.debug.ui.liveedit;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.TableUtils;
 import org.chromium.debug.ui.TableUtils.ColumnBasedLabelProvider;
@@ -177,10 +177,10 @@ class LiveEditResultDialog extends Dialog {
 
     table.setHeaderVisible(true);
 
-    ValueAdapter<SingleInput, DebugTargetImpl> inputToTargetAdapter =
-        new ValueAdapter<SingleInput, DebugTargetImpl>() {
-          public DebugTargetImpl convert(SingleInput from) {
-            return from.getFilePair().getDebugTarget();
+    ValueAdapter<SingleInput, RunningTargetData> inputToTargetAdapter =
+        new ValueAdapter<SingleInput, RunningTargetData>() {
+          public RunningTargetData convert(SingleInput from) {
+            return from.getFilePair().getRunningTargetData();
           }
     };
 

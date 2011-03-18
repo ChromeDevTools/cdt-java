@@ -91,6 +91,10 @@ public class Messages extends NLS {
 
   public static String StackFrame_UnknownScriptName;
 
+  public static String TargetInitializeState_INITIALIZING;
+
+  public static String TargetInitializeState_TERMINATED;
+
   public static String Variable_NotScalarOrObjectFormat;
 
   public static String Variable_NullTypeForAVariable;

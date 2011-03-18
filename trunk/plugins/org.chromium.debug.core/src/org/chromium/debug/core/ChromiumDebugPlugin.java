@@ -13,6 +13,7 @@ import org.chromium.debug.core.model.BreakpointWrapManager;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ScriptTargetMapping;
@@ -85,13 +86,13 @@ public class ChromiumDebugPlugin extends Plugin {
    * scripts if there are more than one debug sessions.
    */
   public static List<? extends ScriptTargetMapping> getScriptTargetMapping(IFile localFile) {
-    List<DebugTargetImpl> targetList = DebugTargetImpl.getAllDebugTargetImpls();
-    ArrayList<ScriptTargetMapping> result = new ArrayList<ScriptTargetMapping>(targetList.size());
+    List<RunningTargetData> targetDataList = DebugTargetImpl.getAllRunningTargetDatas();
+    ArrayList<ScriptTargetMapping> result = new ArrayList<ScriptTargetMapping>(targetDataList.size());
 
-    for (DebugTargetImpl target : targetList) {
+    for (RunningTargetData targetData : targetDataList) {
       VmResource script;
       try {
-        script = target.getVmResource(localFile);
+        script = targetData.getVmResource(localFile);
       } catch (CoreException e) {
         throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
       }
@@ -103,7 +104,7 @@ public class ChromiumDebugPlugin extends Plugin {
         continue;
       }
       VmResource.ScriptHolder scriptHolder = (VmResource.ScriptHolder) metadata;
-      result.add(new ScriptTargetMapping(localFile, script, scriptHolder, target));
+      result.add(new ScriptTargetMapping(localFile, script, scriptHolder, targetData));
     }
     return result;
   }

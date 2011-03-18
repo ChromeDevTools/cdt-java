@@ -12,19 +12,19 @@ import org.chromium.sdk.JsEvaluateContext;
  */
 public class EvaluateContext {
   private final JsEvaluateContext jsEvaluateContext;
-  private final DebugTargetImpl debugTargetImpl;
+  private final RunningTargetData runningTargetData;
 
-  EvaluateContext(JsEvaluateContext jsEvaluateContext, DebugTargetImpl debugTargetImpl) {
+  EvaluateContext(JsEvaluateContext jsEvaluateContext, RunningTargetData runningTargetData) {
     this.jsEvaluateContext = jsEvaluateContext;
-    this.debugTargetImpl = debugTargetImpl;
+    this.runningTargetData = runningTargetData;
   }
 
   public JsEvaluateContext getJsEvaluateContext() {
     return jsEvaluateContext;
   }
 
-  public DebugTargetImpl getDebugTarget() {
-    return debugTargetImpl;
+  public RunningTargetData getRunningTargetData() {
+    return runningTargetData;
   }
 
   public DebugContext getDebugContext() {

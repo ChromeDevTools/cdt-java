@@ -29,7 +29,7 @@ import org.eclipse.debug.ui.actions.IWatchExpressionFactoryAdapter;
  * An IVariable implementation over a JsVariable instance. This is class is a base implementation,
  * and it contains several concrete implementations as nested classes.
  */
-public abstract class Variable extends DebugElementImpl implements IVariable {
+public abstract class Variable extends RunningDebugElement implements IVariable {
 
   /**
    * Represents a real variable -- wraps {@link JsVariable}.
@@ -202,7 +202,7 @@ public abstract class Variable extends DebugElementImpl implements IVariable {
   private final EvaluateContext evaluateContext;
 
   public Variable(EvaluateContext evaluateContext) {
-    super(evaluateContext.getDebugTarget());
+    super(evaluateContext.getRunningTargetData());
     this.evaluateContext = evaluateContext;
   }
 

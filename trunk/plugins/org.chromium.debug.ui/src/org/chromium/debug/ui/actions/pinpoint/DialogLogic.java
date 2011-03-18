@@ -351,7 +351,7 @@ class DialogLogic {
         return createErrorOptional(new Message(Messages.LogicImpl_FEATURE_NOT_SUPPORTED,
             MessagePriority.BLOCKING_PROBLEM));
       }
-      if (uiValue.getDebugTarget().getDebugContext() != debugContext) {
+      if (uiValue.getRunningData().getDebugContext() != debugContext) {
         return createErrorOptional(
             new Message(Messages.LogicImpl_CONTEXT_DISMISSED, MessagePriority.BLOCKING_PROBLEM));
       }

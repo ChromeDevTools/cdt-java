@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.TableUtils;
 import org.chromium.debug.ui.TableUtils.ColumnBasedLabelProvider;
@@ -47,10 +47,10 @@ public class ChooseVmControl {
 
     tableViewer.setContentProvider(new ContentProviderImpl());
 
-    ValueAdapter<ScriptTargetMapping, DebugTargetImpl> pairToTargetAdapter =
-        new ValueAdapter<ScriptTargetMapping, DebugTargetImpl>() {
-          public DebugTargetImpl convert(ScriptTargetMapping from) {
-            return from.getDebugTarget();
+    ValueAdapter<ScriptTargetMapping, RunningTargetData> pairToTargetAdapter =
+        new ValueAdapter<ScriptTargetMapping, RunningTargetData>() {
+          public RunningTargetData convert(ScriptTargetMapping from) {
+            return from.getRunningTargetData();
           }
         };
 
@@ -161,24 +161,24 @@ public class ChooseVmControl {
     public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
   }
 
-  private static class LaunchNameLabelProvider extends ColumnLabelProvider<DebugTargetImpl> {
-    private Map<DebugTargetImpl, Image> createdImages = new HashMap<DebugTargetImpl, Image>();
+  private static class LaunchNameLabelProvider extends ColumnLabelProvider<RunningTargetData> {
+    private Map<RunningTargetData, Image> createdImages = new HashMap<RunningTargetData, Image>();
 
     @Override
-    public Image getColumnImage(DebugTargetImpl debugTarget) {
-      Image result = createdImages.get(debugTarget);
+    public Image getColumnImage(RunningTargetData runningTargetData) {
+      Image result = createdImages.get(runningTargetData);
       if (result == null) {
         ImageDescriptor imageDescriptor = DebugUITools.getDefaultImageDescriptor(
-            debugTarget.getLaunch().getLaunchConfiguration());
+            runningTargetData.getDebugTarget().getLaunch().getLaunchConfiguration());
         result = imageDescriptor.createImage();
-        createdImages.put(debugTarget, result);
+        createdImages.put(runningTargetData, result);
       }
       return result;
     }
 
     @Override
-    public String getColumnText(DebugTargetImpl debugTarget) {
-      return debugTarget.getLaunch().getLaunchConfiguration().getName();
+    public String getColumnText(RunningTargetData runningTargetData) {
+      return runningTargetData.getDebugTarget().getLaunch().getLaunchConfiguration().getName();
     }
 
     @Override
@@ -197,15 +197,15 @@ public class ChooseVmControl {
     }
   }
 
-  private static class TargetNameLabelProvider extends ColumnLabelProvider<DebugTargetImpl> {
+  private static class TargetNameLabelProvider extends ColumnLabelProvider<RunningTargetData> {
     @Override
-    public Image getColumnImage(DebugTargetImpl debugTarget) {
+    public Image getColumnImage(RunningTargetData runningTargetData) {
       return null;
     }
 
     @Override
-    public String getColumnText(DebugTargetImpl debugTarget) {
-      return debugTarget.getName();
+    public String getColumnText(RunningTargetData runningTargetData) {
+      return runningTargetData.getName();
     }
 
     @Override
@@ -222,7 +222,7 @@ public class ChooseVmControl {
    * controls; they only have to provide there row->column value adapter.
    */
   public static <R> List<ColumnData<R, ?>> createLaunchTargetColumns(
-      ValueAdapter<R, DebugTargetImpl> rowValueAdapter) {
+      ValueAdapter<R, RunningTargetData> rowValueAdapter) {
     List<ColumnData<R, ?>> result = new ArrayList<ColumnData<R, ?>>(2);
 
     result.add(ColumnData.create(rowValueAdapter, new LaunchNameLabelProvider()));

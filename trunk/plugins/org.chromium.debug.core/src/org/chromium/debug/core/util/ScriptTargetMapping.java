@@ -4,7 +4,7 @@
 
 package org.chromium.debug.core.util;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.sdk.JavascriptVm;
 import org.eclipse.core.resources.IFile;
@@ -17,14 +17,14 @@ public class ScriptTargetMapping {
   private final IFile file;
   private final VmResource vmResource;
   private final VmResource.ScriptHolder scriptHolder;
-  private final DebugTargetImpl debugTargetImpl;
+  private final RunningTargetData runningTargetData;
 
   public ScriptTargetMapping(IFile file, VmResource vmResource,
-      VmResource.ScriptHolder scriptHolder, DebugTargetImpl debugTargetImpl) {
+      VmResource.ScriptHolder scriptHolder, RunningTargetData runningTargetData) {
     this.file = file;
     this.vmResource = vmResource;
     this.scriptHolder = scriptHolder;
-    this.debugTargetImpl = debugTargetImpl;
+    this.runningTargetData = runningTargetData;
   }
 
   public IFile getFile() {
@@ -40,10 +40,10 @@ public class ScriptTargetMapping {
   }
 
   public JavascriptVm getJavascriptVm() {
-    return debugTargetImpl.getJavascriptEmbedder().getJavascriptVm();
+    return runningTargetData.getJavascriptVm();
   }
 
-  public DebugTargetImpl getDebugTarget() {
-    return debugTargetImpl;
+  public RunningTargetData getRunningTargetData() {
+    return runningTargetData;
   }
 }
