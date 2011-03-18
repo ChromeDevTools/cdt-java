@@ -12,7 +12,196 @@
 </head>
 <body>
 <script>
-  document.write(adviserImpl.RunTest());
+  function Tester(testApi) {
+    var VersionRange = testApi.versionRange;
+    var Version = testApi.version;
+  
+    // Test highly tricky VersionRange#overlap method.
+    function checkOverlapResult(range1, range2, expectedBefore, expectedOverlap, expectedAfter) {
+      var overlapRes = range1.overlap(range2);
+      
+      function rangesEqual(r1, r2) {
+        if (r1) {
+	        if (r2) {
+	            return VersionRange.equals(r1, r2);
+	        } else {
+	            return false;
+	        }
+        } else {
+            return !r2;
+        }
+      }
+      var res = rangesEqual(overlapRes.before, expectedBefore) &&
+          rangesEqual(overlapRes.overlap, expectedOverlap) &&
+          rangesEqual(overlapRes.after, expectedAfter);
+      if (!res) {
+        throw "Failure with overlap " + range1 + " and " + range2;
+      }
+    }
+    function checkOverlapMustBeException(range1, range2) {
+      try {
+        range1.overlap(range2);
+        throw "Failure with overlap " + range1 + " and " + range2 + " (exception expected)";
+      } catch (e) {
+        // Expected
+      }
+    }
+    
+    // Point on point.
+    checkOverlapResult(VersionRange.createPoint( new Version([10]) ),
+                       VersionRange.createPoint( new Version([11]) ),
+                       undefined,
+                       undefined,
+                       VersionRange.createPoint( new Version([11])) ); 
+
+    checkOverlapResult(VersionRange.createPoint( new Version([11]) ),
+                       VersionRange.createPoint( new Version([11]) ),
+                       undefined,
+                       VersionRange.createPoint( new Version([11]) ),
+                       undefined); 
+    
+    checkOverlapResult(VersionRange.createPoint( new Version([10]) ),
+                       VersionRange.createPoint( new Version([9]) ),
+                       VersionRange.createPoint( new Version([9]) ),
+                       undefined,
+                       undefined); 
+    
+    // Point on range.
+    checkOverlapResult(VersionRange.createPoint( new Version([10]) ),
+                       new VersionRange( new Version([11]), new Version([13]) ),
+                       undefined,
+                       undefined,
+                       new VersionRange( new Version([11]), new Version([13]) )); 
+
+    checkOverlapMustBeException(VersionRange.createPoint( new Version([11]) ),
+                       new VersionRange( new Version([11]), new Version([13]) )); 
+
+    checkOverlapMustBeException(VersionRange.createPoint( new Version([12]) ),
+                       new VersionRange( new Version([11]), new Version([13]) )); 
+
+    checkOverlapResult(VersionRange.createPoint( new Version([13]) ),
+                       new VersionRange( new Version([11]), new Version([13]) ),
+                       new VersionRange( new Version([11]), new Version([13]) ),
+                       undefined,
+                       undefined); 
+
+    checkOverlapResult(VersionRange.createPoint( new Version([14]) ),
+                       new VersionRange( new Version([11]), new Version([13]) ),
+                       new VersionRange( new Version([11]), new Version([13]) ),
+                       undefined,
+                       undefined); 
+
+    // Range on point.
+    checkOverlapResult(new VersionRange( new Version([11]), new Version([13]) ),
+                       VersionRange.createPoint( new Version([10]) ),
+                       VersionRange.createPoint( new Version([10]) ),
+                       undefined,
+                       undefined); 
+
+    checkOverlapMustBeException(new VersionRange( new Version([11]), new Version([13]) ),
+                       VersionRange.createPoint( new Version([11]) )); 
+
+    checkOverlapMustBeException(new VersionRange( new Version([11]), new Version([13]) ),
+                       VersionRange.createPoint( new Version([12]) )); 
+
+    checkOverlapResult(new VersionRange( new Version([11]), new Version([13]) ),
+                       VersionRange.createPoint( new Version([13]) ),
+                       undefined,
+                       undefined,
+                       VersionRange.createPoint( new Version([13]) )); 
+
+    checkOverlapResult(new VersionRange( new Version([11]), new Version([13]) ),
+                       VersionRange.createPoint( new Version([14]) ),
+                       undefined,
+                       undefined,
+                       VersionRange.createPoint( new Version([14]) )); 
+
+    // Range on range.
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([4]) ),
+                       new VersionRange( new Version([3]), new Version([4]) ),
+                       undefined,
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([10]) ),
+                       new VersionRange( new Version([3]), new Version([10]) ),
+                       undefined,
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([11]) ),
+                       new VersionRange( new Version([3]), new Version([10]) ),
+                       new VersionRange( new Version([10]), new Version([11]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([10]) ),
+                       new VersionRange( new Version([10]), new Version([20]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([3]), new Version([42]) ),
+                       new VersionRange( new Version([3]), new Version([10]) ),
+                       new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([20]), new Version([42]) )); 
+
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([10]), new Version([11]) ),
+                       undefined,
+                       new VersionRange( new Version([10]), new Version([11]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([10]), new Version([20]) ),
+                       undefined,
+                       new VersionRange( new Version([10]), new Version([20]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([10]), new Version([42]) ),
+                       undefined,
+                       new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([20]), new Version([42]) )); 
+
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([11]), new Version([12]) ),
+                       undefined,
+                       new VersionRange( new Version([11]), new Version([12]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([11]), new Version([20]) ),
+                       undefined,
+                       new VersionRange( new Version([11]), new Version([20]) ),
+                       undefined); 
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([11]), new Version([42]) ),
+                       undefined,
+                       new VersionRange( new Version([11]), new Version([20]) ),
+                       new VersionRange( new Version([20]), new Version([42]) )); 
+
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([20]), new Version([42]) ),
+                       undefined,
+                       undefined,
+                       new VersionRange( new Version([20]), new Version([42]) )); 
+
+
+    checkOverlapResult(new VersionRange( new Version([10]), new Version([20]) ),
+                       new VersionRange( new Version([22]), new Version([42]) ),
+                       undefined,
+                       undefined,
+                       new VersionRange( new Version([22]), new Version([42]) )); 
+
+
+  }
+  document.write(adviserImpl.RunTest(Tester));
 </script>
 </body>
 </html>

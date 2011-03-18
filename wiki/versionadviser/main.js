@@ -6,7 +6,7 @@ var adviserImpl = (function() {
 	function Data() {
 		this.chromiumVersions = [
 				new VersionRange(new Version([ 1 ]), new Version(
-						[ 9, Infinity ])),
+						[ 9, Infinity ]), "old versions"),
 				new VersionRange(new Version([ 10 ]), new Version(
 						[ 10, Infinity ])),
 				new VersionRange(new Version([ 11 ]),
@@ -22,7 +22,7 @@ var adviserImpl = (function() {
 				new VersionRange(new Version([ 0, 2, 3 ]),
 						new Version([ Infinity ]), "future versions"), ];
 		this.toolsRealVersions.forEach(function(version) {
-			toolsVersions.push(createPointRange(version));
+			toolsVersions.push(VersionRange.createPoint(version));
 		});
 		toolsVersions.sort(VersionRange.compareStrict);
 		this.toolsVersions = toolsVersions;
@@ -132,7 +132,11 @@ var adviserImpl = (function() {
 		}
 	}
 	VersionRange.prototype.toString = function() {
-		return this.start + " - " + this.end;
+	    var text = this.start + " - " + this.end;
+	    if (this.codeName_) {
+	      text = text + "(" + this.codeName_ + ")";
+	    }
+		return text;
 	};
 	VersionRange.prototype.getHtmlText = function(versionFormat) {
 		var res = "";
@@ -180,9 +184,7 @@ var adviserImpl = (function() {
 				if (Version.compare(this.start, range.end) >= 0) {
 					rangeBeforeThis = range;
 				} else if (Version.compare(this.start, range.start) >= 0) {
-					rangeBeforeThis = new VersionRange(range.start, this.start);
-					rangeOverlap = this;
-					rangeAfterThis = new VersionRange(this.start, range.end);
+				    throw "Overlapping point with a range";
 				} else {
 					rangeAfterThis = range;
 				}
@@ -208,7 +210,7 @@ var adviserImpl = (function() {
 						rangeBeforeThis = range;
 					} else {
 						rangeBeforeThis = new VersionRange(range.start,
-								this.start);
+								this.start, range.getCodeName());
 					}
 				}
 
@@ -218,15 +220,15 @@ var adviserImpl = (function() {
 					if (Version.compare(range.start, this.end) >= 0) {
 						rangeAfterThis = range;
 					} else {
-						rangeAfterThis = new VersionRange(this.end, range.end);
+						rangeAfterThis = new VersionRange(this.end, range.end, range.getCodeName());
 					}
 				}
 
-				if (Version.compare(point1, point2) <= 0) {
+				if (Version.compare(point1, point2) < 0) {
 					if (sameOverlapInstance) {
 						rangeOverlap = range;
 					} else {
-						rangeOverlap = new VersionRange(point1, point2);
+						rangeOverlap = new VersionRange(point1, point2, range.getCodeName());
 					}
 				}
 			}
@@ -244,6 +246,9 @@ var adviserImpl = (function() {
 			return new VersionRange(this.start, next.end);
 		}
 	};
+	VersionRange.prototype.getCodeName = function() {
+	  return this.codeName_;
+	};
 
 	VersionRange.compareStrict = function(range1, range2) {
 		if (Version.compare(range1.start, range2.end) > 0) {
@@ -254,11 +259,11 @@ var adviserImpl = (function() {
 			throw "Overlapping ranges: " + range1 + " - " + range2;
 		}
 	};
-	VersionRange.compareStrict = function(range1, range2) {
+	VersionRange.equals = function(range1, range2) {
 		return Version.compare(range1.start, range2.start) == 0 &&
-            Version.compare(range1.end, range2.end);
+            Version.compare(range1.end, range2.end) == 0;
 	};
-	function createPointRange(version, opt_codeName) {
+	VersionRange.createPoint = function(version, opt_codeName) {
 		return new VersionRange(version, version, opt_codeName);
 	}
 
@@ -466,8 +471,17 @@ var adviserImpl = (function() {
 		return result;
 	}
 
-	function runTests() {
-
+	function runTests(tester) {
+		var testApi = {
+		    version: Version,
+		    versionRange: VersionRange
+		};
+		try {
+	        tester(testApi);
+	        return "OK";
+    	} catch (e) {
+	        return "Error: " + String(e);
+    	}
 	}
 
 	return {
@@ -481,6 +495,6 @@ var adviserImpl = (function() {
 		},
 		GetKnownToolsVersions : getKnownToolsVersions,
 		DumpAllLimitations : getAllLimitationsHtml,
-		RunTest : runTests()
+		RunTest : runTests
 	};
 })();
