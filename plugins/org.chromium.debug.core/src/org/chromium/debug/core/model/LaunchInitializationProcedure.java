@@ -29,7 +29,7 @@ class LaunchInitializationProcedure {
     final LaunchInitializationProcedure procedure =
         new LaunchInitializationProcedure(workspaceBridge);
 
-    ILaunch launch = workspaceBridge.getDebugTarget().getLaunch();
+    ILaunch launch = workspaceBridge.getRunningTargetData().getDebugTarget().getLaunch();
     final String jobName = NLS.bind(Messages.LaunchInitializationProcedure_JOB_NAME,
         launch.getLaunchConfiguration().getName());
     Job job = new Job(jobName) {
@@ -62,14 +62,14 @@ class LaunchInitializationProcedure {
   }
 
   private IStatus execute(IProgressMonitor monitor) {
-    DebugTargetImpl debugTarget = workspaceBridge.getDebugTarget();
+    RunningTargetData runningTargetData = workspaceBridge.getRunningTargetData();
 
     MonitorWrapper monitorWrapper = new MonitorWrapper(monitor, ""); //$NON-NLS-1$
 
     monitorWrapper.beginTask();
     try {
       WorkPlan.PREINIT.start(monitorWrapper);
-      debugTarget.resumeSessionByDefault();
+      runningTargetData.resumeSessionByDefault();
       WorkPlan.PREINIT.finish(monitorWrapper);
       checkIsCanceled(monitorWrapper);
       WorkPlan.SET_OPTIONS.start(monitorWrapper);
@@ -104,8 +104,8 @@ class LaunchInitializationProcedure {
     try {
       BreakpointsWorkPlan.ANALYZE.start(monitor);
 
-      ILaunchConfiguration launchConfiguration =
-          workspaceBridge.getDebugTarget().getLaunch().getLaunchConfiguration();
+      DebugTargetImpl debugTarget = workspaceBridge.getRunningTargetData().getDebugTarget();
+      ILaunchConfiguration launchConfiguration = debugTarget.getLaunch().getLaunchConfiguration();
 
       BreakpointSynchronizer.Direction direction;
       try {

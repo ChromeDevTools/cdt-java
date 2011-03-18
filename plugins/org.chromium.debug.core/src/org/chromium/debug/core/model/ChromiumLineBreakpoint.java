@@ -121,10 +121,10 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     }
 
     public static void createOnRemote(WrappedBreakpoint uiBreakpoint,
-        VmResourceId scriptId, DebugTargetImpl debugTarget,
+        VmResourceId scriptId, RunningTargetData runningTargetData,
         final CreateOnRemoveCallback createOnRemoveCallback,
         SyncCallback syncCallback) throws CoreException {
-      JavascriptVm javascriptVm = debugTarget.getJavascriptEmbedder().getJavascriptVm();
+      JavascriptVm javascriptVm = runningTargetData.getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
       final int line = (uiBreakpoint.getInner().getLineNumber() - 1);
@@ -137,7 +137,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       };
 
-      SourcePositionMap map = debugTarget.getSourcePositionMap();
+      SourcePositionMap map = runningTargetData.getSourcePositionMap();
       SourcePosition vmPosition =
           map.translatePosition(scriptId, line, 0,TranslateDirection.USER_TO_VM);
 

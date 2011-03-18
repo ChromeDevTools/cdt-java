@@ -8,94 +8,68 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.sourcemap.PositionMapBuilderImpl;
-import org.chromium.debug.core.sourcemap.SourcePositionMap;
-import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
-import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugContext.State;
-import org.chromium.sdk.DebugContext.StepAction;
-import org.chromium.sdk.DebugEventListener;
-import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.Script;
 import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructingGuard;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
-import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
+import org.eclipse.debug.core.model.IDisconnect;
 import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.debug.core.model.ISuspendResume;
+import org.eclipse.debug.core.model.ITerminate;
 import org.eclipse.debug.core.model.IThread;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * An IDebugTarget implementation for remote JavaScript debugging.
- * Can debug any target that supports the ChromeDevTools protocol.
+ * This class is essentially a thin wrapper that uses its internal state object
+ * as implementation. The at first target is in 'initialize' state, later
+ * it should transfer into 'normal' state.
  */
+
 public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
-
-  private static final IThread[] EMPTY_THREADS = new IThread[0];
-
-  private final ILaunch launch;
-
-  private final JavascriptThread[] threads;
-
-  private JavascriptVmEmbedder vmEmbedder = STUB_VM_EMBEDDER;
-
-  private volatile DebugContext debugContext;
-
-  private boolean isSuspended = false;
-
-  private boolean isDisconnected = false;
-
-  private final WorkspaceBridge.Factory workspaceBridgeFactory;
-
-  private final SourcePositionMapBuilder sourcePositionMapBuilder = new PositionMapBuilderImpl();
-
-  private WorkspaceBridge workspaceRelations = null;
-
-  private ListenerBlock listenerBlock = null;
-
-  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
-    super(null);
-    this.workspaceBridgeFactory = workspaceBridgeFactory;
-    this.launch = launch;
-    this.threads = new JavascriptThread[] { new JavascriptThread(this) };
-  }
-
-
   /**
    * Loads browser tabs, consults the {@code selector} which of the tabs to
    * attach to, and if any has been selected, requests an attachment to the tab.
    *
+   * @param debugTargetImpl target that is attached
    * @param remoteServer embedding application we are connected with
+   * @param destructingGuard guard that should gain any destructable value -- a caller
+   *      will dispose everything if this method fails
    * @param attachCallback to invoke on successful attachment, can fail to be called
    * @param monitor to report the progress to
-   * @return whether the target has attached to a tab
-   * @throws CoreException
+   * @return false if user canceled attach (via tab selection dialog) or true otherwise
    */
-  public boolean attach(JavascriptVmEmbedder.ConnectionToRemote remoteServer,
+  public static boolean attach(DebugTargetImpl debugTargetImpl,
+      JavascriptVmEmbedder.ConnectionToRemote remoteServer,
       DestructingGuard destructingGuard, Runnable attachCallback,
       IProgressMonitor monitor) throws CoreException {
+
     monitor.beginTask("", 2); //$NON-NLS-1$
     JavascriptVmEmbedder.VmConnector connector = remoteServer.selectVm();
     if (connector == null) {
       return false;
     }
+
     monitor.worked(1);
-    this.listenerBlock = new ListenerBlock();
+
+    RunningTargetData.TargetInnerState runningState;
+    RunningTargetData runningData;
+
+    ListenerBlock listenerBlock = new ListenerBlock();
     try {
-      final JavascriptVmEmbedder embedder = connector.attach(embedderListener, debugEventListener);
+      runningState = RunningTargetData.create(debugTargetImpl, listenerBlock);
+      runningData = runningState.getRunningTargetData();
+
+      final JavascriptVmEmbedder embedder =
+          connector.attach(runningData.getEmbedderListener(), runningData.getDebugEventListener());
       // From this moment V8 may call our listeners. We block them by listenerBlock for a while.
 
       Destructable embedderDestructor = new Destructable() {
@@ -106,81 +80,74 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
       destructingGuard.addValue(embedderDestructor);
 
-      this.vmEmbedder = embedder;
+      runningData.setVmEmbedder(embedder);
 
-      // We'd like to know when launch is removed to remove our project.
-      DebugPlugin.getDefault().getLaunchManager().addLaunchListener(launchListener);
+      debugTargetImpl.setInnerState(runningState);
 
-      this.workspaceRelations = workspaceBridgeFactory.attachedToVm(this,
-          vmEmbedder.getJavascriptVm());
+      runningData.fireBecameRunningEvents();
+
       listenerBlock.setProperlyInitialized();
     } finally {
       listenerBlock.unblock();
     }
 
-    IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
-    breakpointManager.addBreakpointListener(this);
-    breakpointManager.addBreakpointManagerListener(workspaceRelations.getBreakpointHandler());
-    workspaceRelations.getBreakpointHandler().initBreakpointManagerListenerState(breakpointManager);
-    workspaceRelations.getBreakpointHandler().readBreakExceptionStateFromRemote();
+    runningData.initListeners();
 
-    invokeAttachCallback(attachCallback);
-
-    workspaceRelations.startInitialization();
+    try {
+      if (attachCallback != null) {
+        attachCallback.run();
+      }
+    } catch (Exception e) {
+      ChromiumDebugPlugin.log(e);
+    }
 
     return true;
   }
 
   /**
-   * To initialize debug UI we call "resumed" manually first. However, "suspended" event
-   * may have already arrived, so we should be careful about this.
+   * Defines an actual state of target. It is who implements virtually all operations
+   * of {@link DebugTargetImpl}.
    */
-  void resumeSessionByDefault() {
-    debugEventListener.resumedByDefault();
+  static abstract class State {
+    abstract ITerminate getTerminate();
+    abstract ISuspendResume getSuspendResume();
+    abstract IDisconnect getDisconnect();
+    abstract IBreakpointListener getBreakpointListner();
+    abstract IThread[] getThreads() throws DebugException;
+    abstract String getName();
+    abstract String getVmStatus();
+    abstract boolean supportsBreakpoint(IBreakpoint breakpoint);
+    abstract EvaluateContext getEvaluateContext();
+    abstract RunningTargetData getRunningTargetDataOrNull();
   }
 
-  private void invokeAttachCallback(final Runnable attachCallback) {
-    try {
-      if (attachCallback != null) {
-        attachCallback.run();
-      }
-    } finally {
-      fireCreationEvent();
-    }
+  static final IThread[] EMPTY_THREADS = new IThread[0];
+
+  private final WorkspaceBridge.Factory workspaceBridgeFactory;
+
+  private final ILaunch launch;
+  private volatile State currentState = new TargetInitializeState(this);
+
+  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
+    super(null);
+    this.launch = launch;
+    this.workspaceBridgeFactory = workspaceBridgeFactory;
   }
 
-  public String getName() {
-    JavascriptVmEmbedder vmEmbedder = getJavascriptEmbedder();
-    if (vmEmbedder == null) {
-      return ""; //$NON-NLS-1$
-    }
-    return vmEmbedder.getTargetName();
+  public void fireTargetCreated() {
+    fireDebugEvent(new DebugEvent(this, DebugEvent.CREATE));
   }
 
-  public String getVmStatus() {
-    return vmStatusListener.getStatusString();
+  void setInnerState(State state) {
+    currentState = state;
   }
 
-  public IProcess getProcess() {
-    return null;
+  RunningTargetData getRunningDataOrNull() {
+    return currentState.getRunningTargetDataOrNull();
   }
 
-  public JavascriptVmEmbedder getJavascriptEmbedder() {
-    return vmEmbedder;
-  }
-
-  public IThread[] getThreads() throws DebugException {
-    return isDisconnected()
-        ? EMPTY_THREADS
-        : threads;
-  }
-
-  public boolean hasThreads() throws DebugException {
-    return getThreads().length > 0;
-  }
-
-  public boolean supportsBreakpoint(IBreakpoint breakpoint) {
-    return workspaceRelations.getBreakpointHandler().supportsBreakpoint(breakpoint);
+  WorkspaceBridge.Factory getWorkspaceBridgeFactory() {
+    return workspaceBridgeFactory;
   }
 
   @Override
@@ -193,342 +160,141 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return launch;
   }
 
-  public String getChromiumModelIdentifier() {
-    return workspaceBridgeFactory.getDebugModelIdentifier();
-  }
-
+  @Override
   public boolean canTerminate() {
-    return !isTerminated();
+    return currentState.getTerminate().canTerminate();
   }
 
+  @Override
   public boolean isTerminated() {
-    return isDisconnected();
+    return currentState.getTerminate().isTerminated();
   }
 
+  @Override
   public void terminate() throws DebugException {
-    disconnect();
+    currentState.getTerminate().terminate();
   }
 
+  @Override
   public boolean canResume() {
-    return !isDisconnected() && isSuspended();
+    return currentState.getSuspendResume().canResume();
   }
 
-  public synchronized boolean isSuspended() {
-    return isSuspended;
-  }
-
-  private synchronized void setSuspended(boolean isSuspended) {
-    this.isSuspended = isSuspended;
-  }
-
-  public void suspended(int detail) {
-    setSuspended(true);
-    getThread().reset();
-    fireSuspendEvent(detail);
-  }
-
-  public void resume() throws DebugException {
-    debugContext.continueVm(StepAction.CONTINUE, 1, null);
-    // Let's pretend Chromium does respond to the "continue" request immediately
-    resumed(DebugEvent.CLIENT_REQUEST);
-  }
-
-  public void resumed(int detail) {
-    debugContext = null;
-    fireResumeEvent(detail);
-  }
-
+  @Override
   public boolean canSuspend() {
-    return !isDisconnected() && !isSuspended();
+    return currentState.getSuspendResume().canSuspend();
   }
 
+  @Override
+  public boolean isSuspended() {
+    return currentState.getSuspendResume().isSuspended();
+  }
+
+  @Override
+  public void resume() throws DebugException {
+    currentState.getSuspendResume().resume();
+  }
+
+  @Override
   public void suspend() throws DebugException {
-    vmEmbedder.getJavascriptVm().suspend(null);
+    currentState.getSuspendResume().suspend();
   }
 
+  @Override
+  public void breakpointAdded(IBreakpoint breakpoint) {
+    currentState.getBreakpointListner().breakpointAdded(breakpoint);
+  }
+
+  @Override
+  public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
+    currentState.getBreakpointListner().breakpointRemoved(breakpoint, delta);
+  }
+
+  @Override
+  public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
+    currentState.getBreakpointListner().breakpointChanged(breakpoint, delta);
+  }
+
+  @Override
   public boolean canDisconnect() {
-    return !isDisconnected();
+    return currentState.getDisconnect().canDisconnect();
   }
 
+  @Override
   public void disconnect() throws DebugException {
-    if (!canDisconnect()) {
-      return;
-    }
-    workspaceRelations.beforeDetach();
-    if (!vmEmbedder.getJavascriptVm().detach()) {
-      ChromiumDebugPlugin.logWarning(Messages.DebugTargetImpl_BadResultWhileDisconnecting);
-    }
-    // This is a duplicated call to disconnected().
-    // The primary one comes from V8DebuggerToolHandler#onDebuggerDetached
-    // but we want to make sure the target becomes disconnected even if
-    // there is a browser failure and it does not respond.
-    debugEventListener.disconnected();
+    currentState.getDisconnect().disconnect();
   }
 
-  public synchronized boolean isDisconnected() {
-    return isDisconnected;
+  @Override
+  public boolean isDisconnected() {
+    return currentState.getDisconnect().isDisconnected();
   }
 
-  public IMemoryBlock getMemoryBlock(long startAddress, long length) throws DebugException {
-    return null;
-  }
-
+  @Override
   public boolean supportsStorageRetrieval() {
     return false;
   }
 
-  /**
-   * Fires a debug event
-   *
-   * @param event to be fired
-   */
-  public void fireEvent(DebugEvent event) {
-    DebugPlugin debugPlugin = DebugPlugin.getDefault();
-    if (debugPlugin != null) {
-      debugPlugin.fireDebugEventSet(new DebugEvent[] { event });
-    }
+  @Override
+  public IMemoryBlock getMemoryBlock(long startAddress, long length) throws DebugException {
+    return null;
   }
 
-  public void fireEventForThread(int kind, int detail) {
-    try {
-      IThread[] threads = getThreads();
-      if (threads.length > 0) {
-        fireEvent(new DebugEvent(threads[0], kind, detail));
-      }
-    } catch (DebugException e) {
-      // Actually, this is not thrown in our getThreads()
-      return;
-    }
+  @Override
+  public IProcess getProcess() {
+    return null;
   }
 
-  public void fireCreationEvent() {
-    setDisconnected(false);
-    fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
+  @Override
+  public IThread[] getThreads() throws DebugException {
+    return currentState.getThreads();
   }
 
-  public synchronized void setDisconnected(boolean disconnected) {
-    isDisconnected = disconnected;
+  @Override
+  public boolean hasThreads() throws DebugException {
+    return getThreads().length != 0;
   }
 
-  public void fireResumeEvent(int detail) {
-    setSuspended(false);
-    fireEventForThread(DebugEvent.RESUME, detail);
-    fireEvent(new DebugEvent(this, DebugEvent.RESUME, detail));
+  @Override
+  public String getName() {
+    return currentState.getName();
   }
 
-  public void fireSuspendEvent(int detail) {
-    setSuspended(true);
-    fireEventForThread(DebugEvent.SUSPEND, detail);
-    fireEvent(new DebugEvent(this, DebugEvent.SUSPEND, detail));
+  @Override
+  public boolean supportsBreakpoint(IBreakpoint breakpoint) {
+    return currentState.supportsBreakpoint(breakpoint);
   }
 
-  public void fireTerminateEvent() {
-    // TODO(peter.rybin): from Alexander Pavlov: I think you need to fire a terminate event after
-    // this line, for consolePseudoProcess if one is not null.
-    fireEventForThread(DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED);
-    fireEvent(new DebugEvent(this, DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
-    fireEvent(new DebugEvent(getLaunch(), DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
+  public String getChromiumModelIdentifier() {
+    return workspaceBridgeFactory.getDebugModelIdentifier();
   }
 
-  public void breakpointAdded(IBreakpoint breakpoint) {
-    workspaceRelations.getBreakpointHandler().breakpointAdded(breakpoint);
+  public WorkspaceBridge.JsLabelProvider getLabelProvider() {
+    return workspaceBridgeFactory.getLabelProvider();
   }
 
-  public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-    workspaceRelations.getBreakpointHandler().breakpointChanged(breakpoint, delta);
+  public String getVmStatus() {
+    return currentState.getVmStatus();
   }
 
-  public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-    workspaceRelations.getBreakpointHandler().breakpointRemoved(breakpoint, delta);
+  public RunningTargetData getRunningOrNull() {
+    return currentState.getRunningTargetDataOrNull();
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public Object getAdapter(Class adapter) {
     if (adapter == EvaluateContext.class) {
-      JavascriptThread thread = getThread();
-      if (thread == null) {
-        return null;
-      }
-      return thread.getAdapter(adapter);
+      return currentState.getEvaluateContext();
     } else if (adapter == ILaunch.class) {
       return this.launch;
     }
     return super.getAdapter(adapter);
   }
 
-  public VmResource getVmResource(IFile resource) throws CoreException {
-    return workspaceRelations.findVmResourceFromWorkspaceFile(resource);
-  }
-
-  public JavascriptThread getThread() {
-    return isDisconnected()
-        ? null
-        : threads[0];
-  }
-
-  private static String trim(String text, int maxLength) {
-    if (text == null || text.length() <= maxLength) {
-      return text;
-    }
-    return text.substring(0, maxLength - 3) + "..."; //$NON-NLS-1$
-  }
-
-  public DebugContext getDebugContext() {
-    return debugContext;
-  }
-
-  private final DebugEventListenerImpl debugEventListener = new DebugEventListenerImpl();
-
-  class DebugEventListenerImpl implements DebugEventListener {
-    // Synchronizes calls from ReaderThread of Connection and one call from some worker thread
-    private final Object suspendResumeMonitor = new Object();
-    private boolean alreadyResumedOrSuspended = false;
-
-    public void disconnected() {
-      if (!isDisconnected()) {
-        setDisconnected(true);
-        DebugPlugin.getDefault().getBreakpointManager().removeBreakpointManagerListener(
-            workspaceRelations.getBreakpointHandler());
-        DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(
-            DebugTargetImpl.this);
-        fireTerminateEvent();
-      }
-    }
-
-    public void resumedByDefault() {
-      synchronized (suspendResumeMonitor) {
-        if (!alreadyResumedOrSuspended) {
-          resumed();
-        }
-      }
-    }
-
-    public void resumed() {
-      listenerBlock.waitUntilReady();
-      synchronized (suspendResumeMonitor) {
-        DebugTargetImpl.this.resumed(DebugEvent.CLIENT_REQUEST);
-        alreadyResumedOrSuspended = true;
-      }
-    }
-
-    public void scriptLoaded(Script newScript) {
-      listenerBlock.waitUntilReady();
-      workspaceRelations.scriptLoaded(newScript);
-    }
-
-    public void scriptCollected(Script script) {
-      listenerBlock.waitUntilReady();
-      workspaceRelations.scriptCollected(script);
-    }
-
-    public void scriptContentChanged(Script newScript) {
-      listenerBlock.waitUntilReady();
-      workspaceRelations.reloadScript(newScript);
-    }
-
-    public void suspended(DebugContext context) {
-      listenerBlock.waitUntilReady();
-      synchronized (suspendResumeMonitor) {
-        DebugTargetImpl.this.debugContext = context;
-        workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
-        int suspendedDetail;
-        if (context.getState() == State.EXCEPTION) {
-          suspendedDetail = DebugEvent.BREAKPOINT;
-        } else {
-          if (context.getBreakpointsHit().isEmpty()) {
-            suspendedDetail = DebugEvent.STEP_END;
-          } else {
-            suspendedDetail = DebugEvent.BREAKPOINT;
-          }
-        }
-        DebugTargetImpl.this.suspended(suspendedDetail);
-
-        alreadyResumedOrSuspended = true;
-      }
-    }
-
-    public VmStatusListener getVmStatusListener() {
-      return vmStatusListener;
-    }
-  }
-
-  private final VmStatusListenerImpl vmStatusListener = new VmStatusListenerImpl();
-
-  private class VmStatusListenerImpl implements DebugEventListener.VmStatusListener {
-    private String currentRequest = null;
-    private int numberOfEnqueued;
-
-    public synchronized void busyStatusChanged(String currentRequest, int numberOfEnqueued) {
-      this.currentRequest = currentRequest;
-      this.numberOfEnqueued = numberOfEnqueued;
-      fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE));
-    }
-
-    public synchronized String getStatusString() {
-      if (currentRequest == null) {
-        return null;
-      }
-      return NLS.bind(Messages.DebugTargetImpl_BUSY_WITH, currentRequest, numberOfEnqueued);
-    }
-  }
-
-  public void synchronizeBreakpoints(BreakpointSynchronizer.Direction direction,
-      BreakpointSynchronizer.Callback callback) {
-    workspaceRelations.synchronizeBreakpoints(direction, callback);
-  }
-
-  private final JavascriptVmEmbedder.Listener embedderListener =
-      new JavascriptVmEmbedder.Listener() {
-    public void reset() {
-      listenerBlock.waitUntilReady();
-      workspaceRelations.handleVmResetEvent();
-      fireEvent(new DebugEvent(DebugTargetImpl.this, DebugEvent.CHANGE, DebugEvent.CONTENT));
-    }
-    public void closed() {
-      debugEventListener.disconnected();
-    }
-  };
-
-  private final ILaunchListener launchListener = new ILaunchListener() {
-    public void launchAdded(ILaunch launch) {
-    }
-    public void launchChanged(ILaunch launch) {
-    }
-    // TODO(peter.rybin): maybe have one instance of listener for all targets?
-    public void launchRemoved(ILaunch launch) {
-      if (launch != DebugTargetImpl.this.launch) {
-        return;
-      }
-      DebugPlugin.getDefault().getLaunchManager().removeLaunchListener(this);
-      workspaceRelations.launchRemoved();
-    }
-  };
-
-  private final static JavascriptVmEmbedder STUB_VM_EMBEDDER = new JavascriptVmEmbedder() {
-    public JavascriptVm getJavascriptVm() {
-      //TODO(peter.rybin): decide and redo this exception
-      throw new UnsupportedOperationException();
-    }
-
-    public String getTargetName() {
-      //TODO(peter.rybin): decide and redo this exception
-      throw new UnsupportedOperationException();
-    }
-
-    public String getThreadName() {
-      //TODO(peter.rybin): decide and redo this exception
-      throw new UnsupportedOperationException();
-    }
-  };
-
-  public WorkspaceBridge.JsLabelProvider getLabelProvider() {
-    return workspaceBridgeFactory.getLabelProvider();
-  }
-
-  public static List<DebugTargetImpl> getAllDebugTargetImpls() {
+  public static List<RunningTargetData> getAllRunningTargetDatas() {
     IDebugTarget[] array = DebugPlugin.getDefault().getLaunchManager().getDebugTargets();
-    List<DebugTargetImpl> result = new ArrayList<DebugTargetImpl>(array.length);
+    List<RunningTargetData> result = new ArrayList<RunningTargetData>(array.length);
     for (IDebugTarget target : array) {
       if (target instanceof DebugTargetImpl == false) {
         continue;
@@ -537,12 +303,19 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
         continue;
       }
       DebugTargetImpl debugTargetImpl = (DebugTargetImpl) target;
-      result.add(debugTargetImpl);
+
+      RunningTargetData runningData = debugTargetImpl.getRunningDataOrNull();
+
+      if (runningData == null) {
+        continue;
+      }
+
+      result.add(runningData);
     }
     return result;
   }
 
-  private static class ListenerBlock {
+  static class ListenerBlock {
     private volatile boolean isBlocked = true;
     private volatile boolean hasBeenProperlyInitialized = false;
     private final Object monitor = new Object();
@@ -573,15 +346,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     }
   }
 
-  public WorkspaceBridge getWorkspaceRelations() {
-    return workspaceRelations;
-  }
-
-  public SourcePositionMap getSourcePositionMap() {
-    return sourcePositionMapBuilder.getSourcePositionMap();
-  }
-
-  public SourcePositionMapBuilder getSourcePositionMapBuilder() {
-    return sourcePositionMapBuilder;
+  /**
+   * Fires a debug event
+   *
+   * @param event to be fired
+   */
+  public static void fireDebugEvent(DebugEvent event) {
+    DebugPlugin debugPlugin = DebugPlugin.getDefault();
+    if (debugPlugin != null) {
+      debugPlugin.fireDebugEventSet(new DebugEvent[] { event });
+    }
   }
 }

@@ -13,11 +13,11 @@ import org.eclipse.debug.core.model.IStackFrame;
  * A common base class for all stack frames. Frames may be 'real' or 'fake', e.g. frame that
  * represents throwing an exception.
  */
-public abstract class StackFrameBase extends DebugElementImpl implements IStackFrame {
+public abstract class StackFrameBase extends RunningDebugElement implements IStackFrame {
   private final JavascriptThread thread;
 
   public StackFrameBase(JavascriptThread thread) {
-    super(thread.getDebugTarget());
+    super(thread.getRunningData());
     this.thread = thread;
   }
 
@@ -99,7 +99,7 @@ public abstract class StackFrameBase extends DebugElementImpl implements IStackF
   @SuppressWarnings("unchecked")
   public Object getAdapter(Class adapter) {
     if (adapter == EvaluateContext.class) {
-      DebugContext debugContext = getDebugTarget().getDebugContext();
+      DebugContext debugContext = getRunningData().getDebugContext();
       if (debugContext == null) {
         return null;
       }

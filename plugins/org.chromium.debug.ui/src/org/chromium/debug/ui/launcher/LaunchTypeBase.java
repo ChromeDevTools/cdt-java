@@ -6,6 +6,7 @@ package org.chromium.debug.ui.launcher;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
@@ -20,6 +21,7 @@ import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructingGuard;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -81,10 +83,12 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
         };
         destructingGuard.addValue(targetDestructor);
 
-        boolean attached = target.attach(remoteServer, destructingGuard,
+        launch.addDebugTarget(target);
+
+        boolean attached = DebugTargetImpl.attach(target, remoteServer, destructingGuard,
             OPENING_VIEW_ATTACH_CALLBACK, monitor);
         if (!attached) {
-          // Error
+          // Cancel pressed.
           return;
         }
 
@@ -106,8 +110,11 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
       int port, ILaunch launch, boolean addConsoleLogger) throws CoreException;
 
   private static void terminateTarget(DebugTargetImpl target) {
-    target.setDisconnected(true);
-    target.fireTerminateEvent();
+    try {
+      target.terminate();
+    } catch (DebugException e) {
+      ChromiumDebugPlugin.log(e);
+    }
   }
 
   static ConnectionLogger createConsoleAndLogger(final ILaunch launch,

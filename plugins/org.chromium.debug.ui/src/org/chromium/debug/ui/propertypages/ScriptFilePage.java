@@ -7,6 +7,7 @@ package org.chromium.debug.ui.propertypages;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.ChromiumJavascriptDecorator;
@@ -76,8 +77,8 @@ public class ScriptFilePage extends PropertyPage {
 
     String[] launchLabels = new String[mappingList.size()];
     for (int i = 0; i < launchLabels.length; i++) {
-      launchLabels[i] =
-          mappingList.get(i).getDebugTarget().getLaunch().getLaunchConfiguration().getName();
+      DebugTargetImpl debugTarget = mappingList.get(i).getRunningTargetData().getDebugTarget();
+      launchLabels[i] = debugTarget.getLaunch().getLaunchConfiguration().getName();
     }
 
     final Combo typesCombo = new Combo(main, SWT.READ_ONLY);

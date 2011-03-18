@@ -13,6 +13,7 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.BreakpointSynchronizer;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -76,26 +77,27 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
       return null;
     }
     IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-    final Set<DebugTargetImpl> targets = new HashSet<DebugTargetImpl>(3);
+    final Set<RunningTargetData> targetDatas = new HashSet<RunningTargetData>(3);
     for (Iterator<?> it = structuredSelection.iterator(); it.hasNext(); ) {
       Object element = it.next();
-      DebugTargetImpl debugTargetImpl = getDebugTargetImpl(element);
-      if (debugTargetImpl == null) {
+      RunningTargetData runningTargetData = getRunningTargetData(element);
+      if (runningTargetData == null) {
         continue;
       }
-      targets.add(debugTargetImpl);
+      targetDatas.add(runningTargetData);
     }
-    if (targets.isEmpty()) {
+    if (targetDatas.isEmpty()) {
       return null;
     }
-    if (direction != BreakpointSynchronizer.Direction.RESET_REMOTE && targets.size() > 1) {
+    if (direction != BreakpointSynchronizer.Direction.RESET_REMOTE && targetDatas.size() > 1) {
       // Only "reset remote" mode is implemented for a multiple selection.
       return null;
     }
 
     return new Runnable() {
       public void run() {
-        new Job(MessageFormat.format(Messages.SynchronizeBreakpoints_JOB_TITLE, targets.size())) {
+        new Job(MessageFormat.format(Messages.SynchronizeBreakpoints_JOB_TITLE,
+            targetDatas.size())) {
           @Override
           protected IStatus run(IProgressMonitor monitor) {
             // TODO(peter.rybin): consider blocking this method until callback is invoked to
@@ -107,8 +109,8 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
             };
 
             // TODO(peter.rybin): consider showing progress for several targets.
-            for (DebugTargetImpl target : targets) {
-              target.synchronizeBreakpoints(direction, callback);
+            for (RunningTargetData data : targetDatas) {
+              data.synchronizeBreakpoints(direction, callback);
             }
             return Status.OK_STATUS;
           }
@@ -119,7 +121,7 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
 
   private Runnable currentRunnable;
 
-  public static DebugTargetImpl getDebugTargetImpl(Object element) {
+  public static RunningTargetData getRunningTargetData(Object element) {
     IDebugTarget debugTarget;
     if (element instanceof ILaunch) {
       ILaunch launch = (ILaunch) element;
@@ -133,6 +135,7 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
     if (debugTarget instanceof DebugTargetImpl == false) {
       return null;
     }
-    return (DebugTargetImpl) debugTarget;
+    DebugTargetImpl debugTargetImpl = (DebugTargetImpl) debugTarget;
+    return debugTargetImpl.getRunningOrNull();
   }
 }

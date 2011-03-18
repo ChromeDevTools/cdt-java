@@ -30,7 +30,7 @@ import org.eclipse.debug.ui.IValueDetailListener;
 /**
  * A generic (non-array) implementation of IValue using a JsValue instance.
  */
-public class Value extends DebugElementImpl implements IValue {
+public class Value extends RunningDebugElement implements IValue {
 
   private static final IVariable[] EMPTY_VARIABLES = new IVariable[0];
 
@@ -50,7 +50,7 @@ public class Value extends DebugElementImpl implements IValue {
   }
 
   Value(EvaluateContext evaluateContext, JsValue value) {
-    super(evaluateContext.getDebugTarget());
+    super(evaluateContext.getRunningTargetData());
     this.value = value;
     this.evaluateContext = evaluateContext;
   }
@@ -232,7 +232,7 @@ public class Value extends DebugElementImpl implements IValue {
         return;
       }
 
-      JavascriptVm javascriptVm = getDebugTarget().getJavascriptEmbedder().getJavascriptVm();
+      JavascriptVm javascriptVm = getRunningData().getJavascriptVm();
       EvaluateWithContextExtension extension = javascriptVm.getEvaluateWithContextExtension();
       if (extension == null) {
         String result =
@@ -240,7 +240,7 @@ public class Value extends DebugElementImpl implements IValue {
         stringDetailIsBuilt(result, listener);
         return;
       }
-      DebugContext debugContext = getDebugTarget().getDebugContext();
+      DebugContext debugContext = getRunningData().getDebugContext();
       if (debugContext == null) {
         stringDetailIsBuilt("", listener);
         return;

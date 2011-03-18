@@ -5,6 +5,7 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.actions.OpenFunctionAction.VariableWrapper;
 import org.chromium.sdk.JsValue;
@@ -62,8 +63,8 @@ public abstract class LoadFullValueAction implements IObjectActionDelegate,
     if (wrapper == null) {
       return null;
     }
-    final DebugTargetImpl debugTarget = wrapper.getDebugTarget();
-    if (debugTarget == null) {
+    final RunningTargetData runningTargetData = wrapper.getRunningTargetData();
+    if (runningTargetData == null) {
       return null;
     }
     final Value value = wrapper.getValue();
@@ -77,7 +78,7 @@ public abstract class LoadFullValueAction implements IObjectActionDelegate,
             if (changed) {
               DebugEvent event =
                   new DebugEvent(wrapper.getDebugElement(), DebugEvent.CHANGE, DebugEvent.CONTENT);
-              debugTarget.fireEvent(event);
+              DebugTargetImpl.fireDebugEvent(event);
             }
           }
         };

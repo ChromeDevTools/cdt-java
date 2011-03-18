@@ -50,7 +50,7 @@ public class StackFrame extends StackFrameBase {
     super(thread);
     this.stackFrame = stackFrame;
     this.evaluateContext =
-        new EvaluateContext(stackFrame.getEvaluateContext(), thread.getDebugTarget());
+        new EvaluateContext(stackFrame.getEvaluateContext(), thread.getRunningData());
   }
 
   public CallFrame getCallFrame() {
@@ -217,7 +217,7 @@ public class StackFrame extends StackFrameBase {
         id = VmResourceId.forScript(script);
       }
       TextStreamPosition vmPosition = stackFrame.getStatementStartPosition();
-      SourcePositionMap sourceTransformationMap = getDebugTarget().getSourcePositionMap();
+      SourcePositionMap sourceTransformationMap = getRunningData().getSourcePositionMap();
       SourcePositionMap.Token token = sourceTransformationMap.getCurrentToken();
       SourcePosition originalPosition = sourceTransformationMap.translatePosition(id,
           vmPosition.getLine(), vmPosition.getColumn(), TranslateDirection.VM_TO_USER);

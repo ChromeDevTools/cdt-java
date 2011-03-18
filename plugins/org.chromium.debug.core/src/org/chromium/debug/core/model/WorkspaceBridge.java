@@ -38,7 +38,7 @@ public interface WorkspaceBridge {
      * Creates new instance of {@link WorkspaceBridge} when connection to V8 VM is already
      * established.
      */
-    WorkspaceBridge attachedToVm(DebugTargetImpl debugTargetImpl, JavascriptVm javascriptVm);
+    WorkspaceBridge attachedToVm(RunningTargetData runningTargetData, JavascriptVm javascriptVm);
 
     String getDebugModelIdentifier();
 
