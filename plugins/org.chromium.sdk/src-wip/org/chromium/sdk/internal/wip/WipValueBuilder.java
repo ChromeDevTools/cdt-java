@@ -135,7 +135,7 @@ class WipValueBuilder {
         this.valueData = valueData;
         this.valueLoader = valueLoader;
         this.nameBuilder = nameBuilder;
-        if (WipProtocol.parseHasChildren(this.valueData.hasChildren())) {
+        if (!WipProtocol.parseHasChildren(this.valueData.hasChildren())) {
           WipValueLoader.setEmptyJsObjectProperties(loadedPropertiesRef);
         }
       }

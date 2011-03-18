@@ -4,20 +4,19 @@
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
-import org.chromium.sdk.internal.protocolparser.JsonNullable;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
 public interface ValueData {
-  @JsonNullable
+  @JsonOptionalField
   Id objectId();
 
   String type();
   String description();
 
   // Either number or false or null.
-  @JsonNullable
+  @JsonOptionalField
   Object hasChildren();
 
   @JsonType

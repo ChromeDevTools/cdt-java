@@ -38,6 +38,7 @@ public class WipProtocol {
           WipScope.class,
           WipCommandResponse.class, WipCommandResponse.Data.class,
           WipCommandResponse.Success.class, WipCommandResponse.Error.class,
+          WipCommandResponse.Stub.class,
           ScriptSourceData.class,
           EvaluateData.class,
           ValueData.class, ValueData.Id.class,
