@@ -27,6 +27,8 @@ public interface WipCommandCallback extends BaseCommandProcessor.Callback<WipCom
       WipCommandResponse.Success asSuccess = response.asSuccess();
       if (asSuccess != null) {
         onSuccess(asSuccess);
+      } else if (response.asStub() != null) {
+        throw new RuntimeException("Unexpected stub response");
       } else {
         String message;
         WipCommandResponse.Error asError = response.asError();

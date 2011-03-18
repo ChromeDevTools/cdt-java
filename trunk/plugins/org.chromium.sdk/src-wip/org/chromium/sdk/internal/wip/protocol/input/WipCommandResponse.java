@@ -14,7 +14,6 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
-import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionBoolValue;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 
@@ -25,23 +24,17 @@ public interface WipCommandResponse extends JsonObjectBased {
 
   @JsonSubtypeCasting Success asSuccess();
   @JsonSubtypeCasting Error asError();
+  @JsonSubtypeCasting Stub asStub();
 
   @JsonType
   interface Success extends JsonSubtype<WipCommandResponse> {
-    @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
-    @JsonOptionalField
-    String domain();
-
     @JsonSubtypeCondition(fieldIsAbsent=true)
     @JsonOptionalField
     List<String> errors();
 
     @JsonField(jsonLiteralName="body")
-    @JsonOptionalField
+    @JsonSubtypeCondition
     Data data();
-
-    @JsonSubtypeConditionBoolValue(value = true)
-    boolean success();
   }
 
   @JsonType
@@ -50,12 +43,22 @@ public interface WipCommandResponse extends JsonObjectBased {
     @JsonSubtypeCondition()
     List<String> errors();
 
-    @JsonField(jsonLiteralName = BasicConstants.Property.DOMAIN)
+    @JsonSubtypeCondition(fieldIsAbsent=true)
+    @JsonField(jsonLiteralName="body")
     @JsonOptionalField
-    String domain();
+    Data data();
+  }
 
-    @JsonSubtypeConditionBoolValue(value = false)
-    boolean success();
+  @JsonType
+  interface Stub extends JsonSubtype<WipCommandResponse> {
+    @JsonSubtypeCondition(fieldIsAbsent=true)
+    @JsonOptionalField
+    List<String> errors();
+
+    @JsonSubtypeCondition(fieldIsAbsent=true)
+    @JsonField(jsonLiteralName="body")
+    @JsonOptionalField
+    Data data();
   }
 
   @JsonType(subtypesChosenManually=true)

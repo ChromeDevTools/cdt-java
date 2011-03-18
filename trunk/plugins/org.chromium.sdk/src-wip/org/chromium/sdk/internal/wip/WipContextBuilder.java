@@ -256,21 +256,21 @@ class WipContextBuilder {
           thisObject = createSimpleNameVariable("this", thisObjectData);
         }
 
-        // 1-based.
+        // 0-based.
         final int line = (int) frameData.line();
 
-        // 1-based.
+        // 0-based.
         final int column = (int) frameData.column();
         streamPosition = new TextStreamPosition() {
           @Override public int getOffset() {
             return WipBrowserImpl.throwUnsupported();
           }
           @Override public int getLine() {
-            return line - 1;
+            return line;
           }
 
           @Override public int getColumn() {
-            return column - 1;
+            return column;
           }
         };
       }

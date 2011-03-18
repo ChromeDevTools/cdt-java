@@ -14,10 +14,10 @@ public interface WipCallFrame {
   Id id();
   List<WipScope> scopeChain();
 
-  // 1-based?
+  // 0-based
   long line();
 
-  // 1-based?
+  // 0-based
   long column();
 
   String functionName();
