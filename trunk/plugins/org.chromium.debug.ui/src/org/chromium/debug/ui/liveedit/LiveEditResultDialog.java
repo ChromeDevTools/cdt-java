@@ -36,7 +36,7 @@ import org.eclipse.swt.widgets.Text;
 /**
  * A dialog that shows LiveEdit update results.
  */
-class LiveEditResultDialog extends Dialog {
+public class LiveEditResultDialog extends Dialog {
 
   /**
    * A dialog input. It's essentially an algebraic type, all cases are available
@@ -76,6 +76,21 @@ class LiveEditResultDialog extends Dialog {
   public interface OldScriptData {
     LiveEditDiffViewer.Input getScriptStructure();
     String getOldScriptName();
+  }
+
+  public static SingleInput createTextInput(final String text,
+      final ScriptTargetMapping filePair) {
+    return new LiveEditResultDialog.SingleInput() {
+      public <RES> RES accept(LiveEditResultDialog.InputVisitor<RES> visitor) {
+        return acceptSingle(visitor);
+      }
+      public <RES> RES acceptSingle(LiveEditResultDialog.SingleInputVisitor<RES> visitor) {
+        return visitor.visitErrorMessage(text);
+      }
+      public ScriptTargetMapping getFilePair() {
+        return filePair;
+      }
+    };
   }
 
   private final Input input;
