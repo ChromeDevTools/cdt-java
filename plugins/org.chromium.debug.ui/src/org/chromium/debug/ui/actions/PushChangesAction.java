@@ -10,9 +10,12 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
+import org.chromium.debug.ui.liveedit.LiveEditDiffViewer;
+import org.chromium.debug.ui.liveedit.LiveEditResultDialog;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
+import org.chromium.sdk.UpdatableScript.ChangeDescription;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -28,19 +31,28 @@ public class PushChangesAction extends V8ScriptAction {
   protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell,
       IWorkbenchPart workbenchPart) {
     for (ScriptTargetMapping pair : filePairList) {
-      execute(pair);
+      execute(pair, shell);
     }
   }
 
-  private void execute(ScriptTargetMapping filePair) {
+  private void execute(final ScriptTargetMapping filePair, final Shell shell) {
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
-      public void success(Object report, UpdatableScript.ChangeDescription previewDescription) {
+      @Override
+      public void success(Object report, ChangeDescription changeDescription) {
         ChromiumDebugPlugin.log(new Status(IStatus.OK, ChromiumDebugPlugin.PLUGIN_ID,
             "Script has been successfully updated on remote: " + report)); //$NON-NLS-1$
       }
-      public void failure(String message) {
-        ChromiumDebugPlugin.log(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-            "Failed to change script on remote: " + message)); //$NON-NLS-1$
+
+      @Override
+      public void failure(final String message) {
+        shell.getDisplay().asyncExec(new Runnable() {
+          @Override
+          public void run() {
+            LiveEditResultDialog dialog = new LiveEditResultDialog(shell,
+                LiveEditResultDialog.createTextInput(message, filePair));
+            dialog.open();
+          }
+        });
       }
     };
     execute(filePair, callback, null, false);

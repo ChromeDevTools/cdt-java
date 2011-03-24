@@ -250,12 +250,13 @@ public class PushChangesWizard {
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       public void failure(String message) {
         String text = NLS.bind("Failure: {0}", message);
-        input[0] = createTextInput(text);
+        input[0] = LiveEditResultDialog.createTextInput(text, filePair);
       }
       public void success(Object report,
           final UpdatableScript.ChangeDescription changeDescription) {
         if (changeDescription == null) {
-          input[0] = createTextInput(Messages.PushChangesWizard_EMPTY_CHANGE);
+          input[0] = LiveEditResultDialog.createTextInput(
+              Messages.PushChangesWizard_EMPTY_CHANGE, filePair);
         } else {
           final String oldScriptName = changeDescription.getCreatedScriptName();
           final LiveEditResultDialog.OldScriptData oldScriptData;
@@ -294,19 +295,6 @@ public class PushChangesWizard {
             }
           };
         }
-      }
-      private LiveEditResultDialog.SingleInput createTextInput(final String text) {
-        return new LiveEditResultDialog.SingleInput() {
-          public <RES> RES accept(LiveEditResultDialog.InputVisitor<RES> visitor) {
-            return acceptSingle(visitor);
-          }
-          public <RES> RES acceptSingle(LiveEditResultDialog.SingleInputVisitor<RES> visitor) {
-            return visitor.visitErrorMessage(text);
-          }
-          public ScriptTargetMapping getFilePair() {
-            return filePair;
-          }
-        };
       }
     };
 
