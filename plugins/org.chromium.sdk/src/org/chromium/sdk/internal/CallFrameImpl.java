@@ -16,6 +16,7 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.internal.protocol.ScopeRef;
 import org.chromium.sdk.internal.tools.v8.request.FrameMessage;
 
 /**
@@ -144,11 +145,11 @@ public class CallFrameImpl implements CallFrame {
     return result;
   }
 
-  private List<JsScopeImpl> createScopes() {
-    List<ScopeMirror> scopes = frameMirror.getScopes();
-    List<JsScopeImpl> result = new ArrayList<JsScopeImpl>(scopes.size());
-    for (ScopeMirror mirror : scopes) {
-      result.add(new JsScopeImpl(this, mirror));
+  private List<JsScopeImpl<?>> createScopes() {
+    List<ScopeRef> scopes = frameMirror.getScopes();
+    List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(scopes.size());
+    for (ScopeRef scopeRef : scopes) {
+      result.add(JsScopeImpl.create(this, scopeRef));
     }
     return result;
   }

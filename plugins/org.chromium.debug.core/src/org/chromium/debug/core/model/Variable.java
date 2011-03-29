@@ -168,27 +168,38 @@ public abstract class Variable extends RunningDebugElement implements IVariable 
    * ExceptionStackFrame.
    * TODO: consider hiding this public class behind a static factory method.
    */
-  public static class ExceptionHolder extends Variable {
-    private final ExceptionData exceptionData;
+  public static class NamedHolder extends Variable {
+    public static Variable forWithScope(EvaluateContext evaluateContext, JsValue withValue) {
+      return new NamedHolder(evaluateContext, "<with>", withValue);
+    }
 
-    public ExceptionHolder(EvaluateContext evaluateContext, ExceptionData exceptionData) {
+    public static Variable forException(EvaluateContext evaluateContext,
+        ExceptionData exceptionData) {
+      return new NamedHolder(evaluateContext, "<exception>", exceptionData.getExceptionValue());
+    }
+
+    private final String name;
+    private final JsValue jsValue;
+
+    private NamedHolder(EvaluateContext evaluateContext, String name, JsValue jsValue) {
       super(evaluateContext);
-      this.exceptionData = exceptionData;
+      this.name = name;
+      this.jsValue = jsValue;
     }
 
     @Override
     public String getName() {
-      return "<exception>";
+      return name;
     }
 
     @Override
     public String getReferenceTypeName() throws DebugException {
-      return exceptionData.getExceptionValue().getType().toString();
+      return jsValue.getType().toString();
     }
 
     @Override
     protected Value createValue() {
-      return Value.create(getEvaluateContext(), exceptionData.getExceptionValue());
+      return Value.create(getEvaluateContext(), jsValue);
     }
 
     @Override

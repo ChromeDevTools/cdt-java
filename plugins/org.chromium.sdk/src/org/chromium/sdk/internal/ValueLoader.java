@@ -70,15 +70,14 @@ public class ValueLoader {
   }
 
   /**
-   * Looks up data for scope on remote.
+   * Looks up data for scope on remote in form of scope object handle.
    */
-  public List<? extends PropertyReference> loadScopeFields(int scopeNumber, int frameNumber) {
+  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber) {
     DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, frameNumber);
 
-    V8BlockingCallback<List<? extends PropertyReference>> callback =
-        new V8BlockingCallback<List<? extends PropertyReference>>() {
+    V8BlockingCallback<ObjectValueHandle> callback = new V8BlockingCallback<ObjectValueHandle>() {
       @Override
-      protected List<? extends PropertyReference> handleSuccessfulResponse(
+      protected ObjectValueHandle handleSuccessfulResponse(
           SuccessCommandResponse response) {
         return readFromScopeResponse(response);
       }
@@ -89,11 +88,11 @@ public class ValueLoader {
     } catch (ContextDismissedCheckedException e) {
       context.getDebugSession().maybeRethrowContextException(e);
       // or
-      return Collections.emptyList();
+      return null;
     }
   }
 
-  private List<? extends PropertyReference> readFromScopeResponse(SuccessCommandResponse response) {
+  private ObjectValueHandle readFromScopeResponse(SuccessCommandResponse response) {
     List<SomeHandle> refs = response.getRefs();
 
     HandleManager handleManager = context.getHandleManager();
@@ -107,8 +106,7 @@ public class ValueLoader {
     } catch (JsonProtocolParseException e) {
       throw new ValueLoadException(e);
     }
-    ObjectValueHandle objectRef = body.getObject();
-    return V8ProtocolUtil.extractObjectProperties(objectRef);
+    return body.getObject();
   }
 
 /**

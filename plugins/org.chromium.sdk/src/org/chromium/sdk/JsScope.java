@@ -26,7 +26,20 @@ public interface JsScope {
   Type getType();
 
   /**
+   * @return optional subtype when type is {@link Type#WITH} and null otherwise
+   */
+  WithScope asWithScope();
+
+  /**
    * @return the variables known in this scope, in lexicographical order
    */
   List<? extends JsVariable> getVariables();
+
+  /**
+   * Subtype that exposes the value of the 'with' statement expression (the value might be
+   * already converted by ToObject).
+   */
+  interface WithScope extends JsScope {
+    JsValue getWithArgument();
+  }
 }

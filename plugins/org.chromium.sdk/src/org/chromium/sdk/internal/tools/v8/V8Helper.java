@@ -10,15 +10,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DataWithRef;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.FunctionAdditionalProperties;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
-import org.chromium.sdk.internal.ScopeMirror;
 import org.chromium.sdk.internal.ScriptImpl;
 import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.SubpropertiesMirror;
@@ -158,22 +157,6 @@ public class V8Helper {
     }
 
     return localRefs;
-  }
-
-  public static List<ScopeMirror> computeScopes(FrameObject frame) {
-    List<ScopeRef> scopes = frame.getScopes();
-
-    final List<ScopeMirror> result = new ArrayList<ScopeMirror>(scopes.size());
-
-    for (int i = 0; i < scopes.size(); i++) {
-      ScopeRef scope = scopes.get(i);
-      int type = (int) scope.type();
-      int index = (int) scope.index();
-
-      result.add(new ScopeMirror(type, index));
-    }
-
-    return result;
   }
 
   public static PropertyReference computeReceiverRef(FrameObject frame) {

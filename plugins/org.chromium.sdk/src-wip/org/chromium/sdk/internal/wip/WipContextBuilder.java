@@ -362,6 +362,12 @@ class WipContextBuilder {
       }
 
       @Override
+      public WithScope asWithScope() {
+        // TODO: implement.
+        return null;
+      }
+
+      @Override
       public List<? extends JsVariable> getVariables() {
         if (!propertiesRef.isInitialized()) {
           WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
