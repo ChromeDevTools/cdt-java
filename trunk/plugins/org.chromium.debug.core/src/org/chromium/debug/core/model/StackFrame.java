@@ -105,6 +105,9 @@ public class StackFrame extends StackFrameBase {
           receiverVariable = null;
         }
         vars.add(new Variable.ScopeWrapper(evaluateContext, scope));
+      } else if (scope.asWithScope() != null) {
+        JsScope.WithScope withScope = scope.asWithScope();
+        vars.add(Variable.NamedHolder.forWithScope(evaluateContext, withScope.getWithArgument()));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {

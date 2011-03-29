@@ -114,7 +114,7 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
       this.evaluateContext = evaluateContext;
       this.exceptionData = exceptionData;
 
-      Variable variable = new Variable.ExceptionHolder(evaluateContext, exceptionData);
+      Variable variable = Variable.NamedHolder.forException(evaluateContext, exceptionData);
       variables = new IVariable[] { variable };
     }
 

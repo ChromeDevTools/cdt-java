@@ -5,51 +5,179 @@
 package org.chromium.sdk.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.internal.protocol.ScopeRef;
+import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 
 /**
  * A generic implementation of the JsScope interface.
  */
-public class JsScopeImpl implements JsScope {
+public abstract class JsScopeImpl<D> implements JsScope {
 
   private final CallFrameImpl callFrameImpl;
-  private final ScopeMirror mirror;
-  private List<JsVariable> properties = null;
+  private final int scopeIndex;
+  private final Type type;
+  private volatile D deferredData = null;
 
-  public JsScopeImpl(CallFrameImpl callFrameImpl, ScopeMirror mirror) {
-    this.callFrameImpl = callFrameImpl;
-    this.mirror = mirror;
+  public static JsScopeImpl<?> create(CallFrameImpl callFrameImpl, ScopeRef scopeRef) {
+    Type type = convertType((int) scopeRef.type());
+    if (type == Type.WITH) {
+      return new With(callFrameImpl, type, (int) scopeRef.index());
+    } else {
+      return new NoWith(callFrameImpl, type, (int) scopeRef.index());
+    }
   }
 
+  protected JsScopeImpl(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
+    this.callFrameImpl = callFrameImpl;
+    this.type = type;
+    this.scopeIndex = scopeIndex;
+  }
+
+  @Override
   public Type getType() {
-    Type type = CODE_TO_TYPE.get(mirror.getType());
+    return type;
+  }
+
+  @Override
+  public List<? extends JsVariable> getVariables() {
+    return getVariables(getDeferredData());
+  }
+
+  protected D getDeferredData() {
+    if (deferredData == null) {
+      deferredData = loadDeferredData(callFrameImpl.getInternalContext().getValueLoader());
+    }
+    return deferredData;
+  }
+
+  protected abstract D loadDeferredData(ValueLoader valueLoader);
+
+  protected abstract List<? extends JsVariable> getVariables(D data);
+
+  protected CallFrameImpl getCallFrameImpl() {
+    return callFrameImpl;
+  }
+
+  protected ObjectValueHandle loadScopeObject(ValueLoader valueLoader) {
+    return valueLoader.loadScopeFields(scopeIndex, callFrameImpl.getIdentifier());
+  }
+
+  public static Type convertType(int typeCode) {
+    Type type = CODE_TO_TYPE.get(typeCode);
     if (type == null) {
       type = Type.UNKNOWN;
     }
     return type;
   }
 
-  public synchronized List<? extends JsVariable> getVariables() {
-    if (properties == null) {
-      ValueLoader valueLoader = callFrameImpl.getInternalContext().getValueLoader();
+  static class DeferredData {
+    final List<JsVariable> properties;
+
+    DeferredData(List<JsVariable> properties) {
+      this.properties = properties;
+    }
+  }
+
+
+  private static class NoWith extends JsScopeImpl<List<? extends JsVariable>> {
+    NoWith(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
+      super(callFrameImpl, type, scopeIndex);
+    }
+
+    @Override
+    public WithScope asWithScope() {
+      return null;
+    }
+
+    @Override
+    protected List<? extends JsVariable> getVariables(List<? extends JsVariable> list) {
+      return list;
+    }
+
+    @Override
+    protected List<? extends JsVariable> loadDeferredData(ValueLoader valueLoader) {
+      ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
+      if (scopeObject == null) {
+        return Collections.emptyList();
+      }
       List<? extends PropertyReference> propertyRefs =
-          valueLoader.loadScopeFields(mirror.getIndex(), callFrameImpl.getIdentifier());
+          V8ProtocolUtil.extractObjectProperties(scopeObject);
+
       List<ValueMirror> propertyMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
-      properties = new ArrayList<JsVariable>(propertyMirrors.size());
+      List<JsVariable> properties = new ArrayList<JsVariable>(propertyMirrors.size());
       for (int i = 0; i < propertyMirrors.size(); i++) {
         // This name should be string. We are making it string as a fall-back strategy.
         String varNameStr = propertyRefs.get(i).getName().toString();
-        properties.add(new JsVariableImpl(callFrameImpl.getInternalContext(),
+        properties.add(new JsVariableImpl(getCallFrameImpl().getInternalContext(),
             propertyMirrors.get(i), varNameStr));
       }
+      return properties;
     }
-    return properties;
+  }
+
+  private static class With extends JsScopeImpl<With.DeferredData> implements JsScope.WithScope {
+    With(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
+      super(callFrameImpl, type, scopeIndex);
+    }
+
+    @Override
+    public WithScope asWithScope() {
+      return this;
+    }
+
+    @Override
+    public JsValue getWithArgument() {
+      return getDeferredData().jsValue;
+    }
+
+    @Override
+    protected DeferredData loadDeferredData(ValueLoader valueLoader) {
+      ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
+      PropertyHoldingValueMirror mirror = V8Helper.createMirrorFromLookup(scopeObject.getSuper(),
+          valueLoader.getLoadableStringFactory());
+      ValueMirror valueData = mirror.getValueMirror();
+      JsValue jsValue = JsVariableImpl.createValue(getCallFrameImpl().getInternalContext(),
+          valueData, "<with object>");
+      return new DeferredData(jsValue);
+    }
+
+    @Override
+    protected List<? extends JsVariable> getVariables(DeferredData data) {
+      if (data.orderedProperties == null) {
+        List<? extends JsVariable> list;
+        JsObject jsObject = data.jsValue.asObject();
+        if (jsObject == null) {
+          list = Collections.emptyList();
+        } else {
+          list = new ArrayList<JsVariable>(jsObject.getProperties());
+        }
+        data.orderedProperties = list;
+      }
+      return data.orderedProperties;
+    }
+
+    static class DeferredData {
+      final JsValue jsValue;
+      // Stores properties in the list -- the order is unspecified, but fixed.
+      volatile List<? extends JsVariable> orderedProperties = null;
+
+      DeferredData(JsValue jsValue) {
+        this.jsValue = jsValue;
+      }
+    }
+
   }
 
   private static final Map<Integer, Type> CODE_TO_TYPE;

@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.internal.protocol.FrameObject;
+import org.chromium.sdk.internal.protocol.ScopeRef;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
 
 /**
@@ -78,8 +79,8 @@ public class FrameMirror {
     return V8Helper.computeLocals(frameObject);
   }
 
-  public List<ScopeMirror> getScopes() {
-    return V8Helper.computeScopes(frameObject);
+  public List<ScopeRef> getScopes() {
+    return frameObject.getScopes();
   }
 
   public PropertyReference getReceiverRef() {
