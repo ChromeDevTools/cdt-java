@@ -21,5 +21,7 @@ public @interface JsonField {
    * Specifies JSON property name, which otherwise is derived from the method name (optional "get"
    * prefix is truncated with the first letter decapitalization).
    */
-  String jsonLiteralName();
+  String jsonLiteralName() default "";
+
+  FieldLoadStrategy loadStrategy() default FieldLoadStrategy.AUTO;
 }

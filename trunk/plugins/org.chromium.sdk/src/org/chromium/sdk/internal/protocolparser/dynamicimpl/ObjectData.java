@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import org.chromium.sdk.internal.protocolparser.JsonType;
 
 /**
@@ -18,6 +20,7 @@ class ObjectData {
    * Stores type-specific set of pre-parsed fields.
    */
   private final Object[] fieldArray;
+  private final AtomicReferenceArray<Object> atomicReferenceArray;
 
   /**
    * May be JSONObject (in most cases) or any
@@ -33,7 +36,7 @@ class ObjectData {
   private Object proxy = null;
 
   ObjectData(TypeHandler<?> typeHandler, Object inputObject, int fieldArraySize,
-      ObjectData superObjectData) {
+      int volatileArraySize, ObjectData superObjectData) {
     this.superObjectData = superObjectData;
     this.typeHandler = typeHandler;
     this.underlyingObject = inputObject;
@@ -43,6 +46,11 @@ class ObjectData {
     } else {
       fieldArray = new Object[fieldArraySize];
     }
+    if (volatileArraySize == 0) {
+      atomicReferenceArray = null;
+    } else {
+      atomicReferenceArray = new AtomicReferenceArray<Object>(volatileArraySize);
+    }
   }
 
   void initProxy(Object proxy) {
@@ -51,6 +59,10 @@ class ObjectData {
 
   Object[] getFieldArray() {
     return fieldArray;
+  }
+
+  AtomicReferenceArray<Object> getAtomicReferenceArray() {
+    return atomicReferenceArray;
   }
 
   Object getUnderlyingObject() {

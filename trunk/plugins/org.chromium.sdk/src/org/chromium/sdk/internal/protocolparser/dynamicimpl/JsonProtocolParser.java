@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,7 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
@@ -170,13 +174,15 @@ public class JsonProtocolParser {
       RefToType<?> superclassRef = getSuperclassRef(typeClass);
 
       return new TypeHandler<T>(typeClass, superclassRef,
-          fields.getFieldArraySize(), methodHandlerMap, fields.getFieldLoaders(),
+          fields.getFieldArraySize(), fields.getVolatileFieldArraySize(), methodHandlerMap,
+          fields.getFieldLoaders(),
           fields.getFieldConditions(), eagerFieldParser, fields.getAlgCasesData(),
           strictMode);
     }
 
     private SlowParser<?> getFieldTypeParser(Type type, boolean declaredNullable,
-        boolean isSubtyping) throws JsonProtocolModelParseException {
+        boolean isSubtyping, FieldLoadStrategy loadStrategy)
+        throws JsonProtocolModelParseException {
       if (type instanceof Class) {
         Class<?> typeClass = (Class<?>) type;
         if (type == Long.class) {
@@ -227,8 +233,9 @@ public class JsonProtocolParser {
               argumentType = wildcard.getUpperBounds()[0];
             }
           }
-          SlowParser<?> componentParser = getFieldTypeParser(argumentType, false, false);
-          return createArrayParser(componentParser, declaredNullable);
+          SlowParser<?> componentParser =
+              getFieldTypeParser(argumentType, false, false, loadStrategy);
+          return createArrayParser(componentParser, declaredNullable, loadStrategy);
         } else {
           throw new JsonProtocolModelParseException("Method return type " + type +
               " (generic) not supported");
@@ -251,8 +258,12 @@ public class JsonProtocolParser {
     }
 
     private <T> ArrayParser<T> createArrayParser(SlowParser<T> componentParser,
-        boolean isNullable) {
-      return new ArrayParser<T>(componentParser, isNullable);
+        boolean isNullable, FieldLoadStrategy loadStrategy) {
+      if (loadStrategy == FieldLoadStrategy.LAZY) {
+        return new ArrayParser<T>(componentParser, isNullable, ArrayParser.LAZY);
+      } else {
+        return new ArrayParser<T>(componentParser, isNullable, ArrayParser.EAGER);
+      }
     }
 
     private <T> RefToType<T> getTypeRef(final Class<T> typeClass) {
@@ -313,14 +324,14 @@ public class JsonProtocolParser {
 
       private final JsonType jsonTypeAnn;
       private final List<FieldLoader> fieldLoaders = new ArrayList<FieldLoader>(2);
-      private final List<LazyParseFieldMethodHandler> onDemandHanlers =
-          new ArrayList<LazyParseFieldMethodHandler>();
+      private final List<LazyHandler> onDemandHanlers = new ArrayList<LazyHandler>();
       private final Map<Method, MethodHandler> methodHandlerMap =
           new HashMap<Method, MethodHandler>();
       private final FieldMap fieldMap = new FieldMap();
       private final List<FieldCondition> fieldConditions = new ArrayList<FieldCondition>(2);
       private AlgebraicCasesDataImpl algCasesData = null;
       private int fieldArraySize = 0;
+      private int volatileFieldArraySize = 0;
 
       FieldProcessor(Class<T> typeClass) throws JsonProtocolModelParseException {
         this.typeClass = typeClass;
@@ -384,9 +395,17 @@ public class JsonProtocolParser {
           FieldConditionLogic fieldConditionLogic, JsonOverrideField overrideFieldAnn,
           String fieldName) throws JsonProtocolModelParseException {
         MethodHandler methodHandler;
+
+        FieldLoadStrategy loadStrategy;
+        if (m.getAnnotation(JsonField.class) == null) {
+          loadStrategy = FieldLoadStrategy.AUTO;
+        } else {
+          loadStrategy = m.getAnnotation(JsonField.class).loadStrategy();
+        }
+
         JsonNullable nullableAnn = m.getAnnotation(JsonNullable.class);
         SlowParser<?> fieldTypeParser = getFieldTypeParser(m.getGenericReturnType(),
-            nullableAnn != null, false);
+            nullableAnn != null, false, loadStrategy);
         if (fieldConditionLogic != null) {
           fieldConditions.add(new FieldCondition(fieldName, fieldTypeParser.asQuickParser(),
               fieldConditionLogic));
@@ -400,19 +419,48 @@ public class JsonProtocolParser {
         boolean isOptional = isOptionalField(m);
 
         if (fieldTypeParser.asQuickParser() != null) {
-          LazyParseFieldMethodHandler onDemandHandler = new LazyParseFieldMethodHandler(
-              fieldTypeParser.asQuickParser(), isOptional, fieldName, typeClass);
-          onDemandHanlers.add(onDemandHandler);
-          methodHandler = onDemandHandler;
+          QuickParser<?> quickParser = fieldTypeParser.asQuickParser();
+          if (loadStrategy == FieldLoadStrategy.EAGER) {
+            methodHandler = createEagerLoadGetterHandler(fieldName, fieldTypeParser, isOptional);
+          } else {
+            methodHandler = createLazyQuickGetterHandler(quickParser, isOptional, fieldName);
+          }
         } else {
-          int fieldCode = allocateFieldInArray();
-          FieldLoader fieldLoader = new FieldLoader(fieldCode, fieldName, fieldTypeParser,
-              isOptional);
-          fieldLoaders.add(fieldLoader);
-          methodHandler = new PreparsedFieldMethodHandler(fieldCode,
-              fieldTypeParser.getValueFinisher());
+          if (loadStrategy == FieldLoadStrategy.LAZY) {
+            methodHandler = createLazyCachedGetterHandler(fieldName, fieldTypeParser, isOptional);
+          } else {
+            methodHandler = createEagerLoadGetterHandler(fieldName, fieldTypeParser, isOptional);
+          }
         }
         return methodHandler;
+      }
+
+      private MethodHandler createLazyQuickGetterHandler(QuickParser<?> quickParser,
+          boolean isOptional, String fieldName) {
+        LazyParseFieldMethodHandler onDemandHandler = new LazyParseFieldMethodHandler(quickParser,
+            isOptional, fieldName, typeClass);
+        onDemandHanlers.add(onDemandHandler);
+        return onDemandHandler;
+      }
+
+      private MethodHandler createEagerLoadGetterHandler(String fieldName,
+          SlowParser<?> fieldTypeParser, boolean isOptional) {
+        int fieldCode = allocateFieldInArray();
+        FieldLoader fieldLoader = new FieldLoader(fieldCode, fieldName, fieldTypeParser,
+            isOptional);
+        fieldLoaders.add(fieldLoader);
+        return new PreparsedFieldMethodHandler(fieldCode,
+            fieldTypeParser.getValueFinisher());
+      }
+
+      private MethodHandler createLazyCachedGetterHandler(String fieldName,
+          SlowParser<?> fieldTypeParser, boolean isOptional) {
+        VolatileFieldBinding fieldBinding = allocateVolatileField(fieldTypeParser);
+        LazyCachedFieldMethodHandler lazyCachedHandler =
+            new LazyCachedFieldMethodHandler(fieldBinding, fieldTypeParser, isOptional,
+                fieldName, typeClass);
+        onDemandHanlers.add(lazyCachedHandler);
+        return lazyCachedHandler;
       }
 
       private MethodHandler processAutomaticSubtypeMethod(Method m)
@@ -459,7 +507,7 @@ public class JsonProtocolParser {
         int fieldCode = allocateFieldInArray();
 
         SlowParser<?> fieldTypeParser = getFieldTypeParser(m.getGenericReturnType(), false,
-            !jsonSubtypeCaseAnn.reinterpret());
+            !jsonSubtypeCaseAnn.reinterpret(), FieldLoadStrategy.AUTO);
 
         if (!Arrays.asList(m.getExceptionTypes()).contains(JsonProtocolParseException.class)) {
           throw new JsonProtocolModelParseException(
@@ -488,23 +536,19 @@ public class JsonProtocolParser {
         return fieldArraySize;
       }
 
-      void setFieldArraySize(int fieldArraySize) {
-        this.fieldArraySize = fieldArraySize;
+      int getVolatileFieldArraySize() {
+        return volatileFieldArraySize;
       }
 
       AlgebraicCasesDataImpl getAlgCasesData() {
         return algCasesData;
       }
 
-      void setAlgCasesData(AlgebraicCasesDataImpl algCasesData) {
-        this.algCasesData = algCasesData;
-      }
-
       List<FieldLoader> getFieldLoaders() {
         return fieldLoaders;
       }
 
-      List<LazyParseFieldMethodHandler> getOnDemandHanlers() {
+      List<LazyHandler> getOnDemandHanlers() {
         return onDemandHanlers;
       }
 
@@ -520,6 +564,11 @@ public class JsonProtocolParser {
         return fieldArraySize++;
       }
 
+      private VolatileFieldBinding allocateVolatileField(SlowParser<?> fieldTypeParser) {
+        int position = volatileFieldArraySize++;
+        return new VolatileFieldBinding(position);
+      }
+
       private boolean isOptionalField(Method m) {
         JsonOptionalField jsonOptionalFieldAnn = m.getAnnotation(JsonOptionalField.class);
         return jsonOptionalFieldAnn != null;
@@ -531,7 +580,10 @@ public class JsonProtocolParser {
         }
         JsonField fieldAnn = m.getAnnotation(JsonField.class);
         if (fieldAnn != null) {
-          return fieldAnn.jsonLiteralName();
+          String jsonLiteralName = fieldAnn.jsonLiteralName();
+          if (!jsonLiteralName.isEmpty()) {
+            return jsonLiteralName;
+          }
         }
         String name = m.getName();
         if (name.startsWith("get") && name.length() > 3) {
@@ -543,27 +595,32 @@ public class JsonProtocolParser {
   }
 
   private static class EagerFieldParserImpl extends TypeHandler.EagerFieldParser {
-    private final List<LazyParseFieldMethodHandler> onDemandHandlers;
+    private final List<LazyHandler> onDemandHandlers;
 
-    private EagerFieldParserImpl(List<LazyParseFieldMethodHandler> onDemandHandlers) {
+    private EagerFieldParserImpl(List<LazyHandler> onDemandHandlers) {
       this.onDemandHandlers = onDemandHandlers;
     }
 
     @Override
     void parseAllFields(ObjectData objectData) throws JsonProtocolParseException {
-      for (LazyParseFieldMethodHandler handler : onDemandHandlers) {
-        handler.parse(objectData);
+      for (LazyHandler handler : onDemandHandlers) {
+        handler.parseEager(objectData);
       }
     }
     @Override
     void addAllFieldNames(Set<? super String> output) {
-      for (LazyParseFieldMethodHandler handler : onDemandHandlers) {
+      for (LazyHandler handler : onDemandHandlers) {
         output.add(handler.getFieldName());
       }
     }
   }
 
-  private static class LazyParseFieldMethodHandler extends MethodHandler {
+  private interface LazyHandler {
+    void parseEager(ObjectData objectData) throws JsonProtocolParseException;
+    String getFieldName();
+  }
+
+  private static class LazyParseFieldMethodHandler extends MethodHandler implements LazyHandler {
     private final QuickParser<?> quickParser;
     private final boolean isOptional;
     private final String fieldName;
@@ -585,6 +642,11 @@ public class JsonProtocolParser {
         throw new JsonProtocolParseRuntimeException(
             "On demand parsing failed for " + objectData.getUnderlyingObject(), e);
       }
+    }
+
+    @Override
+    public void parseEager(ObjectData objectData) throws JsonProtocolParseException {
+      parse(objectData);
     }
 
     public Object parse(ObjectData objectData) throws JsonProtocolParseException {
@@ -617,7 +679,86 @@ public class JsonProtocolParser {
       }
     }
 
-    String getFieldName() {
+    @Override
+    public String getFieldName() {
+      return fieldName;
+    }
+  }
+
+  private static class LazyCachedFieldMethodHandler extends MethodHandler implements LazyHandler {
+    private final VolatileFieldBinding fieldBinding;
+    private final SlowParser<?> slowParser;
+    private final boolean isOptional;
+    private final String fieldName;
+    private final Class<?> typeClass;
+
+    LazyCachedFieldMethodHandler(VolatileFieldBinding fieldBinding, SlowParser<?> slowParser,
+        boolean isOptional, String fieldName, Class<?> typeClass) {
+      this.fieldBinding = fieldBinding;
+      this.slowParser = slowParser;
+      this.isOptional = isOptional;
+      this.fieldName = fieldName;
+      this.typeClass = typeClass;
+    }
+
+    @Override
+    Object handle(ObjectData objectData, Object[] args) {
+      try {
+        return parse(objectData);
+      } catch (JsonProtocolParseException e) {
+        throw new JsonProtocolParseRuntimeException(
+            "On demand parsing failed for " + objectData.getUnderlyingObject(), e);
+      }
+    }
+
+    @Override
+    public void parseEager(ObjectData objectData) throws JsonProtocolParseException {
+      parse(objectData);
+    }
+
+    public Object parse(ObjectData objectData) throws JsonProtocolParseException {
+      AtomicReferenceArray<Object> atomicReferenceArray = objectData.getAtomicReferenceArray();
+
+      Object cachedValue = fieldBinding.get(atomicReferenceArray);
+      if (cachedValue != null) {
+        return cachedValue;
+      }
+
+      Map<?,?> properties = (JSONObject)objectData.getUnderlyingObject();
+      Object value = properties.get(fieldName);
+      boolean hasValue;
+      if (value == null) {
+        hasValue = properties.containsKey(fieldName);
+      } else {
+        hasValue = true;
+      }
+      Object parsedValue = parse(hasValue, value, objectData);
+      if (parsedValue != null) {
+        parsedValue = fieldBinding.setAndGet(atomicReferenceArray, parsedValue);
+      }
+      return parsedValue;
+    }
+
+    public Object parse(boolean hasValue, Object value, ObjectData objectData)
+        throws JsonProtocolParseException {
+      if (hasValue) {
+        try {
+          return slowParser.parseValue(value, objectData);
+        } catch (JsonProtocolParseException e) {
+          throw new JsonProtocolParseException("Failed to parse field " + fieldName + " in type " +
+              typeClass.getName(), e);
+        }
+      } else {
+        if (!isOptional) {
+          throw new JsonProtocolParseException("Field is not optional: " + fieldName +
+              " (in type " + typeClass.getName() + ")");
+        }
+        return null;
+      }
+    }
+
+    @Override
+    public String getFieldName() {
       return fieldName;
     }
   }
@@ -713,12 +854,79 @@ public class JsonProtocolParser {
       SimpleParserPair.create(JSONObject.class);
 
   static class ArrayParser<T> extends SlowParser<List<? extends T>> {
+
+    static abstract class ListFactory {
+      abstract <T> List<T> create(JSONArray array, SlowParser<T> componentParser)
+          throws JsonProtocolParseException;
+    }
+
+    static final ListFactory EAGER = new ListFactory() {
+      @Override
+      <T> List<T> create(JSONArray array, SlowParser<T> componentParser)
+          throws JsonProtocolParseException {
+        int size = array.size();
+        List list = new ArrayList<Object>(size);
+        FieldLoadedFinisher valueFinisher = componentParser.getValueFinisher();
+        for (int i = 0; i < size; i++) {
+          // We do not support super object for array component.
+          Object val = componentParser.parseValue(array.get(i), null);
+          if (valueFinisher != null) {
+            val = valueFinisher.getValueForUser(val);
+          }
+          list.add(val);
+        }
+        return Collections.unmodifiableList(list);
+      }
+    };
+
+    static final ListFactory LAZY = new ListFactory() {
+      @Override
+      <T> List<T> create(final JSONArray array, final SlowParser<T> componentParser) {
+        final int size = array.size();
+        List<T> list = new AbstractList<T>() {
+          private final AtomicReferenceArray<T> values = new AtomicReferenceArray<T>(size);
+
+          @Override
+          public synchronized T get(int index) {
+            T parsedValue = values.get(index);
+            if (parsedValue == null) {
+              Object rawObject = array.get(index);
+              if (rawObject != null) {
+                Object parsedObject;
+                try {
+                  parsedObject = componentParser.parseValue(array.get(index), null);
+                } catch (JsonProtocolParseException e) {
+                  throw new JsonProtocolParseRuntimeException(e);
+                }
+                FieldLoadedFinisher valueFinisher = componentParser.getValueFinisher();
+                if (valueFinisher != null) {
+                  parsedObject = valueFinisher.getValueForUser(parsedObject);
+                }
+                parsedValue = (T) parsedObject;
+                values.compareAndSet(index, null, parsedValue);
+                parsedValue = values.get(index);
+              }
+            }
+            return parsedValue;
+          }
+
+          @Override
+          public int size() {
+            return size;
+          }
+        };
+        return list;
+      }
+    };
+
     private final SlowParser<T> componentParser;
     private final boolean isNullable;
+    private final ListFactory listFactory;
 
-    ArrayParser(SlowParser<T> componentParser, boolean isNullable) {
+    ArrayParser(SlowParser<T> componentParser, boolean isNullable, ListFactory listFactory) {
       this.componentParser = componentParser;
       this.isNullable = isNullable;
+      this.listFactory = listFactory;
     }
 
     @Override
@@ -731,23 +939,14 @@ public class JsonProtocolParser {
         throw new JsonProtocolParseException("Array value expected");
       }
       JSONArray arrayValue = (JSONArray) value;
-      int size = arrayValue.size();
-      List list = new ArrayList<Object>(size);
-      FieldLoadedFinisher valueFinisher = componentParser.getValueFinisher();
-      for (int i = 0; i < size; i++) {
-        // We do not support super object for array component.
-        Object val = componentParser.parseValue(arrayValue.get(i), null);
-        if (valueFinisher != null) {
-          val = valueFinisher.getValueForUser(val);
-        }
-        list.add(val);
-      }
-      return Collections.unmodifiableList(list);
+      return listFactory.create(arrayValue, componentParser);
     }
+
     @Override
     public FieldLoadedFinisher getValueFinisher() {
       return null;
     }
+
     @Override
     public JsonTypeParser<?> asJsonTypeParser() {
       return null;
@@ -866,6 +1065,24 @@ public class JsonProtocolParser {
     @Override
     boolean isManualChoose() {
       return isManualChoose;
+    }
+  }
+
+  static class VolatileFieldBinding {
+    private final int position;
+
+    public VolatileFieldBinding(int position) {
+      this.position = position;
+    }
+
+    public Object setAndGet(AtomicReferenceArray<Object> atomicReferenceArray,
+        Object parsedValue) {
+      atomicReferenceArray.compareAndSet(position, null, parsedValue);
+      return atomicReferenceArray.get(position);
+    }
+
+    public Object get(AtomicReferenceArray<Object> atomicReferenceArray) {
+      return atomicReferenceArray.get(position);
     }
   }
 

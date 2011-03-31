@@ -32,6 +32,8 @@ class TypeHandler<T> {
   /** Size of array that holds type-specific instance data. */
   private final int fieldArraySize;
 
+  private final int volatileFieldArraySize;
+
   /** Method implementation for dynamic proxy. */
   private final Map<Method, MethodHandler> methodHandlerMap;
 
@@ -53,12 +55,14 @@ class TypeHandler<T> {
   private final boolean checkLazyParsedFields;
 
   TypeHandler(Class<T> typeClass, RefToType<?> jsonSuperClass, int fieldArraySize,
+      int volatileFieldArraySize,
       Map<Method, MethodHandler> methodHandlerMap,
       List<FieldLoader> fieldLoaders,
       List<FieldCondition> fieldConditions, EagerFieldParser eagerFieldParser,
       AlgebraicCasesData algCasesData, boolean checkLazyParsedFields) {
     this.typeClass = typeClass;
     this.fieldArraySize = fieldArraySize;
+    this.volatileFieldArraySize = volatileFieldArraySize;
     this.methodHandlerMap = methodHandlerMap;
     this.fieldLoaders = fieldLoaders;
     this.eagerFieldParser = eagerFieldParser;
@@ -88,7 +92,8 @@ class TypeHandler<T> {
         jsonProperties = (JSONObject) input;
       }
 
-      ObjectData objectData = new ObjectData(this, input, fieldArraySize, superObjectData);
+      ObjectData objectData = new ObjectData(this, input, fieldArraySize, volatileFieldArraySize,
+          superObjectData);
       if (!fieldLoaders.isEmpty() && jsonProperties == null) {
         throw new JsonProtocolParseException("JSON object input expected");
       }
