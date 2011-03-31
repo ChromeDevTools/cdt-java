@@ -9,6 +9,8 @@ import java.util.List;
 import org.chromium.sdk.internal.protocol.data.PropertyObject;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
+import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
+import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.json.simple.JSONObject;
@@ -35,12 +37,15 @@ public interface FrameObject {
   @JsonOptionalField
   SomeRef getScript();
 
+  @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
   List<PropertyObject> getArguments();
 
+  @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
   List<PropertyObject> getLocals();
 
   SomeRef getReceiver();
 
+  @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
   List<ScopeRef> getScopes();
 
   Boolean constructCall();
@@ -52,5 +57,4 @@ public interface FrameObject {
   Long column();
 
   Boolean debuggerFrame();
-
 }
