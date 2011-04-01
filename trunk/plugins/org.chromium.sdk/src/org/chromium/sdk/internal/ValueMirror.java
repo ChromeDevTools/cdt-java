@@ -123,10 +123,6 @@ public class ValueMirror {
     return className;
   }
 
-  private static Type getObjectJsType(String className) {
-    return JsDataTypeUtil.fromJsonTypeAndClassName("object", className);
-  }
-
   void mergeFrom(ValueMirror alternative) {
     synchronized (MERGE_VALUE_MIRROR_MONITOR) {
       if (alternative.properties != null) {

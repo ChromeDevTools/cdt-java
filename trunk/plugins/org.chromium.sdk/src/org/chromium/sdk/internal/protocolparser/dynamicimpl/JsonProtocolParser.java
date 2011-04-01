@@ -733,6 +733,12 @@ public class JsonProtocolParser {
         hasValue = true;
       }
       Object parsedValue = parse(hasValue, value, objectData);
+      // Cache already finished value, because we don't use unfinished value anywhere.
+      FieldLoadedFinisher valueFinisher = slowParser.getValueFinisher();
+      if (valueFinisher != null) {
+        parsedValue = valueFinisher.getValueForUser(parsedValue);
+      }
+
       if (parsedValue != null) {
         parsedValue = fieldBinding.setAndGet(atomicReferenceArray, parsedValue);
       }

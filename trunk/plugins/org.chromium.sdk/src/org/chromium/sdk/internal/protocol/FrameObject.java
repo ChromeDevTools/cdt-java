@@ -43,6 +43,7 @@ public interface FrameObject {
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
   List<PropertyObject> getLocals();
 
+  @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
   SomeRef getReceiver();
 
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)

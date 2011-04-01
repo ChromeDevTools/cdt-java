@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -17,12 +18,18 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.V8CommandCallbackBase;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessage;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
+import org.json.simple.JSONObject;
 
 public class ContextBuilder {
   private final DebugSession debugSession;
@@ -51,7 +58,7 @@ public class ContextBuilder {
   public interface ExpectingBacktraceStep {
     InternalContext getInternalContext();
 
-    DebugContext setFrames(FrameMirror[] frameMirrors);
+    DebugContext setFrames(List<FrameObject> jsonFrames);
   }
 
   /**
@@ -98,10 +105,10 @@ public class ContextBuilder {
             return preContext;
           }
 
-          public DebugContext setFrames(FrameMirror[] frameMirrors) {
+          public DebugContext setFrames(List<FrameObject> jsonFrames) {
             assertStep(this);
 
-            contextData.frames = new Frames(frameMirrors, preContext);
+            contextData.frames = new Frames(jsonFrames, preContext);
 
             preContext.createContext(contextData);
 
@@ -384,51 +391,34 @@ public class ContextBuilder {
   }
 
   private class Frames {
-    /** The frame mirrors while on a breakpoint. */
-    private final FrameMirror[] frameMirrors;
     /** The cached call frames constructed using frameMirrors. */
     private final List<CallFrameImpl> unmodifableFrames;
     private boolean scriptsLinkedToFrames;
 
-    Frames(FrameMirror[] frameMirrors0, InternalContext internalContext) {
-      this.frameMirrors = frameMirrors0;
-      this.scriptsLinkedToFrames = false;
+    Frames(List<FrameObject> jsonFrames, InternalContext internalContext) {
+      HandleManager handleManager = internalContext.getHandleManager();
 
-      int frameCount = frameMirrors.length;
-      List<CallFrameImpl> frameList = new ArrayList<CallFrameImpl>(frameCount);
-      for (int i = 0; i < frameCount; ++i) {
-        frameList.add(new CallFrameImpl(frameMirrors[i], i, internalContext));
+      CallFrameImpl[] callFrames = new CallFrameImpl[jsonFrames.size()];
+
+      for (FrameObject frameObject : jsonFrames) {
+        CallFrameImpl callFrameImpl = new CallFrameImpl(frameObject, internalContext);
+        callFrames[callFrameImpl.getIdentifier()] = callFrameImpl;
       }
-      this.unmodifableFrames = Collections.unmodifiableList(frameList);
+
+      this.scriptsLinkedToFrames = false;
+      this.unmodifableFrames = Collections.unmodifiableList(Arrays.asList(callFrames));
     }
 
     synchronized List<CallFrameImpl> getCallFrames() {
       if (!scriptsLinkedToFrames) {
         // We expect that ALL the V8 scripts are loaded so we can
         // hook them up to the call frames.
-        int frameCount = frameMirrors.length;
-        for (int i = 0; i < frameCount; ++i) {
-          hookupScriptToFrame(i);
+        for (CallFrameImpl frame : unmodifableFrames) {
+          frame.hookUpScript(debugSession.getScriptManager());
         }
         scriptsLinkedToFrames = true;
       }
       return unmodifableFrames;
-    }
-
-
-    /**
-     * Associates a script found in the ScriptManager with the given frame.
-     *
-     * @param frameIndex to associate a script with
-     */
-    private void hookupScriptToFrame(int frameIndex) {
-      FrameMirror frame = frameMirrors[frameIndex];
-      if (frame != null && frame.getScript() == null) {
-        Script script = debugSession.getScriptManager().findById(frame.getScriptId());
-        if (script != null) {
-          frame.setScript(script);
-        }
-      }
     }
   }
 
