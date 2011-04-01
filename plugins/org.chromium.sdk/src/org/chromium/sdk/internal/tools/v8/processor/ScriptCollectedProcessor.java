@@ -23,7 +23,7 @@ public class ScriptCollectedProcessor extends V8EventProcessor {
 
   @Override
   public void messageReceived(EventNotification eventMessage) {
-    EventNotificationBody body = eventMessage.getBody();
+    EventNotificationBody body = eventMessage.body();
 
     ScriptCollectedBody scriptCollectedBody;
     try {

@@ -223,7 +223,7 @@ public class V8ProtocolUtil {
       DataWithRef getRef(PropertyObject prop) {
         PropertyWithValue asPropertyWithValue = prop.asPropertyWithValue();
         if (asPropertyWithValue != null) {
-          return DataWithRef.fromSomeRef(asPropertyWithValue.getValue());
+          return DataWithRef.fromSomeRef(asPropertyWithValue.value());
         } else {
           return DataWithRef.fromLong(prop.asPropertyWithRef().ref());
         }
@@ -325,7 +325,7 @@ public class V8ProtocolUtil {
   public static Version parseVersionResponse(SuccessCommandResponse versionResponse) {
     VersionBody body;
     try {
-      body = versionResponse.getBody().asVersionBody();
+      body = versionResponse.body().asVersionBody();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }

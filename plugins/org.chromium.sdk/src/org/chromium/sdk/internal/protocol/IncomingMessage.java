@@ -13,9 +13,9 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
  */
 @JsonType
 public interface IncomingMessage {
-  long getSeq();
+  long seq();
 
-  MessageType getType();
+  MessageType type();
 
   @JsonSubtypeCasting
   CommandResponse asCommandResponse();

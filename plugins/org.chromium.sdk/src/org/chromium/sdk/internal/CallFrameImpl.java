@@ -81,10 +81,10 @@ public class CallFrameImpl implements CallFrame {
     this.frameObject = frameObject;
     this.context = context;
 
-    int index = (int) frameObject.getIndex();
-    JSONObject func = frameObject.getFunc();
+    int index = (int) frameObject.index();
+    JSONObject func = frameObject.func();
 
-    int currentLine = (int) frameObject.getLine();
+    int currentLine = (int) frameObject.line();
 
     // If we stopped because of the debuggerword then we're on the next
     // line.
@@ -92,11 +92,11 @@ public class CallFrameImpl implements CallFrame {
     // decide if line is debuggerword. If so, find the next sequential line.
     // The below works for simple scripts but doesn't take into account
     // comments, etc.
-    String srcLine = frameObject.getSourceLineText();
+    String srcLine = frameObject.sourceLineText();
     if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
       currentLine++;
     }
-    Long scriptRef = V8ProtocolUtil.getObjectRef(frameObject.getScript());
+    Long scriptRef = V8ProtocolUtil.getObjectRef(frameObject.script());
 
     Long scriptId = -1L;
     if (scriptRef != null) {
@@ -221,7 +221,7 @@ public class CallFrameImpl implements CallFrame {
   }
 
   private List<JsScopeImpl<?>> createScopes() {
-    List<ScopeRef> scopes = frameObject.getScopes();
+    List<ScopeRef> scopes = frameObject.scopes();
     List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(scopes.size());
     for (ScopeRef scopeRef : scopes) {
       result.add(JsScopeImpl.create(this, scopeRef));

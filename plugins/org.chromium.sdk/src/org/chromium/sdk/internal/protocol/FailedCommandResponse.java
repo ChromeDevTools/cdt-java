@@ -21,11 +21,11 @@ public interface FailedCommandResponse extends JsonSubtype<CommandResponse> {
   @JsonSubtypeConditionBoolValue(false)
   boolean success();
 
-  String getMessage();
+  String message();
 
   @JsonField(jsonLiteralName="request_seq")
-  Long getRequestSeq();
+  Long requestSeq();
 
   @JsonOptionalField
-  String getCommand();
+  String command();
 }

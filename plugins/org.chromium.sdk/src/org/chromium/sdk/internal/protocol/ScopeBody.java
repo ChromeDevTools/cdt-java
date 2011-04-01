@@ -12,7 +12,7 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 @JsonType
 public interface ScopeBody extends JsonSubtype<CommandResponseBody> {
 
-  ObjectValueHandle getObject();
+  ObjectValueHandle object();
 
   @JsonOptionalField
   String text();

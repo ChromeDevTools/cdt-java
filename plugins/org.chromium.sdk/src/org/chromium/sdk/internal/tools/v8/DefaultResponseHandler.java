@@ -47,7 +47,7 @@ public class DefaultResponseHandler {
       // Currently only events are supported.
       return;
     }
-    String commandString = eventResponse.getEvent();
+    String commandString = eventResponse.event();
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command == null) {
       LOGGER.log(Level.WARNING,

@@ -45,7 +45,7 @@ public class BreakpointProcessor extends V8EventProcessor {
   public void messageReceived(EventNotification eventMessage) {
     final boolean isEvent = true;
     if (isEvent) {
-      String event = eventMessage.getEvent();
+      String event = eventMessage.event();
       DebugSession debugSession = getDebugSession();
 
       ContextBuilder contextBuilder = debugSession.getContextBuilder();
@@ -56,7 +56,7 @@ public class BreakpointProcessor extends V8EventProcessor {
 
       BreakEventBody breakEventBody;
       try {
-        breakEventBody = eventMessage.getBody().asBreakEventBody();
+        breakEventBody = eventMessage.body().asBreakEventBody();
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
@@ -94,7 +94,7 @@ public class BreakpointProcessor extends V8EventProcessor {
 
   private Collection<Breakpoint> getBreakpointsHit(EventNotification response,
       BreakEventBody breakEventBody) {
-    List<Long> breakpointIdsArray = breakEventBody.getBreakpoints();
+    List<Long> breakpointIdsArray = breakEventBody.breakpoints();
     BreakpointManager breakpointManager = getDebugSession().getBreakpointManager();
     if (breakpointIdsArray == null) {
       // Suspended on step end.
@@ -112,22 +112,22 @@ public class BreakpointProcessor extends V8EventProcessor {
 
   private ExceptionData createException(EventNotification response, BreakEventBody body,
       InternalContext internalContext) {
-    List<SomeHandle> refs = response.getRefs();
-    ValueHandle exception = body.getException();
+    List<SomeHandle> refs = response.refs();
+    ValueHandle exception = body.exception();
     List<SomeHandle> handles = new ArrayList<SomeHandle>(refs.size() + 1);
     handles.addAll(refs);
     handles.add(exception.getSuper());
     internalContext.getHandleManager().putAll(handles);
 
     // source column is not exposed ("sourceColumn" in "body")
-    String sourceText = body.getSourceLineText();
+    String sourceText = body.sourceLineText();
 
     PropertyHoldingValueMirror propertyHoldingMirror =
         V8Helper.createMirrorFromLookup(exception, LoadableString.Factory.IMMUTABLE);
     return new ExceptionDataImpl(internalContext,
         propertyHoldingMirror.getValueMirror(),
         EXCEPTION_NAME,
-        body.isUncaught(),
+        body.uncaught(),
         sourceText,
         exception.text());
   }

@@ -47,7 +47,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
           public void success(SuccessCommandResponse successResponse) {
             List<ScriptHandle> body;
             try {
-              body = successResponse.getBody().asScripts();
+              body = successResponse.body().asScripts();
             } catch (JsonProtocolParseException e) {
               throw new RuntimeException(e);
             }
@@ -57,7 +57,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
             }
             Script newScript = debugSession.getScriptManager().addScript(
                 body.get(0),
-                successResponse.getRefs());
+                successResponse.refs());
             if (newScript != null) {
               getDebugSession().getSessionManager().getDebugEventListener().scriptLoaded(newScript);
             }
@@ -75,17 +75,17 @@ public class AfterCompileProcessor extends V8EventProcessor {
       V8ContextFilter contextFilter) {
     AfterCompileBody body;
     try {
-      body = eventResponse.getBody().asAfterCompileBody();
+      body = eventResponse.body().asAfterCompileBody();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
-    ScriptHandle script = body.getScript();
+    ScriptHandle script = body.script();
     if (ChromeDevToolSessionManager.JAVASCRIPT_VOID.equals(script.sourceStart()) ||
         script.context() == null ||
         V8ProtocolUtil.getScriptType(script.scriptType()) ==
             Script.Type.NATIVE) {
       return null;
     }
-    return V8ProtocolUtil.validScript(script, eventResponse.getRefs(), contextFilter);
+    return V8ProtocolUtil.validScript(script, eventResponse.refs(), contextFilter);
   }
 }

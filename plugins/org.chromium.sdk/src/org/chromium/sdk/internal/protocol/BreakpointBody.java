@@ -12,7 +12,7 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 @JsonType
 public interface BreakpointBody extends JsonSubtype<CommandResponseBody> {
 
-  long getBreakpoint();
+  long breakpoint();
 
   @JsonOptionalField
   @JsonNullable

@@ -35,7 +35,7 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
  }
 
   public void messageReceived(CommandResponse response) {
-    String commandString = response.getCommand();
+    String commandString = response.command();
 
     DebuggerCommand command = DebuggerCommand.forString(commandString);
     if (command != DebuggerCommand.BACKTRACE) {
@@ -65,18 +65,18 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
   private DebugContext setFrames(SuccessCommandResponse response) {
     BacktraceCommandBody body;
     try {
-      body = response.getBody().asBacktraceCommandBody();
+      body = response.body().asBacktraceCommandBody();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
-    List<FrameObject> jsonFrames = body.getFrames();
+    List<FrameObject> jsonFrames = body.frames();
     if (jsonFrames == null) {
       jsonFrames = Collections.emptyList();
     }
 
     HandleManager handleManager = step2.getInternalContext().getHandleManager();
 
-    List<SomeHandle> refs = response.getRefs();
+    List<SomeHandle> refs = response.refs();
     handleManager.putAll(refs);
 
     return step2.setFrames(jsonFrames);

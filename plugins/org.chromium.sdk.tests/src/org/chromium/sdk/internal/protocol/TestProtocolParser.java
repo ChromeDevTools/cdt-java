@@ -31,15 +31,15 @@ public class TestProtocolParser {
 
     JsonProtocolParser parser = V8ProtocolUtil.getV8Parser();
     IncomingMessage response = parser.parse(json, IncomingMessage.class);
-    Long l1 = response.getSeq();
-    MessageType type = response.getType();
+    Long l1 = response.seq();
+    MessageType type = response.type();
     CommandResponse commandResponse = response.asCommandResponse();
-    Long l2 = commandResponse.getRequestSeq();
+    Long l2 = commandResponse.requestSeq();
     boolean success = commandResponse.success();
     SuccessCommandResponse successResponse = commandResponse.asSuccess();
     Boolean running = successResponse.running();
-    Object body = successResponse.getBody();
-    List<?> refs = successResponse.getRefs();
+    Object body = successResponse.body();
+    List<?> refs = successResponse.refs();
     SuccessCommandResponse successResponse2 = parser.parse(json, SuccessCommandResponse.class);
     response = null;
   }
@@ -51,7 +51,7 @@ public class TestProtocolParser {
     JSONObject json = JsonUtil.jsonObjectFromJson(sample);
 
     SimpleData simpleData = testParser.parse(json, SimpleData.class);
-    Cases cases = simpleData.getA();
+    Cases cases = simpleData.a();
     List<Object> array = cases.asList();
     array = null;
   }
@@ -62,14 +62,14 @@ public class TestProtocolParser {
     String sample = "{'a': 1}".replace('\'', '"');
     JSONObject json = JsonUtil.jsonObjectFromJson(sample);
     SimpleData simpleData = testParser.parse(json, SimpleData.class);
-    Cases cases = simpleData.getA();
+    Cases cases = simpleData.a();
     long num = cases.asNumber();
     num = 0;
   }
 
   @JsonType
   interface SimpleData {
-    Cases getA();
+    Cases a();
   }
   @JsonType(subtypesChosenManually=true)
   interface Cases {

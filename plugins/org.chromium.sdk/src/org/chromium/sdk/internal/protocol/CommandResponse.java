@@ -24,7 +24,7 @@ public interface CommandResponse extends JsonSubtype<IncomingMessage> {
 
   @JsonOverrideField
   @JsonSubtypeConditionCustom(condition=TypeValueCondition.class)
-  MessageType getType();
+  MessageType type();
 
   class TypeValueCondition extends EnumValueCondition<MessageType> {
     public TypeValueCondition() {
@@ -36,10 +36,10 @@ public interface CommandResponse extends JsonSubtype<IncomingMessage> {
    * Id of the corresponding request sent to debugger.
    */
   @JsonField(jsonLiteralName="request_seq")
-  long getRequestSeq();
+  long requestSeq();
 
   @JsonOptionalField
-  String getCommand();
+  String command();
 
   boolean success();
 

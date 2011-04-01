@@ -31,7 +31,7 @@ public class SubtypingAndAggregationTest {
     String semiJson = "{'color': {'name': 'blue' }}";
     Ball ball = parse(semiJson, Ball.class);
     assertNotNull(ball);
-    Color color = ball.getColor();
+    Color color = ball.color();
     assertNotNull(color);
     assertNull(color.asSchemedColor());
     NamedColor namedColor = color.asNamedColor();
@@ -44,7 +44,7 @@ public class SubtypingAndAggregationTest {
     String semiJson = "{'color': {'scheme': 'rgb', 'red': 200, 'green': 50, 'blue': 5 }}";
     Ball ball = parse(semiJson, Ball.class);
     assertNotNull(ball);
-    Color color = ball.getColor();
+    Color color = ball.color();
     assertNotNull(color);
     assertNull(color.asNamedColor());
     SchemedColor schemedColor = color.asSchemedColor();
@@ -105,7 +105,7 @@ public class SubtypingAndAggregationTest {
 
   @JsonType
   public interface Ball {
-    Color getColor();
+    Color color();
   }
 
   @JsonType
