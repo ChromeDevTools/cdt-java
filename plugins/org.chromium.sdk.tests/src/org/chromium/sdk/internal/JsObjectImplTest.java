@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal;
 
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -19,6 +21,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
@@ -64,11 +67,27 @@ public class JsObjectImplTest {
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
 
-    FrameMirror frameMirror = new FrameMirror(
-        null,
-        12, FixtureChromeStub.getScriptId(),
-        "foofunction");
-    this.callFrame = new CallFrameImpl(frameMirror, 0, internalContext);
+    FrameObject frameObject;
+    {
+      JSONObject jsonObject = jsonObject(
+          jsonProperty("line", 12L),
+          jsonProperty("index", 0L),
+          jsonProperty("sourceLineText", ""),
+          jsonProperty("script",
+              jsonObject(
+                  jsonProperty("ref", Long.valueOf(FixtureChromeStub.getScriptId()))
+              )
+          ),
+          jsonProperty("func",
+              jsonObject(
+                  jsonProperty("name", "foofunction")
+              )
+          )
+      );
+      frameObject = V8ProtocolUtil.getV8Parser().parse(jsonObject, FrameObject.class);
+    }
+
+    this.callFrame = new CallFrameImpl(frameObject, internalContext);
   }
 
   @Test

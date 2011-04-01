@@ -16,8 +16,14 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.ScopeRef;
-import org.chromium.sdk.internal.tools.v8.request.FrameMessage;
+import org.chromium.sdk.internal.protocol.data.ScriptHandle;
+import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.V8Helper;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.json.simple.JSONObject;
 
 /**
  * A generic implementation of the CallFrame interface.
@@ -31,7 +37,22 @@ public class CallFrameImpl implements CallFrame {
   private final InternalContext context;
 
   /** The underlying frame data from the JavaScript VM. */
-  private final FrameMirror frameMirror;
+  private final FrameObject frameObject;
+
+  /**
+   * 0-based line number in the entire script resource.
+   */
+  private final int lineNumber;
+
+  /**
+   * Function name associated with the frame.
+   */
+  private final String frameFunction;
+
+  /**
+   * The associated script id value.
+   */
+  private final long scriptId;
 
   /** The variables known in this call frame. */
   private Collection<JsVariableImpl> variables = null;
@@ -44,6 +65,11 @@ public class CallFrameImpl implements CallFrame {
   private boolean receiverVariableLoaded = false;
 
   /**
+   * A script associated with the frame.
+   */
+  private Script script;
+
+  /**
    * Constructs a call frame for the given handler using the FrameMirror data
    * from the remote JavaScript VM.
    *
@@ -51,32 +77,71 @@ public class CallFrameImpl implements CallFrame {
    * @param index call frame id (0 is the stack top)
    * @param context in which the call frame is created
    */
-  public CallFrameImpl(FrameMirror mirror, int index, InternalContext context) {
+  public CallFrameImpl(FrameObject frameObject, InternalContext context) {
+    this.frameObject = frameObject;
     this.context = context;
+
+    int index = (int) frameObject.getIndex();
+    JSONObject func = frameObject.getFunc();
+
+    int currentLine = (int) frameObject.getLine();
+
+    // If we stopped because of the debuggerword then we're on the next
+    // line.
+    // TODO(apavlov): Terry says: we need to use the [e.g. Rhino] AST to
+    // decide if line is debuggerword. If so, find the next sequential line.
+    // The below works for simple scripts but doesn't take into account
+    // comments, etc.
+    String srcLine = frameObject.getSourceLineText();
+    if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
+      currentLine++;
+    }
+    Long scriptRef = V8ProtocolUtil.getObjectRef(frameObject.getScript());
+
+    Long scriptId = -1L;
+    if (scriptRef != null) {
+      SomeHandle handle = context.getHandleManager().getHandle(scriptRef);
+      if (handle != null) {
+        ScriptHandle scriptHandle;
+        try {
+          scriptHandle = handle.asScriptHandle();
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
+        scriptId = scriptHandle.id();
+      }
+    }
+
+    this.scriptId = scriptId;
+    this.lineNumber = currentLine;
+    this.frameFunction = V8ProtocolUtil.getFunctionName(func);
     this.frameId = index;
-    this.frameMirror = mirror;
   }
 
   public InternalContext getInternalContext() {
     return context;
   }
 
+  @Override
   @Deprecated
   public Collection<JsVariableImpl> getVariables() {
     ensureVariables();
     return variables;
   }
 
+  @Override
   public List<? extends JsScope> getVariableScopes() {
     ensureScopes();
     return scopes;
   }
 
+  @Override
   public JsVariable getReceiverVariable() {
     ensureReceiver();
     return this.receiverVariable;
   }
 
+  @Override
   public JsEvaluateContext getEvaluateContext() {
     return evaluateContextImpl;
   }
@@ -95,7 +160,7 @@ public class CallFrameImpl implements CallFrame {
 
   private void ensureReceiver() {
     if (!receiverVariableLoaded) {
-      PropertyReference ref = frameMirror.getReceiverRef();
+      PropertyReference ref = V8Helper.computeReceiverRef(frameObject);
       if (ref == null) {
         this.receiverVariable = null;
       } else {
@@ -110,16 +175,19 @@ public class CallFrameImpl implements CallFrame {
     }
   }
 
+  @Override
   public TextStreamPosition getStatementStartPosition() {
     return textStreamPosition;
   }
 
+  @Override
   public String getFunctionName() {
-    return frameMirror.getFunctionName();
+    return frameFunction;
   }
 
+  @Override
   public Script getScript() {
-    return frameMirror.getScript();
+    return script;
   }
 
   /**
@@ -130,11 +198,18 @@ public class CallFrameImpl implements CallFrame {
     return frameId;
   }
 
+  void hookUpScript(ScriptManager scriptManager) {
+    Script script = scriptManager.findById(scriptId);
+    if (script != null) {
+      this.script = script;
+    }
+  }
+
   /**
    * Initializes this frame with variables based on the frameMirror locals.
    */
   private Collection<JsVariableImpl> createVariables() {
-    List<PropertyReference> refs = frameMirror.getLocals();
+    List<PropertyReference> refs = V8Helper.computeLocals(frameObject);
     List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
     Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
     for (int i = 0; i < refs.size(); i++) {
@@ -146,7 +221,7 @@ public class CallFrameImpl implements CallFrame {
   }
 
   private List<JsScopeImpl<?>> createScopes() {
-    List<ScopeRef> scopes = frameMirror.getScopes();
+    List<ScopeRef> scopes = frameObject.getScopes();
     List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(scopes.size());
     for (ScopeRef scopeRef : scopes) {
       result.add(JsScopeImpl.create(this, scopeRef));
@@ -170,14 +245,20 @@ public class CallFrameImpl implements CallFrame {
   };
 
   private final TextStreamPosition textStreamPosition = new TextStreamPosition() {
-    public int getOffset() {
-      return frameMirror.getOffset();
+    @Override public int getOffset() {
+      return frameObject.position().intValue();
     }
-    public int getLine() {
-      return frameMirror.getLine();
+    @Override public int getLine() {
+      return lineNumber;
     }
-    public int getColumn() {
-      return frameMirror.getColumn();
+    @Override public int getColumn() {
+      Long columnObj = frameObject.column();
+      if (columnObj == null) {
+        return -1;
+      }
+      return columnObj.intValue();
     }
   };
+
+  private static final String DEBUGGER_RESERVED = "debugger";
 }
