@@ -20,7 +20,7 @@ public abstract class V8BlockingCallback<RES> {
     SuccessCommandResponse successResponse = response.asSuccess();
     if (successResponse == null) {
       throw new RuntimeException("Unsuccessful command " +
-          response.asFailure().getMessage());
+          response.asFailure().message());
     }
     return handleSuccessfulResponse(successResponse);
   }

@@ -136,7 +136,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
     }
 
     public Integer getSeq(CommandResponse incomingWithSeq) {
-      return (int) incomingWithSeq.getRequestSeq();
+      return (int) incomingWithSeq.requestSeq();
     }
 
     public void acceptNonSeq(IncomingMessage incoming) {

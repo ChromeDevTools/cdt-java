@@ -13,7 +13,7 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 public interface PropertyWithRef extends JsonSubtype<PropertyObject> {
   @JsonSubtypeCondition(fieldIsAbsent=true)
   @JsonOptionalField
-  Void getValue();
+  Void value();
 
   long ref();
 

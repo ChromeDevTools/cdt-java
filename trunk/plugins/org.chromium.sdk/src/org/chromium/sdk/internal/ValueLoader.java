@@ -93,7 +93,7 @@ public class ValueLoader {
   }
 
   private ObjectValueHandle readFromScopeResponse(SuccessCommandResponse response) {
-    List<SomeHandle> refs = response.getRefs();
+    List<SomeHandle> refs = response.refs();
 
     HandleManager handleManager = context.getHandleManager();
     for (int i = 0; i < refs.size(); i++) {
@@ -102,11 +102,11 @@ public class ValueLoader {
     }
     ScopeBody body;
     try {
-      body = response.getBody().asScopeBody();
+      body = response.body().asScopeBody();
     } catch (JsonProtocolParseException e) {
       throw new ValueLoadException(e);
     }
-    return body.getObject();
+    return body.object();
   }
 
 /**
@@ -233,7 +233,7 @@ public class ValueLoader {
     List<ValueHandle> result = new ArrayList<ValueHandle>(propertyRefIds.size());
     JSONObject body;
     try {
-      body = successResponse.getBody().asLookupMap();
+      body = successResponse.body().asLookupMap();
     } catch (JsonProtocolParseException e) {
       throw new ValueLoadException(e);
     }

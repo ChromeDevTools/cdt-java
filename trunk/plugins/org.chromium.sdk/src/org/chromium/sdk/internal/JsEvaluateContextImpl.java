@@ -51,7 +51,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
           public void success(SuccessCommandResponse successResponse) {
             ValueHandle body;
             try {
-              body = successResponse.getBody().asEvaluateBody();
+              body = successResponse.body().asEvaluateBody();
             } catch (JsonProtocolParseException e) {
               throw new RuntimeException(e);
             }

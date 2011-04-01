@@ -17,27 +17,26 @@ import org.json.simple.JSONObject;
 public interface BreakEventBody extends JsonSubtype<EventNotificationBody> {
 
   @JsonOptionalField
-  List<Long> getBreakpoints();
+  List<Long> breakpoints();
 
   @JsonOptionalField
-  ValueHandle getException();
+  ValueHandle exception();
 
   @JsonOptionalField
-  String getSourceLineText();
+  String sourceLineText();
 
   @JsonOptionalField
-  @JsonField(jsonLiteralName="uncaught")
-  Boolean isUncaught();
+  Boolean uncaught();
 
   @JsonOptionalField
-  Long getSourceLine();
+  Long sourceLine();
 
   @JsonOptionalField
-  String getInvocationText();
+  String invocationText();
 
   @JsonOptionalField
-  JSONObject getScript();
+  JSONObject script();
 
   @JsonOptionalField
-  Long getSourceColumn();
+  Long sourceColumn();
 }

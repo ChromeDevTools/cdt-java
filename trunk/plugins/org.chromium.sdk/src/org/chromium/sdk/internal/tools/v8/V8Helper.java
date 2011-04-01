@@ -93,7 +93,7 @@ public class V8Helper {
           public void success(SuccessCommandResponse successResponse) {
             List<ScriptHandle> body;
             try {
-              body = successResponse.getBody().asScripts();
+              body = successResponse.body().asScripts();
             } catch (JsonProtocolParseException e) {
               throw new RuntimeException(e);
             }
@@ -106,7 +106,7 @@ public class V8Helper {
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
               ScriptImpl scriptById = scriptManager.findById(id);
               if (scriptById == null) {
-                scriptManager.addScript(scriptHandle, successResponse.getRefs());
+                scriptManager.addScript(scriptHandle, successResponse.refs());
               } else {
                 // A scrupulous refactoring note:
                 // do not call setSource in a legacy case, when ids parameter is null.
@@ -131,8 +131,8 @@ public class V8Helper {
    * @return the mirrors corresponding to the frame locals
    */
   public static List<PropertyReference> computeLocals(FrameObject frame) {
-    List<PropertyObject> args = frame.getArguments();
-    List<PropertyObject> locals = frame.getLocals();
+    List<PropertyObject> args = frame.arguments();
+    List<PropertyObject> locals = frame.locals();
 
     int maxLookups = args.size() + locals.size() + 1 /* "this" */;
 
@@ -140,7 +140,7 @@ public class V8Helper {
 
     {
       // Receiver ("this")
-      SomeRef receiverObject = frame.getReceiver();
+      SomeRef receiverObject = frame.receiver();
       V8ProtocolUtil.putMirror(localRefs, receiverObject, V8ProtocolUtil.PropertyNameGetter.THIS);
     }
 
@@ -160,7 +160,7 @@ public class V8Helper {
   }
 
   public static PropertyReference computeReceiverRef(FrameObject frame) {
-    SomeRef receiverObject = frame.getReceiver();
+    SomeRef receiverObject = frame.receiver();
     return V8ProtocolUtil.extractProperty(receiverObject,
         V8ProtocolUtil.PropertyNameGetter.THIS);
   }

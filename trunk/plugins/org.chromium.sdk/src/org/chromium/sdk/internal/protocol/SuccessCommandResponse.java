@@ -24,10 +24,10 @@ public interface SuccessCommandResponse extends JsonSubtype<CommandResponse> {
   boolean success();
 
   @JsonOptionalField
-  CommandResponseBody getBody();
+  CommandResponseBody body();
 
   @JsonOptionalField
-  List<SomeHandle> getRefs();
+  List<SomeHandle> refs();
 
   /**
    * @return whether VM continue running after handling the command; however next commands

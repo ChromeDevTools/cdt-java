@@ -198,7 +198,7 @@ public class ScriptImpl implements Script {
       public void success(SuccessCommandResponse successResponse) {
         ChangeLiveBody body;
         try {
-          body = successResponse.getBody().asChangeLiveBody();
+          body = successResponse.body().asChangeLiveBody();
         } catch (JsonProtocolParseException e) {
           throw new RuntimeException(e);
         }

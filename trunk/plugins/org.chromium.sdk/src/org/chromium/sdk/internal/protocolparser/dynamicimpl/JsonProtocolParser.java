@@ -585,11 +585,7 @@ public class JsonProtocolParser {
             return jsonLiteralName;
           }
         }
-        String name = m.getName();
-        if (name.startsWith("get") && name.length() > 3) {
-          name = Character.toLowerCase(name.charAt(3)) + name.substring(4);
-        }
-        return name;
+        return m.getName();
       }
     }
   }

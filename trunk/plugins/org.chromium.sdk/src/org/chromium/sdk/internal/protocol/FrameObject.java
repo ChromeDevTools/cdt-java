@@ -24,30 +24,30 @@ import org.json.simple.JSONObject;
 @JsonType
 public interface FrameObject {
 
-  long getIndex();
+  long index();
 
-  JSONObject getFunc();
+  JSONObject func();
 
-  String getText();
+  String text();
 
-  long getLine();
+  long line();
 
-  String getSourceLineText();
+  String sourceLineText();
 
   @JsonOptionalField
-  SomeRef getScript();
+  SomeRef script();
 
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
-  List<PropertyObject> getArguments();
+  List<PropertyObject> arguments();
 
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
-  List<PropertyObject> getLocals();
+  List<PropertyObject> locals();
 
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
-  SomeRef getReceiver();
+  SomeRef receiver();
 
   @JsonField(loadStrategy=FieldLoadStrategy.LAZY)
-  List<ScopeRef> getScopes();
+  List<ScopeRef> scopes();
 
   Boolean constructCall();
 

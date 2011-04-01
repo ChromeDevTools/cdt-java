@@ -80,11 +80,11 @@ public class BreakpointManager {
               public void success(SuccessCommandResponse successResponse) {
                 BreakpointBody body;
                 try {
-                  body = successResponse.getBody().asBreakpointBody();
+                  body = successResponse.body().asBreakpointBody();
                 } catch (JsonProtocolParseException e) {
                   throw new RuntimeException(e);
                 }
-                long id = body.getBreakpoint();
+                long id = body.breakpoint();
 
                 final BreakpointImpl breakpoint =
                     new BreakpointImpl(type, id, scriptName, scriptId, line, enabled, ignoreCount,
@@ -168,7 +168,7 @@ public class BreakpointManager {
       }
       @Override
       public void success(SuccessCommandResponse successResponse) {
-        CommandResponseBody body = successResponse.getBody();
+        CommandResponseBody body = successResponse.body();
         ListBreakpointsBody listBreakpointsBody;
         try {
           listBreakpointsBody = body.asListBreakpointsBody();
@@ -221,7 +221,7 @@ public class BreakpointManager {
         @Override public void success(SuccessCommandResponse successResponse) {
           FlagsBody body;
           try {
-            body = successResponse.getBody().asFlagsBody();
+            body = successResponse.body().asFlagsBody();
           } catch (JsonProtocolParseException e) {
             throw new RuntimeException(e);
           }

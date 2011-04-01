@@ -25,7 +25,7 @@ import org.json.simple.JSONObject;
 public interface EventNotification extends JsonObjectBased, JsonSubtype<IncomingMessage> {
   @JsonOverrideField
   @JsonSubtypeConditionCustom(condition=TypeValueCondition.class)
-  MessageType getType();
+  MessageType type();
 
   class TypeValueCondition extends EnumValueCondition<MessageType> {
     public TypeValueCondition() {
@@ -33,14 +33,14 @@ public interface EventNotification extends JsonObjectBased, JsonSubtype<Incoming
     }
   }
 
-  String getEvent();
+  String event();
 
-  EventNotificationBody getBody();
+  EventNotificationBody body();
 
   // TODO(peter.rybin): does this field really exist?
   @JsonOptionalField
-  JSONObject getException();
+  JSONObject exception();
 
   @JsonOptionalField
-  List<SomeHandle> getRefs();
+  List<SomeHandle> refs();
 }

@@ -10,5 +10,5 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 
 @JsonType
 public interface AfterCompileBody extends JsonSubtype<EventNotificationBody> {
-  ScriptHandle getScript();
+  ScriptHandle script();
 }
