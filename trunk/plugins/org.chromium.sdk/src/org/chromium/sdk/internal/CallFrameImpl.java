@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
@@ -55,14 +56,16 @@ public class CallFrameImpl implements CallFrame {
   private final long scriptId;
 
   /** The variables known in this call frame. */
-  private Collection<JsVariableImpl> variables = null;
+  private final AtomicReference<Collection<JsVariableImpl>> variablesRef =
+      new AtomicReference<Collection<JsVariableImpl>>(null);
 
   /** The scopes known in this call frame. */
-  private List<? extends JsScope> scopes = null;
+  private final AtomicReference<List<? extends JsScope>> scopesRef =
+      new AtomicReference<List<? extends JsScope>>(null);
 
-  /** The receiver variable known in this call frame. May be null. */
-  private JsVariable receiverVariable;
-  private boolean receiverVariableLoaded = false;
+  /** The receiver variable known in this call frame. May be null. Null is not cached. */
+  private final AtomicReference<JsVariable> receiverVariableRef =
+      new AtomicReference<JsVariable>(null);
 
   /**
    * A script associated with the frame.
@@ -126,19 +129,19 @@ public class CallFrameImpl implements CallFrame {
   @Deprecated
   public Collection<JsVariableImpl> getVariables() {
     ensureVariables();
-    return variables;
+    return variablesRef.get();
   }
 
   @Override
   public List<? extends JsScope> getVariableScopes() {
     ensureScopes();
-    return scopes;
+    return scopesRef.get();
   }
 
   @Override
   public JsVariable getReceiverVariable() {
     ensureReceiver();
-    return this.receiverVariable;
+    return receiverVariableRef.get();
   }
 
   @Override
@@ -147,31 +150,40 @@ public class CallFrameImpl implements CallFrame {
   }
 
   private void ensureVariables() {
-    if (variables == null) {
-      this.variables = Collections.unmodifiableCollection(createVariables());
+    if (variablesRef.get() != null) {
+      return;
     }
+    Collection<JsVariableImpl> result = Collections.unmodifiableCollection(createVariables());
+    variablesRef.compareAndSet(null, result);
   }
 
   private void ensureScopes() {
-    if (scopes == null) {
-      this.scopes = Collections.unmodifiableList(createScopes());
+    if (scopesRef.get() != null) {
+      return;
     }
+    List<? extends JsScope> result = Collections.unmodifiableList(createScopes());
+    scopesRef.compareAndSet(null, result);
   }
 
   private void ensureReceiver() {
-    if (!receiverVariableLoaded) {
-      PropertyReference ref = V8Helper.computeReceiverRef(frameObject);
-      if (ref == null) {
-        this.receiverVariable = null;
-      } else {
-        ValueLoader valueLoader = context.getValueLoader();
-        ValueMirror mirror =
-            valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
-        // This name should be string. We are making it string as a fall-back strategy.
-        String varNameStr = ref.getName().toString();
-        this.receiverVariable = new JsVariableImpl(this.context, mirror, varNameStr);
-      }
-      this.receiverVariableLoaded = true;
+    if (receiverVariableRef.get() != null) {
+      return;
+    }
+    JsVariable result;
+
+    PropertyReference ref = V8Helper.computeReceiverRef(frameObject);
+    if (ref == null) {
+      result = null;
+    } else {
+      ValueLoader valueLoader = context.getValueLoader();
+      ValueMirror mirror =
+          valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
+      // This name should be string. We are making it string as a fall-back strategy.
+      String varNameStr = ref.getName().toString();
+      result = new JsVariableImpl(this.context, mirror, varNameStr);
+    }
+    if (result != null) {
+      receiverVariableRef.compareAndSet(null, result);
     }
   }
 
