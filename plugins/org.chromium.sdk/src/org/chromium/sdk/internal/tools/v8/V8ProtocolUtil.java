@@ -52,7 +52,7 @@ import org.chromium.sdk.internal.protocol.data.SomeSerialized;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.chromium.sdk.internal.tools.v8.request.ScriptsMessage;
 import org.json.simple.JSONObject;
 
@@ -346,61 +346,5 @@ public class V8ProtocolUtil {
 
   private static boolean isNullOrEmpty(String value) {
     return value == null || value.length() == 0;
-  }
-
-  public static JsonProtocolParser getV8Parser() {
-    return parser;
-  }
-
-  private static final JsonProtocolParser parser;
-  static {
-    try {
-      // TODO(peter.rybin): change to ParserHolder.
-      parser = new JsonProtocolParser(new Class<?>[] {
-          IncomingMessage.class,
-          EventNotification.class,
-          SuccessCommandResponse.class,
-          FailedCommandResponse.class,
-          CommandResponse.class,
-          BreakEventBody.class,
-          EventNotificationBody.class,
-          CommandResponseBody.class,
-          BacktraceCommandBody.class,
-          FrameObject.class,
-          BreakpointBody.class,
-          ScopeBody.class,
-          ScopeRef.class,
-          VersionBody.class,
-          AfterCompileBody.class,
-          ChangeLiveBody.class,
-          ListBreakpointsBody.class,
-          ScriptCollectedBody.class,
-          FlagsBody.class,
-          FlagsBody.FlagInfo.class,
-
-          SomeHandle.class,
-          ScriptHandle.class,
-          ValueHandle.class,
-          RefWithDisplayData.class,
-          PropertyObject.class,
-          PropertyWithRef.class,
-          PropertyWithValue.class,
-          ObjectValueHandle.class,
-          FunctionValueHandle.class,
-          SomeRef.class,
-          SomeSerialized.class,
-          ContextHandle.class,
-          ContextData.class,
-          BreakpointInfo.class,
-          ScriptWithId.class,
-          LiveEditResult.class,
-          LiveEditResult.OldTreeNode.class,
-          LiveEditResult.NewTreeNode.class,
-          LiveEditResult.Positions.class,
-          LiveEditResult.TextualDiff.class,
-      });
-    } catch (JsonProtocolModelParseException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

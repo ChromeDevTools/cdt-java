@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.json.simple.JSONObject;
 
@@ -30,7 +31,7 @@ public class HandleManager {
   SomeHandle put(Long ref, JSONObject object) {
     SomeHandle smthWithHandle;
     try {
-      smthWithHandle = V8ProtocolUtil.getV8Parser().parse(object, SomeHandle.class);
+      smthWithHandle = V8ProtocolParserAccess.get().parse(object, SomeHandle.class);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }

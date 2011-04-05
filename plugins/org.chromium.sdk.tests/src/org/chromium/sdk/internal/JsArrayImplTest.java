@@ -23,6 +23,7 @@ import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.tools.v8.LoadableString;
 import org.chromium.sdk.internal.tools.v8.V8Helper;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
@@ -71,7 +72,7 @@ public class JsArrayImplTest {
         ).replace('\'', '"');
     JSONObject valueHandleJson = (JSONObject) JSONValue.parse(valueHandleJsonText);
     ValueHandle valueHandle =
-        V8ProtocolUtil.getV8Parser().parse(valueHandleJson, ValueHandle.class);
+        V8ProtocolParserAccess.get().parse(valueHandleJson, ValueHandle.class);
 
     arrayMirror = V8Helper.createMirrorFromLookup(valueHandle, LoadableString.Factory.IMMUTABLE)
         .getValueMirror();
@@ -95,7 +96,7 @@ public class JsArrayImplTest {
               )
           )
       );
-      frameObject = V8ProtocolUtil.getV8Parser().parse(jsonObject, FrameObject.class);
+      frameObject = V8ProtocolParserAccess.get().parse(jsonObject, FrameObject.class);
     }
 
     this.callFrame = new CallFrameImpl(frameObject, internalContext);

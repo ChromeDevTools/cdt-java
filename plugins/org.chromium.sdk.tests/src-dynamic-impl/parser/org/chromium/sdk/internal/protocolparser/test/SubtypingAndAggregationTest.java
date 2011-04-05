@@ -20,7 +20,7 @@ import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionCustom;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
@@ -95,7 +95,7 @@ public class SubtypingAndAggregationTest {
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }
-    JsonProtocolParser parser = PARSER_INSTANCE.getParser();
+    DynamicParserImpl parser = PARSER_INSTANCE.getParser();
     try {
       return parser.parse(json, type);
     } catch (JsonProtocolParseException e) {

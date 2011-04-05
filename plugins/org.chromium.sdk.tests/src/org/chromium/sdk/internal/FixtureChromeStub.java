@@ -26,7 +26,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
@@ -34,6 +34,7 @@ import org.chromium.sdk.internal.tools.v8.BreakpointManager;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.DebuggerToolCommand;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.Message;
@@ -175,7 +176,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject body = getJsonObjectByRef(getScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolUtil.getV8Parser().parse(body, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parse(body, ScriptHandle.class);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -405,7 +406,7 @@ public class FixtureChromeStub implements ChromeStub {
   private List<SomeHandle> constructScriptRefsTyped() {
     JSONArray refs = constructScriptRefsJson();
     try {
-      return fixtureParser.parseAnything(refs, Refs.class).asHandles();
+      return FixtureParserAccess.get().parseAnything(refs, Refs.class).asHandles();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -607,7 +608,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject scriptsObject = getJsonObjectByRef(getCompiledScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolUtil.getV8Parser().parse(scriptsObject, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parse(scriptsObject, ScriptHandle.class);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -650,16 +651,6 @@ public class FixtureChromeStub implements ChromeStub {
   public void tabNavigated(String newUrl) {
     sendEvent(
         createMessage("{\"command\":\"navigated\",\"result\":0,\"data\":\"" + newUrl + "\"}"));
-  }
-
-  private static final JsonProtocolParser fixtureParser;
-  static {
-    try {
-      fixtureParser = new JsonProtocolParser(Arrays.asList(Refs.class),
-          Arrays.asList(V8ProtocolUtil.getV8Parser()));
-    } catch (JsonProtocolModelParseException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @JsonType(subtypesChosenManually=true)

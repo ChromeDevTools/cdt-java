@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -14,10 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestProtocolParser {
-  private JsonProtocolParser testParser;
+  private DynamicParserImpl testParser;
   @Before
   public void setUpBefore() throws Exception {
-    testParser = new JsonProtocolParser(SimpleData.class, Cases.class);
+    testParser = new DynamicParserImpl(SimpleData.class, Cases.class);
   }
 
   @Test
@@ -29,7 +31,7 @@ public class TestProtocolParser {
 
     JSONObject json = JsonUtil.jsonObjectFromJson(sample);
 
-    JsonProtocolParser parser = V8ProtocolUtil.getV8Parser();
+    JsonProtocolParser parser = V8ProtocolParserAccess.get();
     IncomingMessage response = parser.parse(json, IncomingMessage.class);
     Long l1 = response.seq();
     MessageType type = response.type();
