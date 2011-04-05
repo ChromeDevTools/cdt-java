@@ -93,7 +93,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
         JSONObject dataObject = (JSONObject) data;
         ContextData contextData;
         try {
-          contextData = V8ProtocolUtil.getV8Parser().parse(dataObject, ContextData.class);
+          contextData = V8ProtocolParserAccess.get().parse(dataObject, ContextData.class);
         } catch (JsonProtocolParseException e) {
           throw new RuntimeException(e);
         }

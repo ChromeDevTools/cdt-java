@@ -4,52 +4,15 @@
 
 package org.chromium.sdk.internal.wip.protocol;
 
-import java.util.Arrays;
-import java.util.Collections;
-
-import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
-import org.chromium.sdk.internal.wip.protocol.input.EvaluateData;
-import org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData;
-import org.chromium.sdk.internal.wip.protocol.input.InspectedUrlChangedData;
-import org.chromium.sdk.internal.wip.protocol.input.ParsedScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.input.PausedScriptData;
-import org.chromium.sdk.internal.wip.protocol.input.WipCallFrame;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
-import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
-import org.chromium.sdk.internal.wip.protocol.input.WipScope;
-import org.chromium.sdk.internal.wip.protocol.input.ScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.input.SetBreakpointData;
-import org.chromium.sdk.internal.wip.protocol.input.ValueData;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 
 /**
  * Main utility class of Wip protocol implementation.
  */
 public class WipProtocol {
-  public static final JsonProtocolParser PARSER;
-  static {
-    try {
-      Class<?>[] jsonTypes = {
-          WipEvent.class, WipEvent.Data.class,
-          InspectedUrlChangedData.class,
-          ParsedScriptSourceData.class,
-          PausedScriptData.class, PausedScriptData.Details.class,
-          WipCallFrame.class, WipCallFrame.Id.class,
-          WipScope.class,
-          WipCommandResponse.class, WipCommandResponse.Data.class,
-          WipCommandResponse.Success.class, WipCommandResponse.Error.class,
-          WipCommandResponse.Stub.class,
-          ScriptSourceData.class,
-          EvaluateData.class,
-          ValueData.class, ValueData.Id.class,
-          GetPropertiesData.class, GetPropertiesData.Property.class,
-          SetBreakpointData.class
-      };
-      PARSER = new JsonProtocolParser(Arrays.asList(jsonTypes),
-          Collections.<JsonProtocolParser>emptyList(), true);
-    } catch (JsonProtocolModelParseException e) {
-      throw new RuntimeException(e);
-    }
+
+  public static JsonProtocolParser getParser() {
+    return WipParserAccess.get();
   }
 
   public static int parseInt(Object obj) {

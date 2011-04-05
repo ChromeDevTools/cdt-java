@@ -16,7 +16,7 @@ abstract class RefToType<T> {
   /**
    * Returns {@link TypeHandler} corresponding to {@link #getTypeClass()}. The method becomes
    * available only after cross-reference resolving has been finished in depths of
-   * {@link JsonProtocolParser} constructor.
+   * {@link DynamicParserImpl} constructor.
    */
   abstract TypeHandler<T> get();
 }

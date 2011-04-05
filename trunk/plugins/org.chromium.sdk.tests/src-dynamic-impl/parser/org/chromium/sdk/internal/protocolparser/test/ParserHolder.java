@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.protocolparser.test;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 
 /**
  * The class holding a parser and suitable for static field (it saves initialization problem).
@@ -13,23 +13,23 @@ import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
  * it there were a problem with it, every test should get a proper exception.
  */
 class ParserHolder {
-  private final InitializedValue<JsonProtocolParser> parser;
+  private final InitializedValue<DynamicParserImpl> parser;
 
   ParserHolder(final Class<?>[] interfaces) {
-    InitializedValue.Initializer<JsonProtocolParser> initializer =
-        new InitializedValue.Initializer<JsonProtocolParser>() {
-      public JsonProtocolParser calculate() {
+    InitializedValue.Initializer<DynamicParserImpl> initializer =
+        new InitializedValue.Initializer<DynamicParserImpl>() {
+      public DynamicParserImpl calculate() {
         try {
-          return new JsonProtocolParser(interfaces);
+          return new DynamicParserImpl(interfaces);
         } catch (JsonProtocolModelParseException e) {
           throw new RuntimeException(e);
         }
       }
     };
-    parser = new InitializedValue<JsonProtocolParser>(initializer);
+    parser = new InitializedValue<DynamicParserImpl>(initializer);
   }
 
-  JsonProtocolParser getParser() {
+  DynamicParserImpl getParser() {
     return parser.get();
   }
 }

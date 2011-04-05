@@ -7,6 +7,6 @@ public class WipProtocolTest {
   @Test
   public void buildParser() {
     // Just make sure parser is built.
-    WipProtocol.PARSER.hashCode();
+    WipProtocol.getParser().hashCode();
   }
 }

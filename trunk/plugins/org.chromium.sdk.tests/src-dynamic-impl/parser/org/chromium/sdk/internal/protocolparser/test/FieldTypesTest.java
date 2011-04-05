@@ -15,7 +15,7 @@ import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.JsonProtocolParser;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class FieldTypesTest {
   @Test
   public void testNullLongValue() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(TypeWithNullableLong.class);
+    DynamicParserImpl parser = new DynamicParserImpl(TypeWithNullableLong.class);
 
     {
       JSONObject json = parseJson("{'val': 2 }");
@@ -47,7 +47,7 @@ public class FieldTypesTest {
   @Test
   public void testBrokenLongValue() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(TypeWithLong.class);
+    DynamicParserImpl parser = new DynamicParserImpl(TypeWithLong.class);
 
     {
       JSONObject json = parseJson("{'val': 2 }");
@@ -75,7 +75,7 @@ public class FieldTypesTest {
   @Test
   public void testNullStructValue() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(Something.class,
+    DynamicParserImpl parser = new DynamicParserImpl(Something.class,
         TypeWithNullableSomething.class);
 
     {
@@ -104,7 +104,7 @@ public class FieldTypesTest {
   @Test
   public void testBrokenNullStructValue() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(Something.class, TypeWithSomething.class);
+    DynamicParserImpl parser = new DynamicParserImpl(Something.class, TypeWithSomething.class);
 
     {
       JSONObject json = parseJson("{'data': {} }");
@@ -131,7 +131,7 @@ public class FieldTypesTest {
   @Test
   public void testNonoptionalFields() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(TypeWithNullableLong.class,
+    DynamicParserImpl parser = new DynamicParserImpl(TypeWithNullableLong.class,
         TypeWithSomething.class, Something.class);
 
     // First couple of checks that parser does work
@@ -170,7 +170,7 @@ public class FieldTypesTest {
   @Test
   public void testOptionalFields() throws JsonProtocolModelParseException,
       JsonProtocolParseException {
-    JsonProtocolParser parser = new JsonProtocolParser(TypeWithOptionalLong.class,
+    DynamicParserImpl parser = new DynamicParserImpl(TypeWithOptionalLong.class,
         TypeWithOptionalSomething.class, Something.class);
 
     JSONObject emptyJson = parseJson("{}");

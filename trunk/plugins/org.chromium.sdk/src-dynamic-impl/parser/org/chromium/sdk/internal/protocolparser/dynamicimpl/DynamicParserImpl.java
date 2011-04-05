@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.AbstractList;
@@ -17,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
@@ -27,6 +27,7 @@ import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
@@ -34,33 +35,32 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- * Java dynamic-proxy based parser for set of json types. It uses set of type interfaces
- * as model description and provides implementations for them. JsonProtocolParser
- * converts JSONObject into a required Java type instance.
+ * Java dynamic-proxy based implementation of {@link JsonProtocolParser}. It analyses
+ * interfaces with reflection and provides their implementation by {@link Proxy} factory.
  */
-public class JsonProtocolParser {
+public class DynamicParserImpl implements JsonProtocolParser {
   private final Map<Class<?>, TypeHandler<?>> type2TypeHandler;
 
   /**
    * Constructs parser from a set of type interfaces.
    */
-  public JsonProtocolParser(Class<?> ... protocolInterfaces)
+  public DynamicParserImpl(Class<?> ... protocolInterfaces)
       throws JsonProtocolModelParseException {
-    this(Arrays.asList(protocolInterfaces), Collections.<JsonProtocolParser>emptyList());
+    this(Arrays.asList(protocolInterfaces), Collections.<DynamicParserImpl>emptyList());
   }
 
   /**
    * Constructs parser from a set of type interfaces and a list of base packages. Type interfaces
    * may reference to type interfaces from base packages.
-   * @param basePackages list of base packages in form of list of {@link JsonProtocolParser}'s
+   * @param basePackages list of base packages in form of list of {@link DynamicParserImpl}'s
    */
-  public JsonProtocolParser(List<? extends Class<?>> protocolInterfaces,
-      List<? extends JsonProtocolParser> basePackages) throws JsonProtocolModelParseException {
+  public DynamicParserImpl(List<? extends Class<?>> protocolInterfaces,
+      List<? extends DynamicParserImpl> basePackages) throws JsonProtocolModelParseException {
     this(protocolInterfaces, basePackages, false);
   }
 
-  public JsonProtocolParser(List<? extends Class<?>> protocolInterfaces,
-      List<? extends JsonProtocolParser> basePackages, boolean strictMode)
+  public DynamicParserImpl(List<? extends Class<?>> protocolInterfaces,
+      List<? extends DynamicParserImpl> basePackages, boolean strictMode)
       throws JsonProtocolModelParseException {
     type2TypeHandler = readTypes(protocolInterfaces, basePackages, strictMode);
   }
@@ -68,6 +68,7 @@ public class JsonProtocolParser {
   /**
    * Parses {@link JSONObject} as typeClass type.
    */
+  @Override
   public <T> T parse(JSONObject object, Class<T> typeClass) throws JsonProtocolParseException {
     return parseAnything(object, typeClass);
   }
@@ -76,6 +77,7 @@ public class JsonProtocolParser {
    * Parses any object as typeClass type. Non-JSONObject only makes sense for
    * types with {@link JsonType#subtypesChosenManually()} = true annotation.
    */
+  @Override
   public <T> T parseAnything(Object object, Class<T> typeClass) throws JsonProtocolParseException {
     TypeHandler<T> type = type2TypeHandler.get(typeClass).cast(typeClass);
     return type.parseRoot(object);
@@ -83,7 +85,7 @@ public class JsonProtocolParser {
 
   private static Map<Class<?>, TypeHandler<?>> readTypes(
       List<? extends Class<?>> protocolInterfaces,
-      final List<? extends JsonProtocolParser> basePackages, boolean strictMode)
+      final List<? extends DynamicParserImpl> basePackages, boolean strictMode)
       throws JsonProtocolModelParseException {
     ReadInterfacesSession session =
         new ReadInterfacesSession(protocolInterfaces, basePackages, strictMode);
@@ -94,7 +96,7 @@ public class JsonProtocolParser {
 
   private static class ReadInterfacesSession {
     private final Map<Class<?>, TypeHandler<?>> type2typeHandler;
-    private final List<? extends JsonProtocolParser> basePackages;
+    private final List<? extends DynamicParserImpl> basePackages;
     private final boolean strictMode;
 
     final List<RefImpl<?>> refs = new ArrayList<RefImpl<?>>();
@@ -102,7 +104,7 @@ public class JsonProtocolParser {
         new ArrayList<SubtypeCaster>();
 
     ReadInterfacesSession(List<? extends Class<?>> protocolInterfaces,
-        List<? extends JsonProtocolParser> basePackages, boolean strictMode) {
+        List<? extends DynamicParserImpl> basePackages, boolean strictMode) {
       this.type2typeHandler = new HashMap<Class<?>, TypeHandler<?>>();
       this.basePackages = basePackages;
       this.strictMode = strictMode;
@@ -272,7 +274,7 @@ public class JsonProtocolParser {
         refs.add(result);
         return result;
       }
-      for (JsonProtocolParser baseParser : basePackages) {
+      for (DynamicParserImpl baseParser : basePackages) {
         TypeHandler<?> typeHandler = baseParser.type2TypeHandler.get(typeClass);
         if (typeHandler != null) {
           final TypeHandler<T> typeHandlerT = (TypeHandler<T>) typeHandler;

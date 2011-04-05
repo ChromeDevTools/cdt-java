@@ -23,6 +23,7 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.protocol.FrameObject;
 import org.chromium.sdk.internal.protocol.data.SomeRef;
+import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
@@ -57,7 +58,7 @@ public class JsObjectImplTest {
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"ref\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
-    SomeRef someRef = V8ProtocolUtil.getV8Parser().parse(valueObject, SomeRef.class);
+    SomeRef someRef = V8ProtocolParserAccess.get().parse(valueObject, SomeRef.class);
     DataWithRef dataWithRef = DataWithRef.fromSomeRef(someRef);
     eventMirror = ValueMirror.createObject(
         11, new SubpropertiesMirror.ListBased(
@@ -84,7 +85,7 @@ public class JsObjectImplTest {
               )
           )
       );
-      frameObject = V8ProtocolUtil.getV8Parser().parse(jsonObject, FrameObject.class);
+      frameObject = V8ProtocolParserAccess.get().parse(jsonObject, FrameObject.class);
     }
 
     this.callFrame = new CallFrameImpl(frameObject, internalContext);
