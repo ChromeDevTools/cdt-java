@@ -2,9 +2,8 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="src-dynamic-impl/v8"/>
+	<classpathentry kind="src" path="src-dynamic-impl/bridge"/>
 	<classpathentry kind="src" path="src-dynamic-impl/parser"/>
-	<classpathentry kind="src" path="src-dynamic-impl/wip"/>
 	<classpathentry kind="src" path="src-wip"/>
 	<classpathentry exported="true" kind="lib" path="lib/json_simple/json_simple-1.1.jar" sourcepath="org.chromium.sdksrc.zip"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
