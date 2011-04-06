@@ -10,6 +10,8 @@ var adviserImpl = (function() {
 				new VersionRange(new Version([ 10 ]), new Version(
 						[ 10, Infinity ])),
 				new VersionRange(new Version([ 11 ]),
+				        new Version([ 11, Infinity ]), "future version"),
+				new VersionRange(new Version([ 12 ]),
 						new Version([ Infinity ]), "future versions"), ]
 				.sort(VersionRange.compareStrict);
 
