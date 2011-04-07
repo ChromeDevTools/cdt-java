@@ -25,22 +25,28 @@ In Eclipse create a new debug configuration (under {{{Run | Debug Configurations
 
 Press “Debug”. If the browser has multiple tabs opened, a corresponding tab chooser dialog will appear.  Unless something went wrong, debugger should attach soon and a new object called [LaunchElement launch] should appear in _Debug_ view (make sure you are in _Debug_ perspective by now).
 
-Note that you can also connect to other V8-based applications via “Standalone V8 VM” launch type, provided they have have [http://code.google.com/p/v8/wiki/AddDebuggerSupport debug support] embedded.
+Note that you can also connect to other V8-based applications via “Standalone V8 VM” launch type, provided they have [http://code.google.com/p/v8/wiki/AddDebuggerSupport debug support] embedded.
 
 = First Steps =
 After debugger attached you should find a VirtualProject (in the Project Explorer view). That's where all running scripts are.
 
 Set a breakpoint on the function you are interested in. Note that when some other debugger or language support is installed in the same Eclipse, there's an ambiguity about whose breakpoint it should be. You ought to specifically preselect {{{Chrome/V8 breakpoints}}} in {{{Run | Breakpoint Types}}} menu in this case.
 
-Make the function with breakpoint run (for example provoke it by clicking something on the web page) – program should stop there and debugger will put a cursor on the breakpoint line. You also can stop the program by pressing “Suspend” button in _Debug_ view.
+Make the function with breakpoint run (for example provoke it by clicking something on the webpage) – program should stop there and debugger will put a cursor on the breakpoint line. You also can stop the program by pressing “Suspend” button in _Debug_ view.
 
-Explore current call stack. Check local variables or try some expressions. If you have an object, you can expand it in _Variables_ or _Expressions_ view and see its properties. Its proto object is shown under  {{{__proto__}}} property. If the object has “toString” method, you can see the object string representation in the same view. If you encounter some value of function type (e.g. some method or a callback), you can navigate to its source: choose {{{Open Function}}} in the context menu. At the same time if you want to see the function you paused in as an object, create new "arguments.callee" expression. If you want to keep an eye on a particular object, you can _pin-point_ under some global object property.
+Explore current call stack. Check local variables or try some expressions. If you have an object, you can expand it in _Variables_ or _Expressions_ view and see its properties. Its proto object is shown under  {{{__proto__}}} property. If the object has “toString” method, you can see the object string representation in the same view.
 
-You may expect Debugger to work with your local working files rather than scripts in the VirtualProject. You can do so as described [FeatureDebugOnRealFiles here].
+If you encounter some value of function type (e.g. some method or a callback), you can navigate to its source: choose {{{Open Function}}} in the context menu. At the same time if you want to see the function you paused in as an object, create new "arguments.callee" expression.
+
+If you want to keep an eye on a particular object, you can _pin-point_ under some global object property.
 
 Whenever you see a bug in your program you can edit it and also you can try a live editing – once you fixed the bug save changes and in the editor context menu try {{{V8Debugging | Push Source Changes to VM}}}. This will put your changes right in the running program. V8 cannot do a magic, but in many simple (or not so simple) cases it should work and you won't have to reload your page. The debuger doesn't have to be paused for this to work.
 
 See also [EclipseDebuggerFeatures full feature list].
+
+== Setting up your sources ==
+
+You may expect Debugger to work with your local working files rather than scripts in the VirtualProject. You can do so as described [FeatureDebugOnRealFiles here].
 
 = How to Spy On How It's Working =
 What you most easily can do is to overlook our network communication. In launch configuration enable “Show debugger network communication console” (see picture above).
