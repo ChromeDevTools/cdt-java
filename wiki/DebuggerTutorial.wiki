@@ -23,7 +23,7 @@ In Eclipse create a new debug configuration (under {{{Run | Debug Configurations
 
 [http://chromedevtools.googlecode.com/svn/wiki/rel022-debug-configurations-remote.png]
 
-Press “Debug”. If the browser has multiple tabs opened, a corresponding tab chooser dialog will appear.  Unless something went wrong, debugger should attach soon and a new object called [LaunchElement launch] should appear in “Debug” view (make sure you are in “Debug” perspective by now).
+Press “Debug”. If the browser has multiple tabs opened, a corresponding tab chooser dialog will appear.  Unless something went wrong, debugger should attach soon and a new object called [LaunchElement launch] should appear in _Debug_ view (make sure you are in _Debug_ perspective by now).
 
 Note that you can also connect to other V8-based applications via “Standalone V8 VM” launch type, provided they have have [http://code.google.com/p/v8/wiki/AddDebuggerSupport debug support] embedded.
 
