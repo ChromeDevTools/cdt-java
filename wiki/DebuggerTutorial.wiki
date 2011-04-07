@@ -1,9 +1,17 @@
 #summary First steps of using Debugger.
 
 = Install =
-First you have to install Eclipse platform from [http://eclipse.org eclipse.org]. Eclipse comes in many different configurations, the Debugger requires “Eclipse platform” or richer. You also could give a try to “Eclipse IDE for JavaScript Web Developers” (JSDT) configuration that provides JavaScript IDE, though it has its limitations.
+First you have to install Eclipse platform from [http://eclipse.org eclipse.org]. Eclipse comes in many different configurations, the Debugger requires “Eclipse platform” or richer. You also could give a try to “Eclipse IDE for !JavaScript Web Developers” (JSDT) configuration that provides !JavaScript IDE, though it has its limitations.
 
-Then you have to install [EclipseDebugger Debugger] into Eclipse. Start Eclipse and open menu {{{Help | Install New Software...}}}. Add update site http://chromedevtools.googlecode.com/svn/update/dev/. You should find “Google Chrome Developer Tools” category in the space below. Under this category choose “Chromium JavaScript Remote Debugger” and optionally debugger bridge to JSDT (only if you have JSDT installed). Finish installation and restart Eclipse as prompted.
+Then you have to install [EclipseDebugger Debugger] into Eclipse.
+
+Start Eclipse and open menu {{{Help | Install New Software...}}}.
+
+Add update site http://chromedevtools.googlecode.com/svn/update/dev/.
+
+You should find “Google Chrome Developer Tools” category in the space below. Under this category choose “Chromium !JavaScript Remote Debugger” and optionally debugger bridge to JSDT (only if you have JSDT installed).
+
+Finish installation and restart Eclipse as prompted.
 
 See also HowToInstall.
 
@@ -11,7 +19,7 @@ See also HowToInstall.
 Start the Google Chrome (or Chromium) browser as: 
 {{{chrome --remote-shell-port=9222}}} (or some other debugger port of your choice.) Open the URL you want to debug.
 
-In Eclipse create a new debug configuration (under {{{Run | Debug Configurations...}}}) from the "Chromium JavaScript" configuration type (you might need to switch to the Debug perspective first):
+In Eclipse create a new debug configuration (under {{{Run | Debug Configurations...}}}) from the "Chromium !JavaScript" configuration type (you might need to switch to the Debug perspective first):
 
 [http://chromedevtools.googlecode.com/svn/wiki/rel022-debug-configurations-remote.png]
 
