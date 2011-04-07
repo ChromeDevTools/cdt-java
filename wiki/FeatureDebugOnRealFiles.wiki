@@ -1,0 +1,28 @@
+#summary How to debug on your real work source files.
+
+= Introduction =
+
+This feature is important element of Debugger-IDE integration. By default Debugger works with source files it gets from remote VM -- a files under a temporary VirtualProject. (This means you never has to worry about getting sources for _debugging_).
+
+However you also could be using Eclipse for _developing_ your !JavaScript program. In this case your sources are in file system and it absolutely makes sense to have debugger use them rather than downloaded copies: you code, you set a breakpoint, you see a problem, you fix it -- all in the same editor. An important detail: you can set a breakpoint on a file before script has been loaded and even before you attached to Chrome.
+
+Unfortunately V8 requires quite precise breakpoint information for this to work. That's why there follow several steps that cannot be automatized:
+
+= How to Set Up =
+First let’s see how V8 identifies those remote scripts. While debugging a script in the virtual project open “Properties” (context menu on file in “Project Explorer” or with Alt+Enter in an editor).
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-script-properties.png
+
+Here we see that VM identifies your script as URL {{{ http://server:8080/misc/utils.js }}} (from this URL you seem to be running a local web server; there may be other configurations). Depending on your working files layout, URLs like this should be mapped either as {{{http://server:8080/misc/** => <your misc folder>/**}}} or as {{{http://server:8080/** => <your project folder>/**}}}
+
+You can configure this in "Edit Source Lookup..." on already running [LaunchElement launch] or in “Source” tab of your debug launch configuration for future runs:
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-debug-configurations-source.png
+
+Add a new source container with identifier mapping and make sure it is above the “Default” container (here “Default” container represents the virtual project that holds downloaded scripts). In the dialog window, choose “!JavaScript Source Name Mapper” from the list. This container converts URL (or any id) into a file name and looks it up in another container, here called “target container”.
+
+http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-source-name-mapper.png
+
+Depending on your configuration, enter the common URL prefix (e.g. {{{http://server:8080/}}}) and specify the target container (choose type and configure it).
+
+See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
