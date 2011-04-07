@@ -33,5 +33,7 @@ You may expect Debugger to work with your local working files rather than script
 
 Whenever you see a bug in your program you can edit it and also you can try a live editing – once you fixed the bug save changes and in the editor context menu try {{{V8Debugging | Push Source Changes to VM}}}. This will put your changes right in the running program. V8 cannot do a magic, but in many simple (or not so simple) cases it should work and you won't have to reload your page. The debuger doesn't have to be paused for this to work.
 
+See also [EclipseDebuggerFeatures full feature list].
+
 = How to Spy On How It's Working =
 What you most easily can do is to overlook our network communication. In launch configuration enable “Show debugger network communication console” (see picture above).
