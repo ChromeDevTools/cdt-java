@@ -1,7 +1,7 @@
 #summary Eclipse 'launch' element basics.
 
 = What is it? =
-A 'launch' is UI element that corresponds to a debug session (or a running program). 
+A 'launch' is Eclipse UI element that corresponds to a debug session (or a running program). 
 It is visible in 'Debug' view in 'Debug' perspective.
 
 http://chromedevtools.googlecode.com/svn/wiki/rel022-launch.png
