@@ -1,5 +1,4 @@
 #summary First steps of using Debugger.
-Debugger Tutorial
 
 = Install =
 First you have to install Eclipse platform from [http://eclipse.org eclipse.org]. Eclipse comes in many different configurations, the Debugger requires “Eclipse platform” or richer. You also could give a try to “Eclipse IDE for JavaScript Web Developers” (JSDT) configuration that provides JavaScript IDE, though it has its limitations.
