@@ -2,7 +2,7 @@
 
 == What is it? ==
 
-A "virtual project" is an Eclipse project created by the [EclipseDebugger Debugger] for every debug session ([LaunchElment launch]) and deleted once the debug session is over. Virtual projects can be found among other regular projects. Since [Release_0_2_0 release 0.2.0], the virtual project icon is decorated by a small [http://www.chromium.org Chromium] logo. A virtual project serves as a container for !JavaScript scripts downloaded from a remote VM. Those scripts are never saved on disk and are forgotten when the virtual project is deleted.
+A "virtual project" is an Eclipse project created by the [EclipseDebugger Debugger] for every debug session ([LaunchElement launch]) and deleted once the debug session is over. Virtual projects can be found among other regular projects. Since [Release_0_2_0 release 0.2.0], the virtual project icon is decorated by a small [http://www.chromium.org Chromium] logo. A virtual project serves as a container for !JavaScript scripts downloaded from a remote VM. Those scripts are never saved on disk and are forgotten when the virtual project is deleted.
 
 == Why do we need it? ==
 
