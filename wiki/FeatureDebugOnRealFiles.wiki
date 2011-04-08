@@ -26,3 +26,8 @@ http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-source-nam
 Depending on your configuration, enter the common URL prefix (e.g. {{{http://server:8080/}}}) and specify the target container (choose type and configure it).
 
 See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
+
+= Known issues =
+For files in VirtualProject the dedicated editor was registered. Obviously this is not the case for files in your project. You can be using JSDT !JavaScript editor or system Text Editor or any other. This brings up the following issues.
+  * The editor may not fully support breakpoint (like system Text Editor). You still can set them via {{{Run | Toggle Breakpoint}}}.
+  * There might be several types of breakpoints registered in Eclipse. In this case you have to hint the system which type you want: choose {{{Chrome/V8 breakpoints}}} in {{{Run | Breakpoint Types}} menu.
