@@ -66,6 +66,11 @@ class BaseHandlersLibrary {
         throws IllegalAccessException, InvocationTargetException {
       return getMethod().invoke(objectData, args);
     }
+
+    @Override
+    boolean requiresJsonObject() {
+      return false;
+    }
   }
 
   private static class GetJsonObjectMethodHaldler extends MethodHandlerBase {
@@ -76,6 +81,11 @@ class BaseHandlersLibrary {
     @Override
     JSONObject handle(ObjectData objectData, Object[] args) {
       return (JSONObject) objectData.getUnderlyingObject();
+    }
+
+    @Override
+    boolean requiresJsonObject() {
+      return false;
     }
   }
 
@@ -88,6 +98,11 @@ class BaseHandlersLibrary {
     Object handle(ObjectData objectData, Object[] args) {
       return objectData.getUnderlyingObject();
     }
+
+    @Override
+    boolean requiresJsonObject() {
+      return false;
+    }
   }
 
   private static class GetSuperMethodHaldler extends MethodHandlerBase {
@@ -98,6 +113,11 @@ class BaseHandlersLibrary {
     @Override
     Object handle(ObjectData objectData, Object[] args) {
       return objectData.getSuperObjectData().getProxy();
+    }
+
+    @Override
+    boolean requiresJsonObject() {
+      return false;
     }
   }
 

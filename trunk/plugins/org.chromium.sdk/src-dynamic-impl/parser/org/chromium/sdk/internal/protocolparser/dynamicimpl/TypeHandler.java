@@ -18,6 +18,7 @@ import java.util.Set;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonType;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl.VolatileFieldBinding;
 import org.json.simple.JSONObject;
 
 /**
@@ -32,7 +33,7 @@ class TypeHandler<T> {
   /** Size of array that holds type-specific instance data. */
   private final int fieldArraySize;
 
-  private final int volatileFieldArraySize;
+  private final List<VolatileFieldBinding> volatileFields;
 
   /** Method implementation for dynamic proxy. */
   private final Map<Method, MethodHandler> methodHandlerMap;
@@ -55,14 +56,14 @@ class TypeHandler<T> {
   private final boolean checkLazyParsedFields;
 
   TypeHandler(Class<T> typeClass, RefToType<?> jsonSuperClass, int fieldArraySize,
-      int volatileFieldArraySize,
+      List<VolatileFieldBinding> volatileFields,
       Map<Method, MethodHandler> methodHandlerMap,
       List<FieldLoader> fieldLoaders,
       List<FieldCondition> fieldConditions, EagerFieldParser eagerFieldParser,
       AlgebraicCasesData algCasesData, boolean checkLazyParsedFields) {
     this.typeClass = typeClass;
     this.fieldArraySize = fieldArraySize;
-    this.volatileFieldArraySize = volatileFieldArraySize;
+    this.volatileFields = volatileFields;
     this.methodHandlerMap = methodHandlerMap;
     this.fieldLoaders = fieldLoaders;
     this.eagerFieldParser = eagerFieldParser;
@@ -92,7 +93,7 @@ class TypeHandler<T> {
         jsonProperties = (JSONObject) input;
       }
 
-      ObjectData objectData = new ObjectData(this, input, fieldArraySize, volatileFieldArraySize,
+      ObjectData objectData = new ObjectData(this, input, fieldArraySize, volatileFields.size(),
           superObjectData);
       if (!fieldLoaders.isEmpty() && jsonProperties == null) {
         throw new JsonProtocolParseException("JSON object input expected");
@@ -197,6 +198,8 @@ class TypeHandler<T> {
     abstract void setSubtypeCaster(SubtypeCaster subtypeCaster)
         throws JsonProtocolModelParseException;
     abstract void checkHasSubtypeCaster() throws JsonProtocolModelParseException;
+
+    abstract boolean checkConditions(Map<?, ?> jsonProperties) throws JsonProtocolParseException;
   }
 
   private void parseObjectSubtype(ObjectData objectData, Map<?, ?> jsonProperties, Object input)
@@ -204,35 +207,7 @@ class TypeHandler<T> {
     if (algCasesData == null) {
       return;
     }
-    if (!algCasesData.isManualChoose()) {
-      if (jsonProperties == null) {
-        throw new JsonProtocolParseException(
-            "JSON object input expected for non-manual subtyping");
-      }
-      int code = -1;
-      for (int i = 0; i < algCasesData.getSubtypes().size(); i++) {
-        TypeHandler<?> nextSubtype = algCasesData.getSubtypes().get(i).get();
-        boolean ok = nextSubtype.subtypeAspect.checkConditions(jsonProperties);
-        if (ok) {
-          if (code == -1) {
-            code = i;
-          } else {
-            throw new JsonProtocolParseException("More than one case match");
-          }
-        }
-      }
-      if (code == -1) {
-        if (!algCasesData.hasDefaultCase()) {
-          throw new JsonProtocolParseException("Not a singe case matches");
-        }
-      } else {
-        ObjectData fieldData =
-            algCasesData.getSubtypes().get(code).get().parse(input, objectData);
-        objectData.getFieldArray()[algCasesData.getVariantValueFieldPos()] = fieldData;
-      }
-      objectData.getFieldArray()[algCasesData.getVariantCodeFieldPos()] =
-          Integer.valueOf(code);
-    }
+    algCasesData.parseObjectSubtype(objectData, jsonProperties, input);
   }
 
   /**
@@ -241,7 +216,6 @@ class TypeHandler<T> {
   private static abstract class SubtypeAspect extends SubtypeSupport {
     abstract void checkSuperObject(ObjectData superObjectData) throws JsonProtocolParseException;
     abstract ObjectData parseFromSuper(Object input) throws JsonProtocolParseException;
-    abstract boolean checkConditions(Map<?, ?> jsonProperties) throws JsonProtocolParseException;
     abstract boolean isRoot();
   }
 
@@ -396,10 +370,9 @@ class TypeHandler<T> {
   }
 
   static abstract class AlgebraicCasesData {
-    abstract int getVariantCodeFieldPos();
-    abstract int getVariantValueFieldPos();
-    abstract boolean hasDefaultCase();
+    abstract void parseObjectSubtype(ObjectData objectData, Map<?, ?> jsonProperties, Object input)
+        throws JsonProtocolParseException;
     abstract List<RefToType<?>> getSubtypes();
-    abstract boolean isManualChoose();
+    abstract boolean underlyingIsJson();
   }
 }
