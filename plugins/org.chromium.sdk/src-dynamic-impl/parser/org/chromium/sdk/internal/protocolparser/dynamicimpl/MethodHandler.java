@@ -9,4 +9,6 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
  */
 abstract class MethodHandler {
   abstract Object handle(ObjectData objectData, Object[] args) throws Throwable;
+
+  abstract boolean requiresJsonObject();
 }
