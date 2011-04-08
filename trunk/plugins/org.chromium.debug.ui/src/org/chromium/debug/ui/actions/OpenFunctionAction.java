@@ -41,6 +41,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -141,10 +142,9 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
           return;
         }
         IFile resource = (IFile) sourceObject;
-        IEditorInput input = JsDebugModelPresentation.toEditorInput(resource);
         IEditorPart editor;
         try {
-          editor = activeWorkbenchWindow.getActivePage().openEditor(input, JsEditor.EDITOR_ID);
+          editor= IDE.openEditor(activeWorkbenchWindow.getActivePage(), resource, true);
         } catch (PartInitException e) {
           throw new RuntimeException(e);
         }
