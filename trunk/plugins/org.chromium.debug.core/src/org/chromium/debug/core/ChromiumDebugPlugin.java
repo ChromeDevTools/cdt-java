@@ -7,6 +7,9 @@ package org.chromium.debug.core;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import org.chromium.debug.core.model.BreakpointMap;
 import org.chromium.debug.core.model.BreakpointWrapManager;
@@ -17,16 +20,13 @@ import org.chromium.debug.core.model.RunningTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ScriptTargetMapping;
+import org.chromium.sdk.BrowserFactory;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterManager;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExtension;
-import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
-import org.eclipse.core.runtime.RegistryFactory;
 import org.eclipse.core.runtime.Status;
 import org.osgi.framework.BundleContext;
 
@@ -60,10 +60,13 @@ public class ChromiumDebugPlugin extends Plugin {
     breakpointWorkbenchAdapterFactory = new ChromiumBreakpointWBAFactory();
     manager.registerAdapters(breakpointWorkbenchAdapterFactory, ChromiumLineBreakpoint.class);
     plugin = this;
+
+    BrowserFactory.getRootLogger().addHandler(SDK_LOG_HANDLER);
   }
 
   @Override
   public void stop(BundleContext context) throws Exception {
+    BrowserFactory.getRootLogger().removeHandler(SDK_LOG_HANDLER);
     plugin = null;
     IAdapterManager manager = Platform.getAdapterManager();
     manager.unregisterAdapters(breakpointWorkbenchAdapterFactory);
@@ -163,4 +166,28 @@ public class ChromiumDebugPlugin extends Plugin {
         : message;
   }
 
+  private static final Handler SDK_LOG_HANDLER = new Handler() {
+    @Override
+    public void publish(LogRecord record) {
+      int statusSeverity = 0;
+      Level level = record.getLevel();
+      if (level == Level.SEVERE) {
+        statusSeverity = Status.ERROR;
+      } else if (level == Level.WARNING) {
+        statusSeverity = Status.WARNING;
+      } else {
+        statusSeverity = Status.INFO;
+      }
+      log(new Status(statusSeverity, PLUGIN_ID, "SDK:" + record.getLoggerName() + ": " +
+          record.getMessage(), record.getThrown()));
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public void close() throws SecurityException {
+    }
+  };
 }
