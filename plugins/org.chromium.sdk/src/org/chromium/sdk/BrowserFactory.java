@@ -5,6 +5,7 @@
 package org.chromium.sdk;
 
 import java.net.SocketAddress;
+import java.util.logging.Logger;
 
 import org.chromium.sdk.internal.BrowserFactoryImpl;
 
@@ -51,4 +52,13 @@ public abstract class BrowserFactory {
    */
   public abstract StandaloneVm createStandalone(SocketAddress socketAddress,
       ConnectionLogger connectionLogger);
+
+  /**
+   * @return SDK root logger that can be used to add handlers or to adjust log level
+   */
+  public static Logger getRootLogger() {
+    return LOGGER;
+  }
+
+  private static final Logger LOGGER = Logger.getLogger("org.chromium.sdk");
 }
