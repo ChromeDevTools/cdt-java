@@ -24,6 +24,8 @@ import org.eclipse.ui.PlatformUI;
  */
 public class DialogBasedTabSelector implements TabSelector {
 
+  public static DialogBasedTabSelector INSTANCE = new DialogBasedTabSelector();
+
   public TabConnector selectTab(TabFetcher tabFetcher) throws IOException {
     List<? extends Browser.TabConnector> allTabs = tabFetcher.getTabs();
 

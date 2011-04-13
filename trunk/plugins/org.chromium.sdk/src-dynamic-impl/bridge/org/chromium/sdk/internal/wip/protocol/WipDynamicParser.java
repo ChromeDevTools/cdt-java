@@ -21,6 +21,7 @@ import org.chromium.sdk.internal.wip.protocol.input.WipCallFrame;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
 import org.chromium.sdk.internal.wip.protocol.input.WipScope;
+import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
 
 /**
  * A dynamic implementation of a WebInspector protocol parser.
@@ -48,7 +49,10 @@ public class WipDynamicParser {
           EvaluateData.class,
           ValueData.class, ValueData.Id.class,
           GetPropertiesData.class, GetPropertiesData.Property.class,
-          SetBreakpointData.class
+          SetBreakpointData.class,
+
+          // Tab list protocol interfaces.
+          WipTabList.class, WipTabList.TabDescription.class
       };
       DYNAMIC_IMPLEMENTATION = new DynamicParserImpl(Arrays.asList(jsonTypes),
           Collections.<DynamicParserImpl>emptyList(), true);

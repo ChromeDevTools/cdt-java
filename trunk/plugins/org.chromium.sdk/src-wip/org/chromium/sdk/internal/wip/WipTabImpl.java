@@ -199,10 +199,12 @@ public class WipTabImpl implements BrowserTab {
     }
   }
 
+  @Override
   public Browser getBrowser() {
-    return WipBrowserImpl.throwUnsupported();
+    return browserImpl;
   }
 
+  @Override
   public String getUrl() {
     return url;
   }
