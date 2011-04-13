@@ -20,7 +20,7 @@ public interface WipBrowserFactory {
    * TODO(peter.rybin): This should return a regular {@link Browser} when we have tab access
    * in protocol.
    */
-  WipBrowser createBrowser(InetSocketAddress socketAddress,
+  Browser createBrowser(InetSocketAddress socketAddress,
       LoggerFactory connectionLoggerFactory);
 
   interface LoggerFactory {

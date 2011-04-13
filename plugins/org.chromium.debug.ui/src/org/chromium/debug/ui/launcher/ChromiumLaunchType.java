@@ -31,7 +31,7 @@ public class ChromiumLaunchType extends LaunchTypeBase {
     NamedConnectionLoggerFactory consoleFactory =
         addConsoleLogger ? getLoggerFactory() : NO_CONNECTION_LOGGER_FACTORY;
     return JavascriptVmEmbedderFactory.connectToChromeDevTools(host, port, consoleFactory,
-        new DialogBasedTabSelector());
+        DialogBasedTabSelector.INSTANCE);
   }
 
   private static NamedConnectionLoggerFactory loggerFactory = null;

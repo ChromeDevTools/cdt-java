@@ -5,22 +5,35 @@
 package org.chromium.sdk.internal.wip;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URL;
+import java.util.AbstractList;
+import java.util.List;
 
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
+import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.internal.JavascriptVmImpl;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.websocket.WsConnection;
-import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
+import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
+import org.chromium.sdk.internal.wip.protocol.input.WipTabList.TabDescription;
 import org.chromium.sdk.wip.WipBrowserFactory;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  * Implements {@link Browser} API that offers connection to a browser tab
  * via WebInspector 'WIP' Protocol.
- * TODO: make class actually implement {@link Browser}.
  */
-public class WipBrowserImpl implements WipBrowser {
+public class WipBrowserImpl implements Browser {
   private final InetSocketAddress socketAddress;
   private final WipBrowserFactory.LoggerFactory connectionLoggerFactory;
 
@@ -33,34 +46,106 @@ public class WipBrowserImpl implements WipBrowser {
   }
 
   @Override
-  public Browser.TabConnector getTabConnector(int tabId) {
-    return new TabConnectorImpl(socketAddress, "/devtools/page/" + tabId);
+  public TabFetcher createTabFetcher() throws IOException, UnsupportedVersionException {
+    // You can connect and check version here.
+
+    return new TabFetcher() {
+      @Override
+      public List<? extends TabConnector> getTabs() throws IOException,
+          IllegalStateException {
+
+        URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
+        String content = realURLContent(url);
+
+        final List<WipTabList.TabDescription> list = parseJsonReponse(content);
+
+        return new AbstractList<TabConnector>() {
+          @Override
+          public TabConnector get(int index) {
+            return new TabConnectorImpl(list.get(index));
+          }
+
+          @Override
+          public int size() {
+            return list.size();
+          }
+        };
+      }
+
+      @Override
+      public void dismiss() {
+      }
+    };
   }
 
-  private class TabConnectorImpl implements Browser.TabConnector {
-    private final InetSocketAddress connectorSocketAddress;
-    private final String resourceId;
+  private static String realURLContent(URL url) throws IOException {
 
-    TabConnectorImpl(InetSocketAddress socketAddress, String resourceId) {
-      this.connectorSocketAddress = socketAddress;
-      this.resourceId = resourceId;
+    Object obj = url.getContent();
+
+    InputStream stream = url.openStream();
+    String content;
+    try {
+      Reader reader = new InputStreamReader(stream, "utf-8");
+      StringBuilder stringBuilder = new StringBuilder();
+      char[] buffer = new char[1024];
+      while (true) {
+        int res = reader.read(buffer);
+        if (res == -1) {
+          break;
+        }
+        stringBuilder.append(buffer, 0, res);
+      }
+      content = stringBuilder.toString();
+      reader.close();
+    } finally {
+      stream.close();
+    }
+    return content;
+  }
+
+  private static List<WipTabList.TabDescription> parseJsonReponse(String content)
+      throws IOException {
+    Object jsonValue;
+    try {
+      jsonValue = new JSONParser().parse(content);
+    } catch (ParseException e) {
+      throw JavascriptVmImpl.newIOException("Failed to parse a JSON tab list response", e);
     }
 
-    @Override
-    public String getUrl() {
-      return "<unknown url>";
+
+    try {
+      WipTabList tabList = WipParserAccess.get().parseAnything(jsonValue, WipTabList.class);
+      return tabList.asTabList();
+    } catch (JsonProtocolParseException e) {
+      throw JavascriptVmImpl.newIOException(
+          "Failed to parse tab list response (on protocol level)", e);
+    }
+  }
+
+  private class TabConnectorImpl implements TabConnector {
+    private final TabDescription description;
+
+    private TabConnectorImpl(TabDescription description) {
+      this.description = description;
     }
 
     @Override
     public boolean isAlreadyAttached() {
-      return false;
+      return description.webSocketDebuggerUrl() == null;
+    }
+
+    @Override
+    public String getUrl() {
+      return description.url();
     }
 
     @Override
     public BrowserTab attach(TabDebugEventListener listener) throws IOException {
       ConnectionLogger connectionLogger = connectionLoggerFactory.newTabConnectionLogger();
-      WsConnection socket = WsConnection.connect(connectorSocketAddress,
-          DEFAULT_CONNECTION_TIMEOUT_MS, resourceId, "empty origin", connectionLogger);
+
+      URI uri = URI.create(description.webSocketDebuggerUrl());
+      WsConnection socket = WsConnection.connect(socketAddress,
+          DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
 
       return new WipTabImpl(socket, WipBrowserImpl.this, listener);
     }

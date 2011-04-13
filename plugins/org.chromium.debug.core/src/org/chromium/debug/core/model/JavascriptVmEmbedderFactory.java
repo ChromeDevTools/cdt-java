@@ -12,9 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.JavascriptVmEmbedder.VmConnector;
 import org.chromium.sdk.Browser;
-import org.chromium.sdk.Browser.TabConnector;
 import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
@@ -24,7 +22,6 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
@@ -36,6 +33,36 @@ public class JavascriptVmEmbedderFactory {
 
     SocketAddress address = new InetSocketAddress(host, port);
     final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
+
+    return connect(browser, tabSelector);
+  }
+
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host,
+      int port, final NamedConnectionLoggerFactory browserLoggerFactory,
+      final NamedConnectionLoggerFactory tabLoggerFactory,
+      TabSelector tabSelector) throws CoreException {
+
+    InetSocketAddress address = new InetSocketAddress(host, port);
+    WipBrowserFactory.LoggerFactory factory = new WipBrowserFactory.LoggerFactory() {
+      @Override
+      public ConnectionLogger newBrowserConnectionLogger() {
+        return browserLoggerFactory.createLogger("Connection to browser");
+      }
+
+      @Override
+      public ConnectionLogger newTabConnectionLogger() {
+        return browserLoggerFactory.createLogger("Connection to tab");
+      }
+    };
+
+    final Browser browser =
+        WipBrowserFactory.INSTANCE.createBrowser(address, factory);
+
+    return connect(browser, tabSelector);
+  }
+
+  private static JavascriptVmEmbedder.ConnectionToRemote connect(Browser browser,
+      final TabSelector tabSelector) throws CoreException {
 
     final TabFetcher tabFetcher;
     try {
@@ -170,50 +197,6 @@ public class JavascriptVmEmbedderFactory {
 
       public void disposeConnection() {
         // Nothing to do. We do not take connection for ConnectionToRemote.
-      }
-    };
-  }
-
-  /**
-   * A temporary tab selector interface for Wip protocol.
-   * TODO: remove when we can get list of tabs from browser.
-   */
-  public interface WipTabSelector {
-    TabConnector selectTab(WipBrowser browser);
-  }
-
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host,
-      int port, final NamedConnectionLoggerFactory browserLoggerFactory,
-      final NamedConnectionLoggerFactory tabLoggerFactory, final WipTabSelector tabSelector)
-      throws CoreException {
-
-    InetSocketAddress address = new InetSocketAddress(host, port);
-    WipBrowserFactory.LoggerFactory factory = new WipBrowserFactory.LoggerFactory() {
-      @Override
-      public ConnectionLogger newBrowserConnectionLogger() {
-        return browserLoggerFactory.createLogger("Connection to browser");
-      }
-
-      @Override
-      public ConnectionLogger newTabConnectionLogger() {
-        return browserLoggerFactory.createLogger("Connection to tab");
-      }
-    };
-    final WipBrowser browser =
-        WipBrowserFactory.INSTANCE.createBrowser(address, factory);
-
-    return new JavascriptVmEmbedder.ConnectionToRemote() {
-      @Override
-      public VmConnector selectVm() throws CoreException {
-        Browser.TabConnector targetTabConnector = tabSelector.selectTab(browser);
-        if (targetTabConnector == null) {
-          return null;
-        }
-        return new EmbeddingTabConnector(targetTabConnector);
-      }
-
-      @Override
-      public void disposeConnection() {
       }
     };
   }
