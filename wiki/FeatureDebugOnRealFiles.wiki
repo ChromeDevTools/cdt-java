@@ -13,7 +13,7 @@ First let’s see how V8 identifies those remote scripts. While debugging a scri
 
 http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-script-properties.png
 
-Here we see that VM identifies your script as URL {{{ http://server:8080/misc/utils.js }}} (from this URL you seem to be running a local web server; there may be other configurations). Depending on your working files layout, URLs like this should be mapped either as {{{http://server:8080/misc/** => <your misc folder>/**}}} or as {{{http://server:8080/** => <your project folder>/**}}}
+Here we see that VM identifies your script as URL {{{ http://server:8080/misc/utils.js }}} (from this URL you seem to be running a local web server; there may be other configurations; in particular scripts may be from your disk, with {{{file://...}}} URLs). Depending on your working files layout, URLs like this should be mapped either as {{{http://server:8080/misc/** => <your misc folder>/**}}} or as {{{http://server:8080/** => <your project folder>/**}}}
 
 You can configure this in "Edit Source Lookup..." on already running [LaunchElement launch] or in “Source” tab of your debug launch configuration for future runs:
 
