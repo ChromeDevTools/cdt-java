@@ -11,3 +11,6 @@ Install "Chromium !JavaScript Remote Debugger" feature. If you have JSDT install
 = SDK library alone =
 
 SDK is available from "Downloads" section as "!ChromeDevTools SDK bundle". This is a tar archive of several jar-files. They have no dependencies on Eclipse.
+
+= For Contributors =
+You can check out sources and build the project yourself. See HowToBuild instructions.
