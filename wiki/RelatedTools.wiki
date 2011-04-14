@@ -2,7 +2,7 @@
 
 = Related Tools =
 
-This project implements JavaScript [EclipseDebugger debugger] for Eclipse platform. It relies on Eclipse ecosystem for other capabilities, in particular source file editor. While the standard Eclipse Platform configuration can be enough for virtually all [DebuggerFeatures Debugger features] to work, additional third-party software could improve JavaScript developer experience.
+This project implements !JavaScript [EclipseDebugger debugger] for Eclipse platform. It relies on Eclipse ecosystem for other capabilities, in particular source file editor. While the standard Eclipse Platform configuration can be enough for virtually all [DebuggerFeatures Debugger features] to work, additional third-party software could improve !JavaScript developer experience.
 
 The following list mentions some software packages with notes about its compatibility with Debugger.
 
