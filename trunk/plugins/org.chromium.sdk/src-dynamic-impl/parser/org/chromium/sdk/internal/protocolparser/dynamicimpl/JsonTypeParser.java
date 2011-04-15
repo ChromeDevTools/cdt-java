@@ -5,6 +5,9 @@
 package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.FileScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.MethodScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.Util;
 import org.json.simple.JSONObject;
 
 /**
@@ -72,4 +75,42 @@ class JsonTypeParser<T> extends SlowParser<ObjectData> {
       return data.getProxy();
     }
   };
+
+  @Override
+  public void appendFinishedValueTypeNameJava(FileScope scope) {
+    scope.append(refToType.getTypeClass().getCanonicalName());
+  }
+
+  @Override
+  public void appendInternalValueTypeNameJava(FileScope classScope) {
+    classScope.append(classScope.getTypeImplReference(refToType.get()));
+  }
+
+  @Override
+  void writeParseCode(MethodScope scope, String valueRef,
+      String superValueRef, String resultRef) {
+    String typeName = scope.getTypeImplReference(refToType.get());
+    scope.startLine(typeName + " " + resultRef + ";\n");
+
+    if (isNullable) {
+      scope.startLine("if (" + valueRef+ " == null) {\n");
+      scope.startLine("  " + resultRef+ " = null;\n");
+      scope.startLine("}\n");
+    }
+    scope.startLine("if (" + valueRef+ " == null) {\n");
+    scope.startLine("  throw new " + Util.BASE_PACKAGE +
+        ".JsonProtocolParseException(\"null input\");\n");
+    scope.startLine("}\n");
+    if (isSubtyping) {
+      scope.startLine(resultRef + " = new " + typeName + "(" + valueRef + ", " +
+          superValueRef + ");\n");
+    } else {
+      scope.startLine(resultRef + " = " + typeName + ".parse(" + valueRef + ");\n");
+    }
+  }
+
+  @Override
+  boolean javaCodeThrowsException() {
+    return false;
+  }
 }

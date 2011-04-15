@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.MethodScope;
 
 /**
  * An implementation of JsonSubtypeCondition* annotations. Basically it only holds all parameters
@@ -37,5 +38,10 @@ class FieldCondition {
    */
   boolean checkValue(boolean hasValue, Object unparsedValue) throws JsonProtocolParseException {
     return conditionLogic.checkValue(hasValue, unparsedValue, quickParser);
+  }
+
+  public void writeCheckJava(MethodScope methodScope, String valueRef, String hasValueRef,
+      String resultRef) {
+    conditionLogic.writeCheckJava(methodScope, valueRef, hasValueRef, resultRef, quickParser);
   }
 }

@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.ClassScope;
 
 /**
  * An internal facility for navigating from object of base type to object of subtype. Used only
@@ -34,4 +35,7 @@ abstract class SubtypeCaster {
   Class<?> getBaseType() {
     return baseType;
   }
+
+  abstract void writeJava(ClassScope scope, String expectedTypeName, String superTypeValueRef,
+      String resultRef);
 }
