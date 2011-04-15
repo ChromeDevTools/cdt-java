@@ -9,9 +9,11 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.chromium.sdk.internal.SubpropertiesMirror.JsonBased;
 import org.chromium.sdk.internal.protocolparser.AnyObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.ClassScope;
 import org.json.simple.JSONObject;
 
 /**
@@ -22,6 +24,35 @@ class BaseHandlersLibrary {
 
   public Map<Method, ? extends MethodHandler> getAllHandlers() {
     return method2Handler;
+  }
+
+  /**
+   * Generates Java implementation of standard methods of JSON type class (if needed):
+   * {@link JsonObjectBased#getUnderlyingObject()},
+   * {@link AnyObjectBased#getUnderlyingObject()} and {@link JsonSubtype#getSuper()}
+   */
+  public static void writeBaseMethodsJava(ClassScope scope, TypeHandler<?> typeHandler) {
+    Class<?> typeClass = typeHandler.getTypeClass();
+
+    // Generated getUnderlyingObject method if it's in interface.
+    writeGetUnderlyingObject: {
+      Method method;
+      try {
+        method = typeClass.getMethod("getUnderlyingObject");
+      } catch (SecurityException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchMethodException e) {
+        // Method not found, skip.
+        break writeGetUnderlyingObject;
+      }
+
+      MethodHandler.writeMethodDeclarationJava(scope, method);
+      scope.startLine("{\n");
+      scope.startLine("  return underlying;\n");
+      scope.startLine("}\n");
+    }
+
+    typeHandler.getSubtypeSupport().writeGetSuperMethodJava(scope);
   }
 
   private final Map<Method, MethodHandler> method2Handler;
@@ -68,6 +99,11 @@ class BaseHandlersLibrary {
     }
 
     @Override
+    void writeMethodImplementationJava(ClassScope classScope, Method m) {
+      // Ignore.
+    }
+
+    @Override
     boolean requiresJsonObject() {
       return false;
     }
@@ -81,6 +117,10 @@ class BaseHandlersLibrary {
     @Override
     JSONObject handle(ObjectData objectData, Object[] args) {
       return (JSONObject) objectData.getUnderlyingObject();
+    }
+
+    @Override
+    void writeMethodImplementationJava(ClassScope classScope, Method m) {
     }
 
     @Override
@@ -100,6 +140,10 @@ class BaseHandlersLibrary {
     }
 
     @Override
+    void writeMethodImplementationJava(ClassScope classScope, Method m) {
+    }
+
+    @Override
     boolean requiresJsonObject() {
       return false;
     }
@@ -113,6 +157,11 @@ class BaseHandlersLibrary {
     @Override
     Object handle(ObjectData objectData, Object[] args) {
       return objectData.getSuperObjectData().getProxy();
+    }
+
+    @Override
+    void writeMethodImplementationJava(ClassScope classScope, Method m) {
+      // Ignore.
     }
 
     @Override

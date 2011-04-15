@@ -19,6 +19,10 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl.VolatileFieldBinding;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.ClassScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.FileScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.MethodScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.Util;
 import org.json.simple.JSONObject;
 
 /**
@@ -198,6 +202,7 @@ class TypeHandler<T> {
     abstract void setSubtypeCaster(SubtypeCaster subtypeCaster)
         throws JsonProtocolModelParseException;
     abstract void checkHasSubtypeCaster() throws JsonProtocolModelParseException;
+    abstract void writeGetSuperMethodJava(ClassScope scope);
 
     abstract boolean checkConditions(Map<?, ?> jsonProperties) throws JsonProtocolParseException;
   }
@@ -217,6 +222,12 @@ class TypeHandler<T> {
     abstract void checkSuperObject(ObjectData superObjectData) throws JsonProtocolParseException;
     abstract ObjectData parseFromSuper(Object input) throws JsonProtocolParseException;
     abstract boolean isRoot();
+    abstract void writeSuperFieldJava(ClassScope scope);
+    abstract void writeSuperConstructorParamJava(ClassScope scope);
+    abstract void writeSuperConstructorInitializationJava(MethodScope scope);
+    abstract void writeHelperMethodsJava(ClassScope classScope);
+    abstract void writeParseMethodJava(ClassScope classScope, String valueTypeName,
+        String inputRef);
   }
 
   private class AbsentSubtypeAspect extends SubtypeAspect {
@@ -244,6 +255,19 @@ class TypeHandler<T> {
     @Override
     boolean isRoot() {
       return true;
+    }
+    @Override void writeGetSuperMethodJava(ClassScope scope) {
+    }
+    @Override void writeSuperFieldJava(ClassScope scope) {
+    }
+    @Override void writeSuperConstructorParamJava(ClassScope scope) {
+    }
+    @Override void writeSuperConstructorInitializationJava(MethodScope scope) {
+    }
+    @Override void writeHelperMethodsJava(ClassScope classScope) {
+    }
+    @Override void writeParseMethodJava(ClassScope scope, String valueTypeName, String inputRef) {
+      scope.startLine("return new " + valueTypeName + "(" + inputRef + ");\n");
     }
   }
 
@@ -332,6 +356,71 @@ class TypeHandler<T> {
     boolean isRoot() {
       return false;
     }
+
+    @Override
+    void writeGetSuperMethodJava(ClassScope scope) {
+      scope.startLine("@Override public " +
+          jsonSuperClass.get().getTypeClass().getCanonicalName() + " getSuper() {\n");
+      scope.startLine("  return superTypeValue;\n");
+      scope.startLine("}\n");
+    }
+
+    @Override
+    void writeSuperFieldJava(ClassScope scope) {
+      scope.startLine("private final " + jsonSuperClass.get().getTypeClass().getCanonicalName() +
+          " superTypeValue;\n");
+    }
+
+    @Override
+    void writeSuperConstructorParamJava(ClassScope scope) {
+      scope.append(", " + jsonSuperClass.get().getTypeClass().getCanonicalName() +
+          " superValueParam");
+    }
+
+    @Override
+    void writeSuperConstructorInitializationJava(MethodScope scope) {
+      scope.startLine("this.superTypeValue = superValueParam;\n");
+    }
+
+    @Override
+    void writeHelperMethodsJava(ClassScope classScope) {
+      classScope.startLine("public static boolean checkSubtypeConditions(" +
+          "org.json.simple.JSONObject input)" + Util.THROWS_CLAUSE + " {\n");
+      MethodScope methodScope = classScope.newMethodScope();
+      methodScope.indentRight();
+      for (FieldCondition condition : fieldConditions) {
+        String name = condition.getPropertyName();
+        methodScope.startLine("{\n");
+        methodScope.startLine("  Object value = input.get(\"" + name + "\");\n");
+        methodScope.startLine("  boolean hasValue;\n");
+        methodScope.startLine("  if (value == null) {\n");
+        methodScope.startLine("    hasValue = input.containsKey(\"" + name + "\");\n");
+        methodScope.startLine("  } else {\n");
+        methodScope.startLine("    hasValue = true;\n");
+        methodScope.startLine("  }\n");
+        condition.writeCheckJava(methodScope, "value", "hasValue", "conditionRes");
+        methodScope.startLine("  if (!conditionRes) {\n");
+        methodScope.startLine("    return false;\n");
+        methodScope.startLine("  }\n");
+        methodScope.startLine("}\n");
+      }
+      methodScope.startLine("return true;\n");
+      methodScope.indentLeft();
+      methodScope.startLine("}\n");
+    }
+
+    @Override
+    void writeParseMethodJava(ClassScope scope, String valueTypeName, String inputRef) {
+      String superTypeName = scope.getTypeImplReference(jsonSuperClass.get());
+      scope.startLine(superTypeName + " superTypeValue = " + superTypeName + ".parse(" +
+          inputRef + ");\n");
+      this.subtypeCaster.writeJava(scope, valueTypeName, "superTypeValue", "result");
+      scope.startLine("if (result == null) {\n");
+      scope.startLine("  throw new " + Util.BASE_PACKAGE + ".JsonProtocolParseException(" +
+          "\"Failed to get subtype object while parsing\");\n");
+      scope.startLine("}\n");
+      scope.startLine("return result;\n");
+    }
   }
 
   private void wrapInProxy(ObjectData data, Map<Method, MethodHandler> methodHandlerMap) {
@@ -374,5 +463,118 @@ class TypeHandler<T> {
         throws JsonProtocolParseException;
     abstract List<RefToType<?>> getSubtypes();
     abstract boolean underlyingIsJson();
+    abstract void writeConstructorCodeJava(MethodScope methodScope);
+    abstract void writeFiledsJava(ClassScope classScope);
+  }
+
+  public void writeStaticClassJava(FileScope fileScope) {
+    fileScope.startLine("// Type " + this.getTypeClass().getName() + "\n");
+    String valueImplClassName = fileScope.getTypeImplShortName(this);
+    String typeClassName = this.getTypeClass().getCanonicalName();
+
+    boolean underlyingIsOfJsonType = false;
+    underlyingIsOfJsonType |= !fieldLoaders.isEmpty();
+    underlyingIsOfJsonType |= algCasesData != null && algCasesData.underlyingIsJson();
+    if (!underlyingIsOfJsonType) {
+      for (MethodHandler handler : methodHandlerMap.values()) {
+        if (handler.requiresJsonObject()) {
+          underlyingIsOfJsonType = true;
+          break;
+        }
+      }
+    }
+
+    fileScope.startLine("public static class " + valueImplClassName + " extends " +
+        Util.BASE_PACKAGE + ".implutil.GeneratedCodeLibrary.");
+    if (underlyingIsOfJsonType) {
+      fileScope.append("JsonValueBase");
+    } else {
+      fileScope.append("ObjectValueBase");
+    }
+    fileScope.append(" implements " + typeClassName + " {\n");
+
+    ClassScope classScope = fileScope.newClassScope();
+    classScope.indentRight();
+
+    classScope.startLine("public static " + valueImplClassName + " parse(Object input)" +
+        Util.THROWS_CLAUSE + " {\n");
+    classScope.indentRight();
+    subtypeAspect.writeParseMethodJava(classScope, valueImplClassName, "input");
+    classScope.indentLeft();
+    classScope.startLine("}");
+    classScope.append("\n");
+    classScope.startLine(valueImplClassName + "(Object input");
+    subtypeAspect.writeSuperConstructorParamJava(classScope);
+    classScope.append(")" + Util.THROWS_CLAUSE + " {\n");
+
+    {
+      MethodScope methodScope = classScope.newMethodScope();
+      methodScope.indentRight();
+      methodScope.startLine("super(input);\n");
+
+      subtypeAspect.writeSuperConstructorInitializationJava(methodScope);
+
+      for (FieldLoader fieldLoader : fieldLoaders) {
+        String valueRef = methodScope.newMethodScopedName("value");
+        String hasValueRef = methodScope.newMethodScopedName("hasValue");
+        String fieldName = fieldLoader.getFieldName();
+        methodScope.append("\n");
+        Util.writeReadValueAndHasValue(methodScope, fieldName, "underlying", valueRef,
+            hasValueRef);
+        fieldLoader.writeFieldLoadJava(methodScope, valueRef, hasValueRef);
+      }
+
+      if (algCasesData != null) {
+        algCasesData.writeConstructorCodeJava(methodScope);
+      }
+
+      methodScope.indentLeft();
+
+    }
+
+    classScope.startLine("}\n");
+
+    for (VolatileFieldBinding field : volatileFields) {
+      field.writeFieldDeclarationJava(classScope);
+    }
+
+    for (FieldLoader loader : this.fieldLoaders) {
+      loader.writeFieldDeclarationJava(classScope);
+    }
+
+    if (algCasesData != null) {
+      algCasesData.writeFiledsJava(classScope);
+    }
+
+    subtypeAspect.writeSuperFieldJava(classScope);
+
+    for (Map.Entry<Method, MethodHandler> en : this.methodHandlerMap.entrySet()) {
+      Method m = en.getKey();
+      MethodHandler methodHandler = en.getValue();
+      methodHandler.writeMethodImplementationJava(classScope, m);
+    }
+
+    BaseHandlersLibrary.writeBaseMethodsJava(classScope, this);
+
+    subtypeAspect.writeHelperMethodsJava(classScope);
+
+    classScope.indentLeft();
+    classScope.startLine("}\n");
+    fileScope.append("\n");
+  }
+
+  public void writeMapFillJava(ClassScope scope, String mapReference) {
+    scope.startLine("// Type " + this.getTypeClass().getName() + "\n");
+    scope.startLine(mapReference + ".put(" + this.getTypeClass().getCanonicalName() +
+        ".class, new " + Util.BASE_PACKAGE + ".implutil.GeneratedCodeLibrary.AbstractType() {\n");
+    scope.startLine("  @Override public Object parseJson(org.json.simple.JSONObject json)" +
+        Util.THROWS_CLAUSE + " {\n");
+    scope.startLine("    return " + scope.getTypeImplShortName(this) + ".parse(json);\n");
+    scope.startLine("  }\n");
+    scope.startLine("  @Override public Object parseAnything(Object object)" +
+        Util.THROWS_CLAUSE + " {\n");
+    scope.startLine("    return " + scope.getTypeImplShortName(this) + ".parse(object);\n");
+    scope.startLine("  }\n");
+    scope.startLine("});\n");
   }
 }

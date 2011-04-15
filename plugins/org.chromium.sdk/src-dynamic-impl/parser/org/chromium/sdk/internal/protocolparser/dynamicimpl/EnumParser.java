@@ -9,6 +9,9 @@ import java.lang.reflect.Method;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.FileScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.MethodScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.Util;
 
 class EnumParser<T extends Enum<T>> extends QuickParser<T> {
   public static <T extends Enum<T>> EnumParser<T> create(Class<T> enumTypeClass,
@@ -55,5 +58,38 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
       throw new JsonProtocolParseException("Failed to parse value " + value + " as enum");
     }
     return result;
+  }
+
+  @Override
+  public void appendFinishedValueTypeNameJava(FileScope scope) {
+    scope.append(enumClass.getCanonicalName());
+  }
+
+  @Override
+  public void appendInternalValueTypeNameJava(FileScope scope) {
+    appendFinishedValueTypeNameJava(scope);
+  }
+
+  @Override
+  void writeParseQuickCode(MethodScope scope, String valueRef,
+      String resultRef) {
+    if (isNullable) {
+      scope.startLine("if (" + valueRef + " == null) {\n");
+      scope.startLine("  return null;\n");
+      scope.startLine("}\n");
+    }
+    scope.startLine("if (" + valueRef + " instanceof String == false) {\n");
+    scope.startLine("  throw new " + Util.BASE_PACKAGE +
+        ".JsonProtocolParseException(\"String value expected\");\n");
+    scope.startLine("}\n");
+    scope.startLine("String stringValue = (String) " + valueRef + ";\n");
+    scope.startLine(enumClass.getCanonicalName() + " " + resultRef + " = " +
+        enumClass.getCanonicalName() + ".valueOf(");
+    scope.append("stringValue);\n");
+  }
+
+  @Override
+  boolean javaCodeThrowsException() {
+    return true;
   }
 }

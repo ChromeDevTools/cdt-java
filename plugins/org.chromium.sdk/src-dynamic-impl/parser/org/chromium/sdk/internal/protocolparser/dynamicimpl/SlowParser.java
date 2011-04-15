@@ -5,6 +5,8 @@
 package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.FileScope;
+import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.MethodScope;
 
 /**
  * A parser that accepts value of JSON field and outputs value in another form (e.g. string
@@ -27,4 +29,13 @@ abstract class SlowParser<T> {
   QuickParser<T> asQuickParser() {
     return null;
   }
+
+  abstract void appendFinishedValueTypeNameJava(FileScope scope);
+
+  abstract void appendInternalValueTypeNameJava(FileScope scope);
+
+  abstract void writeParseCode(MethodScope methodScope, String valueRef, String superValueRef,
+      String resultRef);
+
+  abstract boolean javaCodeThrowsException();
 }
