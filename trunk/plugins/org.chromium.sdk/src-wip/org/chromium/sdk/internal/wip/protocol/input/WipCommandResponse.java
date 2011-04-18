@@ -61,8 +61,8 @@ public interface WipCommandResponse extends JsonObjectBased {
     Data data();
   }
 
-  @JsonType(subtypesChosenManually=true)
-  interface Data {
+  @JsonType(subtypesChosenManually=true, allowsOtherProperties=true)
+  interface Data extends JsonObjectBased {
     @JsonSubtypeCasting ScriptSourceData asScriptSourceData() throws JsonProtocolParseException;
     @JsonSubtypeCasting EvaluateData asEvaluateData() throws JsonProtocolParseException;
     @JsonSubtypeCasting GetPropertiesData asGetPropertiesData() throws JsonProtocolParseException;

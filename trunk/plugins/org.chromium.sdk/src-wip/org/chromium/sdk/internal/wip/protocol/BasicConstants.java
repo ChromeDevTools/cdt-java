@@ -11,11 +11,14 @@ public interface BasicConstants {
     String SEQ = "seq";
     String COMMAND = "command";
     String EVENT = "event";
+    String METHOD = "method";
+    String PARAMS = "params";
   }
 
   interface Domain {
     String DEBUGGER = "Debugger";
     String RUNTIME = "Runtime";
     String INSPECTOR = "Inspector";
+    String PAGE = "Page";
   }
 }

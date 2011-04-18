@@ -216,8 +216,10 @@ class Generator {
 
       String fullName = getEventInterfaceFullName(domainName, event.name());
       String eventTypeMemberText =
-          "  public static final org.chromium.sdk.internal.wip.WipEventType<" + fullName +
-          "> TYPE\n    = new org.chromium.sdk.internal.wip.WipEventType<" + fullName +
+          "  public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
+          fullName +
+          "> TYPE\n      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
+          fullName +
           ">(\"" + domainName + "." + event.name() + "\", " + fullName + ".class);\n";
 
       generateJsonProtocolInterface(writer, className, event.description(), event.parameters(),
@@ -825,7 +827,7 @@ class Generator {
 
   private static void initializeKnownTypes(TypeMap typeMap) {
     typeMap.setTypeResolved("Runtime", "RuntimeProperty",
-        "org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData2.Property");
+        "org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData.Property");
     typeMap.setTypeResolved("Page", "Cookie", "Object");
   }
 

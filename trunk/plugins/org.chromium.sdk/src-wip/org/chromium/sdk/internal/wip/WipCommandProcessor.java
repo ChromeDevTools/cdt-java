@@ -12,18 +12,24 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener.VmStatusListener;
+import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.BaseCommandProcessor;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
+import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.InspectedUrlChangedData;
 import org.chromium.sdk.internal.wip.protocol.input.ParsedScriptSourceData;
 import org.chromium.sdk.internal.wip.protocol.input.PausedScriptData;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
+import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
+import org.chromium.sdk.internal.wip.protocol.output.WipParams;
+import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
+import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
 import org.json.simple.JSONObject;
 
 /**
@@ -45,9 +51,54 @@ class WipCommandProcessor {
     baseProcessor =
         new BaseCommandProcessor<Integer, JSONObject, JSONObject, WipCommandResponse>(handler);
   }
-
+  // TODO: inline this method.
   void send(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
+    sendRaw(message, callback, syncCallback);
+  }
+
+  void sendRaw(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
     baseProcessor.send(message, false, callback, syncCallback);
+  }
+
+  void send(WipParams params, WipCommandCallback callback, SyncCallback syncCallback) {
+    WipRequest request = new WipRequest(params);
+    sendRaw(request, callback, syncCallback);
+  }
+
+  /**
+   * @param <RESPONSE> type of response expected that is determined by params
+   * @param params request parameters that also holds a method name
+   * @param callback a callback that accepts method-specific response or null
+   * @param syncCallback may be null
+   */
+  <RESPONSE> void send(final WipParamsWithResponse<RESPONSE> params,
+      final GenericCallback<RESPONSE> callback, SyncCallback syncCallback) {
+    WipRequest request = new WipRequest(params);
+
+    WipCommandCallback commandCallback;
+    if (callback == null) {
+      commandCallback = null;
+    } else {
+      commandCallback = new WipCommandCallback.Default() {
+        @Override
+        protected void onSuccess(Success success) {
+          RESPONSE response;
+          try {
+            response = params.parseResponse(success.data(), WipParserAccess.get());
+          } catch (JsonProtocolParseException e) {
+            throw new RuntimeException(e);
+          }
+          callback.success(response);
+        }
+
+        @Override
+        protected void onError(String message) {
+          callback.failure(new Exception(message));
+        }
+      };
+    }
+
+    sendRaw(request, commandCallback, syncCallback);
   }
 
   void acceptResponse(JSONObject message) {
