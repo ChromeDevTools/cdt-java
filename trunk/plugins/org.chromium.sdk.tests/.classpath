@@ -4,7 +4,8 @@
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="src-dynamic-impl/bridge"/>
-	<classpathentry kind="src" path="src-wip"/>
+	<classpathentry kind="src" path="src-static-impl/generated"/>
 	<classpathentry kind="src" path="src-dynamic-impl/parser"/>
+	<classpathentry kind="src" path="src-wip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
