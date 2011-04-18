@@ -786,7 +786,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
         scope.indentLeft();
         scope.startLine("} catch (" + Util.BASE_PACKAGE + ".JsonProtocolParseException e) {\n");
         scope.startLine("  throw new " + Util.BASE_PACKAGE +
-            ".implutil.CommonImpl.JsonProtocolParseRuntimeException(" +
+            ".implutil.CommonImpl.ParseRuntimeException(" +
             "\"On demand parsing failed for \" + underlying, e);\n");
         scope.startLine("}\n");
       }
@@ -1023,7 +1023,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
         scope.indentLeft();
         scope.startLine("} catch (" + Util.BASE_PACKAGE + ".JsonProtocolParseException e) {\n");
         scope.startLine("  throw new " + Util.BASE_PACKAGE +
-            ".implutil.CommonImpl.JsonProtocolParseRuntimeException(" +
+            ".implutil.CommonImpl.ParseRuntimeException(" +
             "\"On demand parsing failed for \" + underlying, e);\n");
         scope.startLine("}\n");
       }
