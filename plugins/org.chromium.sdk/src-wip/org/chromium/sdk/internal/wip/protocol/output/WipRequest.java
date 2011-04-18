@@ -13,4 +13,9 @@ public class WipRequest extends JSONObject {
     this.put(BasicConstants.Property.COMMAND, command);
     this.put(BasicConstants.Property.ARGUMENTS, arguments);
   }
+
+  public WipRequest(WipParams params) {
+    this.put(BasicConstants.Property.METHOD, params.getRequestName());
+    this.put(BasicConstants.Property.PARAMS, params);
+  }
 }
