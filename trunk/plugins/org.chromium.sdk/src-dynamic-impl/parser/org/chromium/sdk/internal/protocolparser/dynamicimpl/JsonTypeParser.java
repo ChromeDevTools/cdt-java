@@ -111,6 +111,6 @@ class JsonTypeParser<T> extends SlowParser<ObjectData> {
 
   @Override
   boolean javaCodeThrowsException() {
-    return false;
+    return true;
   }
 }

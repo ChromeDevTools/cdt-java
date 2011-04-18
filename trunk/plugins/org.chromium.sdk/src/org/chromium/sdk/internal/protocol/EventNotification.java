@@ -29,7 +29,7 @@ public interface EventNotification extends JsonObjectBased, JsonSubtype<Incoming
 
   class TypeValueCondition extends EnumValueCondition<MessageType> {
     public TypeValueCondition() {
-      super(EnumSet.of(MessageType.event));
+      super(EnumSet.of(MessageType.EVENT));
     }
   }
 

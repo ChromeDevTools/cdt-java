@@ -36,8 +36,8 @@ public interface BreakpointInfo {
   long ignoreCount();
 
   enum Type {
-    scriptName,
-    scriptId,
-    function
+    SCRIPTNAME,
+    SCRIPTID,
+    FUNCTION
   }
 }
