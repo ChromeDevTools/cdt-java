@@ -28,7 +28,7 @@ public interface CommandResponse extends JsonSubtype<IncomingMessage> {
 
   class TypeValueCondition extends EnumValueCondition<MessageType> {
     public TypeValueCondition() {
-      super(EnumSet.of(MessageType.response));
+      super(EnumSet.of(MessageType.RESPONSE));
     }
   }
 

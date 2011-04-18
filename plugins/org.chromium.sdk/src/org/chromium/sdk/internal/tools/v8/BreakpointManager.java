@@ -265,7 +265,7 @@ public class BreakpointManager {
     // Wrap all loaded BreakpointInfo as BreakpointImpl, possibly reusing old instances.
     // Also check that all breakpoint id's in loaded list are unique.
     for (BreakpointInfo info : infoList) {
-      if (info.type() == BreakpointInfo.Type.function) {
+      if (info.type() == BreakpointInfo.Type.FUNCTION) {
         // We does not support function type breakpoints and ignore them.
         continue;
       }

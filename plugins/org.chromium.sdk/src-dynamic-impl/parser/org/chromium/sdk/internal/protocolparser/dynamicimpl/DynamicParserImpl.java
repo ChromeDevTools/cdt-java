@@ -212,6 +212,8 @@ public class DynamicParserImpl implements JsonProtocolParser {
         } else if (type == Float.TYPE) {
           nullableIsNotSupported(declaredNullable);
           return FLOAT_PARSER.getNotNullable();
+        } else if (type == Number.class) {
+          return NUMBER_PARSER.get(declaredNullable);
         } else if (type == Void.class) {
           nullableIsNotSupported(declaredNullable);
           return VOID_PARSER;
@@ -1168,12 +1170,19 @@ public class DynamicParserImpl implements JsonProtocolParser {
     }
   }
 
-  private static SimpleParserPair<Long> LONG_PARSER = SimpleParserPair.create(Long.class);
-  private static SimpleParserPair<Boolean> BOOLEAN_PARSER = SimpleParserPair.create(Boolean.class);
-  private static SimpleParserPair<Float> FLOAT_PARSER = SimpleParserPair.create(Float.class);
-  private static SimpleParserPair<String> STRING_PARSER = SimpleParserPair.create(String.class);
-  private static SimpleParserPair<Object> OBJECT_PARSER = SimpleParserPair.create(Object.class);
-  private static SimpleParserPair<JSONObject> JSON_PARSER =
+  private static final SimpleParserPair<Long> LONG_PARSER =
+      SimpleParserPair.create(Long.class);
+  private static final SimpleParserPair<Boolean> BOOLEAN_PARSER =
+      SimpleParserPair.create(Boolean.class);
+  private static final SimpleParserPair<Float> FLOAT_PARSER =
+      SimpleParserPair.create(Float.class);
+  private static final SimpleParserPair<Number> NUMBER_PARSER =
+      SimpleParserPair.create(Number.class);
+  private static final SimpleParserPair<String> STRING_PARSER =
+      SimpleParserPair.create(String.class);
+  private static final SimpleParserPair<Object> OBJECT_PARSER =
+      SimpleParserPair.create(Object.class);
+  private static final SimpleParserPair<JSONObject> JSON_PARSER =
       SimpleParserPair.create(JSONObject.class);
 
   static class ArrayParser<T> extends SlowParser<List<? extends T>> {
@@ -1181,6 +1190,9 @@ public class DynamicParserImpl implements JsonProtocolParser {
     static abstract class ListFactory {
       abstract <T> List<T> create(JSONArray array, SlowParser<T> componentParser)
           throws JsonProtocolParseException;
+
+      abstract void writeCreateListCode(SlowParser<?> componentParser, MethodScope scope,
+          String inputRef, String resultRef);
     }
 
     static final ListFactory EAGER = new ListFactory() {
@@ -1199,6 +1211,26 @@ public class DynamicParserImpl implements JsonProtocolParser {
           list.add(val);
         }
         return Collections.unmodifiableList(list);
+      }
+
+      @Override
+      void writeCreateListCode(SlowParser<?> componentParser, MethodScope scope, String inputRef,
+          String resultRef) {
+        scope.startLine("int size = " + inputRef + ".size();\n");
+        scope.startLine("java.util.List<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append("> list = new java.util.ArrayList<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append(">(size);\n");
+        scope.startLine("for (int i = 0; i < size; i++) {\n");
+        scope.indentRight();
+        componentParser.writeParseCode(scope, inputRef + ".get(i)", "null", "arrayComponent");
+        scope.startLine("list.add(arrayComponent);\n");
+        scope.indentLeft();
+        scope.startLine("}\n");
+        scope.startLine("java.util.List<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append("> " + resultRef + " = java.util.Collections.unmodifiableList(list);\n");
       }
     };
 
@@ -1239,6 +1271,74 @@ public class DynamicParserImpl implements JsonProtocolParser {
           }
         };
         return list;
+      }
+
+      @Override
+      void writeCreateListCode(SlowParser<?> componentParser, MethodScope scope, String inputRef,
+          String resultRef) {
+        scope.startLine("final int size = " + inputRef + ".size();\n");
+        scope.startLine("java.util.List<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append("> " + resultRef + " = new java.util.AbstractList<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append(">() {\n");
+        scope.indentRight();
+        scope.startLine("private final java.util.concurrent.atomic.AtomicReferenceArray<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append("> cachedValues = new java.util.concurrent.atomic.AtomicReferenceArray<");
+        componentParser.appendFinishedValueTypeNameJava(scope);
+        scope.append(">(size);\n");
+        scope.append("\n");
+        scope.startLine("@Override public int size() { return size; }\n");
+        scope.append("\n");
+        writeGetMethodCode(componentParser, scope, inputRef);
+        scope.indentLeft();
+        scope.startLine("};\n");
+      }
+
+      private void writeGetMethodCode(SlowParser<?> componentParser, MethodScope outerMethodScope,
+          String arrayRef) {
+        outerMethodScope.startLine("@Override public ");
+        componentParser.appendFinishedValueTypeNameJava(outerMethodScope);
+        outerMethodScope.append(" get(int index) {\n");
+        {
+          MethodScope scope = outerMethodScope.newMethodScope();
+          scope.indentRight();
+
+          String resultRef = scope.newMethodScopedName("result");
+
+          scope.startLine("");
+          componentParser.appendFinishedValueTypeNameJava(scope);
+          scope.append(" " + resultRef + " = cachedValues.get(index);\n");
+          scope.startLine("if (" + resultRef + " == null) {\n");
+          scope.indentRight();
+
+          boolean wrap = componentParser.javaCodeThrowsException();
+          if (wrap) {
+            scope.startLine("try {\n");
+            scope.indentRight();
+          }
+
+          scope.startLine("Object unparsed = " + arrayRef + ".get(index);\n");
+          componentParser.writeParseCode(scope, "unparsed", "null", "parsed");
+          scope.startLine(resultRef + " = parsed;\n");
+
+          if (wrap) {
+            scope.indentLeft();
+            scope.startLine("} catch (" + Util.BASE_PACKAGE +
+                ".JsonProtocolParseException e) {\n");
+            scope.startLine("  throw new " + Util.BASE_PACKAGE +
+                ".implutil.CommonImpl.ParseRuntimeException(e);\n");
+            scope.startLine("}\n");
+          }
+          scope.startLine("cachedValues.compareAndSet(index, null, " + resultRef + ");\n");
+          scope.startLine(resultRef + " = cachedValues.get(index);\n");
+          scope.indentLeft();
+          scope.startLine("}\n");
+          scope.startLine("return " + resultRef + ";\n");
+          scope.indentLeft();
+        }
+        outerMethodScope.startLine("}\n");
       }
     };
 
@@ -1299,23 +1399,9 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.startLine("  throw new " + Util.BASE_PACKAGE +
           ".JsonProtocolParseException(\"Array value expected\");\n");
       scope.startLine("}\n");
-      scope.startLine("org.json.simple.JSONArray arrayValue = (org.json.simple.JSONArray) " +
+      scope.startLine("final org.json.simple.JSONArray arrayValue = (org.json.simple.JSONArray) " +
           valueRef +  ";\n");
-      scope.startLine("int size = arrayValue.size();\n");
-      scope.startLine("java.util.List<");
-      componentParser.appendFinishedValueTypeNameJava(scope);
-      scope.append("> list = new java.util.ArrayList<");
-      componentParser.appendFinishedValueTypeNameJava(scope);
-      scope.append(">(size);\n");
-      scope.startLine("for (int i = 0; i < size; i++) {\n");
-      scope.indentRight();
-      componentParser.writeParseCode(scope, "arrayValue.get(i)", "null", "arrayComponent");
-      scope.startLine("list.add(arrayComponent);\n");
-      scope.indentLeft();
-      scope.startLine("}\n");
-      scope.startLine("java.util.List<");
-      componentParser.appendFinishedValueTypeNameJava(scope);
-      scope.append("> " + resultRef + " = java.util.Collections.unmodifiableList(list);\n");
+      listFactory.writeCreateListCode(componentParser, scope, "arrayValue", resultRef);
     }
 
     @Override

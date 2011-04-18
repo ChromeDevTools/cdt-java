@@ -27,6 +27,7 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
       throws JsonProtocolModelParseException {
     this.enumClass = enumClass;
     this.isNullable = isNullable;
+
     try {
       this.methodValueOf = enumClass.getMethod("valueOf", String.class);
     } catch (NoSuchMethodException e) {
@@ -44,6 +45,7 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
       throw new JsonProtocolParseException("String value expected");
     }
     String stringValue = (String) value;
+    stringValue = stringValue.toUpperCase();
     T result;
     try {
       result = enumClass.cast(methodValueOf.invoke(null, stringValue));
@@ -73,6 +75,14 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
   @Override
   void writeParseQuickCode(MethodScope scope, String valueRef,
       String resultRef) {
+
+    for (Object constant : enumClass.getEnumConstants()) {
+      String name = constant.toString();
+      if (!name.toUpperCase().equals(name)) {
+        throw new RuntimeException();
+      }
+    }
+
     if (isNullable) {
       scope.startLine("if (" + valueRef + " == null) {\n");
       scope.startLine("  return null;\n");
@@ -83,6 +93,7 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
         ".JsonProtocolParseException(\"String value expected\");\n");
     scope.startLine("}\n");
     scope.startLine("String stringValue = (String) " + valueRef + ";\n");
+    scope.startLine("stringValue = stringValue.toUpperCase();\n");
     scope.startLine(enumClass.getCanonicalName() + " " + resultRef + " = " +
         enumClass.getCanonicalName() + ".valueOf(");
     scope.append("stringValue);\n");

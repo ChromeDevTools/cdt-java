@@ -124,7 +124,7 @@ public class SubtypingAndAggregationTest {
   }
 
   public enum ColorScheme {
-    rgb, cmyk
+    RGB, CMYK
   }
 
   @JsonType
@@ -135,7 +135,7 @@ public class SubtypingAndAggregationTest {
 
     class RgbSchemeCondition extends EnumValueCondition<ColorScheme> {
       public RgbSchemeCondition() {
-        super(EnumSet.<ColorScheme>of(ColorScheme.rgb));
+        super(EnumSet.<ColorScheme>of(ColorScheme.RGB));
       }
     }
 
@@ -152,7 +152,7 @@ public class SubtypingAndAggregationTest {
 
     class CmykSchemeCondition extends EnumValueCondition<ColorScheme> {
       public CmykSchemeCondition() {
-        super(EnumSet.<ColorScheme>of(ColorScheme.cmyk));
+        super(EnumSet.<ColorScheme>of(ColorScheme.CMYK));
       }
     }
 

@@ -5,5 +5,5 @@
 package org.chromium.sdk.internal.protocol;
 
 public enum MessageType {
-  response, event
+  RESPONSE, EVENT
 }

@@ -188,9 +188,9 @@ public class BreakpointImpl implements Breakpoint {
   private static Type getType(BreakpointInfo info) {
     BreakpointInfo.Type infoType = info.type();
     switch (infoType) {
-      case scriptId: return Type.SCRIPT_ID;
-      case scriptName: return Type.SCRIPT_NAME;
-      case function: return Type.FUNCTION;
+      case SCRIPTID: return Type.SCRIPT_ID;
+      case SCRIPTNAME: return Type.SCRIPT_NAME;
+      case FUNCTION: return Type.FUNCTION;
     }
     throw new RuntimeException("Unknown type: " + infoType);
   }
