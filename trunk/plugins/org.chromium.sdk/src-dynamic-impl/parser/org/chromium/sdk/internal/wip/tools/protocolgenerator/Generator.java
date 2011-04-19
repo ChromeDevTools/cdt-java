@@ -38,9 +38,11 @@ class Generator {
   private final String outputDir;
   private final List<String> jsonProtocolParserClassNames = new ArrayList<String>();
   private final TypeMap typeMap = new TypeMap();
+  private final String originReference;
 
-  Generator(String outputDir) {
+  Generator(String outputDir, String originReference) {
     this.outputDir = outputDir;
+    this.originReference = originReference;
   }
 
   void go(WipMetamodel.Root metamodel) throws IOException {
@@ -754,7 +756,9 @@ class Generator {
     File file = new File(dir, filename);
     FileOutputStream fileOutputStream = new FileOutputStream(file);
     Writer writer = new OutputStreamWriter(fileOutputStream, "UTF-8");
-    writer.write("// Generated source.\n// See " + this.getClass().getCanonicalName() + ".\n\n");
+    writer.write("// Generated source.\n");
+    writer.write("// Generator: " + this.getClass().getCanonicalName() + "\n");
+    writer.write("// Origin: " + originReference + "\n\n");
     writer.write("package " + packageName + ";\n\n");
     return writer;
   }
