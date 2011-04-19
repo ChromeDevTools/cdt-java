@@ -145,7 +145,7 @@
                 "properties": [
                     { "name": "name", "type": "string", "description": "Property name." },
                     { "name": "value", "$ref": "RemoteObject", "description": "Property value." },
-                    { "name": "isGetter", "type": "string", "description": "True if this property is getter." }
+                    { "name": "isGetter", "type": "boolean", "optional": true, "description": "True if this property is getter." }
                 ]
             }
         ],
