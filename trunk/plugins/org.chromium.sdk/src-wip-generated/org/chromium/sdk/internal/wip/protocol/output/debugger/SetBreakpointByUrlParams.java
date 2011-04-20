@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -8,8 +8,6 @@ package org.chromium.sdk.internal.wip.protocol.output.debugger;
 Sets JavaScript breakpoint at a given location specified by URL. This breakpoint will survive page reload.
  */
 public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData> {
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.DEBUGGER + ".setBreakpointByUrl";
-
   /**
    @param url URL of the resource to set breakpoint on.
    @param lineNumber Line number to set breakpoint at.
@@ -19,9 +17,15 @@ public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.prot
   public SetBreakpointByUrlParams(String url, long lineNumber, Long columnNumberOpt, String conditionOpt) {
     this.put("url", url);
     this.put("lineNumber", lineNumber);
-    this.put("columnNumber", columnNumberOpt);
-    this.put("condition", conditionOpt);
+    if (columnNumberOpt == null) {
+      this.put("columnNumber", columnNumberOpt);
+    }
+    if (conditionOpt == null) {
+      this.put("condition", conditionOpt);
+    }
   }
+
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.DEBUGGER + ".setBreakpointByUrl";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -8,8 +8,6 @@ package org.chromium.sdk.internal.wip.protocol.output.runtime;
 Evaluate expression on global object.
  */
 public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData> {
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".evaluate";
-
   /**
    @param expression Expression to evaluate.
    @param objectGroupOpt Symbolic group name that can be used to release multiple objects.
@@ -17,9 +15,15 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    */
   public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt) {
     this.put("expression", expression);
-    this.put("objectGroup", objectGroupOpt);
-    this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
+    if (objectGroupOpt == null) {
+      this.put("objectGroup", objectGroupOpt);
+    }
+    if (includeCommandLineAPIOpt == null) {
+      this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
+    }
   }
+
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".evaluate";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;

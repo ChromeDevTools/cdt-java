@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -18,7 +18,7 @@ public interface RemoteObjectValue {
    True when this object can be queried for children.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  Long hasChildren();
+  Boolean hasChildren();
 
   /**
    Unique object identifier (for non-primitive values).

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -8,8 +8,6 @@ package org.chromium.sdk.internal.wip.protocol.output.debugger;
 Evaluates expression on a given call frame.
  */
 public class EvaluateOnCallFrameParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData> {
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.DEBUGGER + ".evaluateOnCallFrame";
-
   /**
    @param callFrameId Call frame identifier to evaluate on. This identifier is a part of backtrace reported by the <code>pausedScript</code>.
    @param expression Expression to evaluate.
@@ -19,9 +17,15 @@ public class EvaluateOnCallFrameParams extends org.chromium.sdk.internal.wip.pro
   public EvaluateOnCallFrameParams(String callFrameId, String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt) {
     this.put("callFrameId", callFrameId);
     this.put("expression", expression);
-    this.put("objectGroup", objectGroupOpt);
-    this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
+    if (objectGroupOpt == null) {
+      this.put("objectGroup", objectGroupOpt);
+    }
+    if (includeCommandLineAPIOpt == null) {
+      this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
+    }
   }
+
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.DEBUGGER + ".evaluateOnCallFrame";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;

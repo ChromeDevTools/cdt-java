@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -8,8 +8,6 @@ package org.chromium.sdk.internal.wip.protocol.output.runtime;
 Makes property with given name equal to the expression evaluation result.
  */
 public class SetPropertyValueParams extends org.chromium.sdk.internal.wip.protocol.output.WipParams {
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".setPropertyValue";
-
   /**
    @param objectId Identifier of the object to set property on.
    @param propertyName Property name to set value for.
@@ -20,6 +18,8 @@ public class SetPropertyValueParams extends org.chromium.sdk.internal.wip.protoc
     this.put("propertyName", propertyName);
     this.put("expression", expression);
   }
+
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".setPropertyValue";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;
