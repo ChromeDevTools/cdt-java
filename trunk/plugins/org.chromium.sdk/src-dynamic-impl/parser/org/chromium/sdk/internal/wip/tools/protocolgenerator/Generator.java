@@ -5,12 +5,11 @@
 package org.chromium.sdk.internal.wip.tools.protocolgenerator;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,14 +34,15 @@ class Generator {
   private static final String INPUT_PACKAGE = ROOT_PACKAGE + ".input";
   private static final String PARSER_INTERFACE_LIST_CLASS_NAME = "GeneratedParserInterfaceList";
 
-  private final String outputDir;
   private final List<String> jsonProtocolParserClassNames = new ArrayList<String>();
   private final TypeMap typeMap = new TypeMap();
   private final String originReference;
 
+  private final FileSet fileSet;
+
   Generator(String outputDir, String originReference) {
-    this.outputDir = outputDir;
     this.originReference = originReference;
+    this.fileSet = new FileSet(new File(outputDir));
   }
 
   void go(WipMetamodel.Root metamodel) throws IOException {
@@ -57,6 +57,9 @@ class Generator {
 
     Set<String> domainTodoList = new HashSet<String>(Arrays.asList(DOMAIN_WHITE_LIST));
 
+    Map<String, DomainGenerator> domainGeneratorMap =
+        new HashMap<String, Generator.DomainGenerator>();
+
     for (Domain domain : domainList) {
       boolean found = domainTodoList.remove(domain.domain());
       if (!found) {
@@ -64,16 +67,27 @@ class Generator {
         continue;
       }
 
-      new DomainGenerator(domain).go();
+      DomainGenerator domainGenerator = new DomainGenerator(domain);
+      domainGeneratorMap.put(domain.domain(), domainGenerator);
+
+      domainGenerator.registerTypes();
     }
 
-    generateParserInterfaceList();
+    typeMap.setDomainGeneratorMap(domainGeneratorMap);
 
     if (!domainTodoList.isEmpty()) {
       throw new RuntimeException("Domains expected but not found: " + domainTodoList);
     }
 
-    typeMap.checkTypesResolved();
+    for (DomainGenerator domainGenerator : domainGeneratorMap.values()) {
+      domainGenerator.generateCommandsAndEvents();
+    }
+
+    typeMap.generateRequestedTypes();
+
+    generateParserInterfaceList();
+
+    fileSet.deleteOtherFiles();
   }
 
   private class DomainGenerator {
@@ -83,20 +97,22 @@ class Generator {
       this.domain = domain;
     }
 
-    void go() throws IOException {
+    void registerTypes() {
       if (domain.types() != null) {
         for (StandaloneType type : domain.types()) {
-          generateStandaloneType(type);
+          typeMap.getTypeData(domain.domain(), type.id()).setType(type);
         }
       }
+    }
 
+    void generateCommandsAndEvents() throws IOException {
       for (Command command : domain.commands()) {
         boolean hasResponse = command.returns() != null;
         generateCommandParams(command, hasResponse);
         if (hasResponse) {
           generateCommandData(command);
           jsonProtocolParserClassNames.add(
-              getDataInterfaceFullName(domain.domain(), command.name()));
+              Naming.COMMAND_DATA.getFullName(domain.domain(), command.name()));
         }
       }
 
@@ -104,64 +120,89 @@ class Generator {
         for (Event event : domain.events()) {
           generateEvenData(event);
           jsonProtocolParserClassNames.add(
-              getEventInterfaceFullName(domain.domain(), event.name()));
+              Naming.EVENT_DATA.getFullName(domain.domain(), event.name()));
         }
       }
     }
 
     private void generateCommandParams(Command command, boolean hasResponse) throws IOException {
-      String className = getClassName(command.name()) + "Params";
-      Writer writer = startJavaFile(
-          getDomainOutputPackageName(domain.domain()), className + ".java");
-
-      if (command.description() != null) {
-        writer.write("/**\n" + command.description() + "\n */\n");
-      }
-      writer.write("public class " + className +
-          " extends org.chromium.sdk.internal.wip.protocol.output.");
+      StringBuilder baseTypeBuilder = new StringBuilder();
+      baseTypeBuilder.append("org.chromium.sdk.internal.wip.protocol.output.");
       if (hasResponse) {
-        writer.write("WipParamsWithResponse<" +
-            getDataInterfaceFullName(domain.domain(), command.name()) + ">");
+        baseTypeBuilder.append("WipParamsWithResponse<" +
+            Naming.COMMAND_DATA.getFullName(domain.domain(), command.name()) + ">");
       } else {
-        writer.write("WipParams");
+        baseTypeBuilder.append("WipParams");
       }
-      writer.write(" {\n");
-      writer.write("  public static final String METHOD_NAME = " +
+
+      StringBuilder additionalMemberBuilder = new StringBuilder();
+      additionalMemberBuilder.append("  public static final String METHOD_NAME = " +
           "org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain." +
           domain.domain().toUpperCase() + " + \"." + command.name() + "\";\n");
-      writer.write("\n");
+      additionalMemberBuilder.append("\n");
 
-      if (command.parameters() != null) {
-        boolean hasDoc = false;
-        for (Parameter param : command.parameters()) {
-          if (param.description() != null) {
-            hasDoc = true;
-            break;
-          }
-        }
-        if (hasDoc) {
-          writer.write("  /**\n");
-          for (Parameter param : command.parameters()) {
-            if (param.description() != null) {
-              writer.write("   @param " + getParamName(param) + " " + param.description() + "\n");
-            }
-          }
-          writer.write("   */\n");
-        }
+
+      additionalMemberBuilder.append("  @Override protected String getRequestName() {\n");
+      additionalMemberBuilder.append("    return METHOD_NAME;\n");
+      additionalMemberBuilder.append("  }\n");
+      additionalMemberBuilder.append("\n");
+
+      if (hasResponse) {
+        String dataInterfaceFullname =
+            Naming.COMMAND_DATA.getFullName(domain.domain(), command.name());
+        additionalMemberBuilder.append(
+            "  @Override public " + dataInterfaceFullname + " parseResponse(" +
+            "org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, " +
+            "org.chromium.sdk.internal.protocolparser.JsonProtocolParser parser) " +
+            "throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n");
+        additionalMemberBuilder.append("    return parser.parse(data.getUnderlyingObject(), " +
+            dataInterfaceFullname + ".class);\n");
+        additionalMemberBuilder.append("  }\n");
+        additionalMemberBuilder.append("\n");
       }
+
+      generateOutputClass(Naming.PARAMS, command.name(), command.description(),
+          baseTypeBuilder.toString(), additionalMemberBuilder.toString(), command.parameters(),
+          PropertyLikeAccess.PARAMETER);
+    }
+
+    private void generateCommandAdditionalParam(StandaloneType type) throws IOException {
+      generateOutputClass(Naming.ADDITIONAL_PARAM, type.id(), type.description(),
+          "org.json.simple.JSONObject", null, type.properties(), PropertyLikeAccess.PROPERTY);
+    }
+
+    private <P> void generateOutputClass(ClassNameScheme nameScheme, String baseName,
+        String description, String baseType, String additionalMemberText,
+        List<P> properties, PropertyLikeAccess<P> propertyAccess) throws IOException {
+      String className = nameScheme.getShortName(baseName);
+      JavaFileUpdater fileUpdater = startJavaFile(nameScheme, domain, baseName);
+
+      Writer writer = fileUpdater.getWriter();
+
+      if (description != null) {
+        writer.write("/**\n" + description + "\n */\n");
+      }
+      writer.write("public class " + className +
+          " extends " + baseType + " {\n");
 
       OutputClassScope classScope = new OutputClassScope(writer, className);
 
-      classScope.generateCommandParamsBody(command.parameters(), hasResponse, command.name());
+      if (additionalMemberText != null) {
+        classScope.addMember("param-specific", additionalMemberText);
+      }
+
+      classScope.generateCommandParamsBody(properties, propertyAccess, baseName);
 
       classScope.writeAdditionalMembers(writer);
 
       writer.write("}\n");
 
       writer.close();
+
+      fileUpdater.update();
     }
 
-    private void generateStandaloneType(StandaloneType type) throws IOException {
+    void generateStandaloneInputType(StandaloneType type) throws IOException {
       if (!WipMetamodel.OBJECT_TYPE.equals(type.type())) {
         throw new RuntimeException();
       }
@@ -172,9 +213,10 @@ class Generator {
       String name = type.id();
       String description = type.description();
 
-      String className = getObjectInterfaceShortName(name);
-      String domainName = domain.domain();
-      Writer writer = startJavaFile(getDomainInputPackageName(domainName), className + ".java");
+      String className = Naming.INPUT_VALUE.getShortName(name);
+      JavaFileUpdater fileUpdater = startJavaFile(Naming.INPUT_VALUE, domain, name);
+
+      Writer writer = fileUpdater.getWriter();
 
       if (description != null) {
         writer.write("/**\n " + description + "\n */\n");
@@ -191,32 +233,30 @@ class Generator {
 
       writer.write("}\n");
 
-      writer.close();
+      fileUpdater.update();
 
-      String fullTypeName = getObjectInterfaceFullName(domainName, name);
+      String fullTypeName = Naming.INPUT_VALUE.getFullName(domain.domain(), name);
       jsonProtocolParserClassNames.add(fullTypeName);
-
-      typeMap.getTypeData(domain.domain(), type.id()).setJavaTypeName(
-          getObjectInterfaceFullName(domain.domain(), type.id()));
     }
 
     private void generateCommandData(Command command) throws IOException {
-      String className = getDataInterfaceShortName(command.name());
-      Writer writer = startJavaFile(
-          getDomainInputPackageName(domain.domain()), className + ".java");
+      String className = Naming.COMMAND_DATA.getShortName(command.name());
+      JavaFileUpdater fileUpdater = startJavaFile(Naming.COMMAND_DATA, domain, command.name());
+
+      Writer writer = fileUpdater.getWriter();
 
       generateJsonProtocolInterface(writer, className, command.description(),
           command.returns(), null);
 
-      writer.close();
+      fileUpdater.update();
     }
 
     private void generateEvenData(Event event) throws IOException {
-      String className = getEventInterfaceShortName(event.name());
+      String className = Naming.EVENT_DATA.getShortName(event.name());
+      JavaFileUpdater fileUpdater = startJavaFile(Naming.EVENT_DATA, domain, event.name());
       String domainName = domain.domain();
-      Writer writer = startJavaFile(getDomainInputPackageName(domainName), className + ".java");
+      String fullName = Naming.EVENT_DATA.getFullName(domainName, event.name());
 
-      String fullName = getEventInterfaceFullName(domainName, event.name());
       String eventTypeMemberText =
           "  public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
           fullName +
@@ -224,10 +264,12 @@ class Generator {
           fullName +
           ">(\"" + domainName + "." + event.name() + "\", " + fullName + ".class);\n";
 
+      Writer writer = fileUpdater.getWriter();
+
       generateJsonProtocolInterface(writer, className, event.description(), event.parameters(),
           eventTypeMemberText);
 
-      writer.close();
+      fileUpdater.update();
     }
 
     private void generateJsonProtocolInterface(Writer writer, String className, String description,
@@ -251,7 +293,6 @@ class Generator {
 
       writer.write("}\n");
     }
-
 
     private abstract class ClassScope {
       private final List<String> additionalMemberTexts = new ArrayList<String>(2);
@@ -288,6 +329,7 @@ class Generator {
       }
 
       protected abstract MemberScope newMemberScope(String memberName);
+      protected abstract TypeData.Direction getTypeDirection();
 
       /**
        * Member scope is used to generate additional types that are used only from method.
@@ -316,7 +358,7 @@ class Generator {
           boolean isOptional = access.getOptional(typedObject) == Boolean.TRUE;
           String refName = access.getRef(typedObject);
           if (refName != null) {
-            return resolveRefType(domain.domain(), refName);
+            return resolveRefType(domain.domain(), refName, getTypeDirection());
           }
           String typeName = access.getType(typedObject);
           if (WipMetamodel.BOOLEAN_TYPE.equals(typeName)) {
@@ -353,7 +395,7 @@ class Generator {
 
     class InputClassScope extends ClassScope {
       InputClassScope(Writer writer, String shortClassName) {
-        super(writer, getDomainInputPackageName(domain.domain()), shortClassName);
+        super(writer, ClassNameScheme.Input.getPackageName(domain.domain()), shortClassName);
       }
 
       public void generateMainJsonProtocolInterfaceBody(List<Parameter> parameters)
@@ -397,6 +439,11 @@ class Generator {
               methodName + "();\n");
           getWriter().write("\n");
         }
+      }
+
+      @Override
+      protected TypeData.Direction getTypeDirection() {
+        return TypeData.Direction.INPUT;
       }
 
       @Override
@@ -469,52 +516,69 @@ class Generator {
 
     class OutputClassScope extends ClassScope {
       OutputClassScope(Writer writer, String shortClassName) {
-        super(writer, getDomainOutputPackageName(domain.domain()), shortClassName);
+        super(writer, ClassNameScheme.Output.getPackageName(domain.domain()), shortClassName);
       }
 
-      void generateCommandParamsBody(List<Parameter> parameters, boolean hasResponse,
+      <P> void generateCommandParamsBody(List<P> parameters, PropertyLikeAccess<P> access,
           String commandName) throws IOException {
+        if (parameters != null) {
+          boolean hasDoc = false;
+          for (P param : parameters) {
+            if (access.forTypedObject().getDescription(param) != null) {
+              hasDoc = true;
+              break;
+            }
+          }
+          if (hasDoc) {
+            getWriter().write("  /**\n");
+            for (P param : parameters) {
+              String propertyDescription = access.forTypedObject().getDescription(param);
+              if (propertyDescription != null) {
+                getWriter().write("   @param " + getParamName(param, access) + " " +
+                    propertyDescription + "\n");
+              }
+            }
+            getWriter().write("   */\n");
+          }
+        }
         getWriter().write("  public " + getShortClassName() +"(");
         {
           boolean needComa = false;
           if (parameters != null) {
-            for (Parameter param : parameters) {
+            for (P param : parameters) {
               if (needComa) {
                 getWriter().write(", ");
               }
-              String paramName = getParamName(param);
+              String paramName = getParamName(param, access);
               ClassScope.MemberScope memberScope = newMemberScope(paramName);
-              getWriter().write(memberScope.getTypeName(param) + " " + paramName);
+              getWriter().write(memberScope.getTypeName(param, access.forTypedObject()) +
+                  " " + paramName);
               needComa = true;
             }
           }
         }
         getWriter().write(") {\n");
         if (parameters != null) {
-          for (Parameter param : parameters) {
-            getWriter().write("    this.put(\"" + param.name() + "\", " + getParamName(param) +
+          for (P param : parameters) {
+            boolean isOptional = access.forTypedObject().getOptional(param) == Boolean.TRUE;
+            String paramName = getParamName(param, access);
+            if (isOptional) {
+              getWriter().write("    if (" + paramName + " == null) {\n  ");
+            }
+            getWriter().write("    this.put(\"" + access.getName(param) + "\", " + paramName +
                 ");\n");
+            if (isOptional) {
+              getWriter().write("    }\n");
+            }
           }
         }
         getWriter().write("  }\n");
         getWriter().write("\n");
+      }
 
-        getWriter().write("  @Override protected String getRequestName() {\n");
-        getWriter().write("    return METHOD_NAME;\n");
-        getWriter().write("  }\n");
-        getWriter().write("\n");
-
-        if (hasResponse) {
-          String dataInterfaceFullname = getDataInterfaceFullName(domain.domain(), commandName);
-          getWriter().write("  @Override public " + dataInterfaceFullname + " parseResponse(" +
-              "org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, " +
-              "org.chromium.sdk.internal.protocolparser.JsonProtocolParser parser) " +
-              "throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n");
-          getWriter().write("    return parser.parse(data.getUnderlyingObject(), " +
-              dataInterfaceFullname + ".class);\n");
-          getWriter().write("  }\n");
-          getWriter().write("\n");
-        }
+      @Override
+      protected TypeData.Direction getTypeDirection() {
+        return TypeData.Direction.OUTPUT;
       }
 
       @Override
@@ -563,7 +627,10 @@ class Generator {
   }
 
   private void generateParserInterfaceList() throws IOException {
-    Writer writer = startJavaFile(INPUT_PACKAGE, PARSER_INTERFACE_LIST_CLASS_NAME + ".java");
+    JavaFileUpdater fileUpdater =
+        startJavaFile(INPUT_PACKAGE, PARSER_INTERFACE_LIST_CLASS_NAME + ".java");
+
+    Writer writer = fileUpdater.getWriter();
 
     writer.write("public class " + PARSER_INTERFACE_LIST_CLASS_NAME + " {\n");
     writer.write("  public static final Class<?>[] LIST = {\n");
@@ -573,51 +640,70 @@ class Generator {
     writer.write("  };\n");
     writer.write("}\n");
 
-    writer.close();
+    fileUpdater.update();
   }
 
-  private static String getDataInterfaceFullName(String domainName, String commandName) {
-    return getDomainInputPackageName(domainName) + "." + getDataInterfaceShortName(commandName);
+  private abstract static class ClassNameScheme {
+    private final String suffix;
+
+    ClassNameScheme(String suffix) {
+      this.suffix = suffix;
+    }
+
+    String getFullName(String domainName, String baseName) {
+      return getPackageNameVirtual(domainName) + "." + getShortName(baseName);
+    }
+
+    String getShortName(String baseName) {
+      return capitalizeFirstChar(baseName) + suffix;
+    }
+
+    protected abstract String getPackageNameVirtual(String domainName);
+
+    static class Input extends ClassNameScheme {
+      Input(String suffix) {
+        super(suffix);
+      }
+
+      @Override protected String getPackageNameVirtual(String domainName) {
+        return getPackageName(domainName);
+      }
+
+      static String getPackageName(String domainName) {
+        return INPUT_PACKAGE + "." + domainName.toLowerCase();
+      }
+    }
+
+    static class Output extends ClassNameScheme {
+      Output(String suffix) {
+        super(suffix);
+      }
+
+      @Override protected String getPackageNameVirtual(String domainName) {
+        return getPackageName(domainName);
+      }
+
+      static String getPackageName(String domainName) {
+        return OUTPUT_PACKAGE + "." + domainName.toLowerCase();
+      }
+    }
   }
 
-  private static String getDataInterfaceShortName(String commandName) {
-    return getClassName(commandName) + "Data";
+  interface Naming {
+    ClassNameScheme PARAMS = new ClassNameScheme.Output("Params");
+    ClassNameScheme ADDITIONAL_PARAM = new ClassNameScheme.Output("Param");
+
+    ClassNameScheme COMMAND_DATA = new ClassNameScheme.Input("Data");
+    ClassNameScheme EVENT_DATA = new ClassNameScheme.Input("EventData");
+    ClassNameScheme INPUT_VALUE = new ClassNameScheme.Input("Value");
   }
 
-  private static String getEventInterfaceFullName(String domainName, String eventName) {
-    return getDomainInputPackageName(domainName) + "." + getEventInterfaceShortName(eventName);
-  }
-
-  private static String getEventInterfaceShortName(String eventName) {
-    return getClassName(eventName) + "EventData";
-  }
-
-  private static String getObjectInterfaceFullName(String domainName, String typeName) {
-    return getDomainInputPackageName(domainName) + "." + getObjectInterfaceShortName(typeName);
-  }
-
-  private static String getObjectInterfaceShortName(String typeName) {
-    return getClassName(typeName) + "Value";
-  }
-
-  private static String getParamName(Parameter param) {
-    String paramName = param.name();
-    if (param.optional() == Boolean.TRUE) {
+  private static <P> String getParamName(P param, PropertyLikeAccess<P> access) {
+    String paramName = access.getName(param);
+    if (access.forTypedObject().getOptional(param) == Boolean.TRUE) {
       paramName = paramName + "Opt";
     }
     return paramName;
-  }
-
-  private static String getClassName(String commandOrEventName) {
-    return capitalizeFirstChar(commandOrEventName);
-  }
-
-  private static String getDomainInputPackageName(String domainName) {
-    return INPUT_PACKAGE + "." + domainName.toLowerCase();
-  }
-
-  private static String getDomainOutputPackageName(String domainName) {
-    return OUTPUT_PACKAGE + "." + domainName.toLowerCase();
   }
 
   /**
@@ -709,9 +795,37 @@ class Generator {
   }
 
   /**
+   * A polymorphopus access to something like property (with name and type).
+   */
+  private static abstract class PropertyLikeAccess<T> {
+    abstract TypedObjectAccess<T> forTypedObject();
+    abstract String getName(T obj);
+
+    static final PropertyLikeAccess<Parameter> PARAMETER = new PropertyLikeAccess<Parameter>() {
+      @Override TypedObjectAccess<Parameter> forTypedObject() {
+        return TypedObjectAccess.FOR_PARAMETER;
+      }
+      @Override String getName(Parameter obj) {
+        return obj.name();
+      }
+    };
+
+    static final PropertyLikeAccess<ObjectProperty> PROPERTY =
+        new PropertyLikeAccess<ObjectProperty>() {
+      @Override TypedObjectAccess<ObjectProperty> forTypedObject() {
+        return TypedObjectAccess.FOR_OBJECT_PROPERTY;
+      }
+      @Override String getName(ObjectProperty obj) {
+        return obj.name();
+      }
+    };
+  }
+
+  /**
    * Resolve absolute (DOMAIN.TYPE) or relative (TYPE) typename.
    */
-  private String resolveRefType(String scopeDomainName, String refName) {
+  private String resolveRefType(String scopeDomainName, String refName,
+      TypeData.Direction direction) {
     int pos = refName.indexOf('.');
     String domainName;
     String shortName;
@@ -722,11 +836,7 @@ class Generator {
       domainName = refName.substring(0, pos);
       shortName = refName.substring(pos + 1);
     }
-    String javaTypeName = typeMap.getTypeData(domainName, shortName).getJavaTypeName();
-    if (javaTypeName == null) {
-      javaTypeName = getObjectInterfaceFullName(domainName, shortName);
-    }
-    return javaTypeName;
+    return typeMap.resolve(domainName, shortName, direction);
   }
 
   private String generateMethodNameSubstitute(String originalName, Appendable output)
@@ -746,47 +856,169 @@ class Generator {
     return str;
   }
 
-  private Writer startJavaFile(String packageName, String filename) throws IOException {
+  private JavaFileUpdater startJavaFile(ClassNameScheme nameScheme, Domain domain,
+      String baseName) throws IOException {
+    String packageName = nameScheme.getPackageNameVirtual(domain.domain());
+    String fileName = nameScheme.getShortName(baseName) + ".java";
+    return startJavaFile(packageName, fileName);
+  }
+
+  private JavaFileUpdater startJavaFile(String packageName, String filename) throws IOException {
     String filePath = packageName.replace('.', '/');
-    File dir = new File(outputDir, filePath);
-    boolean dirCreated = dir.mkdirs();
-    if (!dirCreated && !dir.isDirectory()) {
-      throw new RuntimeException("Failed to create directory " + dir.getPath());
-    }
-    File file = new File(dir, filename);
-    FileOutputStream fileOutputStream = new FileOutputStream(file);
-    Writer writer = new OutputStreamWriter(fileOutputStream, "UTF-8");
+
+    JavaFileUpdater fileUpdater = fileSet.createFileUpdater(filePath + "/" + filename);
+    Writer writer = fileUpdater.getWriter();
     writer.write("// Generated source.\n");
     writer.write("// Generator: " + this.getClass().getCanonicalName() + "\n");
     writer.write("// Origin: " + originReference + "\n\n");
     writer.write("package " + packageName + ";\n\n");
-    return writer;
+    return fileUpdater;
   }
 
   private static class TypeData {
     private final String domain;
     private final String name;
-    private String javaTypeName = null;
+
+    private Input input = null;
+    private Output output = null;
+
+    private StandaloneType type = null;
 
     TypeData(String domain, String name) {
       this.domain = domain;
       this.name = name;
     }
 
-    String getJavaTypeName() {
-      return javaTypeName;
+    void setType(StandaloneType type) {
+      this.type = type;
     }
 
-    void setJavaTypeName(String javaTypeName) {
-      if (this.javaTypeName != null) {
-        throw new RuntimeException("Type already initialized");
+    Input getInput() {
+      if (input == null) {
+        input = new Input();
       }
-      this.javaTypeName = javaTypeName;
+      return input;
     }
 
-    void checkResolved() {
-      if (javaTypeName == null) {
-        throw new RuntimeException("Type not resolved " + domain + "." + name);
+    Output getOutput() {
+      if (output == null) {
+        output = new Output();
+      }
+      return output;
+    }
+
+    TypeRef get(Direction direction) {
+      return direction.get(this);
+    }
+
+    void checkComplete() {
+      if (input != null) {
+        input.checkResolved();
+      }
+      if (output != null) {
+        output.checkResolved();
+      }
+    }
+
+    enum Direction {
+      INPUT() {
+        @Override TypeRef get(TypeData typeData) {
+          return typeData.getInput();
+        }
+      },
+      OUTPUT() {
+        @Override TypeRef get(TypeData typeData) {
+          return typeData.getOutput();
+        }
+      };
+      abstract TypeRef get(TypeData typeData);
+    }
+
+    abstract class TypeRef {
+      private boolean requested = false;
+      private boolean generated = false;
+
+      String resolve(TypeMap typeMap) {
+        if (!requested) {
+          typeMap.addTypeToGenerate(this);
+          requested = true;
+        }
+        return resolveImpl();
+      }
+
+      abstract String resolveImpl();
+
+      String getDomainName() {
+        return domain;
+      }
+
+
+      void generate(DomainGenerator domainGenerator) throws IOException {
+        if (!generated) {
+          if (type != null) {
+            generateImpl(domainGenerator);
+          }
+          generated = true;
+        }
+      }
+
+      abstract void generateImpl(DomainGenerator domainGenerator) throws IOException;
+    }
+
+    class Output extends TypeRef {
+      void checkResolved() {
+        if (type == null) {
+          throw new RuntimeException();
+        }
+      }
+
+      @Override
+      String resolveImpl() {
+        if (type == null) {
+          throw new RuntimeException();
+        }
+        return Naming.ADDITIONAL_PARAM.getFullName(domain, name);
+      }
+
+      @Override
+      void generateImpl(DomainGenerator domainGenerator) throws IOException {
+        domainGenerator.generateCommandAdditionalParam(type);
+      }
+    }
+
+    class Input extends TypeRef {
+      private String predefinedJavaTypeName = null;
+
+      @Override
+      String resolveImpl() {
+        if (predefinedJavaTypeName == null) {
+          if (type == null) {
+            throw new RuntimeException();
+          }
+          return Naming.INPUT_VALUE.getFullName(domain, name);
+        } else {
+          return predefinedJavaTypeName;
+        }
+      }
+
+      void checkResolved() {
+        if (type != null && predefinedJavaTypeName != null) {
+          throw new RuntimeException();
+        }
+      }
+
+      void setJavaTypeName(String javaTypeName) {
+        if (this.predefinedJavaTypeName != null) {
+          throw new RuntimeException("Type already initialized");
+        }
+        this.predefinedJavaTypeName = javaTypeName;
+      }
+
+      @Override
+      void generateImpl(DomainGenerator domainGenerator) throws IOException {
+        if (type != null) {
+          domainGenerator.generateStandaloneInputType(type);
+        }
       }
     }
   }
@@ -797,14 +1029,35 @@ class Generator {
    */
   private static class TypeMap {
     private final Map<List<String>, TypeData> map = new HashMap<List<String>, TypeData>();
+    private Map<String, DomainGenerator> domainGeneratorMap = null;
+    private List<TypeData.TypeRef> typesToGenerate = new ArrayList<TypeData.TypeRef>();
 
-    void setTypeResolved(String domainName, String typeName, String javaTypeName) {
-      getTypeData(domainName, typeName).setJavaTypeName(javaTypeName);
+    void setDomainGeneratorMap(Map<String, DomainGenerator> domainGeneratorMap) {
+      this.domainGeneratorMap = domainGeneratorMap;
     }
 
-    void checkTypesResolved() {
-      for (TypeData data : map.values()) {
-        data.checkResolved();
+    String resolve(String domainName, String typeName,
+        TypeData.Direction direction) {
+      return getTypeData(domainName, typeName).get(direction).resolve(this);
+    }
+
+    void addTypeToGenerate(TypeData.TypeRef typeData) {
+      typesToGenerate.add(typeData);
+    }
+
+    public void generateRequestedTypes() throws IOException {
+      // Size may grow during iteration.
+      for (int i = 0; i < typesToGenerate.size(); i++) {
+        TypeData.TypeRef typeRef = typesToGenerate.get(i);
+        DomainGenerator domainGenerator = domainGeneratorMap.get(typeRef.getDomainName());
+        if (domainGenerator == null) {
+          throw new RuntimeException();
+        }
+        typeRef.generate(domainGenerator);
+      }
+
+      for (TypeData typeData : map.values()) {
+        typeData.checkComplete();
       }
     }
 
@@ -823,6 +1076,43 @@ class Generator {
     }
   }
 
+  /**
+   * Records a list of files in the root directory and deletes files that were not re-generated.
+   */
+  private static class FileSet {
+    private final File rootDir;
+    private final Set<File> unusedFiles;
+
+    FileSet(File rootDir) {
+      this.rootDir = rootDir;
+      List<File> files = new ArrayList<File>();
+      collectFilesRecursive(rootDir, files);
+      unusedFiles = new HashSet<File>(files);
+    }
+
+    JavaFileUpdater createFileUpdater(String filePath) {
+      File file = new File(rootDir, filePath);
+      unusedFiles.remove(file);
+      return new JavaFileUpdater(file);
+    }
+
+    void deleteOtherFiles() {
+      for (File file : unusedFiles) {
+        file.delete();
+      }
+    }
+
+    private static void collectFilesRecursive(File file, Collection<File> list) {
+      if (file.isFile()) {
+        list.add(file);
+      } else if (file.isDirectory()) {
+        for (File inner : file.listFiles()) {
+          collectFilesRecursive(inner, list);
+        }
+      }
+    }
+  }
+
   private static final String[] DOMAIN_WHITE_LIST = {
     "Debugger",
     "Runtime",
@@ -830,9 +1120,7 @@ class Generator {
   };
 
   private static void initializeKnownTypes(TypeMap typeMap) {
-    typeMap.setTypeResolved("Runtime", "RuntimeProperty",
-        "org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData.Property");
-    typeMap.setTypeResolved("Page", "Cookie", "Object");
+    typeMap.getTypeData("Page", "Cookie").getInput().setJavaTypeName("Object");
   }
 
   private static final Set<String> BAD_METHOD_NAMES = new HashSet<String>(Arrays.asList(
