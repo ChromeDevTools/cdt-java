@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -629,6 +630,9 @@ class Generator {
   private void generateParserInterfaceList() throws IOException {
     JavaFileUpdater fileUpdater =
         startJavaFile(INPUT_PACKAGE, PARSER_INTERFACE_LIST_CLASS_NAME + ".java");
+
+    // Write classes in stable order.
+    Collections.sort(jsonProtocolParserClassNames);
 
     Writer writer = fileUpdater.getWriter();
 

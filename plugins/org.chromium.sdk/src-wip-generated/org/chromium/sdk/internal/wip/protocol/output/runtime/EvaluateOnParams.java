@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -8,8 +8,6 @@ package org.chromium.sdk.internal.wip.protocol.output.runtime;
 Evaluate expression on given object using it as <code>this</code>.
  */
 public class EvaluateOnParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateOnData> {
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".evaluateOn";
-
   /**
    @param objectId Identifier of the object to evaluate expression on.
    @param expression Expression to evaluate.
@@ -18,6 +16,8 @@ public class EvaluateOnParams extends org.chromium.sdk.internal.wip.protocol.out
     this.put("objectId", objectId);
     this.put("expression", expression);
   }
+
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.RUNTIME + ".evaluateOn";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;
