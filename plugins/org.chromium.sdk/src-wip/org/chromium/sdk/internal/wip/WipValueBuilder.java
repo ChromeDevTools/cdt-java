@@ -26,7 +26,7 @@ import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
-import org.chromium.sdk.internal.wip.protocol.input.ValueData;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
 
 /**
@@ -42,12 +42,12 @@ class WipValueBuilder {
     this.valueLoader = valueLoader;
   }
 
-  public JsVariable createVariable(ValueData valueData, ValueNameBuilder nameBuilder) {
+  public JsVariable createVariable(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
     JsValue jsValue = wrap(valueData, nameBuilder);
     return createVariable(jsValue, nameBuilder);
   }
 
-  public JsValue wrap(ValueData valueData, ValueNameBuilder nameBuilder) {
+  public JsValue wrap(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
     return getValueType(valueData).build(valueData, valueLoader, nameBuilder);
   }
 
@@ -56,8 +56,8 @@ class WipValueBuilder {
     return new VariableImpl(jsValue, qualifiedNameBuilder);
   }
 
-  private static ValueType getValueType(ValueData valueData) {
-    String protocolType = valueData.type();
+  private static ValueType getValueType(RemoteObjectValue valueData) {
+    RemoteObjectValue.Type protocolType = valueData.type();
     ValueType result = PROTOCOL_TYPE_TO_VALUE_TYPE.get(protocolType);
 
     if (result == null) {
@@ -68,7 +68,7 @@ class WipValueBuilder {
   }
 
   private static abstract class ValueType {
-    abstract JsValue build(ValueData valueData, WipValueLoader valueLoader,
+    abstract JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder);
   }
 
@@ -80,7 +80,7 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue build(ValueData valueData, WipValueLoader valueLoader,
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       final String description = valueData.description();
       return new JsValue() {
@@ -114,23 +114,23 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue build(ValueData valueData, WipValueLoader valueLoader,
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       // TODO: Implement caching here.
       return buildNewInstance(valueData, valueLoader, nameBuilder);
     }
 
-    abstract JsValue buildNewInstance(ValueData valueData, WipValueLoader valueLoader,
+    abstract JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder);
 
     abstract class JsObjectBase implements JsObject {
-      private final ValueData valueData;
+      private final RemoteObjectValue valueData;
       private final WipValueLoader valueLoader;
       private final ValueNameBuilder nameBuilder;
       private final AsyncFutureRef<Getter<ObjectProperties>> loadedPropertiesRef =
           new AsyncFutureRef<Getter<ObjectProperties>>();
 
-      JsObjectBase(ValueData valueData, WipValueLoader valueLoader,
+      JsObjectBase(RemoteObjectValue valueData, WipValueLoader valueLoader,
           ValueNameBuilder nameBuilder) {
         this.valueData = valueData;
         this.valueLoader = valueLoader;
@@ -191,11 +191,11 @@ class WipValueBuilder {
 
       @Override
       public String getRefId() {
-        ValueData.Id objectId = valueData.objectId();
+        String objectId = valueData.objectId();
         if (objectId == null) {
           return null;
         }
-        return objectId.id() + "-" + objectId.groupName() + "-" + objectId.injectedScriptId();
+        return objectId;
       }
 
       protected ObjectProperties getLoadedProperties() {
@@ -219,7 +219,7 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(ValueData valueData, WipValueLoader valueLoader,
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
         @Override public JsArray asArray() {
@@ -239,7 +239,7 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(ValueData valueData, WipValueLoader valueLoader,
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       return new Array(valueData, valueLoader, nameBuilder);
     }
@@ -248,7 +248,7 @@ class WipValueBuilder {
       private final AtomicReference<ArrayProperties> arrayPropertiesRef =
           new AtomicReference<ArrayProperties>(null);
 
-      Array(ValueData valueData, WipValueLoader valueLoader,
+      Array(RemoteObjectValue valueData, WipValueLoader valueLoader,
           ValueNameBuilder nameBuilder) {
         super(valueData, valueLoader, nameBuilder);
       }
@@ -339,7 +339,7 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(ValueData valueData, WipValueLoader valueLoader,
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
         @Override public JsArray asArray() {
@@ -403,22 +403,27 @@ class WipValueBuilder {
     }
   }
 
-  private static final Map<String, ValueType> PROTOCOL_TYPE_TO_VALUE_TYPE;
+  private static final Map<RemoteObjectValue.Type, ValueType> PROTOCOL_TYPE_TO_VALUE_TYPE;
   private static final ValueType DEFAULT_VALUE_TYPE;
   static {
-    PROTOCOL_TYPE_TO_VALUE_TYPE = new HashMap<String, ValueType>();
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("string", new PrimitiveType(JsValue.Type.TYPE_STRING));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("boolean", new PrimitiveType(JsValue.Type.TYPE_BOOLEAN));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("number", new PrimitiveType(JsValue.Type.TYPE_NUMBER));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("null", new PrimitiveType(JsValue.Type.TYPE_NULL));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("undefined", new PrimitiveType(JsValue.Type.TYPE_UNDEFINED));
+    PROTOCOL_TYPE_TO_VALUE_TYPE = new HashMap<RemoteObjectValue.Type, ValueType>();
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.STRING,
+        new PrimitiveType(JsValue.Type.TYPE_STRING));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.BOOLEAN,
+        new PrimitiveType(JsValue.Type.TYPE_BOOLEAN));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NUMBER,
+        new PrimitiveType(JsValue.Type.TYPE_NUMBER));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NULL,
+        new PrimitiveType(JsValue.Type.TYPE_NULL));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.UNDEFINED,
+        new PrimitiveType(JsValue.Type.TYPE_UNDEFINED));
 
     ObjectType objectType = new ObjectType();
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("object", objectType);
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("array", new ArrayType());
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("function", new FunctionType());
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.OBJECT, objectType);
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ARRAY, new ArrayType());
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());
 
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put("error", objectType);
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ERROR, objectType);
 
     DEFAULT_VALUE_TYPE = objectType;
   }

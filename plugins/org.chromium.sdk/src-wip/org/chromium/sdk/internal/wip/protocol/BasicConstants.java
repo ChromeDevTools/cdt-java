@@ -6,11 +6,7 @@ package org.chromium.sdk.internal.wip.protocol;
 
 public interface BasicConstants {
   interface Property {
-    String DOMAIN = "domain";
-    String ARGUMENTS = "arguments";
-    String SEQ = "seq";
-    String COMMAND = "command";
-    String EVENT = "event";
+    String ID = "id";
     String METHOD = "method";
     String PARAMS = "params";
   }

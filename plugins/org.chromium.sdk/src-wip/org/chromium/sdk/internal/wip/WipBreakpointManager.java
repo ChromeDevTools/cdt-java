@@ -8,11 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.wip.protocol.input.SetBreakpointData;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
-import org.chromium.sdk.internal.wip.protocol.output.SetJavaScriptBreakpoint;
 
 /**
  * A manager that works as factory for breakpoints.
@@ -26,11 +23,11 @@ public class WipBreakpointManager {
     this.tabImpl = tabImpl;
   }
 
-  void setBreakpoint(Type type, String target, int line, int column,
-      boolean enabled, String condition, int ignoreCount,
-      BreakpointCallback callback, SyncCallback syncCallback) {
+  void setBreakpoint(Type type, String target, final int line, final int column,
+      final boolean enabled, String condition, int ignoreCount,
+      final BreakpointCallback callback, SyncCallback syncCallback) {
 
-    ScriptUrlOrId script;
+    final ScriptUrlOrId script;
     switch (type) {
     case FUNCTION:
       throw new UnsupportedOperationException();
@@ -44,30 +41,20 @@ public class WipBreakpointManager {
       throw new UnsupportedOperationException();
     }
 
-    SetJavaScriptBreakpoint request =
-        new SetJavaScriptBreakpoint(script, line, column, condition, enabled);
-    WipCommandCallback commandCallback =
-        createBreakpointCallback(callback, script, line, column, condition, enabled);
-    tabImpl.getCommandProcessor().send(request, commandCallback, syncCallback);
-  }
+    if (condition == null) {
+      condition = "";
+    }
 
-  WipCommandCallback createBreakpointCallback(final BreakpointCallback callback,
-      final ScriptUrlOrId script, final int lineNumber, final int columnNumber,
-      final String condition, final boolean enabled) {
-    return new WipCommandCallback.Default() {
+    final String conditionFinal = condition;
+
+    GenericCallback<String> wrappedCallback = new GenericCallback<String>() {
       @Override
-      protected void onSuccess(Success success) {
-        SetBreakpointData data;
-        try {
-          data = success.data().asSetBreakpointData();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
+      public void success(String protocolId) {
         int sdkId = breakpointUniqueId.getAndAdd(1);
-        String protocolId = data.breakpointId();
 
         WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(tabImpl, sdkId, protocolId,
-            script, lineNumber, columnNumber, condition, enabled);
+            script, line, column, conditionFinal, enabled);
+
         WipBreakpointImpl breakpoint = breakpointImpl;
         if (callback != null) {
           callback.success(breakpoint);
@@ -75,11 +62,15 @@ public class WipBreakpointManager {
       }
 
       @Override
-      protected void onError(String message) {
+      public void failure(Exception exception) {
         if (callback != null) {
-          callback.failure(message);
+          callback.failure(exception.getMessage());
         }
       }
     };
+
+    // TODO: support enabled.
+    WipBreakpointImpl.sendSetBreakpointRequest(script, line, column, condition,
+        wrappedCallback, syncCallback, tabImpl.getCommandProcessor());
   }
 }

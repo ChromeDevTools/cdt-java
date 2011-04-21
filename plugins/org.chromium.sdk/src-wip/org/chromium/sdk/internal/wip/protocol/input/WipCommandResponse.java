@@ -10,7 +10,6 @@ import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
@@ -19,20 +18,19 @@ import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 
 @JsonType
 public interface WipCommandResponse extends JsonObjectBased {
-  @JsonField(jsonLiteralName = BasicConstants.Property.SEQ)
-  Object seq();
+  @JsonField(jsonLiteralName = BasicConstants.Property.ID)
+  Long id();
 
   @JsonSubtypeCasting Success asSuccess();
   @JsonSubtypeCasting Error asError();
-  @JsonSubtypeCasting Stub asStub();
 
   @JsonType
   interface Success extends JsonSubtype<WipCommandResponse> {
     @JsonSubtypeCondition(fieldIsAbsent=true)
     @JsonOptionalField
-    List<String> errors();
+    Void error();
 
-    @JsonField(jsonLiteralName="body")
+    @JsonField(jsonLiteralName="result")
     @JsonSubtypeCondition
     Data data();
   }
@@ -41,31 +39,22 @@ public interface WipCommandResponse extends JsonObjectBased {
   interface Error extends JsonSubtype<WipCommandResponse> {
     @JsonOverrideField
     @JsonSubtypeCondition()
-    List<String> errors();
+    ErrorInfo error();
 
     @JsonSubtypeCondition(fieldIsAbsent=true)
-    @JsonField(jsonLiteralName="body")
+    @JsonField(jsonLiteralName="result")
     @JsonOptionalField
     Data data();
-  }
 
-  @JsonType
-  interface Stub extends JsonSubtype<WipCommandResponse> {
-    @JsonSubtypeCondition(fieldIsAbsent=true)
-    @JsonOptionalField
-    List<String> errors();
-
-    @JsonSubtypeCondition(fieldIsAbsent=true)
-    @JsonField(jsonLiteralName="body")
-    @JsonOptionalField
-    Data data();
+    @JsonType
+    interface ErrorInfo {
+      String message();
+      List<String> data();
+      long code();
+    }
   }
 
   @JsonType(subtypesChosenManually=true, allowsOtherProperties=true)
   interface Data extends JsonObjectBased {
-    @JsonSubtypeCasting ScriptSourceData asScriptSourceData() throws JsonProtocolParseException;
-    @JsonSubtypeCasting EvaluateData asEvaluateData() throws JsonProtocolParseException;
-    @JsonSubtypeCasting GetPropertiesData asGetPropertiesData() throws JsonProtocolParseException;
-    @JsonSubtypeCasting SetBreakpointData asSetBreakpointData() throws JsonProtocolParseException;
   }
 }
