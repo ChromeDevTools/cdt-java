@@ -1,5 +1,6 @@
 #summary Features of Eclipse Debugger.
 
+Features of EclipseDebugger. See also DebuggerTutorial.
 
 <wiki:toc max_depth="2" />
 
