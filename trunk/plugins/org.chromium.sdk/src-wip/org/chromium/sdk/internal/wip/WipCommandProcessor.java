@@ -21,12 +21,14 @@ import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
-import org.chromium.sdk.internal.wip.protocol.input.InspectedUrlChangedData;
-import org.chromium.sdk.internal.wip.protocol.input.ParsedScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.input.PausedScriptData;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
+import org.chromium.sdk.internal.wip.protocol.input.WipEventType;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.page.InspectedURLChangedEventData;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
@@ -113,13 +115,8 @@ class WipCommandProcessor {
       LOGGER.log(Level.SEVERE, "Failed to parse event", e);
       return;
     }
-    String eventName = event.event();
-    EventHandler eventHandler = EVENT_HANDLERS.get(eventName);
-    if (eventHandler == null) {
-      LOGGER.log(Level.SEVERE, "Unsupported event: " + eventName);
-      return;
-    }
-    eventHandler.accept(event, this);
+    String eventName = event.method();
+    EVENT_MAP.handleEvent(event, this);
   }
 
   /**
@@ -130,13 +127,13 @@ class WipCommandProcessor {
     @Override
     public Integer getUpdatedSeq(JSONObject message) {
       Integer seq = currentSeq.addAndGet(1);
-      message.put(BasicConstants.Property.SEQ, seq);
+      message.put(BasicConstants.Property.ID, seq);
       return seq;
     }
 
     @Override
     public String getCommandName(JSONObject message) {
-      return (String) message.get(BasicConstants.Property.COMMAND);
+      return (String) message.get(BasicConstants.Property.METHOD);
     }
 
     @Override
@@ -151,7 +148,7 @@ class WipCommandProcessor {
 
     @Override
     public WipCommandResponse parseWithSeq(JSONObject incoming) {
-      if (incoming.get(BasicConstants.Property.EVENT) != null) {
+      if (!incoming.containsKey(BasicConstants.Property.ID)) {
         return null;
       }
       try {
@@ -163,7 +160,10 @@ class WipCommandProcessor {
 
     @Override
     public Integer getSeq(WipCommandResponse incomingWithSeq) {
-      Object seqObject = incomingWithSeq.seq();
+      Object seqObject = incomingWithSeq.id();
+      if (seqObject == null) {
+        return null;
+      }
       Number number = (Number) seqObject;
       return number.intValue();
     }
@@ -184,75 +184,86 @@ class WipCommandProcessor {
     }
   }
 
-  private abstract static class EventHandler {
-    abstract void accept(WipEvent yurysEvent, WipCommandProcessor commandProcessor);
+  private abstract static class EventHandler<T> {
+    abstract void accept(T eventData, WipCommandProcessor commandProcessor);
   }
 
-  private static final Map<String, EventHandler> EVENT_HANDLERS;
+  private static final EventMap EVENT_MAP;
   static {
-    EVENT_HANDLERS = new HashMap<String, EventHandler>();
-    EVENT_HANDLERS.put("inspectedURLChanged", new EventHandler() {
+    EVENT_MAP = new EventMap();
+    EVENT_MAP.add(InspectedURLChangedEventData.TYPE,
+        new EventHandler<InspectedURLChangedEventData>() {
       @Override
-      void accept(WipEvent yurysEvent, WipCommandProcessor commandProcessor) {
-
-        InspectedUrlChangedData urlData;
-        try {
-          urlData = yurysEvent.data().asInspectedUrlChangedData();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
+      void accept(InspectedURLChangedEventData eventData, WipCommandProcessor commandProcessor) {
         commandProcessor.tabImpl.getScriptManager().pageReloaded();
-        commandProcessor.tabImpl.updateUrl(urlData.url());
+        commandProcessor.tabImpl.updateUrl(eventData.url());
       }
     });
-    EventHandler noOpHandler = new EventHandler() {
+    EVENT_MAP.add(PausedEventData.TYPE, new EventHandler<PausedEventData>() {
       @Override
-      void accept(WipEvent yurysEvent, WipCommandProcessor commandProcessor) {
-      }
-    };
-    EVENT_HANDLERS.put("bringToFront", noOpHandler);
-    EVENT_HANDLERS.put("showPanel", noOpHandler);
-    EVENT_HANDLERS.put("profilerWasEnabled", noOpHandler);
-    EVENT_HANDLERS.put("debuggerWasEnabled", noOpHandler);
-    EVENT_HANDLERS.put("updateResource", noOpHandler);
-    EVENT_HANDLERS.put("setDocument", noOpHandler);
-    EVENT_HANDLERS.put("addDOMStorage", noOpHandler);
-    EVENT_HANDLERS.put("parsedScriptSource", new EventHandler() {
-      @Override
-      void accept(WipEvent yurysEvent, final WipCommandProcessor commandProcessor) {
-        ParsedScriptSourceData data;
-        try {
-          data = yurysEvent.data().asParsedScriptSourceData();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
-
-        commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(data);
-      }
-    });
-    EVENT_HANDLERS.put("restoredBreakpoint", noOpHandler);
-    EVENT_HANDLERS.put("pausedScript", new EventHandler() {
-      @Override
-      void accept(WipEvent event, WipCommandProcessor commandProcessor) {
-        PausedScriptData data;
-        try {
-          data = event.data().asPausedScriptData();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
-
+      void accept(PausedEventData data, WipCommandProcessor commandProcessor) {
         commandProcessor.tabImpl.getContextBuilder().createContext(data);
       }
     });
-    EVENT_HANDLERS.put("resumedScript", new EventHandler() {
+    EVENT_MAP.add(ResumedEventData.TYPE, new EventHandler<ResumedEventData>() {
       @Override
-      void accept(WipEvent event, final WipCommandProcessor commandProcessor) {
-        commandProcessor.tabImpl.getContextBuilder().onResumeReportedFromRemote();
+      void accept(ResumedEventData event, WipCommandProcessor commandProcessor) {
+        commandProcessor.tabImpl.getContextBuilder().onResumeReportedFromRemote(event);
+      }
+    });
+    EVENT_MAP.add(ScriptParsedEventData.TYPE, new EventHandler<ScriptParsedEventData> () {
+      @Override
+      void accept(ScriptParsedEventData eventData,
+          WipCommandProcessor commandProcessor) {
+        commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(eventData);
       }
     });
   }
 
   public void runInDispatchThread(Runnable runnable) {
     this.tabImpl.getWsSocket().runInDispatchThread(runnable);
+  }
+
+  private static class EventMap {
+    private final Map<String, InternalHandler<?>> map = new HashMap<String, InternalHandler<?>>();
+
+    public <T> void add(WipEventType<T> type, EventHandler<T> eventHandler) {
+      InternalHandler<T> internalHandler = new InternalHandler<T>(eventHandler, type);
+      map.put(type.getMethodName(), internalHandler);
+    }
+
+    public void handleEvent(WipEvent event, WipCommandProcessor commandProcessor) {
+      String method = event.method();
+      InternalHandler<?> parser = map.get(method);
+      if (parser == null) {
+        LOGGER.log(Level.INFO, "Unsupported event: " + method);
+        return;
+      }
+      parser.handle(event, commandProcessor);
+    }
+
+    private static class InternalHandler<T> {
+      private final EventHandler<T> handler;
+      private final WipEventType<T> type;
+
+      InternalHandler(EventHandler<T> handler, WipEventType<T> type) {
+        this.handler = handler;
+        this.type = type;
+      }
+
+      public void handle(WipEvent event, WipCommandProcessor commandProcessor) {
+        if (handler == null) {
+          return;
+        }
+        T data;
+        try {
+          data = WipParserAccess.get().parse(event.data().getUnderlyingObject(),
+              type.getEventType());
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException(e);
+        }
+        handler.accept(data, commandProcessor);
+      }
+    }
   }
 }

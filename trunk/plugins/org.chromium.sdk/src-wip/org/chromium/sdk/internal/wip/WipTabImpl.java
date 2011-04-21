@@ -22,9 +22,7 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.websocket.WsConnection.CloseReason;
-import org.chromium.sdk.internal.wip.protocol.BasicConstants;
-import org.chromium.sdk.internal.wip.protocol.output.WipArguments;
-import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -87,14 +85,7 @@ public class WipTabImpl implements BrowserTab {
   }
 
   private void init() throws IOException {
-    socket.sendTextualMessage("loaded");
-
-    commandProcessor.send(new WipRequest(BasicConstants.Domain.INSPECTOR,
-        "populateScriptObjects", new WipArguments()), null, null);
-
-    commandProcessor.send(
-        new WipRequest(BasicConstants.Domain.DEBUGGER, "enable", new WipArguments()),
-        null, null);
+    commandProcessor.send(new EnableParams(), null, null);
   }
 
   void updateUrl(String url) {

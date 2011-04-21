@@ -5,13 +5,14 @@
 package org.chromium.sdk.internal.wip;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.wip.protocol.input.SetBreakpointData;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
-import org.chromium.sdk.internal.wip.protocol.output.RemoveBreakpointRequest;
-import org.chromium.sdk.internal.wip.protocol.output.SetJavaScriptBreakpoint;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.RemoveBreakpointParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointByUrlParams;
 import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructableWrapper;
 import org.chromium.sdk.util.DestructingGuard;
@@ -71,10 +72,10 @@ public class WipBreakpointImpl implements Breakpoint {
 
   @Override
   public String getScriptName() {
-    return script.accept(SCRIPT_NAME_VISITOR);
+    return script.accept(SCRIPT_URL_VISITOR);
   }
 
-  private static final ScriptUrlOrId.Visitor<String> SCRIPT_NAME_VISITOR =
+  private static final ScriptUrlOrId.Visitor<String> SCRIPT_URL_VISITOR =
       new ScriptUrlOrId.Visitor<String>() {
     @Override public String forUrl(String url) {
       return url;
@@ -139,7 +140,7 @@ public class WipBreakpointImpl implements Breakpoint {
 
   @Override
   public void clear(final BreakpointCallback callback, SyncCallback syncCallback) {
-    RemoveBreakpointRequest request = new RemoveBreakpointRequest(protocolId);
+    RemoveBreakpointParams params = new RemoveBreakpointParams(protocolId);
 
     WipCommandCallback commandCallback;
     if (callback == null) {
@@ -155,7 +156,7 @@ public class WipBreakpointImpl implements Breakpoint {
       };
     }
 
-    tabImpl.getCommandProcessor().send(request, commandCallback, syncCallback);
+    tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
   }
 
   @Override
@@ -189,22 +190,15 @@ public class WipBreakpointImpl implements Breakpoint {
 
     // Call syncCallback if something goes wrong.
     guard.addValue(callbackAsDestructable);
-    tabImpl.getCommandProcessor().send(new RemoveBreakpointRequest(protocolId), removeCallback,
+    tabImpl.getCommandProcessor().send(new RemoveBreakpointParams(protocolId), removeCallback,
         DestructableWrapper.guardAsCallback(guard));
   }
 
   private void recreateBreakpointAsync(final BreakpointCallback flushCallback,
       Destructable callbackAsDestructable) {
-    WipCommandCallback setCommandCallback = new WipCommandCallback.Default() {
+    GenericCallback<String> setCommandCallback = new GenericCallback<String>() {
       @Override
-      protected void onSuccess(Success success) {
-        SetBreakpointData data;
-        try {
-          data = success.data().asSetBreakpointData();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
-        String protocolId = data.breakpointId();
+      public void success(String protocolId) {
         WipBreakpointImpl.this.protocolId = protocolId;
         if (flushCallback != null) {
           flushCallback.success(WipBreakpointImpl.this);
@@ -212,18 +206,65 @@ public class WipBreakpointImpl implements Breakpoint {
       }
 
       @Override
-      protected void onError(String message) {
+      public void failure(Exception exception) {
         if (flushCallback != null) {
-          flushCallback.failure(message);
+          flushCallback.failure(exception.getMessage());
         }
       }
     };
 
     DestructingGuard guard = new DestructingGuard();
     guard.addValue(callbackAsDestructable);
-    SetJavaScriptBreakpoint setRequest =
-        new SetJavaScriptBreakpoint(script, lineNumber, columnNumber, condition, enabled);
-    tabImpl.getCommandProcessor().send(setRequest, setCommandCallback,
-        DestructableWrapper.guardAsCallback(guard));
+
+    if (condition == null) {
+      condition = "";
+    }
+    // TODO: support enabled.
+    sendSetBreakpointRequest(script, lineNumber, columnNumber, condition,
+        setCommandCallback, DestructableWrapper.guardAsCallback(guard),
+        tabImpl.getCommandProcessor());
+  }
+
+  /**
+   * @param callback a generic callback that receives breakpoint protocol id
+   */
+  static void sendSetBreakpointRequest(ScriptUrlOrId scriptRef, final int lineNumber,
+      final int columnNumber, final String condition,
+      final GenericCallback<String> callback, final SyncCallback syncCallback,
+      final WipCommandProcessor commandProcessor) {
+    scriptRef.accept(new ScriptUrlOrId.Visitor<Void>() {
+      @Override
+      public Void forId(long sourceId) {
+        // TODO: implement.
+        return WipBrowserImpl.throwUnsupported();
+      }
+
+      @Override
+      public Void forUrl(String url) {
+        // TODO: support enabled.
+        SetBreakpointByUrlParams request =
+            new SetBreakpointByUrlParams(url, lineNumber, (long) columnNumber, condition);
+
+        JavascriptVm.GenericCallback<SetBreakpointByUrlData> wrappedCallback;
+        if (callback == null) {
+          wrappedCallback = null;
+        } else {
+          wrappedCallback = new JavascriptVm.GenericCallback<SetBreakpointByUrlData>() {
+            @Override
+            public void success(SetBreakpointByUrlData data) {
+              callback.success(data.breakpointId());
+            }
+
+            @Override
+            public void failure(Exception exception) {
+              callback.failure(exception);
+            }
+          };
+        }
+
+        commandProcessor.send(request, wrappedCallback, syncCallback);
+        return null;
+      }
+    });
   }
 }

@@ -8,12 +8,6 @@ import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 import org.json.simple.JSONObject;
 
 public class WipRequest extends JSONObject {
-  public WipRequest(String domain, String command, WipArguments arguments) {
-    this.put(BasicConstants.Property.DOMAIN, domain);
-    this.put(BasicConstants.Property.COMMAND, command);
-    this.put(BasicConstants.Property.ARGUMENTS, arguments);
-  }
-
   public WipRequest(WipParams params) {
     this.put(BasicConstants.Property.METHOD, params.getRequestName());
     this.put(BasicConstants.Property.PARAMS, params);

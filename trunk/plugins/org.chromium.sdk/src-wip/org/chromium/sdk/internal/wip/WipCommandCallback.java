@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.wip;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.sdk.internal.tools.v8.BaseCommandProcessor;
@@ -27,20 +28,16 @@ public interface WipCommandCallback extends BaseCommandProcessor.Callback<WipCom
       WipCommandResponse.Success asSuccess = response.asSuccess();
       if (asSuccess != null) {
         onSuccess(asSuccess);
-      } else if (response.asStub() != null) {
-        throw new RuntimeException("Unexpected stub response");
       } else {
         String message;
         WipCommandResponse.Error asError = response.asError();
         if (asError == null) {
           message = "Internal messaging error";
         } else {
-          List<String> messages = asError.errors();
-          if (messages.size() == 1) {
-            message = messages.get(0);
-          } else {
-            message = messages.toString();
-          }
+          List<String> messageList = new ArrayList<String>(2);
+          messageList.add(asError.error().message());
+          messageList.addAll(asError.error().data());
+          message = messageList.toString();
         }
         onError(message);
       }

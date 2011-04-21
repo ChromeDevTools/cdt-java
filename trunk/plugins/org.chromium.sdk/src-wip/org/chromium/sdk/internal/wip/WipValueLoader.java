@@ -11,19 +11,15 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.JsValue;
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.WipContextBuilder.WipDebugContextImpl;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
-import org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
-import org.chromium.sdk.internal.wip.protocol.input.ValueData;
-import org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData.Property;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
-import org.chromium.sdk.internal.wip.protocol.output.GetPropertiesRequest;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
+import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
 
@@ -52,7 +48,7 @@ public class WipValueLoader {
    * @param innerNameBuilder name builder for qualified names of all properties and subproperties
    * @param output future object that will hold result of load operation
    */
-  void loadJsObjectPropertiesAsync(final ValueData.Id objectId,
+  void loadJsObjectPropertiesAsync(final String objectId,
       PropertyNameBuilder innerNameBuilder,
       AsyncFutureRef<Getter<ObjectProperties>> output) {
     ObjectPropertyProcessor propertyProcessor = new ObjectPropertyProcessor(innerNameBuilder);
@@ -103,7 +99,7 @@ public class WipValueLoader {
    * scopes.
    */
   interface LoadPostprocessor<RES> {
-    RES process(List<? extends Property> propertyList);
+    RES process(List<? extends RemotePropertyValue> propertyList);
     RES getEmptyResult();
     RES forException(Exception exception);
   }
@@ -117,11 +113,11 @@ public class WipValueLoader {
 
     @Override
     public Getter<ObjectProperties> process(
-        List<? extends GetPropertiesData.Property> propertyList) {
+        List<? extends RemotePropertyValue> propertyList) {
       final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
       final List<JsVariable> internalProperties = new ArrayList<JsVariable>(2);
 
-      for (GetPropertiesData.Property property : propertyList) {
+      for (RemotePropertyValue property : propertyList) {
         String name = property.name();
         boolean isInternal = INTERNAL_PROPERTY_NAME.contains(name);
 
@@ -172,7 +168,7 @@ public class WipValueLoader {
         }
       }));
 
-  <RES> void loadPropertiesAsync(final ValueData.Id objectId,
+  <RES> void loadPropertiesAsync(final String objectId,
       final LoadPostprocessor<RES> propertyPostprocessor, AsyncFutureRef<RES> output) {
     if (objectId == null) {
       output.initializeTrivial(propertyPostprocessor.getEmptyResult());
@@ -200,30 +196,15 @@ public class WipValueLoader {
         // Process result (in the calling thread).
         RES result = response.accept(new LoadPropertiesResponse.Visitor<RES>() {
           @Override
-          public RES visitData(WipCommandResponse.Success success) {
-            final GetPropertiesData data;
-            try {
-              data = success.data().asGetPropertiesData();
-            } catch (JsonProtocolParseException e) {
-              throw new RuntimeException(e);
-            }
-
-            if (data.isException() == Boolean.TRUE) {
-              // TODO: prepare better exception description (without JSON details).
-              String rawMessage = success.getSuper().getUnderlyingObject().toJSONString();
-
-              // We have no better representation for exception than Getter that throws.
-              return propertyPostprocessor.forException(
-                  new Exception("Exception in JavaScript: " + rawMessage));
-            }
-
+          public RES visitData(GetPropertiesData data) {
+            // TODO: check exception.
             return propertyPostprocessor.process(data.result());
           }
 
           @Override
-          public RES visitFailure(final String message) {
+          public RES visitFailure(final Exception exception) {
             return propertyPostprocessor.forException(new RuntimeException(
-                "Failed to read properties from remote: " + message));
+                "Failed to read properties from remote", exception));
           }
         });
 
@@ -242,43 +223,42 @@ public class WipValueLoader {
    */
   private static abstract class LoadPropertiesResponse {
     interface Visitor<R> {
-      R visitData(WipCommandResponse.Success response);
+      R visitData(GetPropertiesData response);
 
-      R visitFailure(String message);
+      R visitFailure(Exception exception);
     }
     abstract <R> R accept(Visitor<R> visitor);
   }
 
-  private LoadPropertiesResponse loadRawPropertiesSync(ValueData.Id objectId) {
+  private LoadPropertiesResponse loadRawPropertiesSync(String objectId) {
     final LoadPropertiesResponse[] result = { null };
-    WipCommandCallback callback = new WipCommandCallback.Default() {
+    JavascriptVm.GenericCallback<GetPropertiesData> callback =
+        new JavascriptVm.GenericCallback<GetPropertiesData>() {
       @Override
-      protected void onSuccess(final Success success) {
+      public void success(final GetPropertiesData value) {
         result[0] = new LoadPropertiesResponse() {
           @Override
           <R> R accept(Visitor<R> visitor) {
-            return visitor.visitData(success);
+            return visitor.visitData(value);
           }
         };
       }
 
       @Override
-      protected void onError(final String message) {
+      public void failure(final Exception exception) {
         result[0] = new LoadPropertiesResponse() {
           @Override
           <R> R accept(Visitor<R> visitor) {
-            return visitor.visitFailure(message);
+            return visitor.visitFailure(exception);
           }
         };
       }
     };
 
-    final GetPropertiesRequest request;
+    final GetPropertiesParams request;
     {
       boolean ignoreHasOwnProperty = false;
-      boolean abbreviate = true;
-      request = new GetPropertiesRequest(objectId.id(),  objectId.injectedScriptId(),
-          ignoreHasOwnProperty, abbreviate);
+      request = new GetPropertiesParams(objectId, ignoreHasOwnProperty);
     }
 
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();

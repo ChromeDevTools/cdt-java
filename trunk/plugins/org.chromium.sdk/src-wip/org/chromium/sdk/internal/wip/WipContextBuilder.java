@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
@@ -27,19 +28,22 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.ScriptImpl;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
-import org.chromium.sdk.internal.wip.protocol.input.EvaluateData;
-import org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData;
-import org.chromium.sdk.internal.wip.protocol.input.PausedScriptData;
-import org.chromium.sdk.internal.wip.protocol.input.WipCallFrame;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
-import org.chromium.sdk.internal.wip.protocol.input.WipScope;
-import org.chromium.sdk.internal.wip.protocol.input.ValueData;
-import org.chromium.sdk.internal.wip.protocol.input.GetPropertiesData.Property;
-import org.chromium.sdk.internal.wip.protocol.output.ContinueRequest;
-import org.chromium.sdk.internal.wip.protocol.output.EvaluateOnCallFrame;
+import org.chromium.sdk.internal.wip.protocol.WipProtocol;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
+import org.chromium.sdk.internal.wip.protocol.output.WipParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.EvaluateOnCallFrameParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.ResumeParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.StepIntoParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOutParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
 import org.chromium.sdk.util.AsyncFutureRef;
 
 /**
@@ -56,7 +60,7 @@ class WipContextBuilder {
   }
 
 
-  void createContext(PausedScriptData data) {
+  void createContext(PausedEventData data) {
     if (currentContext != null) {
       LOGGER.severe("Context is already created");
       currentContext = null;
@@ -91,7 +95,7 @@ class WipContextBuilder {
         });
   }
 
-  void onResumeReportedFromRemote() {
+  void onResumeReportedFromRemote(ResumedEventData event) {
     if (currentContext == null) {
       throw new IllegalStateException();
     }
@@ -107,10 +111,10 @@ class WipContextBuilder {
     private final AtomicReference<CloseRequest> closeRequest =
         new AtomicReference<CloseRequest>(null);
 
-    public WipDebugContextImpl(PausedScriptData data) {
-      List<WipCallFrame> frameDataList = data.details().callFrames();
+    public WipDebugContextImpl(PausedEventData data) {
+      List<CallFrameValue> frameDataList = data.details().callFrames();
       frames = new ArrayList<CallFrameImpl>(frameDataList.size());
-      for (WipCallFrame frameData : frameDataList) {
+      for (CallFrameValue frameData : frameDataList) {
         frames.add(new CallFrameImpl(frameData));
       }
     }
@@ -180,23 +184,8 @@ class WipContextBuilder {
         }
       }
 
-      ContinueRequest request = new ContinueRequest(sdkStepToProtocolStep(stepAction));
-      tabImpl.getCommandProcessor().send(request, null, null);
-    }
-
-    private ContinueRequest.StepCommand sdkStepToProtocolStep(StepAction stepAction) {
-      switch (stepAction) {
-      case CONTINUE:
-        return ContinueRequest.StepCommand.RESUME;
-      case IN:
-        return ContinueRequest.StepCommand.STEP_INTO;
-      case OUT:
-        return ContinueRequest.StepCommand.STEP_OUT;
-      case OVER:
-        return ContinueRequest.StepCommand.STEP_OVER;
-      default:
-        throw new RuntimeException();
-      }
+      WipParams params = sdkStepToProtocolStep(stepAction);
+      tabImpl.getCommandProcessor().send(params, null, null);
     }
 
     @Override
@@ -222,32 +211,31 @@ class WipContextBuilder {
 
     private class CallFrameImpl implements CallFrame {
       private final String functionName;
-      private final int ordinal;
-      private final int frameInjectedFrameId;
+      private final String id;
       private final List<ScopeImpl> scopes;
       private final JsVariable thisObject;
       private final TextStreamPosition streamPosition;
       private final Long sourceId;
       private ScriptImpl scriptImpl;
 
-      public CallFrameImpl(WipCallFrame frameData) {
+      public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
-        ordinal = (int) frameData.id().ordinal();
-        frameInjectedFrameId = (int) frameData.id().injectedScriptId();
-        sourceId = frameData.sourceID();
-        List<WipScope> scopeDataList = frameData.scopeChain();
+        id = frameData.id();
+        Object sourceIDObject = frameData.location().sourceID();
+        sourceId = Long.parseLong(sourceIDObject.toString());
+        List<ScopeValue> scopeDataList = frameData.scopeChain();
         scopes = new ArrayList<ScopeImpl>(scopeDataList.size());
 
         // TODO: 'this' variable it sorted out by a brute force. Make it accurate.
-        ValueData thisObjectData = null;
+        RemoteObjectValue thisObjectData = null;
 
         for (int i = 0; i < scopeDataList.size(); i++) {
-          WipScope scopeData = scopeDataList.get(i);
+          ScopeValue scopeData = scopeDataList.get(i);
           // TODO(peter.rybin): provide actual scope type.
           JsScope.Type type = (i == 0) ? JsScope.Type.LOCAL : JsScope.Type.GLOBAL;
           scopes.add(new ScopeImpl(scopeData, type));
           if (thisObjectData == null) {
-            thisObjectData = scopeData.thisObject();
+            thisObjectData = scopeData.getThis();
           }
         }
         if (thisObjectData == null) {
@@ -257,10 +245,17 @@ class WipContextBuilder {
         }
 
         // 0-based.
-        final int line = (int) frameData.line();
+        final int line = (int) frameData.location().lineNumber();
 
         // 0-based.
-        final int column = (int) frameData.column();
+        // TODO: check documentation, whether it's 0-based
+        Long columnObject = frameData.location().columnNumber();
+        final int column;
+        if (columnObject == null) {
+          column = 0;
+        } else {
+          column = columnObject.intValue();
+        }
         streamPosition = new TextStreamPosition() {
           @Override public int getOffset() {
             return WipBrowserImpl.throwUnsupported();
@@ -318,19 +313,16 @@ class WipContextBuilder {
         return evaluateContext;
       }
 
-      private JsVariable createSimpleNameVariable(final String name, ValueData valueData) {
+      private JsVariable createSimpleNameVariable(final String name,
+          RemoteObjectValue thisObjectData) {
         ValueNameBuilder valueNameBuidler = WipExpressionBuilder.createRootName(name, false);
-        return valueLoader.getValueBuilder().createVariable(valueData, valueNameBuidler);
+        return valueLoader.getValueBuilder().createVariable(thisObjectData, valueNameBuidler);
       }
 
       private final WipEvaluateContextImpl evaluateContext = new WipEvaluateContextImpl() {
         @Override
-        protected int getCallFrameOrdinal() {
-          return ordinal;
-        }
-        @Override
-        protected int getCallFrameInjectedScriptId() {
-          return frameInjectedFrameId;
+        protected String getCallFrameId() {
+          return id;
         }
       };
     }
@@ -343,16 +335,16 @@ class WipContextBuilder {
     private class ScopeImpl implements JsScope {
       private final AsyncFutureRef<Getter<ScopeVariables>> propertiesRef =
           new AsyncFutureRef<Getter<ScopeVariables>>();
-      private final ValueData.Id objectId;
+      private final String objectId;
       private final Type type;
 
-      public ScopeImpl(WipScope scopeData, Type type) {
+      public ScopeImpl(ScopeValue scopeData, Type type) {
         this.type = type;
-        if (!scopeData.hasChildren()) {
+        if (!WipProtocol.parseHasChildren(scopeData.object().hasChildren())) {
           objectId = null;
           propertiesRef.initializeTrivial(EMPTY_SCOPE_VARIABLES_OPTIONAL);
         } else {
-          objectId = scopeData.objectId();
+          objectId = scopeData.object().objectId();
         }
       }
 
@@ -373,11 +365,12 @@ class WipContextBuilder {
           WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
               new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
             @Override
-            public Getter<ScopeVariables> process(List<? extends Property> propertyList) {
+            public Getter<ScopeVariables> process(
+                List<? extends RemotePropertyValue> propertyList) {
               final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
 
               WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
-              for (GetPropertiesData.Property property : propertyList) {
+              for (RemotePropertyValue property : propertyList) {
                 final String name = property.name();
 
                 ValueNameBuilder valueNameBuilder =
@@ -430,23 +423,17 @@ class WipContextBuilder {
         }
         // TODO: set a proper value of injectedScriptIdInt.
         int injectedScriptIdInt = 0;
-        EvaluateOnCallFrame request = new EvaluateOnCallFrame(expression, getCallFrameOrdinal(),
-            getCallFrameInjectedScriptId(), "watch-group", false);
+        EvaluateOnCallFrameParams params = new EvaluateOnCallFrameParams(getCallFrameId(),
+            expression, "watch-group", false);
 
-        WipCommandCallback commandCallback;
+        JavascriptVm.GenericCallback<EvaluateOnCallFrameData> commandCallback;
         if (callback == null) {
           commandCallback = null;
         } else {
-          commandCallback = new WipCommandCallback.Default() {
+          commandCallback = new JavascriptVm.GenericCallback<EvaluateOnCallFrameData>() {
             @Override
-            protected void onSuccess(WipCommandResponse.Success response) {
-              EvaluateData data;
-              try {
-                data = response.data().asEvaluateData();
-              } catch (JsonProtocolParseException e) {
-                throw new RuntimeException(e);
-              }
-              ValueData valueData = data.result();
+            public void success(EvaluateOnCallFrameData data) {
+              RemoteObjectValue valueData = data.result();
 
               ValueNameBuilder valueNameBuidler =
                   WipExpressionBuilder.createRootName(expression, true);
@@ -454,25 +441,19 @@ class WipContextBuilder {
               WipValueBuilder valueBuilder = getValueLoader().getValueBuilder();
               JsVariable variable = valueBuilder.createVariable(valueData, valueNameBuidler);
 
-              if (data.isException() == Boolean.TRUE) {
-                // TODO: implement more accurate, without using string value as a user message.
-                callback.failure(variable.getValue().getValueString());
-              } else {
-                callback.success(variable);
-              }
-
+              // TODO: support isException
+              callback.success(variable);
             }
             @Override
-            protected void onError(String message) {
-              callback.failure(message);
+            public void failure(Exception exception) {
+              callback.failure(exception.getMessage());
             }
           };
         }
-        tabImpl.getCommandProcessor().send(request, commandCallback, syncCallback);
+        tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
       }
 
-      protected abstract int getCallFrameOrdinal();
-      protected abstract int getCallFrameInjectedScriptId();
+      protected abstract String getCallFrameId();
     }
   }
 
@@ -494,4 +475,24 @@ class WipContextBuilder {
         }
       };
 
+
+  private WipParams sdkStepToProtocolStep(StepAction stepAction) {
+    switch (stepAction) {
+    case CONTINUE:
+      return RESUME_PARAMS;
+    case IN:
+      return STEP_INTO_PARAMS;
+    case OUT:
+      return STEP_OUT_PARAMS;
+    case OVER:
+      return STEP_OVER_PARAMS;
+    default:
+      throw new RuntimeException();
+    }
+  }
+
+  private static final ResumeParams RESUME_PARAMS = new ResumeParams();
+  private static final StepIntoParams STEP_INTO_PARAMS = new StepIntoParams();
+  private static final StepOutParams STEP_OUT_PARAMS = new StepOutParams();
+  private static final StepOverParams STEP_OVER_PARAMS = new StepOverParams();
 }

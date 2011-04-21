@@ -13,15 +13,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptImpl;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
-import org.chromium.sdk.internal.wip.protocol.input.ParsedScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
-import org.chromium.sdk.internal.wip.protocol.input.ScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.output.GetScriptSource;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.GetScriptSourceData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.GetScriptSourceParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureRef;
@@ -52,7 +51,7 @@ class WipScriptManager {
     }
   }
 
-  public void scriptIsReportedParsed(ParsedScriptSourceData data) {
+  public void scriptIsReportedParsed(ScriptParsedEventData data) {
     final long sourceID = WipProtocol.parseSourceId(data.sourceID());
 
     String url = data.url();
@@ -99,26 +98,21 @@ class WipScriptManager {
 
     @Override
     public void start(final Callback<Boolean> operationCallback, SyncCallback syncCallback) {
-      WipCommandCallback commandCallback = new WipCommandCallback.Default() {
+      JavascriptVm.GenericCallback<GetScriptSourceData> commandCallback =
+          new JavascriptVm.GenericCallback<GetScriptSourceData>() {
         @Override
-        protected void onSuccess(WipCommandResponse.Success success) {
-          ScriptSourceData data;
-          try {
-            data = success.data().asScriptSourceData();
-          } catch (JsonProtocolParseException e) {
-            throw new RuntimeException(e);
-          }
+        public void success(GetScriptSourceData data) {
           String source = data.scriptSource();
           script.setSource(source);
           operationCallback.done(true);
         }
         @Override
-        protected void onError(String message) {
-          throw new RuntimeException(message);
+        public void failure(Exception exception) {
+          throw new RuntimeException(exception);
         }
       };
-      GetScriptSource getScriptRequest = new GetScriptSource(sourceID);
-      tabImpl.getCommandProcessor().send(getScriptRequest, commandCallback, syncCallback);
+      GetScriptSourceParams params = new GetScriptSourceParams(Long.toString(sourceID));
+      tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
     }
   }
 
