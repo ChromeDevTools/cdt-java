@@ -41,36 +41,40 @@ public class WipBreakpointManager {
       throw new UnsupportedOperationException();
     }
 
-    if (condition == null) {
-      condition = "";
+    int sdkId = breakpointUniqueId.getAndAdd(1);
+
+    final WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(tabImpl, sdkId,
+        script, line, column, condition, enabled);
+
+    if (enabled) {
+      if (condition == null) {
+        condition = "";
+      }
+
+      final String conditionFinal = condition;
+
+      GenericCallback<String> wrappedCallback = new GenericCallback<String>() {
+        @Override
+        public void success(String protocolId) {
+          breakpointImpl.setProtocolId(protocolId);
+          if (callback != null) {
+            callback.success(breakpointImpl);
+          }
+        }
+
+        @Override
+        public void failure(Exception exception) {
+          if (callback != null) {
+            callback.failure(exception.getMessage());
+          }
+        }
+      };
+
+      WipBreakpointImpl.sendSetBreakpointRequest(script, line, column, condition,
+          wrappedCallback, syncCallback, tabImpl.getCommandProcessor());
+    } else {
+      callback.success(breakpointImpl);
+      syncCallback.callbackDone(null);
     }
-
-    final String conditionFinal = condition;
-
-    GenericCallback<String> wrappedCallback = new GenericCallback<String>() {
-      @Override
-      public void success(String protocolId) {
-        int sdkId = breakpointUniqueId.getAndAdd(1);
-
-        WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(tabImpl, sdkId, protocolId,
-            script, line, column, conditionFinal, enabled);
-
-        WipBreakpointImpl breakpoint = breakpointImpl;
-        if (callback != null) {
-          callback.success(breakpoint);
-        }
-      }
-
-      @Override
-      public void failure(Exception exception) {
-        if (callback != null) {
-          callback.failure(exception.getMessage());
-        }
-      }
-    };
-
-    // TODO: support enabled.
-    WipBreakpointImpl.sendSetBreakpointRequest(script, line, column, condition,
-        wrappedCallback, syncCallback, tabImpl.getCommandProcessor());
   }
 }
