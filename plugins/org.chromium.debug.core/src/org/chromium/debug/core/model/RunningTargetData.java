@@ -93,16 +93,6 @@ public class RunningTargetData {
     workspaceRelations.startInitialization();
   }
 
-  /**
-   * To initialize debug UI we call "resumed" manually first. However, "suspended" event
-   * may have already arrived, so we should be careful about this.
-   * TODO: consider removing this. There should be no reason why Eclipse need artificial
-   * resume event.
-   */
-  void resumeSessionByDefault() {
-    debugEventListener.resumedByDefault();
-  }
-
   public JavascriptVmEmbedder getJavascriptEmbedder() {
     return vmEmbedder;
   }
@@ -337,9 +327,6 @@ public class RunningTargetData {
   };
 
   private class DebugEventListenerImpl implements DebugEventListener {
-    // Synchronizes calls from ReaderThread of Connection and one call from some worker thread
-    private final Object suspendResumeMonitor = new Object();
-    private boolean alreadyResumedOrSuspended = false;
 
     public void disconnected() {
       if (!disconnectAspect.isDisconnected()) {
@@ -352,20 +339,9 @@ public class RunningTargetData {
       }
     }
 
-    public void resumedByDefault() {
-      synchronized (suspendResumeMonitor) {
-        if (!alreadyResumedOrSuspended) {
-          resumed();
-        }
-      }
-    }
-
     public void resumed() {
       listenerBlock.waitUntilReady();
-      synchronized (suspendResumeMonitor) {
-        RunningTargetData.this.resumed(DebugEvent.CLIENT_REQUEST);
-        alreadyResumedOrSuspended = true;
-      }
+      RunningTargetData.this.resumed(DebugEvent.CLIENT_REQUEST);
     }
 
     public void scriptLoaded(Script newScript) {
@@ -385,23 +361,19 @@ public class RunningTargetData {
 
     public void suspended(DebugContext context) {
       listenerBlock.waitUntilReady();
-      synchronized (suspendResumeMonitor) {
-        RunningTargetData.this.debugContext = context;
-        workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
-        int suspendedDetail;
-        if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
-          suspendedDetail = DebugEvent.BREAKPOINT;
+      RunningTargetData.this.debugContext = context;
+      workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
+      int suspendedDetail;
+      if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
+        suspendedDetail = DebugEvent.BREAKPOINT;
+      } else {
+        if (context.getBreakpointsHit().isEmpty()) {
+          suspendedDetail = DebugEvent.STEP_END;
         } else {
-          if (context.getBreakpointsHit().isEmpty()) {
-            suspendedDetail = DebugEvent.STEP_END;
-          } else {
-            suspendedDetail = DebugEvent.BREAKPOINT;
-          }
+          suspendedDetail = DebugEvent.BREAKPOINT;
         }
-        RunningTargetData.this.suspended(suspendedDetail);
-
-        alreadyResumedOrSuspended = true;
       }
+      RunningTargetData.this.suspended(suspendedDetail);
     }
 
     public VmStatusListener getVmStatusListener() {
