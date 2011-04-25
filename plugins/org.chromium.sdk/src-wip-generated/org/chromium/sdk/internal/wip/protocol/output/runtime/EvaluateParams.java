@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -15,10 +15,10 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    */
   public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt) {
     this.put("expression", expression);
-    if (objectGroupOpt == null) {
+    if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
     }
-    if (includeCommandLineAPIOpt == null) {
+    if (includeCommandLineAPIOpt != null) {
       this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
     }
   }

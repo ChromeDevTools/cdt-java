@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -14,7 +14,7 @@ public class SetBreakpointParams extends org.chromium.sdk.internal.wip.protocol.
    */
   public SetBreakpointParams(org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam location, String conditionOpt) {
     this.put("location", location);
-    if (conditionOpt == null) {
+    if (conditionOpt != null) {
       this.put("condition", conditionOpt);
     }
   }

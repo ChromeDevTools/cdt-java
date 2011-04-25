@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/src-dynamic-impl/parser/org/chromium/sdk/internal/wip/tools/protocolgenerator/Inspector.84172.json@607
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -16,7 +16,7 @@ public class LocationParam extends org.json.simple.JSONObject {
   public LocationParam(String sourceID, long lineNumber, Long columnNumberOpt) {
     this.put("sourceID", sourceID);
     this.put("lineNumber", lineNumber);
-    if (columnNumberOpt == null) {
+    if (columnNumberOpt != null) {
       this.put("columnNumber", columnNumberOpt);
     }
   }

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -24,7 +24,7 @@ public class SetPauseOnExceptionsParams extends org.chromium.sdk.internal.wip.pr
   /**
    Pause on exceptions mode.
    */
-  public enum State {
+  public enum State implements org.json.simple.JSONAware{
     NONE("none"),
     UNCAUGHT("uncaught"),
     ALL("all"),
@@ -35,8 +35,8 @@ public class SetPauseOnExceptionsParams extends org.chromium.sdk.internal.wip.pr
       this.protocolValue = protocolValue;
     }
 
-    @Override public String toString() {
-      return protocolValue;
+    @Override public String toJSONString() {
+      return '"' + protocolValue + '"';
     }
   }
 }

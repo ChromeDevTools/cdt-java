@@ -564,7 +564,7 @@ class Generator {
             boolean isOptional = access.forTypedObject().getOptional(param) == Boolean.TRUE;
             String paramName = getParamName(param, access);
             if (isOptional) {
-              getWriter().write("    if (" + paramName + " == null) {\n  ");
+              getWriter().write("    if (" + paramName + " != null) {\n  ");
             }
             getWriter().write("    this.put(\"" + access.getName(param) + "\", " + paramName +
                 ");\n");
@@ -599,7 +599,7 @@ class Generator {
             builder.append("  /**\n   " + description + "\n   */\n");
           }
           String enumName = capitalizeFirstChar(getMemberName());
-          builder.append("  public enum " + enumName + " {\n");
+          builder.append("  public enum " + enumName + " implements org.json.simple.JSONAware{\n");
           for (String constant : enumConstants) {
             builder.append("    " + constant.toUpperCase() + "(\"" + constant + "\"),\n");
           }
@@ -610,8 +610,8 @@ class Generator {
           builder.append("      this.protocolValue = protocolValue;\n");
           builder.append("    }\n");
           builder.append("\n");
-          builder.append("    @Override public String toString() {\n");
-          builder.append("      return protocolValue;\n");
+          builder.append("    @Override public String toJSONString() {\n");
+          builder.append("      return '\"' + protocolValue + '\"';\n");
           builder.append("    }\n");
           builder.append("  }\n");
           addMember(enumName, builder.toString());
