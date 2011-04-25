@@ -69,7 +69,7 @@ class LaunchInitializationProcedure {
     monitorWrapper.beginTask();
     try {
       WorkPlan.PREINIT.start(monitorWrapper);
-      runningTargetData.resumeSessionByDefault();
+      // Nothing here right now.
       WorkPlan.PREINIT.finish(monitorWrapper);
       checkIsCanceled(monitorWrapper);
       WorkPlan.SET_OPTIONS.start(monitorWrapper);
