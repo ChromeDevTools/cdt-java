@@ -87,11 +87,6 @@ public class WsConnection {
      * Connection has been closed. Message is called from Dispatch thread.
      */
     void eofMessage();
-
-    /**
-     * Connection has been closed. Message is called from unspecified thread.
-     */
-    void closed(CloseReason reason, Exception cause);
   }
 
   public enum CloseReason {
@@ -131,8 +126,8 @@ public class WsConnection {
   public void startListening(final Listener listener) {
     SignalRelay<CloseReason> listenerCloser =
         SignalRelay.create(new SignalRelay.Callback<CloseReason>() {
+      @Override
       public void onSignal(CloseReason reason, Exception cause) {
-        listener.closed(reason, cause);
       }
     });
 
