@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.wip;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
@@ -23,6 +24,8 @@ import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.websocket.WsConnection.CloseReason;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
+import org.chromium.sdk.util.SignalRelay;
+import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -41,6 +44,8 @@ public class WipTabImpl implements BrowserTab {
   private final WipBreakpointManager breakpointManager = new WipBreakpointManager(this);
   private final WipContextBuilder contextBuilder = new WipContextBuilder(this);
 
+  private final SignalRelay<Void> closeSignalRelay;
+
   private volatile String url = "<no url>";
 
   public WipTabImpl(WsConnection socket, WipBrowserImpl browserImpl,
@@ -48,6 +53,19 @@ public class WipTabImpl implements BrowserTab {
     this.socket = socket;
     this.browserImpl = browserImpl;
     this.tabListener = tabListener;
+
+    this.closeSignalRelay = SignalRelay.create(new SignalRelay.Callback<Void>() {
+      @Override
+      public void onSignal(Void signal, Exception cause) {
+        WipTabImpl.this.tabListener.closed();
+      }
+    });
+
+    try {
+      closeSignalRelay.bind(socket.getCloser(), null, null);
+    } catch (AlreadySignalledException e) {
+      throw new IOException("Connection is closed", e);
+    }
 
     commandProcessor = new WipCommandProcessor(this, socket);
 
@@ -65,17 +83,12 @@ public class WipTabImpl implements BrowserTab {
 
       @Override
       public void errorMessage(Exception ex) {
-        // TODO(peter.rybin): implement
+        LOGGER.log(Level.SEVERE, "WebSocket protocol error", ex);
       }
 
       @Override
       public void eofMessage() {
-        // TODO(peter.rybin): implement
-      }
-
-      @Override
-      public void closed(CloseReason reason, Exception cause) {
-        // TODO(peter.rybin): implement
+        // Unused.
       }
     };
 
@@ -99,14 +112,13 @@ public class WipTabImpl implements BrowserTab {
 
   @Override
   public boolean detach() {
-    socket.close();
+    closeSignalRelay.sendSignal(null, null);
     return true;
   }
 
   @Override
   public boolean isAttached() {
-    // TODO(peter.rybin): implement
-    return true;
+    return !closeSignalRelay.isSignalled();
   }
 
   public void enableBreakpoints(Boolean enabled,
