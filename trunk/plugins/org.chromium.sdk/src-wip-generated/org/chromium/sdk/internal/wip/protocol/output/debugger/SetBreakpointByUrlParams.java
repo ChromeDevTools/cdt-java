@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -17,10 +17,10 @@ public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.prot
   public SetBreakpointByUrlParams(String url, long lineNumber, Long columnNumberOpt, String conditionOpt) {
     this.put("url", url);
     this.put("lineNumber", lineNumber);
-    if (columnNumberOpt == null) {
+    if (columnNumberOpt != null) {
       this.put("columnNumber", columnNumberOpt);
     }
-    if (conditionOpt == null) {
+    if (conditionOpt != null) {
       this.put("condition", conditionOpt);
     }
   }
