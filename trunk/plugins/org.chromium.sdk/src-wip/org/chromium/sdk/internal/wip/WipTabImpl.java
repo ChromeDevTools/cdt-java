@@ -22,8 +22,12 @@ import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.websocket.WsConnection;
-import org.chromium.sdk.internal.websocket.WsConnection.CloseReason;
+import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
+import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.PauseParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointsActiveParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptionsParams;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
 import org.json.simple.JSONObject;
@@ -44,6 +48,7 @@ public class WipTabImpl implements BrowserTab {
   private final WipBreakpointManager breakpointManager = new WipBreakpointManager(this);
   private final WipContextBuilder contextBuilder = new WipContextBuilder(this);
 
+  private final VmState vmState = new VmState();
   private final SignalRelay<Void> closeSignalRelay;
 
   private volatile String url = "<no url>";
@@ -121,23 +126,66 @@ public class WipTabImpl implements BrowserTab {
     return !closeSignalRelay.isSignalled();
   }
 
+  @Override
   public void enableBreakpoints(Boolean enabled,
       GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    // TODO(peter.rybin): implement
-    if (callback != null) {
-      throw new UnsupportedOperationException();
+    updateVmVariable(enabled, VmState.BREAKPOINTS_ACTIVE, callback, syncCallback);
+  }
+
+  @Override
+  public void setBreakOnException(ExceptionCatchType catchType,
+      Boolean enabled, GenericCallback<Boolean> callback, SyncCallback syncCallback) {
+
+    VmState.Variable<Boolean> variable;
+    switch (catchType) {
+    case CAUGHT:
+      variable = VmState.BREAK_ON_CAUGHT;
+      break;
+    case UNCAUGHT:
+      variable = VmState.BREAK_ON_UNCAUGHT;
+      break;
+    default:
+      throw new RuntimeException();
     }
+    updateVmVariable(enabled, variable, callback, syncCallback);
+
+
+
+    // TODO(peter.rybin): implement
     if (syncCallback != null) {
       syncCallback.callbackDone(null);
     }
   }
 
-  public void setBreakOnException(ExceptionCatchType catchType,
-      Boolean enabled, GenericCallback<Boolean> callback,
-      SyncCallback syncCallback) {
-    // TODO(peter.rybin): implement
-    if (syncCallback != null) {
-      syncCallback.callbackDone(null);
+  /**
+   * Updates locally saved variables state and send request to remote. If user only calls
+   * the method to learn the current value, request is sent anyway, to keep responses in sequence.
+   */
+  private <T> void updateVmVariable(T value, VmState.Variable<T> variable,
+      final GenericCallback<T> callback, SyncCallback syncCallback) {
+    synchronized (vmState) {
+      final T newValue;
+      if (value == null) {
+        newValue = variable.getValue(vmState);
+      } else {
+        variable.setValue(vmState, value);
+        newValue = value;
+      }
+      WipParams params = variable.createRequestParams(vmState);
+      WipCommandCallback wrappedCallback;
+      if (callback == null) {
+        wrappedCallback = null;
+      } else {
+        wrappedCallback = new WipCommandCallback.Default() {
+          @Override protected void onSuccess(Success success) {
+            callback.success(newValue);
+          }
+          @Override protected void onError(String message) {
+            callback.failure(new Exception(message));
+          }
+        };
+      }
+      commandProcessor.send(params, wrappedCallback, syncCallback);
     }
   }
 
@@ -178,8 +226,23 @@ public class WipTabImpl implements BrowserTab {
         ignoreCount, callback, syncCallback);
   }
 
-  public void suspend(SuspendCallback callback) {
-    WipBrowserImpl.throwUnsupported();
+  @Override
+  public void suspend(final SuspendCallback callback) {
+    PauseParams params = new PauseParams();
+    WipCommandCallback wrappedCallback;
+    if (callback == null) {
+      wrappedCallback = null;
+    } else {
+      wrappedCallback = new WipCommandCallback.Default() {
+        @Override protected void onSuccess(Success success) {
+          callback.success();
+        }
+        @Override protected void onError(String message) {
+          callback.failure(new Exception(message));
+        }
+      };
+    }
+    commandProcessor.send(params, wrappedCallback, null);
   }
 
   @Override
@@ -190,13 +253,6 @@ public class WipTabImpl implements BrowserTab {
       List<Breakpoint> stubEmptyList = Collections.emptyList();
       callback.success(stubEmptyList);
     }
-    if (syncCallback != null) {
-      syncCallback.callbackDone(null);
-    }
-  }
-
-  public void enableBreakpoints(boolean enabled, Void callback,
-      SyncCallback syncCallback) {
     if (syncCallback != null) {
       syncCallback.callbackDone(null);
     }
@@ -230,5 +286,75 @@ public class WipTabImpl implements BrowserTab {
 
   TabDebugEventListener getTabListener() {
     return tabListener;
+  }
+
+  /**
+   * Saves currently set VM parameters. Default values must correspond to those
+   * of WebInspector protocol.
+   */
+  private static class VmState {
+    boolean breakpointsActive = false;
+
+    boolean breakOnCaughtExceptions = false;
+    boolean breakOnUncaughtExceptions = false;
+
+    static abstract class Variable<T> {
+      abstract T getValue(VmState vmState);
+      abstract void setValue(VmState vmState, T value);
+      abstract WipParams createRequestParams(VmState vmState);
+    }
+
+    static final Variable<Boolean> BREAKPOINTS_ACTIVE = new Variable<Boolean>() {
+      @Override Boolean getValue(VmState vmState) {
+        return vmState.breakpointsActive;
+      }
+      @Override void setValue(VmState vmState, Boolean value) {
+        vmState.breakpointsActive = value;
+      }
+      @Override WipParams createRequestParams(VmState vmState) {
+        return new SetBreakpointsActiveParams(vmState.breakpointsActive);
+      }
+    };
+
+    static final Variable<Boolean> BREAK_ON_CAUGHT = new Variable<Boolean>() {
+      @Override Boolean getValue(VmState vmState) {
+        return vmState.breakOnCaughtExceptions;
+      }
+      @Override void setValue(VmState vmState, Boolean value) {
+        vmState.breakOnCaughtExceptions = value;
+      }
+      @Override WipParams createRequestParams(VmState vmState) {
+        return vmState.createPauseOnExceptionRequest();
+      }
+    };
+
+    static final Variable<Boolean> BREAK_ON_UNCAUGHT = new Variable<Boolean>() {
+      @Override Boolean getValue(VmState vmState) {
+        return vmState.breakOnUncaughtExceptions;
+      }
+      @Override void setValue(VmState vmState, Boolean value) {
+        vmState.breakOnUncaughtExceptions = value;
+      }
+      @Override WipParams createRequestParams(VmState vmState) {
+        return vmState.createPauseOnExceptionRequest();
+      }
+    };
+
+    private SetPauseOnExceptionsParams createPauseOnExceptionRequest() {
+      // We try to push 2 bits (inherited from V8 internal flags)
+      // into 3-state flag (WIP type).
+      // TODO: change SDK and reduce 2 flags to 1 3-state value.
+      SetPauseOnExceptionsParams.State protocolState;
+      if (breakOnCaughtExceptions) {
+        protocolState = SetPauseOnExceptionsParams.State.ALL;
+      } else {
+        if (breakOnUncaughtExceptions) {
+          protocolState = SetPauseOnExceptionsParams.State.UNCAUGHT;
+        } else {
+          protocolState = SetPauseOnExceptionsParams.State.NONE;
+        }
+      }
+      return new SetPauseOnExceptionsParams(protocolState);
+    }
   }
 }
