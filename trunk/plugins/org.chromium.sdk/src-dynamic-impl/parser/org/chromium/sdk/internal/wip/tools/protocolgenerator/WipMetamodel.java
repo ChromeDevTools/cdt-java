@@ -141,6 +141,9 @@ public interface WipMetamodel {
     @JsonField(jsonLiteralName="enum")
     @JsonOptionalField
     List<String> getEnum();
+
+    @JsonOptionalField
+    List<ObjectProperty> properties();
   }
 
   String STRING_TYPE = "string";

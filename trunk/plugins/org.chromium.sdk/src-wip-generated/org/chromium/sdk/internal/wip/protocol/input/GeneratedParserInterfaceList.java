@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84775
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -23,7 +23,14 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.Resources.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetCookiesData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.GetResourceContentData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.InspectedURLChangedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.LoadEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData.class,
