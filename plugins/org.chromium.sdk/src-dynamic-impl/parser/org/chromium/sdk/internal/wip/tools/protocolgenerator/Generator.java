@@ -203,41 +203,133 @@ class Generator {
       fileUpdater.update();
     }
 
-    void generateStandaloneInputType(StandaloneType type) throws IOException {
-      if (!WipMetamodel.OBJECT_TYPE.equals(type.type())) {
-        throw new RuntimeException();
-      }
-      List<ObjectProperty> properties = type.properties();
-      if (properties == null) {
-        throw new RuntimeException();
-      }
-      String name = type.id();
-      String description = type.description();
+    StandaloneTypeBinding createStandaloneInputTypeBinding(final StandaloneType type) {
+      return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
+          new TypeVisitor<StandaloneTypeBinding>() {
+        @Override
+        public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
+          try {
+            return createStandaloneObjectInputTypeBinding(type, properties);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
 
-      String className = Naming.INPUT_VALUE.getShortName(name);
-      JavaFileUpdater fileUpdater = startJavaFile(Naming.INPUT_VALUE, domain, name);
+        @Override
+        public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
+          try {
+            return createStandaloneEnumInputTypeBinding(type, enumConstants);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
 
-      Writer writer = fileUpdater.getWriter();
+        @Override public StandaloneTypeBinding visitRef(String refName) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitBoolean(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitString(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitInteger(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitNumber(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitUnknown() {
+          throw new RuntimeException();
+        }
+      });
+    }
 
-      if (description != null) {
-        writer.write("/**\n " + description + "\n */\n");
-      }
-
-      writer.write("@org.chromium.sdk.internal.protocolparser.JsonType\n");
-      writer.write("public interface " + className +" {\n");
-
-      InputClassScope classScope = new InputClassScope(writer, className);
-
-      classScope.generateStandaloneTypeBody(properties);
-
-      classScope.writeAdditionalMembers(writer);
-
-      writer.write("}\n");
-
-      fileUpdater.update();
-
-      String fullTypeName = Naming.INPUT_VALUE.getFullName(domain.domain(), name);
+    StandaloneTypeBinding createStandaloneObjectInputTypeBinding(final StandaloneType type,
+        final List<ObjectProperty> properties) throws IOException {
+      final String name = type.id();
+      final String fullTypeName = Naming.INPUT_VALUE.getFullName(domain.domain(), name);
       jsonProtocolParserClassNames.add(fullTypeName);
+
+      return new StandaloneTypeBinding() {
+        @Override
+        public String getJavaFullName() {
+          return fullTypeName;
+        }
+
+        @Override
+        public void generate() throws IOException {
+          String description = type.description();
+
+          String className = Naming.INPUT_VALUE.getShortName(name);
+          JavaFileUpdater fileUpdater = startJavaFile(Naming.INPUT_VALUE, domain, name);
+
+          Writer writer = fileUpdater.getWriter();
+
+          if (description != null) {
+            writer.write("/**\n " + description + "\n */\n");
+          }
+
+          writer.write("@org.chromium.sdk.internal.protocolparser.JsonType\n");
+          writer.write("public interface " + className +" {\n");
+
+          InputClassScope classScope = new InputClassScope(writer, className);
+
+          classScope.generateStandaloneTypeBody(properties);
+
+          classScope.writeAdditionalMembers(writer);
+
+          writer.write("}\n");
+
+          fileUpdater.update();
+        }
+      };
+    }
+
+    StandaloneTypeBinding createStandaloneEnumInputTypeBinding(final StandaloneType type,
+        final List<String> enumConstants) throws IOException {
+      final String name = type.id();
+      return new StandaloneTypeBinding() {
+        @Override
+        public String getJavaFullName() {
+          return Naming.INPUT_ENUM.getFullName(domain.domain(), name);
+        }
+
+        @Override
+        public void generate() throws IOException {
+          String description = type.description();
+
+          String className = Naming.INPUT_ENUM.getShortName(name);
+          JavaFileUpdater fileUpdater = startJavaFile(Naming.INPUT_ENUM, domain, name);
+
+          Writer writer = fileUpdater.getWriter();
+
+          if (description != null) {
+            writer.write("/**\n " + description + "\n */\n");
+          }
+
+          writer.write("public enum " + className +" {\n");
+
+          boolean first = true;
+          for (String constName : enumConstants) {
+            if (first) {
+              writer.write("\n  ");
+            } else {
+              writer.write(",\n  ");
+            }
+            writer.write(constName.toUpperCase());
+            first = false;
+          }
+          writer.write("\n");
+
+          writer.write("}\n");
+
+          fileUpdater.update();
+        }
+      };
     }
 
     private void generateCommandData(Command command) throws IOException {
@@ -355,33 +447,50 @@ class Generator {
           return getTypeName(arrayItemType, TypedObjectAccess.FOR_ARRAY_ITEM);
         }
 
-        <T> String getTypeName(T typedObject, TypedObjectAccess<T> access) throws IOException {
-          boolean isOptional = access.getOptional(typedObject) == Boolean.TRUE;
-          String refName = access.getRef(typedObject);
-          if (refName != null) {
-            return resolveRefType(domain.domain(), refName, getTypeDirection());
-          }
-          String typeName = access.getType(typedObject);
-          if (WipMetamodel.BOOLEAN_TYPE.equals(typeName)) {
-            return isOptional ? "Boolean" : "boolean";
-          } else if (WipMetamodel.STRING_TYPE.equals(typeName)) {
-            if (access.getEnum(typedObject) != null) {
-              return generateEnum(access.getDescription(typedObject), access.getEnum(typedObject));
+        <T> String getTypeName(final T typedObject, final TypedObjectAccess<T> access) {
+
+          return switchByType(typedObject, access, new TypeVisitor<String>() {
+            @Override public String visitRef(String refName) {
+              return resolveRefType(domain.domain(), refName, getTypeDirection());
             }
-            return "String";
-          } else if (WipMetamodel.INTEGER_TYPE.equals(typeName)) {
-            return isOptional ? "Long" : "long";
-          } else if (WipMetamodel.NUMBER_TYPE.equals(typeName)) {
-            return "Number";
-          } else if (WipMetamodel.ARRAY_TYPE.equals(typeName)) {
-            return "java.util.List<" + getTypeName(access.getItems(typedObject)) + ">";
-          } else if (WipMetamodel.OBJECT_TYPE.equals(typeName)) {
-            return generateNestedObject(access.getDescription(typedObject),
-                access.getProperties(typedObject));
-          } else if (WipMetamodel.UNKNOWN_TYPE.equals(typeName)) {
-            return "Object";
-          }
-          throw new RuntimeException("Unrecognized type " + typeName);
+            @Override public String visitBoolean(boolean isOptional) {
+              return isOptional ? "Boolean" : "boolean";
+            }
+
+            @Override public String visitEnum(List<String> enumConstants) {
+              return generateEnum(getDescription(), enumConstants);
+            }
+
+            @Override public String visitString(boolean isOptional) {
+              return "String";
+            }
+            @Override public String visitInteger(boolean isOptional) {
+              return isOptional ? "Long" : "long";
+            }
+            @Override public String visitNumber(boolean isOptional) {
+              return "Number";
+            }
+            @Override public String visitArray(ArrayItemType items) {
+              try {
+                return "java.util.List<" + getTypeName(items) + ">";
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            }
+            @Override public String visitObject(List<ObjectProperty> properties) {
+              try {
+                return generateNestedObject(getDescription(), properties);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            }
+            @Override public String visitUnknown() {
+              return "Object";
+            }
+            private <T> String getDescription() {
+              return access.getDescription(typedObject);
+            }
+          });
         }
 
         protected String getMemberName() {
@@ -700,6 +809,7 @@ class Generator {
     ClassNameScheme COMMAND_DATA = new ClassNameScheme.Input("Data");
     ClassNameScheme EVENT_DATA = new ClassNameScheme.Input("EventData");
     ClassNameScheme INPUT_VALUE = new ClassNameScheme.Input("Value");
+    ClassNameScheme INPUT_ENUM = new ClassNameScheme.Input("Enum");
   }
 
   private static <P> String getParamName(P param, PropertyLikeAccess<P> access) {
@@ -793,7 +903,32 @@ class Generator {
         return obj.items();
       }
       @Override List<ObjectProperty> getProperties(ArrayItemType obj) {
-        throw new RuntimeException();
+        return obj.properties();
+      }
+    };
+
+    static final TypedObjectAccess<StandaloneType> FOR_STANDALONE =
+        new TypedObjectAccess<StandaloneType>() {
+      @Override String getDescription(StandaloneType obj) {
+        return obj.description();
+      }
+      @Override Boolean getOptional(StandaloneType obj) {
+        return null;
+      }
+      @Override String getRef(StandaloneType obj) {
+        return null;
+      }
+      @Override List<String> getEnum(StandaloneType obj) {
+        return obj.getEnum();
+      }
+      @Override String getType(StandaloneType obj) {
+        return obj.type();
+      }
+      @Override ArrayItemType getItems(StandaloneType obj) {
+        return null;
+      }
+      @Override List<ObjectProperty> getProperties(StandaloneType obj) {
+        return obj.properties();
       }
     };
   }
@@ -879,6 +1014,58 @@ class Generator {
     return fileUpdater;
   }
 
+  private interface TypeVisitor<R> {
+
+    R visitRef(String refName);
+
+    R visitBoolean(boolean isOptional);
+
+    R visitEnum(List<String> enumConstants);
+
+    R visitString(boolean isOptional);
+
+    R visitInteger(boolean isOptional);
+
+    R visitNumber(boolean isOptional);
+
+    R visitArray(ArrayItemType items);
+
+    R visitObject(List<ObjectProperty> properties);
+
+    R visitUnknown();
+
+  }
+
+  private static <R, T> R switchByType(T typedObject, TypedObjectAccess<T> access,
+      TypeVisitor<R> visitor) {
+    boolean isOptional = access.getOptional(typedObject) == Boolean.TRUE;
+    String refName = access.getRef(typedObject);
+    if (refName != null) {
+      return visitor.visitRef(refName);
+    }
+    String typeName = access.getType(typedObject);
+    if (WipMetamodel.BOOLEAN_TYPE.equals(typeName)) {
+      return visitor.visitBoolean(isOptional);
+    } else if (WipMetamodel.STRING_TYPE.equals(typeName)) {
+      if (access.getEnum(typedObject) != null) {
+        return visitor.visitEnum(access.getEnum(typedObject));
+      }
+      return visitor.visitString(isOptional);
+    } else if (WipMetamodel.INTEGER_TYPE.equals(typeName)) {
+      return visitor.visitInteger(isOptional);
+    } else if (WipMetamodel.NUMBER_TYPE.equals(typeName)) {
+      return visitor.visitNumber(isOptional);
+    } else if (WipMetamodel.ARRAY_TYPE.equals(typeName)) {
+      return visitor.visitArray(access.getItems(typedObject));
+    } else if (WipMetamodel.OBJECT_TYPE.equals(typeName)) {
+      return visitor.visitObject(access.getProperties(typedObject));
+    } else if (WipMetamodel.UNKNOWN_TYPE.equals(typeName)) {
+      return visitor.visitUnknown();
+    }
+    throw new RuntimeException("Unrecognized type " + typeName);
+  }
+
+
   private static class TypeData {
     private final String domain;
     private final String name;
@@ -941,32 +1128,33 @@ class Generator {
     abstract class TypeRef {
       private boolean requested = false;
       private boolean generated = false;
+      private StandaloneTypeBinding binding = null;
 
-      String resolve(TypeMap typeMap) {
-        if (!requested) {
+      String resolve(TypeMap typeMap, DomainGenerator domainGenerator) {
+        if (binding == null) {
+          binding = resolveImpl(domainGenerator);
           typeMap.addTypeToGenerate(this);
           requested = true;
         }
-        return resolveImpl();
+        return binding.getJavaFullName();
       }
 
-      abstract String resolveImpl();
+      abstract StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator);
 
       String getDomainName() {
         return domain;
       }
 
-
-      void generate(DomainGenerator domainGenerator) throws IOException {
+      void generate() throws IOException {
         if (!generated) {
-          if (type != null) {
-            generateImpl(domainGenerator);
-          }
           generated = true;
+          binding.generate();
         }
       }
 
-      abstract void generateImpl(DomainGenerator domainGenerator) throws IOException;
+      boolean isRequested() {
+        return requested;
+      }
     }
 
     class Output extends TypeRef {
@@ -977,16 +1165,21 @@ class Generator {
       }
 
       @Override
-      String resolveImpl() {
+      StandaloneTypeBinding resolveImpl(final DomainGenerator domainGenerator) {
         if (type == null) {
           throw new RuntimeException();
         }
-        return Naming.ADDITIONAL_PARAM.getFullName(domain, name);
-      }
+        return new StandaloneTypeBinding() {
+          @Override
+          public String getJavaFullName() {
+            return Naming.ADDITIONAL_PARAM.getFullName(domain, name);
+          }
 
-      @Override
-      void generateImpl(DomainGenerator domainGenerator) throws IOException {
-        domainGenerator.generateCommandAdditionalParam(type);
+          @Override
+          public void generate() throws IOException {
+            domainGenerator.generateCommandAdditionalParam(type);
+          }
+        };
       }
     }
 
@@ -994,20 +1187,34 @@ class Generator {
       private String predefinedJavaTypeName = null;
 
       @Override
-      String resolveImpl() {
+      StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator) {
         if (predefinedJavaTypeName == null) {
           if (type == null) {
             throw new RuntimeException();
           }
-          return Naming.INPUT_VALUE.getFullName(domain, name);
+          return domainGenerator.createStandaloneInputTypeBinding(type);
         } else {
-          return predefinedJavaTypeName;
+          return new StandaloneTypeBinding() {
+            @Override
+            public String getJavaFullName() {
+              return predefinedJavaTypeName;
+            }
+
+            @Override
+            public void generate() throws IOException {
+            }
+          };
         }
       }
 
       void checkResolved() {
-        if (type != null && predefinedJavaTypeName != null) {
-          throw new RuntimeException();
+        if (predefinedJavaTypeName != null) {
+          if (type != null) {
+            throw new RuntimeException();
+          }
+          if (!isRequested()) {
+            throw new RuntimeException("Unused predifined type");
+          }
         }
       }
 
@@ -1017,15 +1224,14 @@ class Generator {
         }
         this.predefinedJavaTypeName = javaTypeName;
       }
-
-      @Override
-      void generateImpl(DomainGenerator domainGenerator) throws IOException {
-        if (type != null) {
-          domainGenerator.generateStandaloneInputType(type);
-        }
-      }
     }
   }
+
+  private interface StandaloneTypeBinding {
+    abstract String getJavaFullName();
+    abstract void generate() throws IOException;
+  }
+
 
   /**
    * Keeps track of all referenced types.
@@ -1042,7 +1248,11 @@ class Generator {
 
     String resolve(String domainName, String typeName,
         TypeData.Direction direction) {
-      return getTypeData(domainName, typeName).get(direction).resolve(this);
+      DomainGenerator domainGenerator = domainGeneratorMap.get(domainName);
+      if (domainGenerator == null) {
+        throw new RuntimeException();
+      }
+      return getTypeData(domainName, typeName).get(direction).resolve(this, domainGenerator);
     }
 
     void addTypeToGenerate(TypeData.TypeRef typeData) {
@@ -1052,12 +1262,7 @@ class Generator {
     public void generateRequestedTypes() throws IOException {
       // Size may grow during iteration.
       for (int i = 0; i < typesToGenerate.size(); i++) {
-        TypeData.TypeRef typeRef = typesToGenerate.get(i);
-        DomainGenerator domainGenerator = domainGeneratorMap.get(typeRef.getDomainName());
-        if (domainGenerator == null) {
-          throw new RuntimeException();
-        }
-        typeRef.generate(domainGenerator);
+        typesToGenerate.get(i).generate();
       }
 
       for (TypeData typeData : map.values()) {
