@@ -40,6 +40,8 @@ import org.eclipse.osgi.util.NLS;
  * externally after {@link #setVmEmbedder} is called.
  * <p>
  * It corresponds to running state of target and post-terminated state.
+ * TODO: rename 'running' -> 'connected' here and everywhere to keep consistent
+ *     with 'suspended' state.
  */
 public class RunningTargetData {
 
@@ -119,6 +121,26 @@ public class RunningTargetData {
 
   public DebugContext getDebugContext() {
     return debugContext;
+  }
+
+  // Temporary method or implementation.
+  // TODO: bind this object with mutable fields of RunningTargetData and JavascriptThread.
+  JavascriptThread.SuspendedState getThreadSuspendedState(final JavascriptThread thread) {
+    final DebugContext savedContext = debugContext;
+    if (savedContext == null) {
+      return null;
+    }
+    return new JavascriptThread.SuspendedState() {
+      @Override public RunningTargetData getRunningTargetData() {
+        return RunningTargetData.this;
+      }
+      @Override public JavascriptThread getThread() {
+        return thread;
+      }
+      @Override public DebugContext getDebugContext() {
+        return savedContext;
+      }
+    };
   }
 
   private final VmStatusListenerImpl vmStatusListener = new VmStatusListenerImpl();

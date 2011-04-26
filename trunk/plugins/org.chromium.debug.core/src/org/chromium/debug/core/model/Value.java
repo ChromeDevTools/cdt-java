@@ -30,15 +30,13 @@ import org.eclipse.debug.ui.IValueDetailListener;
 /**
  * A generic (non-array) implementation of IValue using a JsValue instance.
  */
-public class Value extends RunningDebugElement implements IValue {
+public class Value extends DebugElementImpl.WithEvaluate implements IValue {
 
   private static final IVariable[] EMPTY_VARIABLES = new IVariable[0];
 
   private final JsValue value;
 
   private IVariable[] variables;
-
-  private final EvaluateContext evaluateContext;
 
   private final DetailBuilder detailBuilder = new DetailBuilder();
 
@@ -50,9 +48,8 @@ public class Value extends RunningDebugElement implements IValue {
   }
 
   Value(EvaluateContext evaluateContext, JsValue value) {
-    super(evaluateContext.getRunningTargetData());
+    super(evaluateContext);
     this.value = value;
-    this.evaluateContext = evaluateContext;
   }
 
   public String getReferenceTypeName() throws DebugException {
@@ -74,7 +71,7 @@ public class Value extends RunningDebugElement implements IValue {
     try {
       if (variables == null) {
         if (value.asObject() != null) {
-          variables = StackFrame.wrapVariables(evaluateContext,
+          variables = StackFrame.wrapVariables(getEvaluateContext(),
               value.asObject().getProperties(), Collections.<String>emptySet(),
               value.asObject().getInternalProperties());
         } else {
@@ -100,10 +97,6 @@ public class Value extends RunningDebugElement implements IValue {
 
   public JsValue getJsValue() {
     return value;
-  }
-
-  public EvaluateContext getEvaluateContext() {
-    return evaluateContext;
   }
 
   /**

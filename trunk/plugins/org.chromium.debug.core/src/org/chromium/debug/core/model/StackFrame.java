@@ -32,8 +32,6 @@ public class StackFrame extends StackFrameBase {
 
   private final CallFrame stackFrame;
 
-  private final EvaluateContext evaluateContext;
-
   private IVariable[] variables;
 
   private volatile CachedUserPosition userCachedSourcePosition = null;
@@ -46,11 +44,9 @@ public class StackFrame extends StackFrameBase {
    * @param thread for which the stack frame is created
    * @param stackFrame an underlying SDK stack frame
    */
-  public StackFrame(JavascriptThread thread, CallFrame stackFrame) {
-    super(thread);
+  public StackFrame(JavascriptThread.SuspendedState threadState, CallFrame stackFrame) {
+    super(new EvaluateContext(stackFrame.getEvaluateContext(), threadState));
     this.stackFrame = stackFrame;
-    this.evaluateContext =
-        new EvaluateContext(stackFrame.getEvaluateContext(), thread.getRunningData());
   }
 
   public CallFrame getCallFrame() {
@@ -60,7 +56,7 @@ public class StackFrame extends StackFrameBase {
   public IVariable[] getVariables() throws DebugException {
     if (variables == null) {
       try {
-        variables = wrapScopes(evaluateContext, stackFrame.getVariableScopes(),
+        variables = wrapScopes(getEvaluateContext(), stackFrame.getVariableScopes(),
             stackFrame.getReceiverVariable());
       } catch (RuntimeException e) {
         // We shouldn't throw RuntimeException from here, because calling
@@ -150,11 +146,6 @@ public class StackFrame extends StackFrameBase {
 
   public String getName() throws DebugException {
     return getDebugTarget().getLabelProvider().getStackFrameLabel(this);
-  }
-
-  @Override
-  protected EvaluateContext getEvaluateContext() {
-    return evaluateContext;
   }
 
   @Override
