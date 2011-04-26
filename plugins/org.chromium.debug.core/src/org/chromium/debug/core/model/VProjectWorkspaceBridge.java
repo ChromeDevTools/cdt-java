@@ -47,10 +47,10 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       this.projectNameBase = projectNameBase;
     }
 
-    public WorkspaceBridge attachedToVm(RunningTargetData runningTargetData,
+    public WorkspaceBridge attachedToVm(ConnectedTargetData connectedTargetData,
         JavascriptVm javascriptVm) {
       // We might want to add URL or something to project name.
-      return new VProjectWorkspaceBridge(projectNameBase, runningTargetData, javascriptVm);
+      return new VProjectWorkspaceBridge(projectNameBase, connectedTargetData, javascriptVm);
     }
 
     public String getDebugModelIdentifier() {
@@ -65,18 +65,18 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private final IProject debugProject;
   private final JavascriptVm javascriptVm;
   private final ResourceManager resourceManager;
-  private final RunningTargetData runningTargetData;
+  private final ConnectedTargetData connectedTargetData;
   private final BreakpointMap.InTargetMap breakpointInTargetMap = new BreakpointMap.InTargetMap();
   private final ChromiumSourceDirector sourceDirector;
 
-  public VProjectWorkspaceBridge(String projectName, RunningTargetData runningTargetData,
+  public VProjectWorkspaceBridge(String projectName, ConnectedTargetData connectedTargetData,
       JavascriptVm javascriptVm) {
-    this.runningTargetData = runningTargetData;
+    this.connectedTargetData = connectedTargetData;
     this.javascriptVm = javascriptVm;
     this.debugProject = ChromiumDebugPluginUtil.createEmptyProject(projectName);
     this.resourceManager = new ResourceManager(debugProject);
 
-    ILaunch launch = runningTargetData.getDebugTarget().getLaunch();
+    ILaunch launch = connectedTargetData.getDebugTarget().getLaunch();
 
     sourceDirector = (ChromiumSourceDirector) launch.getSourceLocator();
     sourceDirector.initializeVProjectContainers(debugProject, resourceManager);
@@ -199,7 +199,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public WrappedBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
-      if (runningTargetData.getDebugTarget().isDisconnected()) {
+      if (connectedTargetData.getDebugTarget().isDisconnected()) {
         return null;
       }
       return ChromiumDebugPlugin.getDefault().getBreakpointWrapManager().wrap(breakpoint);
@@ -260,7 +260,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       };
       try {
         ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceId,
-            runningTargetData, callback, syncCallback);
+            connectedTargetData, callback, syncCallback);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to create breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
@@ -353,7 +353,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
     private String getTargetNameSafe() {
       try {
-        return runningTargetData.getDebugTarget().getLaunch().getLaunchConfiguration().getName();
+        return connectedTargetData.getDebugTarget().getLaunch().getLaunchConfiguration().getName();
       } catch (RuntimeException e) {
         return "<unknown>"; //$NON-NLS-1$
       }
@@ -399,7 +399,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public String getThreadLabel(JavascriptThread thread) {
-      String url = thread.getRunningData().getJavascriptEmbedder().getThreadName();
+      String url = thread.getConnectedData().getJavascriptEmbedder().getThreadName();
       return NLS.bind(Messages.JsThread_ThreadLabelFormat,
           getThreadStateLabel(thread),
           (url.length() > 0 ? (" : " + url) : "")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -409,7 +409,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       DebugContext context;
       if (thread.isSuspended()) {
         // Theoretically the context may be null.
-        context = thread.getRunningData().getDebugContext();
+        context = thread.getConnectedData().getDebugContext();
       } else {
         context = null;
       }
@@ -445,7 +445,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
   };
 
-  public RunningTargetData getRunningTargetData() {
-    return runningTargetData;
+  public ConnectedTargetData getConnectedTargetData() {
+    return connectedTargetData;
   }
 }

@@ -225,7 +225,7 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         return;
       }
 
-      JavascriptVm javascriptVm = getRunningData().getJavascriptVm();
+      JavascriptVm javascriptVm = getConnectedData().getJavascriptVm();
       EvaluateWithContextExtension extension = javascriptVm.getEvaluateWithContextExtension();
       if (extension == null) {
         String result =
@@ -233,7 +233,7 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         stringDetailIsBuilt(result, listener);
         return;
       }
-      DebugContext debugContext = getRunningData().getDebugContext();
+      DebugContext debugContext = getConnectedData().getDebugContext();
       if (debugContext == null) {
         stringDetailIsBuilt("", listener);
         return;

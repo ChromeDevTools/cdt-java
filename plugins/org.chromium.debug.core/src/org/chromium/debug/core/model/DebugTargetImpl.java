@@ -60,16 +60,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
     monitor.worked(1);
 
-    RunningTargetData.TargetInnerState runningState;
-    RunningTargetData runningData;
+    ConnectedTargetData.TargetInnerState connectedState;
+    ConnectedTargetData connectedData;
 
     ListenerBlock listenerBlock = new ListenerBlock();
     try {
-      runningState = RunningTargetData.create(debugTargetImpl, listenerBlock);
-      runningData = runningState.getRunningTargetData();
+      connectedState = ConnectedTargetData.create(debugTargetImpl, listenerBlock);
+      connectedData = connectedState.getConnectedTargetData();
 
-      final JavascriptVmEmbedder embedder =
-          connector.attach(runningData.getEmbedderListener(), runningData.getDebugEventListener());
+      final JavascriptVmEmbedder embedder = connector.attach(connectedData.getEmbedderListener(),
+              connectedData.getDebugEventListener());
       // From this moment V8 may call our listeners. We block them by listenerBlock for a while.
 
       Destructable embedderDestructor = new Destructable() {
@@ -80,18 +80,18 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
       destructingGuard.addValue(embedderDestructor);
 
-      runningData.setVmEmbedder(embedder);
+      connectedData.setVmEmbedder(embedder);
 
-      debugTargetImpl.setInnerState(runningState);
+      debugTargetImpl.setInnerState(connectedState);
 
-      runningData.fireBecameRunningEvents();
+      connectedData.fireBecameConnectedEvents();
 
       listenerBlock.setProperlyInitialized();
     } finally {
       listenerBlock.unblock();
     }
 
-    runningData.initListeners();
+    connectedData.initListeners();
 
     try {
       if (attachCallback != null) {
@@ -118,7 +118,7 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     abstract String getVmStatus();
     abstract boolean supportsBreakpoint(IBreakpoint breakpoint);
     abstract EvaluateContext getEvaluateContext();
-    abstract RunningTargetData getRunningTargetDataOrNull();
+    abstract ConnectedTargetData getConnectedTargetDataOrNull();
   }
 
   static final IThread[] EMPTY_THREADS = new IThread[0];
@@ -141,8 +141,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     currentState = state;
   }
 
-  RunningTargetData getRunningDataOrNull() {
-    return currentState.getRunningTargetDataOrNull();
+  ConnectedTargetData getConnectedDataOrNull() {
+    return currentState.getConnectedTargetDataOrNull();
   }
 
   WorkspaceBridge.Factory getWorkspaceBridgeFactory() {
@@ -276,8 +276,8 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return currentState.getVmStatus();
   }
 
-  public RunningTargetData getRunningOrNull() {
-    return currentState.getRunningTargetDataOrNull();
+  public ConnectedTargetData getConnectedOrNull() {
+    return currentState.getConnectedTargetDataOrNull();
   }
 
   @SuppressWarnings("unchecked")
@@ -291,9 +291,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     return super.getAdapter(adapter);
   }
 
-  public static List<RunningTargetData> getAllRunningTargetDatas() {
+  public static List<ConnectedTargetData> getAllConnectedTargetDatas() {
     IDebugTarget[] array = DebugPlugin.getDefault().getLaunchManager().getDebugTargets();
-    List<RunningTargetData> result = new ArrayList<RunningTargetData>(array.length);
+    List<ConnectedTargetData> result = new ArrayList<ConnectedTargetData>(array.length);
     for (IDebugTarget target : array) {
       if (target instanceof DebugTargetImpl == false) {
         continue;
@@ -303,13 +303,13 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
       }
       DebugTargetImpl debugTargetImpl = (DebugTargetImpl) target;
 
-      RunningTargetData runningData = debugTargetImpl.getRunningDataOrNull();
+      ConnectedTargetData connectedData = debugTargetImpl.getConnectedDataOrNull();
 
-      if (runningData == null) {
+      if (connectedData == null) {
         continue;
       }
 
-      result.add(runningData);
+      result.add(connectedData);
     }
     return result;
   }

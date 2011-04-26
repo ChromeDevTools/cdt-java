@@ -100,7 +100,7 @@ class TargetInitializeState extends State {
   }
 
   @Override
-  RunningTargetData getRunningTargetDataOrNull() {
+  ConnectedTargetData getConnectedTargetDataOrNull() {
     return null;
   }
 

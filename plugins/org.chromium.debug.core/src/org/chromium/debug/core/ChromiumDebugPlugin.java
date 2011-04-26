@@ -16,7 +16,7 @@ import org.chromium.debug.core.model.BreakpointWrapManager;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.DebugTargetImpl;
-import org.chromium.debug.core.model.RunningTargetData;
+import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ScriptTargetMapping;
@@ -89,10 +89,11 @@ public class ChromiumDebugPlugin extends Plugin {
    * scripts if there are more than one debug sessions.
    */
   public static List<? extends ScriptTargetMapping> getScriptTargetMapping(IFile localFile) {
-    List<RunningTargetData> targetDataList = DebugTargetImpl.getAllRunningTargetDatas();
-    ArrayList<ScriptTargetMapping> result = new ArrayList<ScriptTargetMapping>(targetDataList.size());
+    List<ConnectedTargetData> targetDataList = DebugTargetImpl.getAllConnectedTargetDatas();
+    ArrayList<ScriptTargetMapping> result =
+        new ArrayList<ScriptTargetMapping>(targetDataList.size());
 
-    for (RunningTargetData targetData : targetDataList) {
+    for (ConnectedTargetData targetData : targetDataList) {
       VmResource script;
       try {
         script = targetData.getVmResource(localFile);
