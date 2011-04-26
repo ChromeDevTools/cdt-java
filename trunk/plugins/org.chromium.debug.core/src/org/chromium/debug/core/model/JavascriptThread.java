@@ -27,7 +27,8 @@ import org.eclipse.debug.core.model.IVariable;
 /**
  * This class represents the only Chromium V8 VM thread.
  */
-public class JavascriptThread extends DebugElementImpl.WithRunning implements IThread, IAdaptable {
+public class JavascriptThread extends DebugElementImpl.WithConnected
+    implements IThread, IAdaptable {
 
   private static final StackFrame[] EMPTY_FRAMES = new StackFrame[0];
 
@@ -55,7 +56,7 @@ public class JavascriptThread extends DebugElementImpl.WithRunning implements IT
   public interface SuspendedState {
     JavascriptThread getThread();
 
-    RunningTargetData getRunningTargetData();
+    ConnectedTargetData getConnectedTargetData();
 
     DebugContext getDebugContext();
   }
@@ -63,15 +64,15 @@ public class JavascriptThread extends DebugElementImpl.WithRunning implements IT
   /**
    * Constructs a new thread for the given target
    *
-   * @param runningTargetData this thread is created for
+   * @param connectedTargetData this thread is created for
    */
-  public JavascriptThread(RunningTargetData runningTargetData) {
-    super(runningTargetData);
+  public JavascriptThread(ConnectedTargetData connectedTargetData) {
+    super(connectedTargetData);
   }
 
   public StackFrameBase[] getStackFrames() throws DebugException {
     try {
-      ensureStackFrames(getRunningData().getThreadSuspendedState(this));
+      ensureStackFrames(getConnectedData().getThreadSuspendedState(this));
       return stackFrames;
     } catch (InvalidContextException e) {
       return new StackFrame[0];
@@ -241,7 +242,7 @@ public class JavascriptThread extends DebugElementImpl.WithRunning implements IT
   }
 
   private void step(StepAction stepAction, int detail) throws DebugException {
-    DebugContext debugContext = getRunningData().getDebugContext();
+    DebugContext debugContext = getConnectedData().getDebugContext();
     if (debugContext == null) {
       throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
           "Step attempted while not suspended")); //$NON-NLS-1$
@@ -250,7 +251,7 @@ public class JavascriptThread extends DebugElementImpl.WithRunning implements IT
     debugContext.continueVm(stepAction, 1, null);
     // The suspend event should be fired once the backtrace is ready
     // (in BacktraceProcessor).
-    getRunningData().fireResumeEvent(detail);
+    getConnectedData().fireResumeEvent(detail);
   }
 
   public void stepInto() throws DebugException {
@@ -285,8 +286,8 @@ public class JavascriptThread extends DebugElementImpl.WithRunning implements IT
   }
 
   EvaluateContext getEvaluateContext() {
-    RunningTargetData targetRunningData = getRunningData();
-    JavascriptThread.SuspendedState threadState = targetRunningData.getThreadSuspendedState(this);
+    ConnectedTargetData targetConnectedData = getConnectedData();
+    JavascriptThread.SuspendedState threadState = targetConnectedData.getThreadSuspendedState(this);
     if (threadState == null) {
       return null;
     }

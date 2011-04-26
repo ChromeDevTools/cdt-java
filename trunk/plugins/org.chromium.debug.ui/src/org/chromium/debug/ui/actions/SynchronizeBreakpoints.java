@@ -13,7 +13,7 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.BreakpointSynchronizer;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
-import org.chromium.debug.core.model.RunningTargetData;
+import org.chromium.debug.core.model.ConnectedTargetData;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -77,14 +77,14 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
       return null;
     }
     IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-    final Set<RunningTargetData> targetDatas = new HashSet<RunningTargetData>(3);
+    final Set<ConnectedTargetData> targetDatas = new HashSet<ConnectedTargetData>(3);
     for (Iterator<?> it = structuredSelection.iterator(); it.hasNext(); ) {
       Object element = it.next();
-      RunningTargetData runningTargetData = getRunningTargetData(element);
-      if (runningTargetData == null) {
+      ConnectedTargetData connectedTargetData = getConnectionTargetData(element);
+      if (connectedTargetData == null) {
         continue;
       }
-      targetDatas.add(runningTargetData);
+      targetDatas.add(connectedTargetData);
     }
     if (targetDatas.isEmpty()) {
       return null;
@@ -109,7 +109,7 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
             };
 
             // TODO(peter.rybin): consider showing progress for several targets.
-            for (RunningTargetData data : targetDatas) {
+            for (ConnectedTargetData data : targetDatas) {
               data.synchronizeBreakpoints(direction, callback);
             }
             return Status.OK_STATUS;
@@ -121,7 +121,7 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
 
   private Runnable currentRunnable;
 
-  public static RunningTargetData getRunningTargetData(Object element) {
+  public static ConnectedTargetData getConnectionTargetData(Object element) {
     IDebugTarget debugTarget;
     if (element instanceof ILaunch) {
       ILaunch launch = (ILaunch) element;
@@ -136,6 +136,6 @@ public class SynchronizeBreakpoints implements IWorkbenchWindowActionDelegate {
       return null;
     }
     DebugTargetImpl debugTargetImpl = (DebugTargetImpl) debugTarget;
-    return debugTargetImpl.getRunningOrNull();
+    return debugTargetImpl.getConnectedOrNull();
   }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.JavaScriptFormatter;
 import org.chromium.debug.core.model.StringMappingData;
-import org.chromium.debug.core.model.RunningTargetData;
+import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
@@ -52,7 +52,7 @@ public class TemporarilyFormatSourceAction
       new FileFilter<ResourceData>() {
     @Override
     ResourceData accept(IFile file) {
-      for (RunningTargetData targetData : DebugTargetImpl.getAllRunningTargetDatas()) {
+      for (ConnectedTargetData targetData : DebugTargetImpl.getAllConnectedTargetDatas()) {
         VmResource vmResource = targetData.getWorkspaceRelations().getVProjectVmResource(file);
         if (vmResource == null) {
           continue;
@@ -154,7 +154,7 @@ public class TemporarilyFormatSourceAction
 
       JavaScriptFormatter.Result result = formatter.format(sourceString);
 
-      WorkspaceBridge workspaceRelations = data.getRunningTargetData().getWorkspaceRelations();
+      WorkspaceBridge workspaceRelations = data.getConnectedTargetData().getWorkspaceRelations();
 
       String proposedFileName = data.getVmResource().getLocalVisibleFileName() +
           Messages.TemporarilyFormatSourceAction_FORMATTER_SUFFIX;
@@ -166,7 +166,7 @@ public class TemporarilyFormatSourceAction
       SourcePositionMapBuilder.MappingHandle mappingHandle;
       try {
         SourcePositionMapBuilder builder =
-            data.getRunningTargetData().getSourcePositionMapBuilder();
+            data.getConnectedTargetData().getSourcePositionMapBuilder();
 
         // Unformatted text is a VM text.
         StringMappingData vmTextData = result.getInputTextData();
@@ -283,12 +283,12 @@ public class TemporarilyFormatSourceAction
   static class ResourceData {
     private final IFile file;
     private final VmResource vmResource;
-    private final RunningTargetData runningTargetData;
+    private final ConnectedTargetData connectedTargetData;
 
-    ResourceData(IFile file, VmResource vmResource, RunningTargetData runningTargetData) {
+    ResourceData(IFile file, VmResource vmResource, ConnectedTargetData connectedTargetData) {
       this.file = file;
       this.vmResource = vmResource;
-      this.runningTargetData = runningTargetData;
+      this.connectedTargetData = connectedTargetData;
     }
 
     IFile getFile() {
@@ -299,8 +299,8 @@ public class TemporarilyFormatSourceAction
       return vmResource;
     }
 
-    public RunningTargetData getRunningTargetData() {
-      return runningTargetData;
+    public ConnectedTargetData getConnectedTargetData() {
+      return connectedTargetData;
     }
   }
 

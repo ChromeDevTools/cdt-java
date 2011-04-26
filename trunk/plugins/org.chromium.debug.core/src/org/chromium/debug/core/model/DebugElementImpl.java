@@ -33,31 +33,31 @@ public abstract class DebugElementImpl extends PlatformObject implements IDebugE
   }
 
   /**
-   * An abstract base class for debug element that refers to {@link RunningTargetData}.
+   * An abstract base class for debug element that refers to {@link ConnectedTargetData}.
    * It declares no data field.
    */
-  public static abstract class WithRunningBase extends DebugElementImpl {
+  public static abstract class WithConnectedBase extends DebugElementImpl {
     @Override
     public DebugTargetImpl getDebugTarget() {
-      return getRunningData().getDebugTarget();
+      return getConnectedData().getDebugTarget();
     }
 
-    public abstract RunningTargetData getRunningData();
+    public abstract ConnectedTargetData getConnectedData();
   }
 
   /**
-   * A base class for debug element that refers to {@link RunningTargetData}.
+   * A base class for debug element that refers to {@link ConnectedTargetData}.
    */
-  public static class WithRunning extends WithRunningBase {
-    private final RunningTargetData runningTargetData;
+  public static class WithConnected extends WithConnectedBase {
+    private final ConnectedTargetData connectedTargetData;
 
-    public WithRunning(RunningTargetData runningTargetData) {
-      this.runningTargetData = runningTargetData;
+    public WithConnected(ConnectedTargetData connectedTargetData) {
+      this.connectedTargetData = connectedTargetData;
     }
 
     @Override
-    public RunningTargetData getRunningData() {
-      return runningTargetData;
+    public ConnectedTargetData getConnectedData() {
+      return connectedTargetData;
     }
   }
 
@@ -65,9 +65,9 @@ public abstract class DebugElementImpl extends PlatformObject implements IDebugE
    * An abstract base class for debug element that refers to
    * {@link JavascriptThread.SuspendedState}. It declares no data field.
    */
-  public static abstract class WithSuspendedBase extends WithRunningBase {
-    public RunningTargetData getRunningData() {
-      return getSuspendedState().getRunningTargetData();
+  public static abstract class WithSuspendedBase extends WithConnectedBase {
+    public ConnectedTargetData getConnectedData() {
+      return getSuspendedState().getConnectedTargetData();
     }
 
     public abstract JavascriptThread.SuspendedState getSuspendedState();

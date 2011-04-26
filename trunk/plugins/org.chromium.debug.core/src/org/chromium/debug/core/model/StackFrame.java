@@ -211,7 +211,7 @@ public class StackFrame extends StackFrameBase {
         id = VmResourceId.forScript(script);
       }
       TextStreamPosition vmPosition = stackFrame.getStatementStartPosition();
-      SourcePositionMap sourceTransformationMap = getRunningData().getSourcePositionMap();
+      SourcePositionMap sourceTransformationMap = getConnectedData().getSourcePositionMap();
       SourcePositionMap.Token token = sourceTransformationMap.getCurrentToken();
       SourcePosition originalPosition = sourceTransformationMap.translatePosition(id,
           vmPosition.getLine(), vmPosition.getColumn(), TranslateDirection.VM_TO_USER);

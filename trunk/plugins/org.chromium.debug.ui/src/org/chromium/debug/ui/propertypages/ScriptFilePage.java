@@ -77,7 +77,7 @@ public class ScriptFilePage extends PropertyPage {
 
     String[] launchLabels = new String[mappingList.size()];
     for (int i = 0; i < launchLabels.length; i++) {
-      DebugTargetImpl debugTarget = mappingList.get(i).getRunningTargetData().getDebugTarget();
+      DebugTargetImpl debugTarget = mappingList.get(i).getConnectedTargetData().getDebugTarget();
       launchLabels[i] = debugTarget.getLaunch().getLaunchConfiguration().getName();
     }
 

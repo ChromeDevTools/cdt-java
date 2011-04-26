@@ -94,7 +94,7 @@ public abstract class StackFrameBase extends DebugElementImpl.WithEvaluate imple
   @SuppressWarnings("unchecked")
   public Object getAdapter(Class adapter) {
     if (adapter == EvaluateContext.class) {
-      DebugContext debugContext = getRunningData().getDebugContext();
+      DebugContext debugContext = getConnectedData().getDebugContext();
       if (debugContext == null) {
         return null;
       }

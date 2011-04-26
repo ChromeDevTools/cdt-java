@@ -32,18 +32,16 @@ import org.eclipse.debug.core.model.IThread;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Contains state and behavior of running {@link DebugTargetImpl}. Its inner implementation of
+ * Contains state and behavior of 'connected' {@link DebugTargetImpl}. Its inner implementation of
  * {@link DebugTargetImpl#State} is for {@link DebugTargetImpl} only and is available externally
- * only at construction. The class multistep initialization process. The class can be used
+ * only at construction. The class can be used
  * only after {@link #setVmEmbedder} was called. Listeners can be used from the
  * beginning, but they are blocking until {@link #listenerBlock} is unblocked which is done
  * externally after {@link #setVmEmbedder} is called.
  * <p>
- * It corresponds to running state of target and post-terminated state.
- * TODO: rename 'running' -> 'connected' here and everywhere to keep consistent
- *     with 'suspended' state.
+ * It corresponds to 'connected' state of target and post-terminated state.
  */
-public class RunningTargetData {
+public class ConnectedTargetData {
 
   /**
    * Creates instance and returns its inner state class. This is the only moment when inner
@@ -52,7 +50,7 @@ public class RunningTargetData {
    * @return inner state of data that provides getter to the data itself.
    */
   static TargetInnerState create(DebugTargetImpl debugTargetImpl, ListenerBlock listenerBlock) {
-    RunningTargetData data = new RunningTargetData(debugTargetImpl, listenerBlock);
+    ConnectedTargetData data = new ConnectedTargetData(debugTargetImpl, listenerBlock);
 
     // No public getter for stateImpl. We expose state only to one who creates us.
     return data.debugTargetState;
@@ -73,14 +71,14 @@ public class RunningTargetData {
   private boolean isSuspended = false;
   private boolean isDisconnected = false;
 
-  private RunningTargetData(DebugTargetImpl debugTargetImpl, ListenerBlock listenerBlock) {
+  private ConnectedTargetData(DebugTargetImpl debugTargetImpl, ListenerBlock listenerBlock) {
     this.debugTargetImpl = debugTargetImpl;
     this.threads = new JavascriptThread[] { new JavascriptThread(this) };
     this.listenerBlock = listenerBlock;
   }
 
   void setVmEmbedder(JavascriptVmEmbedder vmEmbedder) {
-    RunningTargetData.this.vmEmbedder = vmEmbedder;
+    ConnectedTargetData.this.vmEmbedder = vmEmbedder;
 
     initWorkspaceRelations();
   }
@@ -103,7 +101,7 @@ public class RunningTargetData {
     return getJavascriptEmbedder().getJavascriptVm();
   }
 
-  void fireBecameRunningEvents() {
+  void fireBecameConnectedEvents() {
     setDisconnected(false);
     DebugTargetImpl.fireDebugEvent(new DebugEvent(debugTargetImpl, DebugEvent.CHANGE));
     fireEventForThread(DebugEvent.CREATE, DebugEvent.UNSPECIFIED);
@@ -124,15 +122,15 @@ public class RunningTargetData {
   }
 
   // Temporary method or implementation.
-  // TODO: bind this object with mutable fields of RunningTargetData and JavascriptThread.
+  // TODO: bind this object with mutable fields of ConnectedTargetData and JavascriptThread.
   JavascriptThread.SuspendedState getThreadSuspendedState(final JavascriptThread thread) {
     final DebugContext savedContext = debugContext;
     if (savedContext == null) {
       return null;
     }
     return new JavascriptThread.SuspendedState() {
-      @Override public RunningTargetData getRunningTargetData() {
-        return RunningTargetData.this;
+      @Override public ConnectedTargetData getConnectedTargetData() {
+        return ConnectedTargetData.this;
       }
       @Override public JavascriptThread getThread() {
         return thread;
@@ -243,7 +241,7 @@ public class RunningTargetData {
   }
 
   private synchronized void setSuspended(boolean isSuspended) {
-    RunningTargetData.this.isSuspended = isSuspended;
+    ConnectedTargetData.this.isSuspended = isSuspended;
   }
 
   private synchronized void setDisconnected(boolean disconnected) {
@@ -251,8 +249,8 @@ public class RunningTargetData {
   }
 
   private void initWorkspaceRelations() {
-    RunningTargetData.this.workspaceRelations =
-        debugTargetImpl.getWorkspaceBridgeFactory().attachedToVm(RunningTargetData.this,
+    ConnectedTargetData.this.workspaceRelations =
+        debugTargetImpl.getWorkspaceBridgeFactory().attachedToVm(ConnectedTargetData.this,
             vmEmbedder.getJavascriptVm());
 
     // We'd like to know when launch is removed to remove our project.
@@ -363,7 +361,7 @@ public class RunningTargetData {
 
     public void resumed() {
       listenerBlock.waitUntilReady();
-      RunningTargetData.this.resumed(DebugEvent.CLIENT_REQUEST);
+      ConnectedTargetData.this.resumed(DebugEvent.CLIENT_REQUEST);
     }
 
     public void scriptLoaded(Script newScript) {
@@ -383,7 +381,7 @@ public class RunningTargetData {
 
     public void suspended(DebugContext context) {
       listenerBlock.waitUntilReady();
-      RunningTargetData.this.debugContext = context;
+      ConnectedTargetData.this.debugContext = context;
       workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
       int suspendedDetail;
       if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
@@ -395,7 +393,7 @@ public class RunningTargetData {
           suspendedDetail = DebugEvent.BREAKPOINT;
         }
       }
-      RunningTargetData.this.suspended(suspendedDetail);
+      ConnectedTargetData.this.suspended(suspendedDetail);
     }
 
     public VmStatusListener getVmStatusListener() {
@@ -422,12 +420,12 @@ public class RunningTargetData {
     }
 
     @Override
-    RunningTargetData getRunningTargetDataOrNull() {
-      return getRunningTargetData();
+    ConnectedTargetData getConnectedTargetDataOrNull() {
+      return getConnectedTargetData();
     }
 
-    RunningTargetData getRunningTargetData() {
-      return RunningTargetData.this;
+    ConnectedTargetData getConnectedTargetData() {
+      return ConnectedTargetData.this;
     }
 
     @Override
