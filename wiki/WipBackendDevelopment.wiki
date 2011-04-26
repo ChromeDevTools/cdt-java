@@ -1,0 +1,19 @@
+#summary Aim and process of WebInspector protocol SDK back-end development.
+
+= Introduction =
+Google Chrome/Chromium uses ChromeDevToolsProtocol for remote debugging, which is a slightly extended [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol]. SDK supports both of them. However Chrome is in process of switching to a new protocol called "!WebInspector Protocol" (WIP) that is likely to be supported by the whole [http://webkit.org WebKit]-based browser family.
+
+== !WebInspector Protocol ==
+TBD
+
+== Support development process ==
+SDK is going to support new protocol together with the old two.
+
+See also DesignOverview (parts marked {future}).
+
+=== Anticipated changes ===
+SDK is meant to provide a uniform interface to all existing or future protocols. However some small differences in behavior or features are possible. This is a preview of the list of WIP implementation differences.
+  * !JavaScript VM is not neccessarily V8. This may affect the feature-set. E.g. live editing might be disabled.
+  * No "ref-id" property for values. Ref-id can be used to visually distinguish two objects with similar properties. This may be not available on WIP back-end.
+  * Permanent values, that outlive !DebugContext (i.e. a single paused state). (How to collect unused values in this case?)
+  * Additional protocol domains might be supported, including access to DOM tree with CSS.
