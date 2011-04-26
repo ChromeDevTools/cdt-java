@@ -129,7 +129,6 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private volatile State currentState = new TargetInitializeState(this);
 
   public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
-    super(null);
     this.launch = launch;
     this.workspaceBridgeFactory = workspaceBridgeFactory;
   }

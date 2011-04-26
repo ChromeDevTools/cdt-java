@@ -13,16 +13,13 @@ import org.eclipse.debug.core.model.IStackFrame;
  * A common base class for all stack frames. Frames may be 'real' or 'fake', e.g. frame that
  * represents throwing an exception.
  */
-public abstract class StackFrameBase extends RunningDebugElement implements IStackFrame {
-  private final JavascriptThread thread;
-
-  public StackFrameBase(JavascriptThread thread) {
-    super(thread.getRunningData());
-    this.thread = thread;
+public abstract class StackFrameBase extends DebugElementImpl.WithEvaluate implements IStackFrame {
+  public StackFrameBase(EvaluateContext evaluateContext) {
+    super(evaluateContext);
   }
 
   public JavascriptThread getThread() {
-    return thread;
+    return getSuspendedState().getThread();
   }
 
   public boolean canStepInto() {
@@ -92,8 +89,6 @@ public abstract class StackFrameBase extends RunningDebugElement implements ISta
   public boolean hasRegisterGroups() throws DebugException {
     return false;
   }
-
-  protected abstract EvaluateContext getEvaluateContext();
 
   @Override
   @SuppressWarnings("unchecked")

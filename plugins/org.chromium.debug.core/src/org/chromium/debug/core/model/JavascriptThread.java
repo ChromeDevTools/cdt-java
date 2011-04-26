@@ -27,7 +27,7 @@ import org.eclipse.debug.core.model.IVariable;
 /**
  * This class represents the only Chromium V8 VM thread.
  */
-public class JavascriptThread extends RunningDebugElement implements IThread, IAdaptable {
+public class JavascriptThread extends DebugElementImpl.WithRunning implements IThread, IAdaptable {
 
   private static final StackFrame[] EMPTY_FRAMES = new StackFrame[0];
 
@@ -49,6 +49,18 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
   private StackFrameBase[] stackFrames;
 
   /**
+   * Holds 'suspended' state of the thread. As such has a getter to {@link DebugContext}.
+   * It also keep references to basic enclosing objects.
+   */
+  public interface SuspendedState {
+    JavascriptThread getThread();
+
+    RunningTargetData getRunningTargetData();
+
+    DebugContext getDebugContext();
+  }
+
+  /**
    * Constructs a new thread for the given target
    *
    * @param runningTargetData this thread is created for
@@ -59,7 +71,7 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
 
   public StackFrameBase[] getStackFrames() throws DebugException {
     try {
-      ensureStackFrames(getRunningData().getDebugContext());
+      ensureStackFrames(getRunningData().getThreadSuspendedState(this));
       return stackFrames;
     } catch (InvalidContextException e) {
       return new StackFrame[0];
@@ -70,18 +82,18 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
     this.stackFrames = null;
   }
 
-  private void ensureStackFrames(DebugContext debugContext) {
+  private void ensureStackFrames(JavascriptThread.SuspendedState threadState) {
     if (stackFrames == null) {
-      if (debugContext == null) {
+      if (threadState == null) {
         this.stackFrames = EMPTY_FRAMES;
       } else {
-        this.stackFrames = wrapStackFrames(this, debugContext);
+        this.stackFrames = wrapStackFrames(threadState);
       }
     }
   }
 
-  private static StackFrameBase[] wrapStackFrames(JavascriptThread thread,
-      DebugContext debugContext) {
+  private static StackFrameBase[] wrapStackFrames(JavascriptThread.SuspendedState threadState) {
+    DebugContext debugContext = threadState.getDebugContext();
     List<? extends CallFrame> jsFrames = debugContext.getCallFrames();
     List<StackFrameBase> result = new ArrayList<StackFrameBase>(jsFrames.size() + 1);
 
@@ -89,11 +101,11 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
     if (exceptionData != null) {
       // Add fake 'throw exception' frame.
       EvaluateContext evaluateContext =
-          new EvaluateContext(debugContext.getGlobalEvaluateContext(), thread.getRunningData());
-      result.add(new ExceptionStackFrame(thread, evaluateContext, exceptionData));
+          new EvaluateContext(debugContext.getGlobalEvaluateContext(), threadState);
+      result.add(new ExceptionStackFrame(evaluateContext, exceptionData));
     }
     for (CallFrame jsFrame : jsFrames) {
-      result.add(new StackFrame(thread, jsFrame));
+      result.add(new StackFrame(threadState, jsFrame));
     }
     return ChromiumDebugPluginUtil.toArray(result, StackFrameBase.class);
   }
@@ -105,13 +117,10 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
    */
   private static class ExceptionStackFrame extends StackFrameBase {
     private final IVariable[] variables;
-    private final EvaluateContext evaluateContext;
     private final ExceptionData exceptionData;
 
-    private ExceptionStackFrame(JavascriptThread thread, EvaluateContext evaluateContext,
-        ExceptionData exceptionData) {
-      super(thread);
-      this.evaluateContext = evaluateContext;
+    private ExceptionStackFrame(EvaluateContext evaluateContext, ExceptionData exceptionData) {
+      super(evaluateContext);
       this.exceptionData = exceptionData;
 
       Variable variable = Variable.NamedHolder.forException(evaluateContext, exceptionData);
@@ -146,11 +155,6 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
     @Override
     public String getName() throws DebugException {
       return "<throwing exception>";
-    }
-
-    @Override
-    protected EvaluateContext getEvaluateContext() {
-      return evaluateContext;
     }
 
     @Override
@@ -282,11 +286,12 @@ public class JavascriptThread extends RunningDebugElement implements IThread, IA
 
   EvaluateContext getEvaluateContext() {
     RunningTargetData targetRunningData = getRunningData();
-    DebugContext debugContext = targetRunningData.getDebugContext();
-    if (debugContext == null) {
+    JavascriptThread.SuspendedState threadState = targetRunningData.getThreadSuspendedState(this);
+    if (threadState == null) {
       return null;
     }
-    return new EvaluateContext(debugContext.getGlobalEvaluateContext(), targetRunningData);
+    return new EvaluateContext(threadState.getDebugContext().getGlobalEvaluateContext(),
+        threadState);
   }
 
   @Override

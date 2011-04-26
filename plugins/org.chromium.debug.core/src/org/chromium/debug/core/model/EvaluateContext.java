@@ -12,19 +12,20 @@ import org.chromium.sdk.JsEvaluateContext;
  */
 public class EvaluateContext {
   private final JsEvaluateContext jsEvaluateContext;
-  private final RunningTargetData runningTargetData;
+  private final JavascriptThread.SuspendedState threadState;
 
-  EvaluateContext(JsEvaluateContext jsEvaluateContext, RunningTargetData runningTargetData) {
+  EvaluateContext(JsEvaluateContext jsEvaluateContext,
+      JavascriptThread.SuspendedState threadState) {
     this.jsEvaluateContext = jsEvaluateContext;
-    this.runningTargetData = runningTargetData;
+    this.threadState = threadState;
   }
 
   public JsEvaluateContext getJsEvaluateContext() {
     return jsEvaluateContext;
   }
 
-  public RunningTargetData getRunningTargetData() {
-    return runningTargetData;
+  public JavascriptThread.SuspendedState getThreadSuspendedState() {
+    return threadState;
   }
 
   public DebugContext getDebugContext() {
