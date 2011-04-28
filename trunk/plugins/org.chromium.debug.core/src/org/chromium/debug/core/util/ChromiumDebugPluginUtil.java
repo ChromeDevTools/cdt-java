@@ -320,7 +320,7 @@ public class ChromiumDebugPluginUtil {
   }
 
 
-  public static <T> T[] toArray(Collection<T> collection, Class<T> clazz) {
+  public static <T> T[] toArray(Collection<? extends T> collection, Class<T> clazz) {
     T[] result = (T[]) Array.newInstance(clazz, collection.size());
     collection.toArray(result);
     return result;

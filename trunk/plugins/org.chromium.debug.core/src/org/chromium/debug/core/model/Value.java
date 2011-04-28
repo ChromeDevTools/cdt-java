@@ -233,8 +233,7 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         stringDetailIsBuilt(result, listener);
         return;
       }
-      DebugContext debugContext = getConnectedData().getDebugContext();
-      if (debugContext == null) {
+      if (getSuspendedState().isDismissed()) {
         stringDetailIsBuilt("", listener);
         return;
       }
@@ -252,8 +251,8 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         }
       };
 
-      extension.evaluateAsync(debugContext.getGlobalEvaluateContext(), TO_STRING_EXPRESSION,
-          additionalContext, evaluateCallback, null);
+      extension.evaluateAsync(getSuspendedState().getDebugContext().getGlobalEvaluateContext(),
+          TO_STRING_EXPRESSION, additionalContext, evaluateCallback, null);
     }
 
     private void stringDetailIsBuilt(final String detailString, IValueDetailListener listener) {

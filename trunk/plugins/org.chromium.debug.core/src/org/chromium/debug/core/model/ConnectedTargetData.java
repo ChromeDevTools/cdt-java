@@ -11,7 +11,6 @@ import org.chromium.debug.core.sourcemap.PositionMapBuilderImpl;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMapBuilder;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
@@ -58,7 +57,8 @@ public class ConnectedTargetData {
 
   private final DebugTargetImpl debugTargetImpl;
   private final TargetInnerState debugTargetState = new TargetInnerState();
-  private final JavascriptThread[] threads;
+  private final JavascriptThread singleThread;
+  private final JavascriptThread[] threadArray;
   private final SourcePositionMapBuilder sourcePositionMapBuilder = new PositionMapBuilderImpl();
   private final ListenerBlock listenerBlock;
   private final DebugEventListenerImpl debugEventListener = new DebugEventListenerImpl();
@@ -66,14 +66,12 @@ public class ConnectedTargetData {
   private JavascriptVmEmbedder vmEmbedder = null;
   private WorkspaceBridge workspaceRelations = null;
 
-  private volatile DebugContext debugContext;
-
-  private boolean isSuspended = false;
-  private boolean isDisconnected = false;
+  private volatile boolean isDisconnected = false;
 
   private ConnectedTargetData(DebugTargetImpl debugTargetImpl, ListenerBlock listenerBlock) {
     this.debugTargetImpl = debugTargetImpl;
-    this.threads = new JavascriptThread[] { new JavascriptThread(this) };
+    this.singleThread = new JavascriptThread(this);
+    this.threadArray = new JavascriptThread[] { singleThread };
     this.listenerBlock = listenerBlock;
   }
 
@@ -108,37 +106,12 @@ public class ConnectedTargetData {
   }
 
   void fireResumeEvent(int detail) {
-    setSuspended(false);
     fireEventForThread(DebugEvent.RESUME, detail);
     DebugTargetImpl.fireDebugEvent(new DebugEvent(debugTargetImpl, DebugEvent.RESUME, detail));
   }
 
   public VmResource getVmResource(IFile resource) throws CoreException {
     return workspaceRelations.findVmResourceFromWorkspaceFile(resource);
-  }
-
-  public DebugContext getDebugContext() {
-    return debugContext;
-  }
-
-  // Temporary method or implementation.
-  // TODO: bind this object with mutable fields of ConnectedTargetData and JavascriptThread.
-  JavascriptThread.SuspendedState getThreadSuspendedState(final JavascriptThread thread) {
-    final DebugContext savedContext = debugContext;
-    if (savedContext == null) {
-      return null;
-    }
-    return new JavascriptThread.SuspendedState() {
-      @Override public ConnectedTargetData getConnectedTargetData() {
-        return ConnectedTargetData.this;
-      }
-      @Override public JavascriptThread getThread() {
-        return thread;
-      }
-      @Override public DebugContext getDebugContext() {
-        return savedContext;
-      }
-    };
   }
 
   private final VmStatusListenerImpl vmStatusListener = new VmStatusListenerImpl();
@@ -197,13 +170,7 @@ public class ConnectedTargetData {
   private JavascriptThread getThread() {
     return disconnectAspect.isDisconnected()
         ? null
-        : threads[0];
-  }
-
-  private void suspended(int detail) {
-    setSuspended(true);
-    getThread().reset();
-    fireSuspendEvent(detail);
+        : singleThread;
   }
 
   private void fireEventForThread(int kind, int detail) {
@@ -229,23 +196,17 @@ public class ConnectedTargetData {
         new DebugEvent(debugTargetImpl.getLaunch(), DebugEvent.TERMINATE, DebugEvent.UNSPECIFIED));
   }
 
-  private void fireSuspendEvent(int detail) {
-    setSuspended(true);
+  void fireSuspendEvent(int detail) {
     fireEventForThread(DebugEvent.SUSPEND, detail);
     DebugTargetImpl.fireDebugEvent(new DebugEvent(debugTargetImpl, DebugEvent.SUSPEND, detail));
   }
 
-  private void resumed(int detail) {
-    debugContext = null;
-    fireResumeEvent(detail);
-  }
-
-  private synchronized void setSuspended(boolean isSuspended) {
-    ConnectedTargetData.this.isSuspended = isSuspended;
-  }
-
-  private synchronized void setDisconnected(boolean disconnected) {
+  private void setDisconnected(boolean disconnected) {
     isDisconnected = disconnected;
+  }
+
+  boolean isDisconnected() {
+    return isDisconnected;
   }
 
   private void initWorkspaceRelations() {
@@ -290,7 +251,7 @@ public class ConnectedTargetData {
       debugEventListener.disconnected();
     }
 
-    public synchronized boolean isDisconnected() {
+    public boolean isDisconnected() {
       return isDisconnected;
     }
   };
@@ -306,30 +267,6 @@ public class ConnectedTargetData {
 
     public void terminate() throws DebugException {
       disconnectAspect.disconnect();
-    }
-  };
-
-  private final ISuspendResume suspendResumeAspect = new ISuspendResume() {
-    @Override public boolean canResume() {
-      return !disconnectAspect.isDisconnected() && isSuspended();
-    }
-
-    @Override public synchronized boolean isSuspended() {
-      return isSuspended;
-    }
-
-    @Override public void resume() throws DebugException {
-      debugContext.continueVm(StepAction.CONTINUE, 1, null);
-      // Let's pretend Chromium does respond to the "continue" request immediately
-      resumed(DebugEvent.CLIENT_REQUEST);
-    }
-
-    @Override public boolean canSuspend() {
-      return !disconnectAspect.isDisconnected() && !isSuspended();
-    }
-
-    @Override public void suspend() throws DebugException {
-      vmEmbedder.getJavascriptVm().suspend(null);
     }
   };
 
@@ -361,7 +298,12 @@ public class ConnectedTargetData {
 
     public void resumed() {
       listenerBlock.waitUntilReady();
-      ConnectedTargetData.this.resumed(DebugEvent.CLIENT_REQUEST);
+      singleThread.getRemoteEventListener().resumed(null);
+    }
+
+    public void suspended(DebugContext context) {
+      listenerBlock.waitUntilReady();
+      singleThread.getRemoteEventListener().suspended(context);
     }
 
     public void scriptLoaded(Script newScript) {
@@ -377,23 +319,6 @@ public class ConnectedTargetData {
     public void scriptContentChanged(Script newScript) {
       listenerBlock.waitUntilReady();
       workspaceRelations.reloadScript(newScript);
-    }
-
-    public void suspended(DebugContext context) {
-      listenerBlock.waitUntilReady();
-      ConnectedTargetData.this.debugContext = context;
-      workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
-      int suspendedDetail;
-      if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
-        suspendedDetail = DebugEvent.BREAKPOINT;
-      } else {
-        if (context.getBreakpointsHit().isEmpty()) {
-          suspendedDetail = DebugEvent.STEP_END;
-        } else {
-          suspendedDetail = DebugEvent.BREAKPOINT;
-        }
-      }
-      ConnectedTargetData.this.suspended(suspendedDetail);
     }
 
     public VmStatusListener getVmStatusListener() {
@@ -416,7 +341,7 @@ public class ConnectedTargetData {
     IThread[] getThreads() throws DebugException {
       return disconnectAspect.isDisconnected()
           ? DebugTargetImpl.EMPTY_THREADS
-          : threads;
+          : threadArray;
     }
 
     @Override
@@ -430,7 +355,7 @@ public class ConnectedTargetData {
 
     @Override
     ISuspendResume getSuspendResume() {
-      return suspendResumeAspect;
+      return singleThread.getSuspendResumeAspect();
     }
 
     @Override
