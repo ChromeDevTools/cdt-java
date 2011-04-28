@@ -351,7 +351,8 @@ class DialogLogic {
         return createErrorOptional(new Message(Messages.LogicImpl_FEATURE_NOT_SUPPORTED,
             MessagePriority.BLOCKING_PROBLEM));
       }
-      if (uiValue.getConnectedData().getDebugContext() != debugContext) {
+      // Unsafe asynchronous check.
+      if (uiValue.getSuspendedState().isDismissed()) {
         return createErrorOptional(
             new Message(Messages.LogicImpl_CONTEXT_DISMISSED, MessagePriority.BLOCKING_PROBLEM));
       }

@@ -102,8 +102,16 @@ public interface WorkspaceBridge {
    * Breakpoint-related aspect of {@link WorkspaceBridge} interface.
    */
   interface BreakpointHandler extends IBreakpointListener, IBreakpointManagerListener {
+
     boolean supportsBreakpoint(IBreakpoint breakpoint);
-    void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit);
+
+    /**
+     * Registers hit breakpoints and returns their Eclipse counterpart objects.
+     * Consider splitting the operation into 2 independent operations.
+     */
+    Collection<? extends IBreakpoint> breakpointsHit(
+        Collection<? extends Breakpoint> breakpointsHit);
+
     void initBreakpointManagerListenerState(IBreakpointManager breakpointManager);
 
     void readBreakExceptionStateFromRemote();

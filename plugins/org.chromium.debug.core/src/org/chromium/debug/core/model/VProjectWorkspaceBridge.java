@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -12,6 +13,7 @@ import java.util.Map;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
+import org.chromium.debug.core.model.JavascriptThread.ResumeReason;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
@@ -335,10 +337,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       enablementMonitor.setState(enabled);
     }
 
-    public void breakpointsHit(Collection<? extends Breakpoint> breakpointsHit) {
+    public Collection<? extends IBreakpoint> breakpointsHit(
+        Collection<? extends Breakpoint> breakpointsHit) {
       if (breakpointsHit.isEmpty()) {
-        return;
+        return Collections.emptyList();
       }
+
+      Collection<IBreakpoint> uiBreakpoints = new ArrayList<IBreakpoint>(breakpointsHit.size());
 
       for (Breakpoint sdkBreakpoint : breakpointsHit) {
         WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
@@ -348,9 +353,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           } catch (CoreException e) {
             throw new RuntimeException(e);
           }
+
+          uiBreakpoints.add(uiBreakpoint.getInner());
         }
       }
+      return uiBreakpoints;
     }
+
     private String getTargetNameSafe() {
       try {
         return connectedTargetData.getDebugTarget().getLaunch().getLaunchConfiguration().getName();
@@ -406,25 +415,27 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     private String getThreadStateLabel(JavascriptThread thread) {
-      DebugContext context;
-      if (thread.isSuspended()) {
-        // Theoretically the context may be null.
-        context = thread.getConnectedData().getDebugContext();
-      } else {
-        context = null;
-      }
-      if (context == null) {
-        return Messages.JsThread_ThreadLabelRunning;
-      } else {
-        ExceptionData exceptionData = context.getExceptionData();
-        if (exceptionData != null) {
-          return NLS.bind(Messages.JsThread_ThreadLabelSuspendedExceptionFormat,
-              exceptionData.getExceptionMessage());
-        } else {
-          return Messages.JsThread_ThreadLabelSuspended;
-        }
-      }
+      return thread.describeState(THREAD_DESCRIBE_VISITOR);
     }
+
+    private final JavascriptThread.StateVisitor<String> THREAD_DESCRIBE_VISITOR =
+        new JavascriptThread.StateVisitor<String>() {
+          @Override
+          public String visitResumed(JavascriptThread.ResumeReason resumeReason) {
+            return Messages.JsThread_ThreadLabelRunning;
+          }
+
+          @Override
+          public String visitSuspended(IBreakpoint[] breakpoints,
+              ExceptionData exceptionData) {
+            if (exceptionData != null) {
+              return NLS.bind(Messages.JsThread_ThreadLabelSuspendedExceptionFormat,
+                  exceptionData.getExceptionMessage());
+            } else {
+              return Messages.JsThread_ThreadLabelSuspended;
+            }
+          }
+        };
 
     public String getStackFrameLabel(StackFrame stackFrame) throws DebugException {
       CallFrame callFrame = stackFrame.getCallFrame();

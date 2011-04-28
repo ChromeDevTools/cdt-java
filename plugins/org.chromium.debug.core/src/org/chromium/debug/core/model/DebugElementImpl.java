@@ -67,7 +67,7 @@ public abstract class DebugElementImpl extends PlatformObject implements IDebugE
    */
   public static abstract class WithSuspendedBase extends WithConnectedBase {
     public ConnectedTargetData getConnectedData() {
-      return getSuspendedState().getConnectedTargetData();
+      return getSuspendedState().getThread().getConnectedData();
     }
 
     public abstract JavascriptThread.SuspendedState getSuspendedState();
