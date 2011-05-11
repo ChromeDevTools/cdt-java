@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@85751
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -44,7 +44,6 @@ public interface RemoteObjectValue {
     STRING,
     NUMBER,
     BOOLEAN,
-    ERROR,
     REGEXP,
     DATE,
   }

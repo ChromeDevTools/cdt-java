@@ -28,7 +28,6 @@ import org.chromium.sdk.internal.wip.protocol.input.WipEventType;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
-import org.chromium.sdk.internal.wip.protocol.input.page.InspectedURLChangedEventData;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
@@ -191,14 +190,9 @@ class WipCommandProcessor {
   private static final EventMap EVENT_MAP;
   static {
     EVENT_MAP = new EventMap();
-    EVENT_MAP.add(InspectedURLChangedEventData.TYPE,
-        new EventHandler<InspectedURLChangedEventData>() {
-      @Override
-      void accept(InspectedURLChangedEventData eventData, WipCommandProcessor commandProcessor) {
-        commandProcessor.tabImpl.getScriptManager().pageReloaded();
-        commandProcessor.tabImpl.updateUrl(eventData.url());
-      }
-    });
+
+    // TODO: support url changed event.
+
     EVENT_MAP.add(PausedEventData.TYPE, new EventHandler<PausedEventData>() {
       @Override
       void accept(PausedEventData data, WipCommandProcessor commandProcessor) {
