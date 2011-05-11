@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@85751
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -22,17 +22,22 @@ public interface ScriptParsedEventData {
   /**
    Line offset of the script within the resource with given URL (for script tags).
    */
-  long lineOffset();
+  long startLine();
 
   /**
    Column offset of the script within the resource with given URL.
    */
-  long columnOffset();
+  long startColumn();
 
   /**
-   Length of the script
+   Last line of the script.
    */
-  long length();
+  long endLine();
+
+  /**
+   Length of the last line of the script.
+   */
+  long endColumn();
 
   /**
    Determines whether this script is a user extension script.

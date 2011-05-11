@@ -60,7 +60,7 @@ class WipScriptManager {
     }
 
     ScriptImpl.Descriptor descriptor = new ScriptImpl.Descriptor(Script.Type.NORMAL,
-        sourceID, url, (int) data.lineOffset(), (int) data.columnOffset(), -1);
+        sourceID, url, (int) data.startLine(), (int) data.startColumn(), -1);
     final ScriptImpl script = new ScriptImpl(descriptor, null);
     final ScriptData scriptData = new ScriptData(script);
 

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@85751
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -25,6 +25,12 @@ public interface PausedEventData {
      Call stack the virtual machine stopped on.
      */
     java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue> callFrames();
+
+    /**
+     Current exception object if script execution is paused when an exception is being thrown.
+     */
+    @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+    org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue exception();
 
   }
 }

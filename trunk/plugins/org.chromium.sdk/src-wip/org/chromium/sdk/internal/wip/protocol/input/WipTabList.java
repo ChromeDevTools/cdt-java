@@ -20,6 +20,8 @@ public interface WipTabList {
     String title();
     String url();
 
+    String thumbnailUrl();
+
     @JsonOptionalField
     String devtoolsFrontendUrl();
 

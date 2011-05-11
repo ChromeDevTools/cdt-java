@@ -423,8 +423,6 @@ class WipValueBuilder {
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ARRAY, new ArrayType());
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());
 
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ERROR, objectType);
-
     DEFAULT_VALUE_TYPE = objectType;
   }
 }
