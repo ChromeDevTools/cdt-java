@@ -3,7 +3,7 @@
 = Design Overview =
 
 == Components of the system ==
-The schema depicts how Debugger/SDK communicate with Chrome or standalone V8-based application. Note that the lower part of the picture describes design that is being [WipBackendDevelopmen developed now].
+The schema depicts how Debugger/SDK communicate with Chrome or standalone V8-based application. Note that the lower part of the picture describes design that is being [WipBackendDevelopment developed now].
 
 http://chromedevtools.googlecode.com/svn/wiki/ComponentsAndFuture.png
 
