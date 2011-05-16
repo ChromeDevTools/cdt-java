@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@85751
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86562
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -32,6 +32,8 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceContentData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.LoadEventFiredEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourcesData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.SearchResultValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateOnData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData.class,
