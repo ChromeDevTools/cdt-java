@@ -22,6 +22,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ObjectPropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
+import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
@@ -52,8 +53,8 @@ class WipValueBuilder {
   }
 
   public static JsVariable createVariable(JsValue jsValue,
-      ValueNameBuilder qualifiedNameBuilder) {
-    return new VariableImpl(jsValue, qualifiedNameBuilder);
+      ValueNameBuilder nameBuilder) {
+    return new VariableImpl(jsValue, nameBuilder);
   }
 
   private static ValueType getValueType(RemoteObjectValue valueData) {
@@ -206,7 +207,13 @@ class WipValueBuilder {
       }
 
       private void doLoadProperties() {
-        PropertyNameBuilder innerNameBuilder = new ObjectPropertyNameBuilder(nameBuilder);
+        PropertyNameBuilder innerNameBuilder;
+        QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+        if (qualifiedNameBuilder == null) {
+          innerNameBuilder = null;
+        } else {
+          innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
+        }
         valueLoader.loadJsObjectPropertiesAsync(valueData.objectId(), innerNameBuilder,
             loadedPropertiesRef);
       }
@@ -356,12 +363,12 @@ class WipValueBuilder {
 
   private static class VariableImpl implements JsVariable {
     private final JsValue jsValue;
-    private final ValueNameBuilder qualifiedNameBuilder;
+    private final ValueNameBuilder nameBuilder;
     private volatile String qualifiedName = null;
 
-    public VariableImpl(JsValue jsValue, ValueNameBuilder qualifiedNameBuilder) {
+    public VariableImpl(JsValue jsValue, ValueNameBuilder nameBuilder) {
       this.jsValue = jsValue;
-      this.qualifiedNameBuilder = qualifiedNameBuilder;
+      this.nameBuilder = nameBuilder;
     }
 
     @Override
@@ -376,7 +383,7 @@ class WipValueBuilder {
 
     @Override
     public String getName() {
-      return qualifiedNameBuilder.getShortName();
+      return nameBuilder.getShortName();
     }
 
     @Override
@@ -394,6 +401,10 @@ class WipValueBuilder {
     public String getFullyQualifiedName() {
       String result = qualifiedName;
       if (result == null) {
+        QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+        if (qualifiedNameBuilder == null) {
+          return null;
+        }
         StringBuilder builder = new StringBuilder();
         qualifiedNameBuilder.append(builder);
         result = builder.toString();

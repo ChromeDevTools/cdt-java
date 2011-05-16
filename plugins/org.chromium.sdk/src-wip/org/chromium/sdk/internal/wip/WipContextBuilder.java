@@ -21,7 +21,9 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
@@ -31,6 +33,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.ScriptImpl;
+import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
@@ -52,6 +55,8 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.LazyConstructable;
+
+import sun.net.www.content.audio.wav;
 
 /**
  * Builder for {@link DebugContext} that works with Wip protocol.
@@ -573,13 +578,18 @@ class WipContextBuilder {
 
               RemoteObjectValue valueData = getRemoteObjectValue(data);
 
-              ValueNameBuilder valueNameBuidler =
-                  WipExpressionBuilder.createRootName(expression, true);
-
               WipValueBuilder valueBuilder = getValueLoader().getValueBuilder();
-              JsVariable variable = valueBuilder.createVariable(valueData, valueNameBuidler);
 
-              // TODO: support isException
+              JsVariable variable;
+              if (getWasThrown(data) == Boolean.TRUE) {
+                variable = wrapExceptionValue(valueData, valueBuilder);
+              } else {
+                ValueNameBuilder valueNameBuidler =
+                    WipExpressionBuilder.createRootName(expression, true);
+
+                variable = valueBuilder.createVariable(valueData, valueNameBuidler);
+              }
+
               callback.success(variable);
             }
             @Override
@@ -599,6 +609,85 @@ class WipContextBuilder {
     }
   }
 
+  private JsVariable wrapExceptionValue(RemoteObjectValue valueData,
+      WipValueBuilder valueBuilder) {
+    JsValue exceptionValue = valueBuilder.wrap(valueData, null);
+
+    final JsVariable property =
+        WipValueBuilder.createVariable(exceptionValue, EVALUATE_EXCEPTION_INNER_NAME);
+
+    JsObject wrapperValue = new JsObject() {
+      @Override
+      public void reloadHeavyValue(ReloadBiggerCallback callback,
+          SyncCallback syncCallback) {
+        WipBrowserImpl.throwUnsupported();
+        return;
+      }
+
+      @Override
+      public boolean isTruncated() {
+        return false;
+      }
+
+      @Override
+      public String getValueString() {
+        return "<abnormal return>";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.TYPE_OBJECT;
+      }
+
+      @Override
+      public JsObject asObject() {
+        return this;
+      }
+
+      @Override
+      public String getRefId() {
+        return null;
+      }
+
+      @Override
+      public JsVariable getProperty(String name) {
+        if (name.equals(property.getName())) {
+          return property;
+        }
+        return null;
+      }
+
+      @Override
+      public Collection<? extends JsVariable> getProperties()
+          throws MethodIsBlockingException {
+        return Collections.singletonList(property);
+      }
+
+      @Override
+      public Collection<? extends JsVariable> getInternalProperties()
+          throws MethodIsBlockingException {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public String getClassName() {
+        return null;
+      }
+
+      @Override
+      public JsFunction asFunction() {
+        return null;
+      }
+
+      @Override
+      public JsArray asArray() {
+        return null;
+      }
+    };
+
+    return WipValueBuilder.createVariable(wrapperValue, EVALUATE_EXCEPTION_NAME);
+  }
+
   private static final Map<ScopeValue.Type, JsScope.Type> WIP_TO_SDK_SCOPE_TYPE;
   static {
     WIP_TO_SDK_SCOPE_TYPE = new HashMap<ScopeValue.Type, JsScope.Type>();
@@ -614,11 +703,17 @@ class WipContextBuilder {
 
   // TODO: this name must be built as non-derivable.
   private static final ValueNameBuilder EXCEPTION_NAME =
-      WipExpressionBuilder.createRootName("exception", false);
+      WipExpressionBuilder.createRootNameNoDerived("exception");
 
   // TODO: this name must be built as non-derivable.
   private static final ValueNameBuilder WITH_OBJECT_NAME =
-      WipExpressionBuilder.createRootName("<with object>", false);
+      WipExpressionBuilder.createRootNameNoDerived("<with object>");
+
+  private static final ValueNameBuilder EVALUATE_EXCEPTION_INNER_NAME =
+      WipExpressionBuilder.createRootNameNoDerived("<exception>");
+
+  private static final ValueNameBuilder EVALUATE_EXCEPTION_NAME =
+      WipExpressionBuilder.createRootNameNoDerived("<thrown exception>");
 
   private static class ScopeVariables {
     final List<JsVariable> variables;
