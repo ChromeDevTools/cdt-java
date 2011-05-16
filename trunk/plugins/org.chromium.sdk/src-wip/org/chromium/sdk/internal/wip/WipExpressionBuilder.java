@@ -14,9 +14,21 @@ import org.json.simple.JSONValue;
 public class WipExpressionBuilder {
 
   /**
-   * Builds a qualified name of some value.
+   * Holds a value short name and optionally a qualified name builder.
    */
   public interface ValueNameBuilder {
+    String getShortName();
+
+    /**
+     * @return value qualified name builder or null if there's no qualified name for the value
+     */
+    QualifiedNameBuilder getQualifiedNameBuilder();
+  }
+
+  /**
+   * Builds a qualified name of some value.
+   */
+  public interface QualifiedNameBuilder {
     void append(StringBuilder output);
 
     /**
@@ -24,8 +36,6 @@ public class WipExpressionBuilder {
      *   expression
      */
     boolean needsParentheses();
-
-    String getShortName();
   }
 
   /**
@@ -46,23 +56,35 @@ public class WipExpressionBuilder {
    */
   static ValueNameBuilder createValueOfPropertyNameBuilder(final String propertyName,
       final PropertyNameBuilder propertyNameBuilder) {
+
+    final QualifiedNameBuilder qualifiedNameBuilder;
+    if (propertyNameBuilder == null) {
+      qualifiedNameBuilder = null;
+    } else {
+      qualifiedNameBuilder = new QualifiedNameBuilder() {
+        @Override public boolean needsParentheses() {
+          return propertyNameBuilder.needsParentheses();
+        }
+
+        @Override public void append(StringBuilder output) {
+          propertyNameBuilder.build(propertyName, output);
+        }
+      };
+    }
+
     return new ValueNameBuilder() {
-      @Override public boolean needsParentheses() {
-        return propertyNameBuilder.needsParentheses();
-      }
-
-      @Override public void append(StringBuilder output) {
-        propertyNameBuilder.build(propertyName, output);
-      }
-
       @Override public String getShortName() {
         return propertyName;
+      }
+
+      @Override public QualifiedNameBuilder getQualifiedNameBuilder() {
+        return qualifiedNameBuilder;
       }
     };
   }
 
   static ValueNameBuilder createRootName(final String name, final boolean needsParentheses) {
-    return new ValueNameBuilder() {
+    final QualifiedNameBuilder qualifiedNameBuilder = new QualifiedNameBuilder() {
       @Override
       public void append(StringBuilder output) {
         output.append(name);
@@ -72,9 +94,26 @@ public class WipExpressionBuilder {
       public boolean needsParentheses() {
         return needsParentheses;
       }
-
+    };
+    return new ValueNameBuilder() {
       @Override public String getShortName() {
         return name;
+      }
+
+      @Override public QualifiedNameBuilder getQualifiedNameBuilder() {
+        return qualifiedNameBuilder;
+      }
+    };
+  }
+
+  public static ValueNameBuilder createRootNameNoDerived(final String name) {
+    return new ValueNameBuilder() {
+      @Override public String getShortName() {
+        return name;
+      }
+
+      @Override public QualifiedNameBuilder getQualifiedNameBuilder() {
+        return null;
       }
     };
   }
@@ -83,9 +122,9 @@ public class WipExpressionBuilder {
    * Builder for a qualified name of some object.
    */
   static class ObjectPropertyNameBuilder implements PropertyNameBuilder {
-    private final ValueNameBuilder objectNameBuilder;
+    private final QualifiedNameBuilder objectNameBuilder;
 
-    ObjectPropertyNameBuilder(ValueNameBuilder objectNameBuilder) {
+    ObjectPropertyNameBuilder(QualifiedNameBuilder objectNameBuilder) {
       this.objectNameBuilder = objectNameBuilder;
     }
 
@@ -107,7 +146,9 @@ public class WipExpressionBuilder {
 
     private void buildParentRef(StringBuilder output) {
       if (objectNameBuilder.needsParentheses()) {
-        output.append('(').append(output).append(')');
+        output.append('(');
+        objectNameBuilder.append(output);
+        output.append(')');
       } else {
         objectNameBuilder.append(output);
       }
