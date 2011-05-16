@@ -7,3 +7,12 @@ You will need developer Eclipse (with JDT and PDE) and you will need target Ecli
 The directory {{{/plugins}}} from {{{/trunk}}} or from branches contains several Eclipse projects. Check them out and import into Eclipse.
 
 Eclipse should build all projects. Run or Debug them as "Eclipse Application".
+
+= How to Build SDK alone =
+
+SDK is a Java library. Its sources are hosted inside {{{org.chromium.sdk}}} pluging. The easies way to build them is to use Eclipse.
+
+== Building in Eclipse ==
+Check out plug-in project {{{org.chromium.sdk}}} from SVN. Let Eclipse build it (usually it happens automatically). Start external tool "build_sdk_jar" (should appear in {{{Run | External Tools}}} menu once you checked out the project).
+
+A folder named {{{build-output}}} should appear under the project folder (you may need to manually refresh project folder to see it). Several .jar files should appear in the directory. These files comprise the SDK library.
