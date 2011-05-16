@@ -149,17 +149,13 @@ public class StackFrame extends StackFrameBase {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof StackFrame) {
-      StackFrame other = (StackFrame) obj;
-      return other.stackFrame.equals(this.stackFrame);
-    }
-    return false;
+  Object getObjectForEquals() {
+    return stackFrame;
   }
 
   @Override
-  public int hashCode() {
-    return stackFrame.hashCode();
+  boolean isRegularFrame() {
+    return true;
   }
 
   private final static Comparator<Variable> VARIABLE_COMPARATOR = new Comparator<Variable>() {
