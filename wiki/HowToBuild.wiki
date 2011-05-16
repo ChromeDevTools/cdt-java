@@ -16,3 +16,20 @@ SDK is a Java library. Its sources are hosted inside {{{org.chromium.sdk}}} plug
 Check out plug-in project {{{org.chromium.sdk}}} from SVN. Let Eclipse build it (usually it happens automatically). Start external tool "build_sdk_jar" (should appear in {{{Run | External Tools}}} menu once you checked out the project).
 
 A folder named {{{build-output}}} should appear under the project folder (you may need to manually refresh project folder to see it). Several .jar files should appear in the directory. These files comprise the SDK library.
+
+== Building without Eclipse ==
+Checkout {{{plugins/org.chromium.sdk}}} directory from the SVN (from trunk or a tagged version).
+
+Build Java sources (using JDK 6 or later). Source directories:
+  * src
+  * src-dynamic-impl/bridge
+  * src-dynamc-impl/parser
+  * src-wip
+  * src-wip-generated
+libraries:
+  * lib/json_simple/json_simple-1.1.jar
+
+= Build with parser's static implementation =
+In the project JSON messages get parsed by a dedicated parser. The parser has a domain-specific interfaces, that are normally implemented on the fly (using Java reflection). Alternatively a static (faster) implementation can be generated.
+
+TBD.
