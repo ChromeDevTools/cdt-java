@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
@@ -20,6 +21,8 @@ import org.chromium.sdk.JsValue.ReloadBiggerCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable.SetValueCallback;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
@@ -71,11 +74,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
 
     @Override
     protected String createWatchExpression() {
-      String expression = variable.getFullyQualifiedName();
-      if (expression == null) {
-        expression = variable.getName();
-      }
-      return expression;
+      return variable.getFullyQualifiedName();
     }
   }
 
@@ -239,15 +238,23 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   @Override
   public Object getAdapter(Class adapter) {
     if (IWatchExpressionFactoryAdapter.class == adapter) {
-      return new IWatchExpressionFactoryAdapter() {
-        public String createWatchExpression(IVariable variable) throws CoreException {
-          Variable castVariable = (Variable) variable;
-          return castVariable.createWatchExpression();
-        }
-      };
+      return EXPRESSION_FACTORY_ADAPTER;
     }
     return super.getAdapter(adapter);
   }
+
+  private final static IWatchExpressionFactoryAdapter EXPRESSION_FACTORY_ADAPTER =
+      new IWatchExpressionFactoryAdapter() {
+    public String createWatchExpression(IVariable variable) throws CoreException {
+      Variable castVariable = (Variable) variable;
+      String expressionText = castVariable.createWatchExpression();
+      if (expressionText == null) {
+        throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            Messages.Variable_CANNOT_BUILD_EXPRESSION));
+      }
+      return expressionText;
+    }
+  };
 
   public void setValue(String expression) throws DebugException {
   }
@@ -271,5 +278,8 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     return verifyValue(value.getValueString());
   }
 
+  /**
+   * @return expression or null
+   */
   protected abstract String createWatchExpression();
 }

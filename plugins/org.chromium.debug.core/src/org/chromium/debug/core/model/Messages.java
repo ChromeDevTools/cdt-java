@@ -95,6 +95,8 @@ public class Messages extends NLS {
 
   public static String TargetInitializeState_TERMINATED;
 
+  public static String Variable_CANNOT_BUILD_EXPRESSION;
+
   public static String Variable_NotScalarOrObjectFormat;
 
   public static String Variable_NullTypeForAVariable;
