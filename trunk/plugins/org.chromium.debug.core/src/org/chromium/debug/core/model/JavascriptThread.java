@@ -157,17 +157,13 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof ExceptionStackFrame == false) {
-        return false;
-      }
-      ExceptionStackFrame other = (ExceptionStackFrame) obj;
-      return this.exceptionData.equals(other.exceptionData);
+    Object getObjectForEquals() {
+      return exceptionData;
     }
 
     @Override
-    public int hashCode() {
-      return this.exceptionData.hashCode();
+    boolean isRegularFrame() {
+      return false;
     }
   }
 
@@ -180,11 +176,17 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
   }
 
   public IStackFrame getTopStackFrame() throws DebugException {
-    IStackFrame[] frames = getStackFrames();
-    if (frames.length > 0) {
+    StackFrameBase[] frames = getStackFrames();
+    if (frames.length == 0) {
+      return null;
+    }
+    if (frames[0].isRegularFrame()) {
       return frames[0];
     }
-    return null;
+    if (frames.length < 1) {
+      return null;
+    }
+    return frames[1];
   }
 
   public String getName() throws DebugException {

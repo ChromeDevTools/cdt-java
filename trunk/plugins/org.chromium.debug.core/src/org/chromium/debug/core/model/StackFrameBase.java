@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.DebugContext;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
@@ -88,6 +89,24 @@ public abstract class StackFrameBase extends DebugElementImpl.WithEvaluate imple
 
   public boolean hasRegisterGroups() throws DebugException {
     return false;
+  }
+
+  abstract boolean isRegularFrame();
+
+  abstract Object getObjectForEquals();
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof StackFrameBase == false) {
+      return false;
+    }
+    StackFrameBase other = (StackFrameBase) obj;
+    return this.getObjectForEquals().equals(other.getObjectForEquals());
+  }
+
+  @Override
+  public int hashCode() {
+    return getObjectForEquals().hashCode();
   }
 
   @Override
