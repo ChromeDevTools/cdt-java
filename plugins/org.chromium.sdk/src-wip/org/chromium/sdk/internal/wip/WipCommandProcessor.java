@@ -249,12 +249,17 @@ class WipCommandProcessor {
         if (handler == null) {
           return;
         }
+        WipEvent.Data genericData = event.data();
         T data;
-        try {
-          data = WipParserAccess.get().parse(event.data().getUnderlyingObject(),
-              type.getEventType());
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
+        if (genericData == null) {
+          data = null;
+        } else {
+          try {
+            data = WipParserAccess.get().parse(genericData.getUnderlyingObject(),
+                type.getEventType());
+          } catch (JsonProtocolParseException e) {
+            throw new RuntimeException(e);
+          }
         }
         handler.accept(data, commandProcessor);
       }

@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.wip;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,9 @@ import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -36,15 +39,19 @@ import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrame
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
+import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.EvaluateOnCallFrameParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.ResumeParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.StepIntoParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOutParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
+import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.LazyConstructable;
 
 /**
  * Builder for {@link DebugContext} that works with Wip protocol.
@@ -108,15 +115,38 @@ class WipContextBuilder {
   class WipDebugContextImpl implements DebugContext {
     private final WipValueLoader valueLoader = new WipValueLoader(this);
     private final List<CallFrameImpl> frames;
+    private final ExceptionData exceptionData;
     private final AtomicReference<CloseRequest> closeRequest =
         new AtomicReference<CloseRequest>(null);
+    private final JsEvaluateContext globalContext;
 
     public WipDebugContextImpl(PausedEventData data) {
-      List<CallFrameValue> frameDataList = data.details().callFrames();
+      PausedEventData.Details details = data.details();
+      List<CallFrameValue> frameDataList = details.callFrames();
       frames = new ArrayList<CallFrameImpl>(frameDataList.size());
       for (CallFrameValue frameData : frameDataList) {
         frames.add(new CallFrameImpl(frameData));
       }
+      RemoteObjectValue exceptionRemoteObject = details.exception();
+      if (exceptionRemoteObject == null) {
+        exceptionData = null;
+      } else {
+        JsValue exceptionValue =
+            valueLoader.getValueBuilder().wrap(exceptionRemoteObject, EXCEPTION_NAME);
+        exceptionData = new ExceptionDataImpl(exceptionValue);
+      }
+      globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
+        @Override protected EvaluateParams createRequestParams(String expression) {
+          return new EvaluateParams(expression, "watch-group", false);
+        }
+        @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
+          return data.result();
+        }
+
+        @Override protected Boolean getWasThrown(EvaluateData data) {
+          return data.wasThrown();
+        }
+      };
     }
 
     WipValueLoader getValueLoader() {
@@ -152,14 +182,16 @@ class WipContextBuilder {
 
     @Override
     public State getState() {
-      // TODO: implement.
-      return State.NORMAL;
+      if (exceptionData == null) {
+        return State.NORMAL;
+      } else {
+        return State.EXCEPTION;
+      }
     }
 
     @Override
     public ExceptionData getExceptionData() {
-      // TODO: implement.
-      return null;
+      return exceptionData;
     }
 
     @Override
@@ -190,7 +222,7 @@ class WipContextBuilder {
 
     @Override
     public JsEvaluateContext getGlobalEvaluateContext() {
-      return WipBrowserImpl.throwUnsupported();
+      return globalContext;
     }
 
     public WipTabImpl getTab() {
@@ -212,8 +244,7 @@ class WipContextBuilder {
     private class CallFrameImpl implements CallFrame {
       private final String functionName;
       private final String id;
-      private final List<ScopeImpl> scopes;
-      private final JsVariable thisObject;
+      private final LazyConstructable<ScopeData> scopeData;
       private final TextStreamPosition streamPosition;
       private final Long sourceId;
       private ScriptImpl scriptImpl;
@@ -223,26 +254,37 @@ class WipContextBuilder {
         id = frameData.id();
         Object sourceIDObject = frameData.location().sourceID();
         sourceId = Long.parseLong(sourceIDObject.toString());
-        List<ScopeValue> scopeDataList = frameData.scopeChain();
-        scopes = new ArrayList<ScopeImpl>(scopeDataList.size());
+        final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
-        // TODO: 'this' variable it sorted out by a brute force. Make it accurate.
-        RemoteObjectValue thisObjectData = null;
+        scopeData = LazyConstructable.create(new LazyConstructable.Factory<ScopeData>() {
+          @Override
+          public ScopeData construct() {
+            final List<JsScope> scopes = new ArrayList<JsScope>(scopeDataList.size());
 
-        for (int i = 0; i < scopeDataList.size(); i++) {
-          ScopeValue scopeData = scopeDataList.get(i);
-          // TODO(peter.rybin): provide actual scope type.
-          JsScope.Type type = (i == 0) ? JsScope.Type.LOCAL : JsScope.Type.GLOBAL;
-          scopes.add(new ScopeImpl(scopeData, type));
-          if (thisObjectData == null) {
-            thisObjectData = scopeData.getThis();
+            // TODO: 'this' variable is sorted out by the brute force. Make it accurate.
+            RemoteObjectValue thisObjectData = null;
+
+            for (int i = 0; i < scopeDataList.size(); i++) {
+              ScopeValue scopeData = scopeDataList.get(i);
+              // TODO(peter.rybin): provide actual scope type.
+              JsScope.Type type = WIP_TO_SDK_SCOPE_TYPE.get(scopeData.type());
+              if (type == null) {
+                type = JsScope.Type.UNKNOWN;
+              }
+              scopes.add(createScope(scopeData, type));
+              if (thisObjectData == null) {
+                thisObjectData = scopeData.getThis();
+              }
+            }
+            final JsVariable thisObject;
+            if (thisObjectData == null) {
+              thisObject = null;
+            } else {
+              thisObject = createSimpleNameVariable("this", thisObjectData);
+            }
+            return new ScopeData(scopes, thisObject);
           }
-        }
-        if (thisObjectData == null) {
-          thisObject = null;
-        } else {
-          thisObject = createSimpleNameVariable("this", thisObjectData);
-        }
+        });
 
         // 0-based.
         final int line = (int) frameData.location().lineNumber();
@@ -285,12 +327,12 @@ class WipContextBuilder {
 
       @Override
       public List<? extends JsScope> getVariableScopes() {
-        return scopes;
+        return scopeData.get().scopes;
       }
 
       @Override
       public JsVariable getReceiverVariable() {
-        return thisObject;
+        return scopeData.get().thisObject;
       }
 
       @Override
@@ -319,17 +361,80 @@ class WipContextBuilder {
         return valueLoader.getValueBuilder().createVariable(thisObjectData, valueNameBuidler);
       }
 
-      private final WipEvaluateContextImpl evaluateContext = new WipEvaluateContextImpl() {
-        @Override
-        protected String getCallFrameId() {
-          return id;
+      private final WipEvaluateContextImpl<?,?> evaluateContext =
+          new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
+        @Override protected EvaluateOnCallFrameParams createRequestParams(String expression) {
+          return new EvaluateOnCallFrameParams(id, expression, "watch-group", false);
+        }
+        @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
+          return data.result();
+        }
+
+        @Override protected Boolean getWasThrown(EvaluateOnCallFrameData data) {
+          return data.wasThrown();
         }
       };
+    }
+
+    private class ScopeData {
+      final List<JsScope> scopes;
+      final JsVariable thisObject;
+
+      ScopeData(List<JsScope> scopes, JsVariable thisObject) {
+        this.scopes = scopes;
+        this.thisObject = thisObject;
+      }
+    }
+
+    private class ExceptionDataImpl implements ExceptionData {
+      private final JsValue exceptionValue;
+
+      ExceptionDataImpl(JsValue exceptionValue) {
+        this.exceptionValue = exceptionValue;
+      }
+
+      @Override
+      public JsObject getExceptionObject() {
+        if (exceptionValue instanceof JsObject == false) {
+          return null;
+        }
+        return (JsObject) exceptionValue;
+      }
+
+      @Override
+      public JsValue getExceptionValue() {
+        return exceptionValue;
+      }
+
+      @Override
+      public boolean isUncaught() {
+        // TODO: implement.
+        return false;
+      }
+
+      @Override
+      public String getSourceText() {
+        // TODO: implement.
+        return null;
+      }
+
+      @Override
+      public String getExceptionMessage() {
+        return exceptionValue.getValueString();
+      }
     }
 
     @Override
     public JavascriptVm getJavascriptVm() {
       return tabImpl;
+    }
+
+    JsScope createScope(ScopeValue scopeData, JsScope.Type type) {
+      if (type == JsScope.Type.WITH) {
+        return new WithScopeImpl(scopeData);
+      } else {
+        return new ScopeImpl(scopeData, type);
+      }
     }
 
     private class ScopeImpl implements JsScope {
@@ -407,7 +512,40 @@ class WipContextBuilder {
       }
     }
 
-    private abstract class WipEvaluateContextImpl extends JsEvaluateContextBase {
+    private class WithScopeImpl implements JsScope.WithScope {
+      private final JsValue jsValue;
+
+      WithScopeImpl(ScopeValue scopeData) {
+        jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), WITH_OBJECT_NAME);
+      }
+
+      @Override
+      public Type getType() {
+        return Type.WITH;
+      }
+
+      @Override
+      public WithScope asWithScope() {
+        return this;
+      }
+
+      @Override
+      public List<? extends JsVariable> getVariables() {
+        JsObject asObject = jsValue.asObject();
+        if (asObject == null) {
+          return Collections.emptyList();
+        }
+        return new ArrayList<JsVariable>(asObject.getProperties());
+      }
+
+      @Override
+      public JsValue getWithArgument() {
+        return jsValue;
+      }
+    }
+
+    private abstract class WipEvaluateContextImpl<DATA, PARAMS extends WipParamsWithResponse<DATA>>
+        extends JsEvaluateContextBase {
       @Override
       public DebugContext getDebugContext() {
         return WipDebugContextImpl.this;
@@ -423,17 +561,17 @@ class WipContextBuilder {
         }
         // TODO: set a proper value of injectedScriptIdInt.
         int injectedScriptIdInt = 0;
-        EvaluateOnCallFrameParams params = new EvaluateOnCallFrameParams(getCallFrameId(),
-            expression, "watch-group", false);
+        PARAMS params = createRequestParams(expression);
 
-        JavascriptVm.GenericCallback<EvaluateOnCallFrameData> commandCallback;
+        JavascriptVm.GenericCallback<DATA> commandCallback;
         if (callback == null) {
           commandCallback = null;
         } else {
-          commandCallback = new JavascriptVm.GenericCallback<EvaluateOnCallFrameData>() {
+          commandCallback = new JavascriptVm.GenericCallback<DATA>() {
             @Override
-            public void success(EvaluateOnCallFrameData data) {
-              RemoteObjectValue valueData = data.result();
+            public void success(DATA data) {
+
+              RemoteObjectValue valueData = getRemoteObjectValue(data);
 
               ValueNameBuilder valueNameBuidler =
                   WipExpressionBuilder.createRootName(expression, true);
@@ -453,9 +591,34 @@ class WipContextBuilder {
         tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
       }
 
-      protected abstract String getCallFrameId();
+      protected abstract PARAMS createRequestParams(String expression);
+
+      protected abstract RemoteObjectValue getRemoteObjectValue(DATA data);
+
+      protected abstract Boolean getWasThrown(DATA data);
     }
   }
+
+  private static final Map<ScopeValue.Type, JsScope.Type> WIP_TO_SDK_SCOPE_TYPE;
+  static {
+    WIP_TO_SDK_SCOPE_TYPE = new HashMap<ScopeValue.Type, JsScope.Type>();
+
+    WIP_TO_SDK_SCOPE_TYPE.put(ScopeValue.Type.GLOBAL, JsScope.Type.GLOBAL);
+    WIP_TO_SDK_SCOPE_TYPE.put(ScopeValue.Type.LOCAL, JsScope.Type.LOCAL);
+    WIP_TO_SDK_SCOPE_TYPE.put(ScopeValue.Type.WITH, JsScope.Type.WITH);
+    WIP_TO_SDK_SCOPE_TYPE.put(ScopeValue.Type.CLOSURE, JsScope.Type.CLOSURE);
+    WIP_TO_SDK_SCOPE_TYPE.put(ScopeValue.Type.CATCH, JsScope.Type.CATCH);
+
+    assert WIP_TO_SDK_SCOPE_TYPE.size() == ScopeValue.Type.values().length;
+  }
+
+  // TODO: this name must be built as non-derivable.
+  private static final ValueNameBuilder EXCEPTION_NAME =
+      WipExpressionBuilder.createRootName("exception", false);
+
+  // TODO: this name must be built as non-derivable.
+  private static final ValueNameBuilder WITH_OBJECT_NAME =
+      WipExpressionBuilder.createRootName("<with object>", false);
 
   private static class ScopeVariables {
     final List<JsVariable> variables;
