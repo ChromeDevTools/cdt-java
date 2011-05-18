@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
@@ -90,6 +92,8 @@ public class WipValueLoader {
 
   interface ObjectProperties {
     List<? extends JsVariable> properties();
+    JsVariable getProperty(String name);
+
     List<? extends JsVariable> internalProperties();
   }
 
@@ -133,13 +137,31 @@ public class WipValueLoader {
       }
 
       final ObjectProperties result = new ObjectProperties() {
+        private volatile Map<String, JsVariable> propertyMap = null;
+
         @Override
         public List<? extends JsVariable> properties() {
           return properties;
         }
+
         @Override
         public List<? extends JsVariable> internalProperties() {
           return internalProperties;
+        }
+
+        @Override
+        public JsVariable getProperty(String name) {
+          Map<String, JsVariable> map = propertyMap;
+          if (map == null) {
+            List<? extends JsVariable> list = properties();
+            map = new HashMap<String, JsVariable>(list.size());
+            for (JsVariable property : list) {
+              map.put(property.getName(), property);
+            }
+            // Possibly overwrite other already created map, but we don't care about instance here.
+            propertyMap = map;
+          }
+          return map.get(name);
         }
       };
       return Getter.newNormal(result);
@@ -158,12 +180,13 @@ public class WipValueLoader {
 
   private static final Getter<ObjectProperties> EMPTY_OBJECT_PROPERTIES_GETTER =
       Getter.newNormal(((ObjectProperties) new ObjectProperties() {
-        @Override
-        public List<? extends JsVariable> properties() {
+        @Override public List<? extends JsVariable> properties() {
           return Collections.emptyList();
         }
-        @Override
-        public List<? extends JsVariable> internalProperties() {
+        @Override public JsVariable getProperty(String name) {
+          return null;
+        }
+        @Override public List<? extends JsVariable> internalProperties() {
           return Collections.emptyList();
         }
       }));

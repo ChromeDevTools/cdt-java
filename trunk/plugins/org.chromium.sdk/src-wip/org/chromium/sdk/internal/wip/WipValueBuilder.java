@@ -95,13 +95,11 @@ class WipValueBuilder {
           return null;
         }
         @Override public boolean isTruncated() {
-          // TODO(peter.rybin): implement.
           return false;
         }
         @Override public void reloadHeavyValue(ReloadBiggerCallback callback,
             SyncCallback syncCallback) {
-          // TODO(peter.rybin): implement.
-          WipBrowserImpl.throwUnsupported();
+          throw new UnsupportedOperationException();
         }
       };
     }
@@ -164,13 +162,7 @@ class WipValueBuilder {
       @Override
       public void reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
-        // TODO(peter.rybin): implement.
-        WipBrowserImpl.throwUnsupported();
-      }
-
-      @Override
-      public String getClassName() {
-        return WipBrowserImpl.throwUnsupported();
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -206,6 +198,10 @@ class WipValueBuilder {
         return loadedPropertiesRef.getSync().get();
       }
 
+      protected RemoteObjectValue getValueData() {
+        return valueData;
+      }
+
       private void doLoadProperties() {
         PropertyNameBuilder innerNameBuilder;
         QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
@@ -221,14 +217,47 @@ class WipValueBuilder {
   }
 
   private static class ObjectType extends ObjectTypeBase {
-    ObjectType() {
-      super(JsValue.Type.TYPE_OBJECT);
+    ObjectType(JsValue.Type type) {
+      super(type);
     }
 
     @Override
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
+        @Override
+        public String getClassName() {
+          return getValueData().description();
+        }
+
+        @Override public JsArray asArray() {
+          return null;
+        }
+
+        @Override public JsFunction asFunction() {
+          return null;
+        }
+      };
+    }
+  }
+
+  private static class FixedClassObjectType extends ObjectTypeBase {
+    private final String className;
+
+    FixedClassObjectType(JsValue.Type type, String className) {
+      super(type);
+      this.className = className;
+    }
+
+    @Override
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
+        ValueNameBuilder nameBuilder) {
+      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
+        @Override
+        public String getClassName() {
+          return className;
+        }
+
         @Override public JsArray asArray() {
           return null;
         }
@@ -263,6 +292,11 @@ class WipValueBuilder {
       @Override
       public JsArray asArray() {
         return this;
+      }
+
+      @Override
+      public String getClassName() {
+        return "Array";
       }
 
       @Override
@@ -357,6 +391,11 @@ class WipValueBuilder {
           // TODO: make it a function, when backend provides data!
           return null;
         }
+
+        @Override
+        public String getClassName() {
+          return "Function";
+        }
       };
     }
   }
@@ -429,10 +468,19 @@ class WipValueBuilder {
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.UNDEFINED,
         new PrimitiveType(JsValue.Type.TYPE_UNDEFINED));
 
-    ObjectType objectType = new ObjectType();
+    ObjectType objectType = new ObjectType(JsValue.Type.TYPE_OBJECT);
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.OBJECT, objectType);
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ARRAY, new ArrayType());
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());
+
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.REGEXP,
+        new FixedClassObjectType(JsValue.Type.TYPE_REGEXP, "RegExp"));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.DATE,
+        new FixedClassObjectType(JsValue.Type.TYPE_DATE, "Date"));
+
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NODE, objectType);
+
+    assert PROTOCOL_TYPE_TO_VALUE_TYPE.size() == RemoteObjectValue.Type.values().length;
 
     DEFAULT_VALUE_TYPE = objectType;
   }
