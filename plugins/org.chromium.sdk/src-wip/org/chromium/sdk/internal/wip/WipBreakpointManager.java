@@ -4,6 +4,10 @@
 
 package org.chromium.sdk.internal.wip;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.Breakpoint.Type;
@@ -18,6 +22,8 @@ import org.chromium.sdk.SyncCallback;
 public class WipBreakpointManager {
   private final WipTabImpl tabImpl;
   private final AtomicInteger breakpointUniqueId = new AtomicInteger(0);
+
+  private final Set<WipBreakpointImpl> breakpoints = new HashSet<WipBreakpointImpl>();
 
   WipBreakpointManager(WipTabImpl tabImpl) {
     this.tabImpl = tabImpl;
@@ -43,8 +49,12 @@ public class WipBreakpointManager {
 
     int sdkId = breakpointUniqueId.getAndAdd(1);
 
-    final WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(tabImpl, sdkId,
+    final WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(this, sdkId,
         script, line, column, condition, enabled);
+
+    synchronized (breakpoints) {
+      breakpoints.add(breakpointImpl);
+    }
 
     if (enabled) {
       if (condition == null) {
@@ -75,6 +85,22 @@ public class WipBreakpointManager {
     } else {
       callback.success(breakpointImpl);
       syncCallback.callbackDone(null);
+    }
+  }
+
+  void breakpointDeleted(WipBreakpointImpl breakpoint) {
+    synchronized (breakpoints) {
+      breakpoints.remove(breakpoint);
+    }
+  }
+
+  WipCommandProcessor getCommandProcessor() {
+    return tabImpl.getCommandProcessor();
+  }
+
+  Collection<WipBreakpointImpl> getAllBreakpoints() {
+    synchronized (breakpoints) {
+      return new ArrayList<WipBreakpointImpl>(breakpoints);
     }
   }
 }

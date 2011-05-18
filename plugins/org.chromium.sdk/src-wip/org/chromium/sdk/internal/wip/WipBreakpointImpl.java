@@ -11,9 +11,12 @@ import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData;
-import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData;
+import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.RemoveBreakpointParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointByUrlParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointParams;
 import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructableWrapper;
 import org.chromium.sdk.util.DestructingGuard;
@@ -24,7 +27,7 @@ import org.chromium.sdk.util.DestructingGuard;
  * synchronization (serialize calls to setters, {@link #flush} and {@link #clear}).
  */
 public class WipBreakpointImpl implements Breakpoint {
-  private final WipTabImpl tabImpl;
+  private final WipBreakpointManager breakpointManager;
 
   private final ScriptUrlOrId script;
 
@@ -38,9 +41,9 @@ public class WipBreakpointImpl implements Breakpoint {
   private volatile boolean enabled;
   private volatile boolean isDirty;
 
-  public WipBreakpointImpl(WipTabImpl tabImpl, int sdkId, ScriptUrlOrId script,
+  public WipBreakpointImpl(WipBreakpointManager breakpointManager, int sdkId, ScriptUrlOrId script,
       int lineNumber, int columnNumber, String condition, boolean enabled) {
-    this.tabImpl = tabImpl;
+    this.breakpointManager = breakpointManager;
     this.sdkId = sdkId;
     this.script = script;
     this.lineNumber = lineNumber;
@@ -152,6 +155,7 @@ public class WipBreakpointImpl implements Breakpoint {
   @Override
   public void clear(final BreakpointCallback callback, SyncCallback syncCallback) {
     if (protocolId == null) {
+      breakpointManager.breakpointDeleted(this);
       callback.success(this);
       syncCallback.callbackDone(null);
     }
@@ -164,6 +168,7 @@ public class WipBreakpointImpl implements Breakpoint {
     } else {
       commandCallback = new WipCommandCallback.Default() {
         @Override protected void onSuccess(Success success) {
+          breakpointManager.breakpointDeleted(WipBreakpointImpl.this);
           callback.success(WipBreakpointImpl.this);
         }
         @Override protected void onError(String message) {
@@ -172,7 +177,7 @@ public class WipBreakpointImpl implements Breakpoint {
       };
     }
 
-    tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
+    breakpointManager.getCommandProcessor().send(params, commandCallback, syncCallback);
   }
 
   @Override
@@ -208,8 +213,8 @@ public class WipBreakpointImpl implements Breakpoint {
 
       // Call syncCallback if something goes wrong.
       guard.addValue(callbackAsDestructable);
-      tabImpl.getCommandProcessor().send(new RemoveBreakpointParams(protocolId), removeCallback,
-          DestructableWrapper.guardAsCallback(guard));
+      breakpointManager.getCommandProcessor().send(new RemoveBreakpointParams(protocolId),
+          removeCallback, DestructableWrapper.guardAsCallback(guard));
     }
   }
 
@@ -242,7 +247,7 @@ public class WipBreakpointImpl implements Breakpoint {
       }
       sendSetBreakpointRequest(script, lineNumber, columnNumber, condition,
           setCommandCallback, DestructableWrapper.guardAsCallback(guard),
-          tabImpl.getCommandProcessor());
+          breakpointManager.getCommandProcessor());
     } else {
       // Breakpoint is disabled, do not create it.
       callbackAsDestructable.destruct();
@@ -259,23 +264,29 @@ public class WipBreakpointImpl implements Breakpoint {
     scriptRef.accept(new ScriptUrlOrId.Visitor<Void>() {
       @Override
       public Void forId(long sourceId) {
-        // TODO: implement.
-        return WipBrowserImpl.throwUnsupported();
+        sendRequest(sourceId, RequestHandler.FOR_ID);
+        return null;
       }
 
       @Override
       public Void forUrl(String url) {
-        SetBreakpointByUrlParams request =
-            new SetBreakpointByUrlParams(url, lineNumber, (long) columnNumber, condition);
+        sendRequest(url, RequestHandler.FOR_URL);
+        return null;
+      }
 
-        JavascriptVm.GenericCallback<SetBreakpointByUrlData> wrappedCallback;
+      private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> void sendRequest(T parameter,
+          final RequestHandler<T, DATA, PARAMS> handler) {
+        PARAMS requestParams =
+            handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
+
+        JavascriptVm.GenericCallback<DATA> wrappedCallback;
         if (callback == null) {
           wrappedCallback = null;
         } else {
-          wrappedCallback = new JavascriptVm.GenericCallback<SetBreakpointByUrlData>() {
+          wrappedCallback = new JavascriptVm.GenericCallback<DATA>() {
             @Override
-            public void success(SetBreakpointByUrlData data) {
-              callback.success(data.breakpointId());
+            public void success(DATA data) {
+              callback.success(handler.getBreakpointId(data));
             }
 
             @Override
@@ -285,10 +296,49 @@ public class WipBreakpointImpl implements Breakpoint {
           };
         }
 
-        commandProcessor.send(request, wrappedCallback, syncCallback);
-        return null;
+        commandProcessor.send(requestParams, wrappedCallback, syncCallback);
       }
     });
+  }
+
+  private static abstract class RequestHandler<T,
+      DATA, PARAMS extends WipParamsWithResponse<DATA>> {
+
+    abstract PARAMS createRequestParams(T parameter, long lineNumber, long columnNumberOpt,
+        String conditionOpt);
+
+    abstract String getBreakpointId(DATA data);
+
+    static final RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> FOR_URL =
+        new RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams>() {
+          @Override
+          SetBreakpointByUrlParams createRequestParams(String url,
+              long lineNumber, long columnNumber, String condition) {
+            return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition);
+          }
+
+          @Override
+          String getBreakpointId(SetBreakpointByUrlData data) {
+            return data.breakpointId();
+          }
+        };
+
+
+    static final RequestHandler<Long, SetBreakpointData, SetBreakpointParams> FOR_ID =
+        new RequestHandler<Long, SetBreakpointData, SetBreakpointParams>() {
+          @Override
+          SetBreakpointParams createRequestParams(Long sourceId,
+              long lineNumber, long columnNumber, String condition) {
+            LocationParam locationParam =
+                new LocationParam(String.valueOf(sourceId), lineNumber, columnNumber);
+            return new SetBreakpointParams(locationParam, condition);
+          }
+
+          @Override
+          String getBreakpointId(SetBreakpointData data) {
+            return data.breakpointId();
+          }
+        };
   }
 
   private static <T> boolean eq(T left, T right) {
