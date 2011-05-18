@@ -334,6 +334,9 @@ public class ConnectedTargetData {
 
     @Override
     String getVmStatus() {
+      if (isDisconnected) {
+        return null;
+      }
       return vmStatusListener.getStatusString();
     }
 
