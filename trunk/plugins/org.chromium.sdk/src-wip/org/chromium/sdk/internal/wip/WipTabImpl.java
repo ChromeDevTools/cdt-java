@@ -196,6 +196,7 @@ public class WipTabImpl implements BrowserTab {
     }
   }
 
+  @Override
   public Version getVersion() {
     // TODO(peter.rybin): support it.
     return new Version(Collections.<Integer>emptyList(), " <Unknown V8 version>");
@@ -256,9 +257,7 @@ public class WipTabImpl implements BrowserTab {
   public void listBreakpoints(ListBreakpointsCallback callback,
       SyncCallback syncCallback) {
     if (callback != null) {
-      // TODO: stub result; implement the true list.
-      List<Breakpoint> stubEmptyList = Collections.emptyList();
-      callback.success(stubEmptyList);
+      callback.success(breakpointManager.getAllBreakpoints());
     }
     if (syncCallback != null) {
       syncCallback.callbackDone(null);
