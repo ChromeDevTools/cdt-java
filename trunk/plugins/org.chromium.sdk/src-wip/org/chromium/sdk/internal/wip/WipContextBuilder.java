@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
@@ -266,26 +267,34 @@ class WipContextBuilder {
           public ScopeData construct() {
             final List<JsScope> scopes = new ArrayList<JsScope>(scopeDataList.size());
 
-            // TODO: 'this' variable is sorted out by the brute force. Make it accurate.
-            RemoteObjectValue thisObjectData = null;
+            ScopeValue localScopeData = null;
 
             for (int i = 0; i < scopeDataList.size(); i++) {
               ScopeValue scopeData = scopeDataList.get(i);
-              // TODO(peter.rybin): provide actual scope type.
               JsScope.Type type = WIP_TO_SDK_SCOPE_TYPE.get(scopeData.type());
               if (type == null) {
                 type = JsScope.Type.UNKNOWN;
               }
               scopes.add(createScope(scopeData, type));
-              if (thisObjectData == null) {
-                thisObjectData = scopeData.getThis();
+
+              if (type == JsScope.Type.LOCAL) {
+                if (localScopeData != null) {
+                  LOGGER.log(Level.SEVERE, "Double local scope", new Exception());
+                }
+                localScopeData = scopeData;
               }
             }
             final JsVariable thisObject;
-            if (thisObjectData == null) {
+            if (localScopeData == null) {
+              LOGGER.log(Level.SEVERE, "Missing local scope", new Exception());
               thisObject = null;
             } else {
-              thisObject = createSimpleNameVariable("this", thisObjectData);
+              RemoteObjectValue thisObjectData = localScopeData.getThis();
+              if (thisObjectData == null) {
+                thisObject = null;
+              } else {
+                thisObject = createSimpleNameVariable("this", thisObjectData);
+              }
             }
             return new ScopeData(scopes, thisObject);
           }
