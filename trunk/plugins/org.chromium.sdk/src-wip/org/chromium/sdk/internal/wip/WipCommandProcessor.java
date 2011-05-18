@@ -28,6 +28,8 @@ import org.chromium.sdk.internal.wip.protocol.input.WipEventType;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData;
+import org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
@@ -51,10 +53,6 @@ class WipCommandProcessor {
 
     baseProcessor =
         new BaseCommandProcessor<Integer, JSONObject, JSONObject, WipCommandResponse>(handler);
-  }
-  // TODO: inline this method.
-  void send(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
-    sendRaw(message, callback, syncCallback);
   }
 
   void sendRaw(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
@@ -191,8 +189,6 @@ class WipCommandProcessor {
   static {
     EVENT_MAP = new EventMap();
 
-    // TODO: support url changed event.
-
     EVENT_MAP.add(PausedEventData.TYPE, new EventHandler<PausedEventData>() {
       @Override
       void accept(PausedEventData data, WipCommandProcessor commandProcessor) {
@@ -212,6 +208,16 @@ class WipCommandProcessor {
         commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(eventData);
       }
     });
+
+    EVENT_MAP.add(FrameNavigatedEventData.TYPE, new EventHandler<FrameNavigatedEventData> () {
+      @Override
+      void accept(FrameNavigatedEventData eventData,
+          WipCommandProcessor commandProcessor) {
+        commandProcessor.tabImpl.getFrameManager().frameNavigated(eventData);
+      }
+    });
+
+    EVENT_MAP.add(FrameDetachedEventData.TYPE, null);
   }
 
   public void runInDispatchThread(Runnable runnable) {
