@@ -16,7 +16,7 @@ import java.util.Set;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.ScriptImpl;
+import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.GetScriptSourceData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
@@ -59,9 +59,9 @@ class WipScriptManager {
       url = null;
     }
 
-    ScriptImpl.Descriptor descriptor = new ScriptImpl.Descriptor(Script.Type.NORMAL,
+    ScriptBase.Descriptor descriptor = new ScriptBase.Descriptor(Script.Type.NORMAL,
         sourceID, url, (int) data.startLine(), (int) data.startColumn(), -1);
-    final ScriptImpl script = new ScriptImpl(descriptor, null);
+    final ScriptBase script = new WipScriptImpl(descriptor);
     final ScriptData scriptData = new ScriptData(script);
 
     synchronized (scriptIdToData) {
@@ -88,10 +88,10 @@ class WipScriptManager {
    * Asynchronously loads script source.
    */
   private final class SourceLoadOperation implements AsyncFuture.Operation<Boolean> {
-    private final ScriptImpl script;
+    private final ScriptBase script;
     private final long sourceID;
 
-    private SourceLoadOperation(ScriptImpl script, long sourceID) {
+    private SourceLoadOperation(ScriptBase script, long sourceID) {
       this.script = script;
       this.sourceID = sourceID;
     }
@@ -117,10 +117,10 @@ class WipScriptManager {
   }
 
   private class ScriptData {
-    final ScriptImpl scriptImpl;
+    final ScriptBase scriptImpl;
     final AsyncFutureRef<Boolean> sourceLoadedFuture = new AsyncFutureRef<Boolean>();
 
-    ScriptData(ScriptImpl scriptImpl) {
+    ScriptData(ScriptBase scriptImpl) {
       this.scriptImpl = scriptImpl;
     }
   }
@@ -133,7 +133,7 @@ class WipScriptManager {
   void loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
       SyncCallback syncCallback) {
     Queue<ScriptData> scripts = new ArrayDeque<ScriptData>(ids.size());
-    Map<Long, ScriptImpl> result = new HashMap<Long, ScriptImpl>(ids.size());
+    Map<Long, ScriptBase> result = new HashMap<Long, ScriptBase>(ids.size());
     synchronized (scriptIdToData) {
       for (Long id : ids) {
         ScriptData data = scriptIdToData.get(id);
@@ -157,11 +157,11 @@ class WipScriptManager {
   }
 
   interface ScriptSourceLoadCallback {
-    void done(Map<Long, ScriptImpl> loadedScripts);
+    void done(Map<Long, ScriptBase> loadedScripts);
   }
 
   private void loadNextScript(final Queue<ScriptData> scripts,
-      final Map<Long, ScriptImpl> result, final ScriptSourceLoadCallback callback,
+      final Map<Long, ScriptBase> result, final ScriptSourceLoadCallback callback,
       final Destructable operationDestructable) {
     final ScriptData data = scripts.poll();
     if (data == null) {

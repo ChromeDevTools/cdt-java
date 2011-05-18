@@ -18,7 +18,7 @@ import org.chromium.sdk.internal.FunctionAdditionalProperties;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
-import org.chromium.sdk.internal.ScriptImpl;
+import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.ScriptManager;
 import org.chromium.sdk.internal.SubpropertiesMirror;
 import org.chromium.sdk.internal.ValueLoadException;
@@ -104,7 +104,7 @@ public class V8Helper {
                 continue;
               }
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
-              ScriptImpl scriptById = scriptManager.findById(id);
+              ScriptBase scriptById = scriptManager.findById(id);
               if (scriptById == null) {
                 scriptManager.addScript(scriptHandle, successResponse.refs());
               } else {

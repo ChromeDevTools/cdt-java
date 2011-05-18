@@ -33,7 +33,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
-import org.chromium.sdk.internal.ScriptImpl;
+import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
@@ -80,12 +80,12 @@ class WipContextBuilder {
     final WipDebugContextImpl context = new WipDebugContextImpl(data);
     currentContext = context;
 
-    final List<Map<Long, ScriptImpl>> loadedScriptsHolder = new ArrayList<Map<Long,ScriptImpl>>(1);
+    final List<Map<Long, ScriptBase>> loadedScriptsHolder = new ArrayList<Map<Long,ScriptBase>>(1);
 
     tabImpl.getScriptManager().loadScriptSourcesAsync(context.getScriptIds(),
         new WipScriptManager.ScriptSourceLoadCallback() {
           @Override
-          public void done(Map<Long, ScriptImpl> loadedScripts) {
+          public void done(Map<Long, ScriptBase> loadedScripts) {
             loadedScriptsHolder.add(loadedScripts);
           }
         },
@@ -175,7 +175,7 @@ class WipContextBuilder {
       return scriptIds;
     }
 
-    void setScripts(Map<Long, ScriptImpl> loadedScripts) {
+    void setScripts(Map<Long, ScriptBase> loadedScripts) {
       for (CallFrameImpl frame : frames) {
         Long sourceId = frame.getSourceId();
         if (sourceId != null) {
@@ -251,7 +251,7 @@ class WipContextBuilder {
       private final LazyConstructable<ScopeData> scopeData;
       private final TextStreamPosition streamPosition;
       private final Long sourceId;
-      private ScriptImpl scriptImpl;
+      private ScriptBase scriptImpl;
 
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
@@ -328,7 +328,7 @@ class WipContextBuilder {
         return sourceId;
       }
 
-      void setScript(ScriptImpl scriptImpl) {
+      void setScript(ScriptBase scriptImpl) {
         this.scriptImpl = scriptImpl;
       }
 

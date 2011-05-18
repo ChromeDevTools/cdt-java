@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.ScriptImpl.Descriptor;
+import org.chromium.sdk.internal.ScriptBase.Descriptor;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
@@ -36,8 +36,8 @@ public class ScriptManager {
   /**
    * Maps script id's to scripts.
    */
-  private final Map<Long, ScriptImpl> idToScript =
-      Collections.synchronizedMap(new HashMap<Long, ScriptImpl>());
+  private final Map<Long, ScriptBase> idToScript =
+      Collections.synchronizedMap(new HashMap<Long, ScriptBase>());
 
   private final V8ContextFilter contextFilter;
   private final DebugSession debugSession;
@@ -57,7 +57,7 @@ public class ScriptManager {
    */
   public synchronized Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
 
-    ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
+    ScriptBase theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
       Descriptor desc = Descriptor.forResponse(scriptBody, refs, contextFilter);
@@ -75,7 +75,7 @@ public class ScriptManager {
   }
 
   public void scriptCollected(long scriptId) {
-    ScriptImpl script;
+    ScriptBase script;
     synchronized (this) {
       script = idToScript.remove(scriptId);
       if (script == null) {
@@ -93,7 +93,7 @@ public class ScriptManager {
    * @param body the JSON response body
    * @param script the script to associate the source with
    */
-  private void setSourceCode(ScriptHandle body, ScriptImpl script) {
+  private void setSourceCode(ScriptHandle body, ScriptBase script) {
     String src = body.source();
     if (src == null) {
       return;
@@ -107,7 +107,7 @@ public class ScriptManager {
    * @param id of the script to find
    * @return the script with {@code id == ref} or {@code null} if none found
    */
-  public ScriptImpl findById(Long id) {
+  public ScriptBase findById(Long id) {
     return idToScript.get(id);
   }
 
