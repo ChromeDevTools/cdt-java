@@ -57,8 +57,6 @@ import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.LazyConstructable;
 
-import sun.net.www.content.audio.wav;
-
 /**
  * Builder for {@link DebugContext} that works with Wip protocol.
  */
@@ -336,7 +334,7 @@ class WipContextBuilder {
 
       @Override
       public Collection<? extends JsVariable> getVariables() {
-        return WipBrowserImpl.throwUnsupported();
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -474,7 +472,6 @@ class WipContextBuilder {
 
       @Override
       public WithScope asWithScope() {
-        // TODO: implement.
         return null;
       }
 
@@ -573,8 +570,6 @@ class WipContextBuilder {
           WipBrowserImpl.throwUnsupported();
           return;
         }
-        // TODO: set a proper value of injectedScriptIdInt.
-        int injectedScriptIdInt = 0;
         PARAMS params = createRequestParams(expression);
 
         JavascriptVm.GenericCallback<DATA> commandCallback;
@@ -629,8 +624,7 @@ class WipContextBuilder {
       @Override
       public void reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
-        WipBrowserImpl.throwUnsupported();
-        return;
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -710,11 +704,9 @@ class WipContextBuilder {
     assert WIP_TO_SDK_SCOPE_TYPE.size() == ScopeValue.Type.values().length;
   }
 
-  // TODO: this name must be built as non-derivable.
   private static final ValueNameBuilder EXCEPTION_NAME =
       WipExpressionBuilder.createRootNameNoDerived("exception");
 
-  // TODO: this name must be built as non-derivable.
   private static final ValueNameBuilder WITH_OBJECT_NAME =
       WipExpressionBuilder.createRootNameNoDerived("<with object>");
 
