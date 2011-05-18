@@ -55,7 +55,7 @@ public class WipBrowserImpl implements Browser {
           IllegalStateException {
 
         URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
-        String content = realURLContent(url);
+        String content = readURLContent(url);
 
         final List<WipTabList.TabDescription> list = parseJsonReponse(content);
 
@@ -78,7 +78,7 @@ public class WipBrowserImpl implements Browser {
     };
   }
 
-  private static String realURLContent(URL url) throws IOException {
+  private static String readURLContent(URL url) throws IOException {
 
     Object obj = url.getContent();
 
@@ -147,7 +147,7 @@ public class WipBrowserImpl implements Browser {
       WsConnection socket = WsConnection.connect(socketAddress,
           DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
 
-      return new WipTabImpl(socket, WipBrowserImpl.this, listener);
+      return new WipTabImpl(socket, WipBrowserImpl.this, listener, description.url());
     }
   }
 

@@ -47,17 +47,19 @@ public class WipTabImpl implements BrowserTab {
   private final WipScriptManager scriptManager = new WipScriptManager(this);
   private final WipBreakpointManager breakpointManager = new WipBreakpointManager(this);
   private final WipContextBuilder contextBuilder = new WipContextBuilder(this);
+  private final WipFrameManager frameManager = new WipFrameManager(this);
 
   private final VmState vmState = new VmState();
   private final SignalRelay<Void> closeSignalRelay;
 
-  private volatile String url = "<no url>";
+  private volatile String url;
 
   public WipTabImpl(WsConnection socket, WipBrowserImpl browserImpl,
-      TabDebugEventListener tabListener) throws IOException {
+      TabDebugEventListener tabListener, String preliminaryUrl) throws IOException {
     this.socket = socket;
     this.browserImpl = browserImpl;
     this.tabListener = tabListener;
+    this.url = preliminaryUrl;
 
     this.closeSignalRelay = SignalRelay.create(new SignalRelay.Callback<Void>() {
       @Override
@@ -104,10 +106,15 @@ public class WipTabImpl implements BrowserTab {
 
   private void init() throws IOException {
     commandProcessor.send(new EnableParams(), null, null);
+    frameManager.readFrames();
   }
 
-  void updateUrl(String url) {
+  void updateUrl(String url, boolean silent) {
     this.url = url;
+    if (silent) {
+      return;
+    }
+    scriptManager.pageReloaded();
     WipTabImpl.this.tabListener.navigated(this.url);
   }
 
@@ -282,6 +289,10 @@ public class WipTabImpl implements BrowserTab {
 
   WipCommandProcessor getCommandProcessor() {
     return commandProcessor;
+  }
+
+  WipFrameManager getFrameManager() {
+    return frameManager;
   }
 
   TabDebugEventListener getTabListener() {
