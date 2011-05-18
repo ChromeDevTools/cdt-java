@@ -25,6 +25,7 @@ import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList.TabDescription;
+import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -33,7 +34,7 @@ import org.json.simple.parser.ParseException;
  * Implements {@link Browser} API that offers connection to a browser tab
  * via WebInspector 'WIP' Protocol.
  */
-public class WipBrowserImpl implements Browser {
+public class WipBrowserImpl implements WipBrowser {
   private final InetSocketAddress socketAddress;
   private final WipBrowserFactory.LoggerFactory connectionLoggerFactory;
 
@@ -46,12 +47,12 @@ public class WipBrowserImpl implements Browser {
   }
 
   @Override
-  public TabFetcher createTabFetcher() throws IOException, UnsupportedVersionException {
+  public WipTabFetcher createTabFetcher() throws IOException, UnsupportedVersionException {
     // You can connect and check version here.
 
-    return new TabFetcher() {
+    return new WipTabFetcher() {
       @Override
-      public List<? extends TabConnector> getTabs() throws IOException,
+      public List<? extends WipTabConnector> getTabs() throws IOException,
           IllegalStateException {
 
         URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
@@ -59,9 +60,9 @@ public class WipBrowserImpl implements Browser {
 
         final List<WipTabList.TabDescription> list = parseJsonReponse(content);
 
-        return new AbstractList<TabConnector>() {
+        return new AbstractList<WipTabConnector>() {
           @Override
-          public TabConnector get(int index) {
+          public WipTabConnector get(int index) {
             return new TabConnectorImpl(list.get(index));
           }
 
@@ -122,7 +123,7 @@ public class WipBrowserImpl implements Browser {
     }
   }
 
-  private class TabConnectorImpl implements TabConnector {
+  private class TabConnectorImpl implements WipTabConnector {
     private final TabDescription description;
 
     private TabConnectorImpl(TabDescription description) {
@@ -137,6 +138,11 @@ public class WipBrowserImpl implements Browser {
     @Override
     public String getUrl() {
       return description.url();
+    }
+
+    @Override
+    public String getTitle() {
+      return description.title();
     }
 
     @Override
