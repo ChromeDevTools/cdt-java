@@ -12,8 +12,11 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Browser;
@@ -22,6 +25,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ConnectionLogger;
+import org.chromium.sdk.ConnectionLogger.Factory;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
@@ -30,6 +34,7 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.util.ByteToCharConverter;
+import org.chromium.sdk.wip.WipBrowserFactory;
 
 /**
  * A small automatic test that connects to Chromium browser using ChromeDevTools SDK and try some
@@ -54,7 +59,7 @@ public class Main {
 
     BrowserTab tab;
     try {
-      tab = connect(address, stateManager);
+      tab = connect(address, stateManager, commandLineArgs.getProtocolType());
     } catch (IOException e) {
       throw new SmokeException("Failed to connect", e);
     } catch (UnsupportedVersionException e) {
@@ -142,23 +147,102 @@ public class Main {
   private interface CommandLineArgs {
     String getHost();
     int getPort();
+    ProtocolType getProtocolType();
   }
 
   private static CommandLineArgs readArguments(String[] argv) {
-    if (argv.length != 2) {
+
+    List<String> simpleArgs = new ArrayList<String>(2);
+    Map<String, String> keyToValueMap = new LinkedHashMap<String, String>(1);
+    int pos = 0;
+    while (pos < argv.length) {
+      String s = argv[pos];
+      if (s.startsWith("--")) {
+        s = s.substring(2);
+        String key;
+        String value;
+        int eqPos = s.indexOf('=');
+        if (eqPos == -1) {
+          key = s;
+          value = null;
+        } else {
+          key = s.substring(0, eqPos);
+          value = s.substring(eqPos + 1);
+        }
+        keyToValueMap.put(key, value);
+        pos++;
+      } else {
+        simpleArgs.add(s);
+        pos++;
+      }
+    }
+
+    if (simpleArgs.size() != 2) {
       throw new IllegalArgumentException("2 arguments expected: debug socket host and port");
     }
-    final String host = argv[0];
-    String portStr = argv[1];
-    final int port = Integer.parseInt(portStr);
-    return new CommandLineArgs() {
+
+    class CommandLineArgsImpl implements CommandLineArgs {
       public String getHost() {
         return host;
       }
       public int getPort() {
         return port;
       }
+      public ProtocolType getProtocolType() {
+        return protocolType;
+      }
+
+      String host;
+      int port;
+      ProtocolType protocolType = ProtocolType.SHELL;
+    }
+
+    CommandLineArgsImpl result = new CommandLineArgsImpl();
+
+    result.host = simpleArgs.get(0);
+    String portStr = simpleArgs.get(1);
+    result.port = Integer.parseInt(portStr);
+
+    for (Map.Entry<String, String> entry : keyToValueMap.entrySet()) {
+      String key = entry.getKey();
+      if ("protocol".equals(key)) {
+        result.protocolType = ProtocolType.valueOf(entry.getValue());
+      } else {
+        throw new IllegalArgumentException("Unknown parameter: " + key);
+      }
+    }
+
+    return result;
+  }
+
+  private enum ProtocolType {
+    // Old protocol enabled by --remote-shell-port parameter
+    SHELL {
+      @Override
+      public Browser connect(InetSocketAddress address,
+          Factory connectionLoggerFactory) {
+        return BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+      }
+    },
+    // WIP (new) protocol enabled by --remote-debugging-port parameter
+    DEBUGGING {
+      @Override
+      public Browser connect(InetSocketAddress address,
+          final Factory connectionLoggerFactory) {
+        WipBrowserFactory.LoggerFactory wipLoggerFactory = new WipBrowserFactory.LoggerFactory() {
+          @Override public ConnectionLogger newBrowserConnectionLogger() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override public ConnectionLogger newTabConnectionLogger() {
+            return connectionLoggerFactory.newConnectionLogger();
+          }
+        };
+        return WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
+      }
     };
+
+    public abstract Browser connect(InetSocketAddress address, Factory connectionLoggerFactory);
   }
 
   private static JsVariable getVariable(JsScope scope, String name) throws SmokeException {
@@ -234,15 +318,16 @@ public class Main {
     return result.get();
   }
 
-  private static BrowserTab connect(InetSocketAddress address, StateManager stateManager)
-      throws SmokeException, IOException, UnsupportedVersionException {
+  private static BrowserTab connect(InetSocketAddress address, StateManager stateManager,
+      ProtocolType protocolType) throws SmokeException, IOException, UnsupportedVersionException {
     ConnectionLogger.Factory connectionLoggerFactory = new ConnectionLogger.Factory() {
       public ConnectionLogger newConnectionLogger() {
         return new SystemOutConnectionLogger();
       }
     };
 
-    Browser browser = BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+    Browser browser = protocolType.connect(address, connectionLoggerFactory);
+
     Browser.TabFetcher tabFetcher = browser.createTabFetcher();
     List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
     if (tabs.isEmpty()) {
@@ -273,7 +358,7 @@ public class Main {
         private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
         @Override
         public int read() throws IOException {
-          byte[] buffer = new byte[0];
+          byte[] buffer = new byte[1];
           int res = readImpl(buffer, 0, 1);
           if (res <= 0) {
             return -1;
