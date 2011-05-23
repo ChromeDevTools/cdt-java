@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -12,7 +12,7 @@ public interface LocationValue {
   /**
    Script identifier as reported by the <code>scriptParsed</code>
    */
-  String sourceID();
+  String sourceId();
 
   /**
    Line number in the script.

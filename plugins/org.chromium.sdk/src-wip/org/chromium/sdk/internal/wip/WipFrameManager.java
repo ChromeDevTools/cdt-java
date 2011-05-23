@@ -27,7 +27,11 @@ class WipFrameManager {
         new JavascriptVm.GenericCallback<GetResourceTreeData>() {
           @Override
           public void success(GetResourceTreeData value) {
-            String url = value.frameTree().frame().url();
+            FrameValue frame = value.frameTree().frame();
+            if (frame.parentId() != null) {
+              throw new RuntimeException("Unexpected parentId value");
+            }
+            String url = frame.url();
             boolean silentUpdate = urlUnknown;
             tabImpl.updateUrl(url, silentUpdate);
             urlUnknown = false;
@@ -44,7 +48,7 @@ class WipFrameManager {
   void frameNavigated(FrameNavigatedEventData eventData) {
     FrameValue frame = eventData.frame();
     String parentId = frame.parentId();
-    if ("".equals(parentId)) {
+    if (parentId == null) {
       String newUrl = frame.url();
       tabImpl.updateUrl(newUrl, false);
       urlUnknown = false;

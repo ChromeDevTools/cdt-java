@@ -109,7 +109,7 @@ class WipScriptManager {
   }
 
   public void scriptIsReportedParsed(ScriptParsedEventData data) {
-    final long sourceID = WipProtocol.parseSourceId(data.sourceID());
+    final long sourceID = WipProtocol.parseSourceId(data.sourceId());
 
     String url = data.url();
     if (url.isEmpty()) {

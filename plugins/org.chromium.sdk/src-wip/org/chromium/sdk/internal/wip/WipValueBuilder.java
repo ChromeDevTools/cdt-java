@@ -160,6 +160,11 @@ class WipValueBuilder {
       }
 
       @Override
+      public String getClassName() {
+        return valueData.className();
+      }
+
+      @Override
       public void reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
         throw new UnsupportedOperationException();
@@ -179,7 +184,7 @@ class WipValueBuilder {
 
       @Override
       public JsVariable getProperty(String name) {
-        return WipBrowserImpl.throwUnsupported();
+        return getLoadedProperties().getProperty(name);
       }
 
       @Override
@@ -196,10 +201,6 @@ class WipValueBuilder {
           doLoadProperties();
         }
         return loadedPropertiesRef.getSync().get();
-      }
-
-      protected RemoteObjectValue getValueData() {
-        return valueData;
       }
 
       private void doLoadProperties() {
@@ -225,39 +226,6 @@ class WipValueBuilder {
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
       return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
-        @Override
-        public String getClassName() {
-          return getValueData().description();
-        }
-
-        @Override public JsArray asArray() {
-          return null;
-        }
-
-        @Override public JsFunction asFunction() {
-          return null;
-        }
-      };
-    }
-  }
-
-  private static class FixedClassObjectType extends ObjectTypeBase {
-    private final String className;
-
-    FixedClassObjectType(JsValue.Type type, String className) {
-      super(type);
-      this.className = className;
-    }
-
-    @Override
-    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
-      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
-        @Override
-        public String getClassName() {
-          return className;
-        }
-
         @Override public JsArray asArray() {
           return null;
         }
@@ -292,11 +260,6 @@ class WipValueBuilder {
       @Override
       public JsArray asArray() {
         return this;
-      }
-
-      @Override
-      public String getClassName() {
-        return "Array";
       }
 
       @Override
@@ -391,11 +354,6 @@ class WipValueBuilder {
           // TODO: make it a function, when backend provides data!
           return null;
         }
-
-        @Override
-        public String getClassName() {
-          return "Function";
-        }
       };
     }
   }
@@ -473,10 +431,8 @@ class WipValueBuilder {
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ARRAY, new ArrayType());
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());
 
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.REGEXP,
-        new FixedClassObjectType(JsValue.Type.TYPE_REGEXP, "RegExp"));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.DATE,
-        new FixedClassObjectType(JsValue.Type.TYPE_DATE, "Date"));
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.REGEXP, objectType);
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.DATE, objectType);
 
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NODE, objectType);
 
