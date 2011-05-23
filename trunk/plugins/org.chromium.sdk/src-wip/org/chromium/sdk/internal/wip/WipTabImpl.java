@@ -165,13 +165,6 @@ public class WipTabImpl implements BrowserTab {
       throw new RuntimeException();
     }
     updateVmVariable(enabled, variable, callback, syncCallback);
-
-
-
-    // TODO(peter.rybin): implement
-    if (syncCallback != null) {
-      syncCallback.callbackDone(null);
-    }
   }
 
   /**

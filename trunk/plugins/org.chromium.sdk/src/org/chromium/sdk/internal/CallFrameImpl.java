@@ -95,6 +95,8 @@ public class CallFrameImpl implements CallFrame {
     // decide if line is debuggerword. If so, find the next sequential line.
     // The below works for simple scripts but doesn't take into account
     // comments, etc.
+    // TODO(peter.rybin): do we really need this thing? (advancing to the next line?)
+    //     stopping on "debugger;" seems to be a quite natural thing.
     String srcLine = frameObject.sourceLineText();
     if (srcLine.trim().startsWith(DEBUGGER_RESERVED)) {
       currentLine++;

@@ -12,19 +12,22 @@ package org.chromium.sdk;
 public interface TextStreamPosition {
   /**
    * Returns 0-based offset from the beginning of the stream/file measured in Unicode characters.
-   * @return offset from the beginning of the stream/file or -1 if value is not available
+   * @return offset from the beginning of the stream/file or {@link #NO_POSITION} if value
+   *     is not available
    */
   int getOffset();
 
   /**
    * Returns 0-based line number within the stream/file.
-   * @return 0-based line number or -1 if value is not available
+   * @return 0-based line number or {@link #NO_POSITION} if value is not available
    */
   int getLine();
 
   /**
    * Returns 0-based column number within the line.
-   * @return 0-based column number or -1 if value is not available
+   * @return 0-based column number or {@link #NO_POSITION} if value is not available
    */
   int getColumn();
+
+  int NO_POSITION = -1;
 }
