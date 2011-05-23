@@ -5,17 +5,18 @@
 package org.chromium.sdk.internal.wip;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
+import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.Version;
@@ -105,7 +106,16 @@ public class WipTabImpl implements BrowserTab {
   }
 
   private void init() throws IOException {
-    commandProcessor.send(new EnableParams(), null, null);
+    SyncCallback syncCallback = new SyncCallback() {
+      @Override
+      public void callbackDone(RuntimeException e) {
+        // This statement suits sync callback more rather than a regular callback:
+        // it's safe enough and we prefer to execute it event if the command failed.
+        scriptManager.endPopulateScriptMode();
+      }
+    };
+    commandProcessor.send(new EnableParams(), null, syncCallback);
+
     frameManager.readFrames();
   }
 
@@ -214,15 +224,22 @@ public class WipTabImpl implements BrowserTab {
 
     final CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
 
-    commandProcessor.runInDispatchThread(new Runnable() {
-      @Override public void run() {
-        try {
-          callback.success(scriptManager.getScripts());
-        } finally {
-          callbackSemaphore.callbackDone(null);
+    JavascriptVm.GenericCallback<Collection<Script>> innerCallback;
+    if (callback == null) {
+      innerCallback = null;
+    } else {
+      innerCallback = new JavascriptVm.GenericCallback<Collection<Script>>() {
+        @Override public void success(Collection<Script> value) {
+          callback.success(value);
         }
-      }
-    });
+        @Override public void failure(Exception exception) {
+          callback.failure(exception.getMessage());
+        }
+      };
+    }
+
+    scriptManager.getScripts(innerCallback, callbackSemaphore);
+
     callbackSemaphore.acquireDefault();
   }
 

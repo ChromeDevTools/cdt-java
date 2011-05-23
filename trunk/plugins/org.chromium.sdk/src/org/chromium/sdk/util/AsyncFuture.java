@@ -109,7 +109,7 @@ public abstract class AsyncFuture<T> {
    * @param callback may be null
    * @param syncCallback may be null
    */
-  public abstract void getAsync(Callback<T> callback, SyncCallback syncCallback);
+  public abstract void getAsync(Callback<? super T> callback, SyncCallback syncCallback);
 
   /**
    * Returns whether the operation is done. If the method returns true, the following calls
@@ -160,18 +160,13 @@ public abstract class AsyncFuture<T> {
         @Override
         public void callbackDone(RuntimeException e) {
           resultIsReadySync(e);
-          for (CallbackPair<T> pair : callbacks) {
-            if (pair.syncCallback != null) {
-              pair.syncCallback.callbackDone(e);
-            }
-          }
         }
       };
       operation.start(callback, syncCallback);
     }
 
     @Override
-    public void getAsync(Callback<T> callback, SyncCallback syncCallback) {
+    public void getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
       synchronized (this) {
         if (!resultReady) {
           callbacks.add(new CallbackPair<T>(callback, syncCallback));
@@ -214,7 +209,10 @@ public abstract class AsyncFuture<T> {
 
     private void resultIsReady(T result) {
       Done<T> resultDone = new Done<T>(result);
-      ref.compareAndSet(this, resultDone);
+      boolean updated = ref.compareAndSet(this, resultDone);
+      if (!updated) {
+        throw new IllegalStateException();
+      }
       synchronized (this) {
         this.resultReady = true;
         this.result = result;
@@ -239,10 +237,10 @@ public abstract class AsyncFuture<T> {
     }
 
     private static class CallbackPair<RES> {
-      final Callback<RES> callback;
+      final Callback<? super RES> callback;
       final SyncCallback syncCallback;
 
-      CallbackPair(Callback<RES> callback, SyncCallback syncCallback) {
+      CallbackPair(Callback<? super RES> callback, SyncCallback syncCallback) {
         this.callback = callback;
         this.syncCallback = syncCallback;
       }
@@ -262,7 +260,7 @@ public abstract class AsyncFuture<T> {
     }
 
     @Override
-    public void getAsync(Callback<T> callback, SyncCallback syncCallback) {
+    public void getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
       deliverResultImmediately(result, callback, syncCallback);
     }
 
