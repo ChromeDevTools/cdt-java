@@ -32,7 +32,7 @@ public class CallbackSemaphore implements SyncCallback {
   public void acquireDefault() throws MethodIsBlockingException {
     boolean res = tryAcquireDefault();
     if (!res) {
-      throw new RuntimeException("Failed to acquire semaphore");
+      throw new RuntimeException("Failed to acquire semaphore (timeout)");
     }
   }
 

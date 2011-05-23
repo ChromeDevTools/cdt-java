@@ -30,6 +30,10 @@ public interface JavascriptVm {
    */
   public interface ScriptsCallback {
 
+    /**
+     * This method provides a synchronous access to script collection. All script events
+     * are postponed for the time of this call.
+     */
     void success(Collection<Script> scripts);
 
     void failure(String errorMessage);
@@ -70,7 +74,6 @@ public interface JavascriptVm {
    *        may be {@code null}
    * @throws MethodIsBlockingException if called from a callback because it
    *         blocks until scripts are received
-   * TODO(peter.rybin): get rid of callback (return result explicitly)
    * TODO(peter.rybin): support notification about collected scripts
    */
   void getScripts(ScriptsCallback callback) throws MethodIsBlockingException;
