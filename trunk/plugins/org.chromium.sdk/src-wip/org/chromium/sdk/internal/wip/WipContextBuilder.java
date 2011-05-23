@@ -248,7 +248,8 @@ class WipContextBuilder {
     private class CallFrameImpl implements CallFrame {
       private final String functionName;
       private final String id;
-      private final LazyConstructable<ScopeData> scopeData;
+      private final LazyConstructable<List<JsScope>> scopeData;
+      private final JsVariable thisObject;
       private final TextStreamPosition streamPosition;
       private final Long sourceId;
       private ScriptBase scriptImpl;
@@ -256,16 +257,14 @@ class WipContextBuilder {
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        Object sourceIDObject = frameData.location().sourceID();
+        Object sourceIDObject = frameData.location().sourceId();
         sourceId = Long.parseLong(sourceIDObject.toString());
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
-        scopeData = LazyConstructable.create(new LazyConstructable.Factory<ScopeData>() {
+        scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {
           @Override
-          public ScopeData construct() {
+          public List<JsScope> construct() {
             final List<JsScope> scopes = new ArrayList<JsScope>(scopeDataList.size());
-
-            ScopeValue localScopeData = null;
 
             for (int i = 0; i < scopeDataList.size(); i++) {
               ScopeValue scopeData = scopeDataList.get(i);
@@ -274,29 +273,18 @@ class WipContextBuilder {
                 type = JsScope.Type.UNKNOWN;
               }
               scopes.add(createScope(scopeData, type));
-
-              if (type == JsScope.Type.LOCAL) {
-                if (localScopeData != null) {
-                  LOGGER.log(Level.SEVERE, "Double local scope", new Exception());
-                }
-                localScopeData = scopeData;
-              }
             }
-            final JsVariable thisObject;
-            if (localScopeData == null) {
-              LOGGER.log(Level.SEVERE, "Missing local scope", new Exception());
-              thisObject = null;
-            } else {
-              RemoteObjectValue thisObjectData = localScopeData.getThis();
-              if (thisObjectData == null) {
-                thisObject = null;
-              } else {
-                thisObject = createSimpleNameVariable("this", thisObjectData);
-              }
-            }
-            return new ScopeData(scopes, thisObject);
+            return scopes;
           }
         });
+
+        RemoteObjectValue thisObjectData = frameData.getThis();
+        if (thisObjectData == null) {
+          LOGGER.log(Level.SEVERE, "Missing local scope", new Exception());
+          thisObject = null;
+        } else {
+          thisObject = createSimpleNameVariable("this", thisObjectData);
+        }
 
         // 0-based.
         final int line = (int) frameData.location().lineNumber();
@@ -339,12 +327,12 @@ class WipContextBuilder {
 
       @Override
       public List<? extends JsScope> getVariableScopes() {
-        return scopeData.get().scopes;
+        return scopeData.get();
       }
 
       @Override
       public JsVariable getReceiverVariable() {
-        return scopeData.get().thisObject;
+        return thisObject;
       }
 
       @Override
@@ -386,16 +374,6 @@ class WipContextBuilder {
           return data.wasThrown();
         }
       };
-    }
-
-    private class ScopeData {
-      final List<JsScope> scopes;
-      final JsVariable thisObject;
-
-      ScopeData(List<JsScope> scopes, JsVariable thisObject) {
-        this.scopes = scopes;
-        this.thisObject = thisObject;
-      }
     }
 
     private class ExceptionDataImpl implements ExceptionData {

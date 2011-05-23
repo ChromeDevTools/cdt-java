@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -28,5 +28,11 @@ public interface CallFrameValue {
    Scope chain for given call frame.
    */
   java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue> scopeChain();
+
+  /**
+   <code>this</code> object for this call frame.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonField(jsonLiteralName="this")
+  org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue getThis();
 
 }
