@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
 
 /**
  * Generic implementation of {@link JsFunction}.
@@ -18,42 +19,45 @@ class JsFunctionImpl extends JsObjectImpl implements JsFunction {
     super(context, parentFqn, valueState);
   }
 
+  @Override
   public Script getScript() {
-    FunctionAdditionalProperties additionalProperties =
-        (FunctionAdditionalProperties) getSubpropertiesMirror().getAdditionalProperties();
-
-    int scriptId = additionalProperties.getScriptId();
-    if (scriptId == FunctionAdditionalProperties.NO_SCRIPT_ID) {
+    final FunctionValueHandle functionValueHandle = getAdditionalPropertyData();
+    Long scriptId = functionValueHandle.scriptId();
+    if (scriptId == null) {
       return null;
     }
     DebugSession debugSession = getInternalContext().getDebugSession();
-    return debugSession.getScriptManager().findById(Long.valueOf(scriptId));
+    return debugSession.getScriptManager().findById(scriptId);
   }
 
+  @Override
   public TextStreamPosition getOpenParenPosition() {
     if (openParenPosition == null) {
-      final FunctionAdditionalProperties additionalProperties =
-          (FunctionAdditionalProperties) getSubpropertiesMirror().getAdditionalProperties();
+      final FunctionValueHandle functionValueHandle = getAdditionalPropertyData();
       openParenPosition = new TextStreamPosition() {
-        public int getOffset() {
-          return additionalProperties.getSourcePosition();
+        @Override public int getOffset() {
+          return castLongToInt(functionValueHandle.position(), NO_POSITION);
         }
-        public int getLine() {
-          return additionalProperties.getLine();
+        @Override public int getLine() {
+          return castLongToInt(functionValueHandle.line(), NO_POSITION);
         }
-        public int getColumn() {
-          return additionalProperties.getColumn();
+        @Override public int getColumn() {
+          return castLongToInt(functionValueHandle.column(), NO_POSITION);
+        }
+        private int castLongToInt(Long objValue, int defaultValue) {
+          if (objValue == null) {
+            return defaultValue;
+          } else {
+            return objValue.intValue();
+          }
         }
       };
     }
     return openParenPosition;
   }
 
-  public int getSourcePosition() {
-    FunctionAdditionalProperties additionalProperties =
-        (FunctionAdditionalProperties) getSubpropertiesMirror().getAdditionalProperties();
-
-    return additionalProperties.getSourcePosition();
+  private FunctionValueHandle getAdditionalPropertyData() {
+    return (FunctionValueHandle) getSubpropertiesMirror().getAdditionalPropertyData();
   }
 
   @Override

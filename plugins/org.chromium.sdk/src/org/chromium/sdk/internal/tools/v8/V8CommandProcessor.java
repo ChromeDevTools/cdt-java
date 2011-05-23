@@ -113,10 +113,6 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
     baseCommandProcessor.processEos();
   }
 
-  public void removeAllCallbacks() {
-    // TODO(peter.rybin): get rid of this method
-  }
-
   private class HandlerImpl implements
       BaseCommandProcessor.Handler<Integer, DebuggerMessage, IncomingMessage, CommandResponse> {
     public Integer getUpdatedSeq(DebuggerMessage message) {

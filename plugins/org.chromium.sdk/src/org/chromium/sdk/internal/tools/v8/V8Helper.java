@@ -14,7 +14,6 @@ import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DataWithRef;
 import org.chromium.sdk.internal.DebugSession;
-import org.chromium.sdk.internal.FunctionAdditionalProperties;
 import org.chromium.sdk.internal.JsDataTypeUtil;
 import org.chromium.sdk.internal.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.PropertyReference;
@@ -25,7 +24,6 @@ import org.chromium.sdk.internal.ValueLoadException;
 import org.chromium.sdk.internal.ValueMirror;
 import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.FrameObject;
-import org.chromium.sdk.internal.protocol.ScopeRef;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
 import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
@@ -259,11 +257,9 @@ public class V8Helper {
       SubpropertiesMirror subpropertiesMirror;
       if (type == Type.TYPE_FUNCTION) {
         FunctionValueHandle functionValueHandle = objectValueHandle.asFunction();
-        subpropertiesMirror = new SubpropertiesMirror.FunctionValueBased(functionValueHandle,
-            FUNCTION_PROPERTY_FACTORY2);
+        subpropertiesMirror = new SubpropertiesMirror.FunctionValueBased(functionValueHandle);
       } else {
-        subpropertiesMirror =
-          new SubpropertiesMirror.ObjectValueBased(objectValueHandle, null);
+        subpropertiesMirror = new SubpropertiesMirror.ObjectValueBased(objectValueHandle);
       }
       return ValueMirror.createObject(refId, subpropertiesMirror, type, valueHandle.className());
     } else {
@@ -271,16 +267,6 @@ public class V8Helper {
           valueHandle.className());
     }
   }
-
-  // TODO(peter.rybin): Get rid of this monstrosity once we switched to type JSON interfaces.
-  private static final
-      SubpropertiesMirror.JsonBased.AdditionalPropertyFactory<FunctionValueHandle>
-      FUNCTION_PROPERTY_FACTORY2 =
-      new SubpropertiesMirror.JsonBased.AdditionalPropertyFactory<FunctionValueHandle>() {
-    public Object createAdditionalProperties(FunctionValueHandle jsonWithProperties) {
-      return new FunctionAdditionalProperties(jsonWithProperties);
-    }
-  };
 
   public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
       V8CommandSender<MESSAGE, EX> commandSender, MESSAGE message,

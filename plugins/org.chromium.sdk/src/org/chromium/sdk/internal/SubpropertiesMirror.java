@@ -20,33 +20,29 @@ public abstract class SubpropertiesMirror {
 
   public abstract List<? extends PropertyReference> getInternalProperties();
 
-  public abstract Object getAdditionalProperties();
+  public abstract Object getAdditionalPropertyData();
 
-  public static class ObjectValueBased extends JsonBased<ObjectValueHandle> {
+  public static class ObjectValueBased extends JsonBased {
     private final ObjectValueHandle objectValueHandle;
-    public ObjectValueBased(ObjectValueHandle valueHandle,
-        AdditionalPropertyFactory<ObjectValueHandle> additionalPropertyFactory) {
-      super(additionalPropertyFactory);
+    public ObjectValueBased(ObjectValueHandle valueHandle) {
       this.objectValueHandle = valueHandle;
     }
     @Override
-    protected ObjectValueHandle getObjectForFactory() {
-      return objectValueHandle;
+    public Object getAdditionalPropertyData() {
+      return EMPTY_OBJECT;
     }
     @Override
     protected ObjectValueHandle getObjectValue() {
       return objectValueHandle;
     }
   }
-  public static class FunctionValueBased extends JsonBased<FunctionValueHandle> {
+  public static class FunctionValueBased extends JsonBased {
     private final FunctionValueHandle functionValueHandle;
-    public FunctionValueBased(FunctionValueHandle functionValueHandle,
-        AdditionalPropertyFactory<FunctionValueHandle> additionalPropertyFactory) {
-      super(additionalPropertyFactory);
+    public FunctionValueBased(FunctionValueHandle functionValueHandle) {
       this.functionValueHandle = functionValueHandle;
     }
     @Override
-    protected FunctionValueHandle getObjectForFactory() {
+    public FunctionValueHandle getAdditionalPropertyData() {
       return functionValueHandle;
     }
     @Override
@@ -58,19 +54,9 @@ public abstract class SubpropertiesMirror {
   /**
    * Keeps properties in for of JSON and parses JSON on demand.
    */
-  public static abstract class JsonBased<T> extends SubpropertiesMirror {
-    private final AdditionalPropertyFactory<T> additionalPropertyFactory;
-
+  public static abstract class JsonBased extends SubpropertiesMirror {
     private List<? extends PropertyReference> properties = null;
     private List<? extends PropertyReference> internalProperties = null;
-    private Object additionalProperties = null;
-
-    public JsonBased(AdditionalPropertyFactory<T> additionalPropertyFactory) {
-      if (additionalPropertyFactory == null) {
-        additionalPropertyFactory = NO_OP_FACTORY;
-      }
-      this.additionalPropertyFactory = additionalPropertyFactory;
-    }
 
     @Override
     public synchronized List<? extends PropertyReference> getProperties() {
@@ -89,26 +75,6 @@ public abstract class SubpropertiesMirror {
     }
 
     protected abstract ObjectValueHandle getObjectValue();
-
-    @Override
-    public Object getAdditionalProperties() {
-      if (additionalProperties == null) {
-        additionalProperties =
-            additionalPropertyFactory.createAdditionalProperties(getObjectForFactory());
-      }
-      return additionalProperties;
-    }
-    protected abstract T getObjectForFactory();
-
-    public interface AdditionalPropertyFactory<T> {
-      Object createAdditionalProperties(T jsonWithProperties);
-    }
-
-    private static AdditionalPropertyFactory NO_OP_FACTORY = new AdditionalPropertyFactory<Void>() {
-      public Object createAdditionalProperties(Void jsonWithProperties) {
-        return EMPTY_OBJECT;
-      }
-    };
   }
 
   static class ListBased extends SubpropertiesMirror {
@@ -129,7 +95,7 @@ public abstract class SubpropertiesMirror {
     }
 
     @Override
-    public Object getAdditionalProperties() {
+    public Object getAdditionalPropertyData() {
       return EMPTY_OBJECT;
     }
   }
@@ -146,7 +112,7 @@ public abstract class SubpropertiesMirror {
     }
 
     @Override
-    public Object getAdditionalProperties() {
+    public Object getAdditionalPropertyData() {
       return EMPTY_OBJECT;
     }
   };

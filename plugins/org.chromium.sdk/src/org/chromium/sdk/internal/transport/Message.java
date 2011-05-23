@@ -127,55 +127,51 @@ public class Message {
   public static Message fromBufferedReader(LineReader reader, Charset charset)
       throws IOException, MalformedMessageException {
     Map<String, String> headers = new LinkedHashMap<String, String>();
-    // TODO(peter.rybin): remove this commented 'synchronized' below.
-    //    It is left for now to keep nesting to keep diff simple.
-    // synchronized (reader)
-    {
-      String contentLengthValue = null;
 
-      while (true) { // read headers
-        String line = reader.readLine(charset);
-        if (line == null) {
-          LOGGER.fine("End of stream");
-          return null;
-        }
-        if (line.length() == 0) {
-          break; // end of headers
-        }
-        int semiColonPos = line.indexOf(':');
-        if (semiColonPos == -1) {
-          LOGGER.log(Level.SEVERE, "Bad header line: {0}", line);
-          return null;
-        }
-        String name = line.substring(0, semiColonPos);
-        String value = line.substring(semiColonPos + 1);
-        String trimmedValue = value.trim();
-        if (CONTENT_LENGTH.equals(name)) {
-          contentLengthValue = trimmedValue;
-        } else {
-          headers.put(name, trimmedValue);
-        }
+    String contentLengthValue = null;
+
+    while (true) { // read headers
+      String line = reader.readLine(charset);
+      if (line == null) {
+        LOGGER.fine("End of stream");
+        return null;
       }
-
-      // Read payload if applicable
-      int contentLength = Integer.valueOf(contentLengthValue.trim());
-      byte[] contentBytes = new byte[contentLength];
-      int totalRead = 0;
-      LOGGER.log(Level.FINER, "Reading payload: {0} bytes", contentLength);
-      while (totalRead < contentLength) {
-        int readBytes = reader.read(contentBytes, totalRead, contentLength - totalRead);
-        if (readBytes == -1) {
-          // End-of-stream (browser closed?)
-          LOGGER.fine("End of stream while reading content");
-          return null;
-        }
-        totalRead += readBytes;
+      if (line.length() == 0) {
+        break; // end of headers
       }
-
-      // Construct response message
-      String contentString = new String(contentBytes, charset);
-      return new Message(headers, contentString);
+      int semiColonPos = line.indexOf(':');
+      if (semiColonPos == -1) {
+        LOGGER.log(Level.SEVERE, "Bad header line: {0}", line);
+        return null;
+      }
+      String name = line.substring(0, semiColonPos);
+      String value = line.substring(semiColonPos + 1);
+      String trimmedValue = value.trim();
+      if (CONTENT_LENGTH.equals(name)) {
+        contentLengthValue = trimmedValue;
+      } else {
+        headers.put(name, trimmedValue);
+      }
     }
+
+    // Read payload if applicable
+    int contentLength = Integer.valueOf(contentLengthValue.trim());
+    byte[] contentBytes = new byte[contentLength];
+    int totalRead = 0;
+    LOGGER.log(Level.FINER, "Reading payload: {0} bytes", contentLength);
+    while (totalRead < contentLength) {
+      int readBytes = reader.read(contentBytes, totalRead, contentLength - totalRead);
+      if (readBytes == -1) {
+        // End-of-stream (browser closed?)
+        LOGGER.fine("End of stream while reading content");
+        return null;
+      }
+      totalRead += readBytes;
+    }
+
+    // Construct response message
+    String contentString = new String(contentBytes, charset);
+    return new Message(headers, contentString);
   }
 
   /**
