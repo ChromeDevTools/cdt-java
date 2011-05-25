@@ -125,11 +125,16 @@ public class WipTabImpl implements BrowserTab {
       return;
     }
     scriptManager.pageReloaded();
+    breakpointManager.clearNonProvisionalBreakpoints();
     WipTabImpl.this.tabListener.navigated(this.url);
   }
 
   WipScriptManager getScriptManager() {
     return scriptManager;
+  }
+
+  WipBreakpointManager getBreakpointManager() {
+    return breakpointManager;
   }
 
   @Override

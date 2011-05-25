@@ -18,18 +18,22 @@ public abstract class ScriptUrlOrId {
 
   public static ScriptUrlOrId forUrl(final String url) {
     return new ScriptUrlOrId() {
-      @Override
-      public <RES> RES accept(Visitor<RES> visitor) {
+      @Override public <RES> RES accept(Visitor<RES> visitor) {
         return visitor.forUrl(url);
+      }
+      @Override public String toString() {
+        return "url=" + url;
       }
     };
   }
 
   public static ScriptUrlOrId forId(final long sourceId) {
     return new ScriptUrlOrId() {
-      @Override
-      public <RES> RES accept(Visitor<RES> visitor) {
+      @Override public <RES> RES accept(Visitor<RES> visitor) {
         return visitor.forId(sourceId);
+      }
+      @Override public String toString() {
+        return "id=" + sourceId;
       }
     };
   }

@@ -200,8 +200,11 @@ class WipContextBuilder {
 
     @Override
     public Collection<? extends Breakpoint> getBreakpointsHit() {
-      // TODO: implement.
-      return Collections.emptyList();
+      if (frames.isEmpty()) {
+        return Collections.emptyList();
+      }
+      CallFrameImpl topFrame = frames.get(0);
+      return tabImpl.getBreakpointManager().findRelatedBreakpoints(topFrame);
     }
 
     @Override

@@ -4,12 +4,19 @@
 
 package org.chromium.sdk.internal.wip;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
@@ -40,6 +47,9 @@ public class WipBreakpointImpl implements Breakpoint {
   private volatile String condition;
   private volatile boolean enabled;
   private volatile boolean isDirty;
+
+  // Access only from Dispatch thread.
+  private Set<ActualLocation> actualLocations = new HashSet<ActualLocation>(2);
 
   public WipBreakpointImpl(WipBreakpointManager breakpointManager, int sdkId, ScriptUrlOrId script,
       int lineNumber, int columnNumber, String condition, boolean enabled) {
@@ -148,14 +158,37 @@ public class WipBreakpointImpl implements Breakpoint {
     isDirty = true;
   }
 
-  void setProtocolId(String protocolId) {
+  void setRemoteData(String protocolId, Collection<ActualLocation> actualLocations) {
     this.protocolId = protocolId;
+    this.actualLocations.clear();
+    this.actualLocations.addAll(actualLocations);
+    this.breakpointManager.getDb().setIdMapping(this, protocolId);
+  }
+
+  void addResolvedLocation(LocationValue locationValue) {
+    ActualLocation location = locationFromProtocol(locationValue);
+    actualLocations.add(location);
+  }
+
+  Set<ActualLocation> getActualLocations() {
+    return actualLocations;
+  }
+
+  void clearActualLocations() {
+    actualLocations.clear();
+  }
+
+  void deleteSelfFromDb() {
+    if (protocolId != null) {
+      breakpointManager.getDb().setIdMapping(this, null);
+    }
+    breakpointManager.getDb().removeBreakpoint(this);
   }
 
   @Override
   public void clear(final BreakpointCallback callback, SyncCallback syncCallback) {
     if (protocolId == null) {
-      breakpointManager.breakpointDeleted(this);
+      breakpointManager.getDb().removeBreakpoint(this);
       callback.success(this);
       syncCallback.callbackDone(null);
     }
@@ -168,7 +201,8 @@ public class WipBreakpointImpl implements Breakpoint {
     } else {
       commandCallback = new WipCommandCallback.Default() {
         @Override protected void onSuccess(Success success) {
-          breakpointManager.breakpointDeleted(WipBreakpointImpl.this);
+          breakpointManager.getDb().setIdMapping(WipBreakpointImpl.this, null);
+          breakpointManager.getDb().removeBreakpoint(WipBreakpointImpl.this);
           callback.success(WipBreakpointImpl.this);
         }
         @Override protected void onError(String message) {
@@ -200,7 +234,7 @@ public class WipBreakpointImpl implements Breakpoint {
       WipCommandCallback removeCallback = new WipCommandCallback.Default() {
         @Override
         protected void onSuccess(Success success) {
-          setProtocolId(null);
+          setRemoteData(null, Collections.<ActualLocation>emptyList());
           recreateBreakpointAsync(callback, callbackAsDestructable);
           guard.discharge();
         }
@@ -218,21 +252,57 @@ public class WipBreakpointImpl implements Breakpoint {
     }
   }
 
+  static class ActualLocation {
+    private final String sourceId;
+    private final long lineNumber;
+    private final Long columnNumber;
+
+    ActualLocation(String sourceId, long lineNumber, Long columnNumber) {
+      this.sourceId = sourceId;
+      this.lineNumber = lineNumber;
+      this.columnNumber = columnNumber;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      ActualLocation other = (ActualLocation) obj;
+      return this.sourceId.equals(other.sourceId) &&
+          this.lineNumber == other.lineNumber &&
+          eq(this.columnNumber, other.columnNumber);
+    }
+
+    @Override
+    public int hashCode() {
+      int column;
+      if (columnNumber == null) {
+        column = 0;
+      } else {
+        column = columnNumber.intValue();
+      }
+      return sourceId.hashCode() + 31 * (int) lineNumber + column;
+    }
+
+    @Override
+    public String toString() {
+      return "<sourceId=" + sourceId + ", line=" + lineNumber + ", column=" + columnNumber + ">";
+    }
+  }
+
   private void recreateBreakpointAsync(final BreakpointCallback flushCallback,
       Destructable callbackAsDestructable) {
 
     if (enabled) {
-      GenericCallback<String> setCommandCallback = new GenericCallback<String>() {
+      SetBreakpointCallback setCommandCallback = new SetBreakpointCallback() {
         @Override
-        public void success(String protocolId) {
-          setProtocolId(protocolId);
+        public void onSuccess(String protocolId, Collection<ActualLocation> actualLocations) {
+          setRemoteData(protocolId, actualLocations);
           if (flushCallback != null) {
             flushCallback.success(WipBreakpointImpl.this);
           }
         }
 
         @Override
-        public void failure(Exception exception) {
+        public void onFailure(Exception exception) {
           if (flushCallback != null) {
             flushCallback.failure(exception.getMessage());
           }
@@ -254,12 +324,17 @@ public class WipBreakpointImpl implements Breakpoint {
     }
   }
 
+  interface SetBreakpointCallback {
+    void onSuccess(String breakpointId, Collection<ActualLocation> actualLocations);
+    void onFailure(Exception cause);
+  }
+
   /**
    * @param callback a generic callback that receives breakpoint protocol id
    */
   static void sendSetBreakpointRequest(ScriptUrlOrId scriptRef, final int lineNumber,
       final int columnNumber, final String condition,
-      final GenericCallback<String> callback, final SyncCallback syncCallback,
+      final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
     scriptRef.accept(new ScriptUrlOrId.Visitor<Void>() {
       @Override
@@ -286,12 +361,19 @@ public class WipBreakpointImpl implements Breakpoint {
           wrappedCallback = new JavascriptVm.GenericCallback<DATA>() {
             @Override
             public void success(DATA data) {
-              callback.success(handler.getBreakpointId(data));
+              String breakpointId = handler.getBreakpointId(data);
+              Collection<LocationValue> locationValues = handler.getActualLocations(data);
+              List<ActualLocation> locationList =
+                  new ArrayList<ActualLocation>(locationValues.size());
+              for (LocationValue value : locationValues) {
+                locationList.add(locationFromProtocol(value));
+              }
+              callback.onSuccess(breakpointId, locationList);
             }
 
             @Override
             public void failure(Exception exception) {
-              callback.failure(exception);
+              callback.onFailure(exception);
             }
           };
         }
@@ -309,6 +391,8 @@ public class WipBreakpointImpl implements Breakpoint {
 
     abstract String getBreakpointId(DATA data);
 
+    abstract Collection<LocationValue> getActualLocations(DATA data);
+
     static final RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> FOR_URL =
         new RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams>() {
           @Override
@@ -320,6 +404,11 @@ public class WipBreakpointImpl implements Breakpoint {
           @Override
           String getBreakpointId(SetBreakpointByUrlData data) {
             return data.breakpointId();
+          }
+
+          @Override
+          Collection<LocationValue> getActualLocations(SetBreakpointByUrlData data) {
+            return data.locations();
           }
         };
 
@@ -338,7 +427,17 @@ public class WipBreakpointImpl implements Breakpoint {
           String getBreakpointId(SetBreakpointData data) {
             return data.breakpointId();
           }
+
+          @Override
+          Collection<LocationValue> getActualLocations(SetBreakpointData data) {
+            return Collections.singletonList(data.actualLocation());
+          }
         };
+  }
+
+  private static ActualLocation locationFromProtocol(LocationValue locationValue) {
+    return new ActualLocation(locationValue.sourceId(), locationValue.lineNumber(),
+        locationValue.columnNumber());
   }
 
   private static <T> boolean eq(T left, T right) {
