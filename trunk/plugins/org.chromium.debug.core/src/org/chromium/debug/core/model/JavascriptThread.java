@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
@@ -283,8 +284,9 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
       }
 
       WorkspaceBridge workspaceRelations = getConnectedData().getWorkspaceRelations();
+      Collection<? extends Breakpoint> sdkBreakpointsHit = context.getBreakpointsHit();
       Collection<? extends IBreakpoint> uiBreakpointsHit =
-          workspaceRelations.getBreakpointHandler().breakpointsHit(context.getBreakpointsHit());
+          workspaceRelations.getBreakpointHandler().breakpointsHit(sdkBreakpointsHit);
 
       suspendedState.setBreakpoints(uiBreakpointsHit);
 
@@ -292,7 +294,7 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
       if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
         suspendedReason = SuspendReason.BREAKPOINT;
       } else {
-        if (context.getBreakpointsHit().isEmpty()) {
+        if (sdkBreakpointsHit.isEmpty()) {
           suspendedReason = expectedSuspendReason;
         } else {
           suspendedReason = SuspendReason.BREAKPOINT;

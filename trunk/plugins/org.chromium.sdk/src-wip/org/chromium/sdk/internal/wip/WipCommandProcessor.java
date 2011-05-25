@@ -25,6 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
 import org.chromium.sdk.internal.wip.protocol.input.WipEventType;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.BreakpointResolvedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
@@ -206,6 +207,14 @@ class WipCommandProcessor {
       void accept(ScriptParsedEventData eventData,
           WipCommandProcessor commandProcessor) {
         commandProcessor.tabImpl.getScriptManager().scriptIsReportedParsed(eventData);
+      }
+    });
+    EVENT_MAP.add(BreakpointResolvedEventData.TYPE,
+        new EventHandler<BreakpointResolvedEventData> () {
+      @Override
+      void accept(BreakpointResolvedEventData eventData,
+          WipCommandProcessor commandProcessor) {
+        commandProcessor.tabImpl.getBreakpointManager().breakpointReportedResolved(eventData);
       }
     });
 
