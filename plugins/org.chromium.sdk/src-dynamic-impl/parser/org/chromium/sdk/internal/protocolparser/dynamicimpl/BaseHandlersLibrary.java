@@ -102,11 +102,6 @@ class BaseHandlersLibrary {
     void writeMethodImplementationJava(ClassScope classScope, Method m) {
       // Ignore.
     }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
-    }
   }
 
   private static class GetJsonObjectMethodHaldler extends MethodHandlerBase {
@@ -121,11 +116,6 @@ class BaseHandlersLibrary {
 
     @Override
     void writeMethodImplementationJava(ClassScope classScope, Method m) {
-    }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
     }
   }
 
@@ -142,11 +132,6 @@ class BaseHandlersLibrary {
     @Override
     void writeMethodImplementationJava(ClassScope classScope, Method m) {
     }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
-    }
   }
 
   private static class GetSuperMethodHaldler extends MethodHandlerBase {
@@ -162,11 +147,6 @@ class BaseHandlersLibrary {
     @Override
     void writeMethodImplementationJava(ClassScope classScope, Method m) {
       // Ignore.
-    }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
     }
   }
 
