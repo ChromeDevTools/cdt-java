@@ -36,6 +36,4 @@ abstract class MethodHandler {
     scope.append(" ");
     appendMethodSignatureJava(scope, m);
   }
-
-  abstract boolean requiresJsonObject();
 }

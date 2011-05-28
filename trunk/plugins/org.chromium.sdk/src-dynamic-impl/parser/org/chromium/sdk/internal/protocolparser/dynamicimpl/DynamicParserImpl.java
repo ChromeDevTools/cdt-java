@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
+import org.chromium.sdk.internal.protocolparser.JsonObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
@@ -182,11 +183,14 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
       RefToType<?> superclassRef = getSuperclassRef(typeClass);
 
+      boolean requiresJsonObject = fields.requiresJsonObject() ||
+          JsonObjectBased.class.isAssignableFrom(typeClass);
+
       return new TypeHandler<T>(typeClass, superclassRef,
           fields.getFieldArraySize(), fields.getVolatileFields(), methodHandlerMap,
           fields.getFieldLoaders(),
           fields.getFieldConditions(), eagerFieldParser, fields.getAlgCasesData(),
-          strictMode);
+          requiresJsonObject, strictMode);
     }
 
     private SlowParser<?> getFieldTypeParser(Type type, boolean declaredNullable,
@@ -344,6 +348,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
       private AutoAlgebraicCasesDataImpl autoAlgCasesData = null;
       private int fieldArraySize = 0;
       private List<VolatileFieldBinding> volatileFields = new ArrayList<VolatileFieldBinding>(2);
+      private boolean requiresJsonObject = false;
 
       FieldProcessor(Class<T> typeClass) throws JsonProtocolModelParseException {
         this.typeClass = typeClass;
@@ -396,10 +401,12 @@ public class DynamicParserImpl implements JsonProtocolParser {
               throw new JsonProtocolModelParseException(
                   "Option 'reinterpret' is only available with 'subtypes chosen manually'");
             }
+            requiresJsonObject = true;
             methodHandler = processAutomaticSubtypeMethod(m);
           }
 
         } else {
+          requiresJsonObject = true;
           methodHandler = processFieldGetterMethod(m, fieldConditionLogic, overrideFieldAnn,
               fieldName);
         }
@@ -592,6 +599,10 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
       List<FieldCondition> getFieldConditions() {
         return fieldConditions;
+      }
+
+      boolean requiresJsonObject() {
+        return requiresJsonObject;
       }
 
       private int allocateFieldInArray() {
@@ -793,11 +804,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.startLine("return result;\n");
       scope.indentLeft();
       scope.startLine("}\n");
-    }
-
-    @Override
-    boolean requiresJsonObject() {
-      return true;
     }
   }
 
@@ -1033,11 +1039,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
     public String getFieldName() {
       return fieldName;
     }
-
-    @Override
-    boolean requiresJsonObject() {
-      return true;
-    }
   }
 
   private static class PreparsedFieldMethodHandler extends MethodHandler {
@@ -1066,11 +1067,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.append(" {\n");
       scope.startLine("  return field_" + fieldName + ";\n");
       scope.startLine("}\n");
-    }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
     }
   }
 
@@ -1422,11 +1418,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.append(" {\n");
       scope.startLine("}\n");
     }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
-    }
   };
 
   static class AutoSubtypeMethodHandler extends MethodHandler {
@@ -1468,11 +1459,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.startLine("  return " + AutoAlgebraicCasesDataImpl.getAutoAlgFieldNameJava(code) +
           ";\n");
       scope.startLine("}\n");
-    }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
     }
   }
 
@@ -1518,11 +1504,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
     protected void writeParseJava(MethodScope scope, String parseResultRef) {
       parser.writeParseCode(scope, "underlying", "this", parseResultRef);
     }
-
-    @Override
-    boolean requiresJsonObject() {
-      return false;
-    }
   }
 
   static class AutoAlgebraicCasesDataImpl extends TypeHandler.AlgebraicCasesData {
@@ -1536,12 +1517,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
     List<RefToType<?>> getSubtypes() {
       return subtypes;
     }
-
-    @Override
-    boolean underlyingIsJson() {
-      return true;
-    }
-
 
     @Override
     void parseObjectSubtype(ObjectData objectData, Map<?, ?> jsonProperties,
@@ -1624,11 +1599,6 @@ public class DynamicParserImpl implements JsonProtocolParser {
     @Override
     List<RefToType<?>> getSubtypes() {
       return subtypes;
-    }
-
-    @Override
-    boolean underlyingIsJson() {
-      return false;
     }
 
     @Override

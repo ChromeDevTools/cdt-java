@@ -57,6 +57,8 @@ class TypeHandler<T> {
   /** Subtype aspects of the type or null */
   private final SubtypeAspect subtypeAspect;
 
+  private final boolean requiresJsonObject;
+
   private final boolean checkLazyParsedFields;
 
   TypeHandler(Class<T> typeClass, RefToType<?> jsonSuperClass, int fieldArraySize,
@@ -64,7 +66,8 @@ class TypeHandler<T> {
       Map<Method, MethodHandler> methodHandlerMap,
       List<FieldLoader> fieldLoaders,
       List<FieldCondition> fieldConditions, EagerFieldParser eagerFieldParser,
-      AlgebraicCasesData algCasesData, boolean checkLazyParsedFields) {
+      AlgebraicCasesData algCasesData, boolean requiresJsonObject,
+      boolean checkLazyParsedFields) {
     this.typeClass = typeClass;
     this.fieldArraySize = fieldArraySize;
     this.volatileFields = volatileFields;
@@ -72,6 +75,7 @@ class TypeHandler<T> {
     this.fieldLoaders = fieldLoaders;
     this.eagerFieldParser = eagerFieldParser;
     this.algCasesData = algCasesData;
+    this.requiresJsonObject = requiresJsonObject;
     this.checkLazyParsedFields = checkLazyParsedFields;
     if (jsonSuperClass == null) {
       if (!fieldConditions.isEmpty()) {
@@ -99,7 +103,7 @@ class TypeHandler<T> {
 
       ObjectData objectData = new ObjectData(this, input, fieldArraySize, volatileFields.size(),
           superObjectData);
-      if (!fieldLoaders.isEmpty() && jsonProperties == null) {
+      if (requiresJsonObject && jsonProperties == null) {
         throw new JsonProtocolParseException("JSON object input expected");
       }
 
@@ -462,7 +466,6 @@ class TypeHandler<T> {
     abstract void parseObjectSubtype(ObjectData objectData, Map<?, ?> jsonProperties, Object input)
         throws JsonProtocolParseException;
     abstract List<RefToType<?>> getSubtypes();
-    abstract boolean underlyingIsJson();
     abstract void writeConstructorCodeJava(MethodScope methodScope);
     abstract void writeFiledsJava(ClassScope classScope);
   }
@@ -472,21 +475,9 @@ class TypeHandler<T> {
     String valueImplClassName = fileScope.getTypeImplShortName(this);
     String typeClassName = this.getTypeClass().getCanonicalName();
 
-    boolean underlyingIsOfJsonType = false;
-    underlyingIsOfJsonType |= !fieldLoaders.isEmpty();
-    underlyingIsOfJsonType |= algCasesData != null && algCasesData.underlyingIsJson();
-    if (!underlyingIsOfJsonType) {
-      for (MethodHandler handler : methodHandlerMap.values()) {
-        if (handler.requiresJsonObject()) {
-          underlyingIsOfJsonType = true;
-          break;
-        }
-      }
-    }
-
     fileScope.startLine("public static class " + valueImplClassName + " extends " +
         Util.BASE_PACKAGE + ".implutil.GeneratedCodeLibrary.");
-    if (underlyingIsOfJsonType) {
+    if (requiresJsonObject) {
       fileScope.append("JsonValueBase");
     } else {
       fileScope.append("ObjectValueBase");
