@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.SyncCallback;
@@ -36,7 +37,7 @@ import org.chromium.sdk.util.DestructingGuard;
 public class WipBreakpointImpl implements Breakpoint {
   private final WipBreakpointManager breakpointManager;
 
-  private final ScriptUrlOrId script;
+  private final Target target;
 
   private final int lineNumber;
   private final int columnNumber;
@@ -51,11 +52,11 @@ public class WipBreakpointImpl implements Breakpoint {
   // Access only from Dispatch thread.
   private Set<ActualLocation> actualLocations = new HashSet<ActualLocation>(2);
 
-  public WipBreakpointImpl(WipBreakpointManager breakpointManager, int sdkId, ScriptUrlOrId script,
+  public WipBreakpointImpl(WipBreakpointManager breakpointManager, int sdkId, Target target,
       int lineNumber, int columnNumber, String condition, boolean enabled) {
     this.breakpointManager = breakpointManager;
     this.sdkId = sdkId;
-    this.script = script;
+    this.target = target;
     this.lineNumber = lineNumber;
     this.columnNumber = columnNumber;
     this.condition = condition;
@@ -65,52 +66,19 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   @Override
-  public Type getType() {
-    return script.accept(SCRIPT_TYPE_VISITOR);
+  public Target getTarget() {
+    return target;
   }
-
-  private static final ScriptUrlOrId.Visitor<Type> SCRIPT_TYPE_VISITOR =
-      new ScriptUrlOrId.Visitor<Type>() {
-    @Override public Type forUrl(String url) {
-      return Type.SCRIPT_NAME;
-    }
-    @Override public Type forId(long sourceId) {
-      return Type.SCRIPT_ID;
-    }
-  };
 
   @Override
   public long getId() {
     return sdkId;
   }
 
-  @Override
-  public String getScriptName() {
-    return script.accept(SCRIPT_URL_VISITOR);
-  }
-
-  private static final ScriptUrlOrId.Visitor<String> SCRIPT_URL_VISITOR =
-      new ScriptUrlOrId.Visitor<String>() {
-    @Override public String forUrl(String url) {
-      return url;
-    }
-    @Override public String forId(long sourceId) {
+  public static final BreakpointTypeExtension TYPE_EXTENSION = new BreakpointTypeExtension() {
+    @Override
+    public FunctionSupport getFunctionSupport() {
       return null;
-    }
-  };
-
-  @Override
-  public Long getScriptId() {
-    return script.accept(SCRIPT_ID_VISITOR);
-  }
-
-  private static final ScriptUrlOrId.Visitor<Long> SCRIPT_ID_VISITOR =
-      new ScriptUrlOrId.Visitor<Long>() {
-    @Override public Long forUrl(String url) {
-      return null;
-    }
-    @Override public Long forId(long sourceId) {
-      return sourceId;
     }
   };
 
@@ -315,7 +283,7 @@ public class WipBreakpointImpl implements Breakpoint {
       if (condition == null) {
         condition = "";
       }
-      sendSetBreakpointRequest(script, lineNumber, columnNumber, condition,
+      sendSetBreakpointRequest(target, lineNumber, columnNumber, condition,
           setCommandCallback, DestructableWrapper.guardAsCallback(guard),
           breakpointManager.getCommandProcessor());
     } else {
@@ -332,21 +300,26 @@ public class WipBreakpointImpl implements Breakpoint {
   /**
    * @param callback a generic callback that receives breakpoint protocol id
    */
-  static void sendSetBreakpointRequest(ScriptUrlOrId scriptRef, final int lineNumber,
+  static void sendSetBreakpointRequest(Target target, final int lineNumber,
       final int columnNumber, final String condition,
       final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
-    scriptRef.accept(new ScriptUrlOrId.Visitor<Void>() {
+    target.accept(new Target.Visitor<Void>() {
       @Override
-      public Void forId(long sourceId) {
-        sendRequest(sourceId, RequestHandler.FOR_ID);
+      public Void visitScriptName(String scriptName) {
+        sendRequest(scriptName, RequestHandler.FOR_URL);
         return null;
       }
 
       @Override
-      public Void forUrl(String url) {
-        sendRequest(url, RequestHandler.FOR_URL);
+      public Void visitScriptId(long scriptId) {
+        sendRequest(scriptId, RequestHandler.FOR_ID);
         return null;
+      }
+
+      @Override
+      public Void visitUnknown(Target target) {
+        throw new IllegalArgumentException();
       }
 
       private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> void sendRequest(T parameter,

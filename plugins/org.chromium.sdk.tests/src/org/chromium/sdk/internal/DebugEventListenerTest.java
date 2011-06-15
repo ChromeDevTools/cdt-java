@@ -37,7 +37,8 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     final String[] failure = new String[1];
     {
       final CountDownLatch latch = new CountDownLatch(1);
-      browserTab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, "file:///C:/1.js", 18, 3, true, null, 0,
+      Breakpoint.Target target = new Breakpoint.Target.ScriptName("file:///C:/1.js");
+      browserTab.setBreakpoint(target, 18, 3, true, null, 0,
           new BreakpointCallback() {
 
             public void failure(String errorMessage) {

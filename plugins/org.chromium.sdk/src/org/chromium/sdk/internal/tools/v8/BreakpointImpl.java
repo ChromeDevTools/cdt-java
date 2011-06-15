@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
@@ -15,24 +16,14 @@ import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 public class BreakpointImpl implements Breakpoint {
 
   /**
-   * The breakpoint type.
+   * The breakpoint target.
    */
-  private final Type type;
+  private Target target;
 
   /**
    * The breakpoint id as reported by the JavaScript VM.
    */
   private long id;
-
-  /**
-   * The corresponding script name as reported by the JavaScript VM. May be null.
-   */
-  private String scriptName;
-
-  /**
-   * The corresponding script id as reported by the JavaScript VM. May be null.
-   */
-  private Long scriptId;
 
   /**
    * Breakpoint line number. May become invalidated by LiveEdit actions.
@@ -67,11 +58,9 @@ public class BreakpointImpl implements Breakpoint {
    */
   private volatile boolean isDirty = false;
 
-  public BreakpointImpl(Type type, long id, String scriptName, Long scriptId, long lineNumber,
+  public BreakpointImpl(long id, Target target, long lineNumber,
       boolean enabled, int ignoreCount, String condition, BreakpointManager breakpointManager) {
-    this.type = type;
-    this.scriptName = scriptName;
-    this.scriptId = scriptId;
+    this.target = target;
     this.id = id;
     this.isEnabled = enabled;
     this.ignoreCount = ignoreCount;
@@ -81,15 +70,12 @@ public class BreakpointImpl implements Breakpoint {
   }
 
   public BreakpointImpl(BreakpointInfo info, BreakpointManager breakpointManager) {
-    this.type = getType(info);
+    this.target = getType(info);
     this.id = info.number();
     this.breakpointManager = breakpointManager;
     updateFromRemote(info);
   }
   public void updateFromRemote(BreakpointInfo info) {
-    if (this.type != getType(info)) {
-      throw new IllegalArgumentException();
-    }
     if (this.id != info.number()) {
       throw new IllegalArgumentException();
     }
@@ -97,28 +83,19 @@ public class BreakpointImpl implements Breakpoint {
     this.isEnabled = info.active();
     this.ignoreCount = (int) info.ignoreCount();
     this.condition = info.condition();
-    this.scriptName = info.script_name();
-    this.scriptId = info.script_id();
   }
 
   public boolean isEnabled() {
     return isEnabled;
   }
 
-  public Type getType() {
-    return type;
+  @Override
+  public Target getTarget() {
+    return target;
   }
 
   public long getId() {
     return id;
-  }
-
-  public String getScriptName() {
-    return scriptName;
-  }
-
-  public Long getScriptId() {
-    return scriptId;
   }
 
   public int getIgnoreCount() {
@@ -185,13 +162,52 @@ public class BreakpointImpl implements Breakpoint {
     return isDirty;
   }
 
-  private static Type getType(BreakpointInfo info) {
+  private static Target getType(BreakpointInfo info) {
     BreakpointInfo.Type infoType = info.type();
     switch (infoType) {
-      case SCRIPTID: return Type.SCRIPT_ID;
-      case SCRIPTNAME: return Type.SCRIPT_NAME;
-      case FUNCTION: return Type.FUNCTION;
+      case SCRIPTID: return new Target.ScriptId(info.script_id());
+      case SCRIPTNAME: return new Target.ScriptName(info.script_name());
+      case FUNCTION: return new FunctionTarget(null);
     }
     throw new RuntimeException("Unknown type: " + infoType);
   }
+
+  /**
+   * Visitor interface that includes all extensions.
+   */
+  public interface TargetExtendedVisitor<R> extends
+      BreakpointTypeExtension.FunctionSupport.Visitor<R> {
+  }
+
+  static class FunctionTarget extends Target {
+    private final String expression;
+    FunctionTarget(String expression) {
+      this.expression = expression;
+    }
+
+    @Override
+    public <R> R accept(Visitor<R> visitor) {
+      if (visitor instanceof BreakpointTypeExtension.FunctionSupport.Visitor) {
+        BreakpointTypeExtension.FunctionSupport.Visitor<R> functionVisitor =
+            (BreakpointTypeExtension.FunctionSupport.Visitor<R>) visitor;
+        return functionVisitor.visitFunction(expression);
+      } else {
+        return visitor.visitUnknown(this);
+      }
+    }
+  }
+
+  public static final BreakpointTypeExtension TYPE_EXTENSION = new BreakpointTypeExtension() {
+    @Override
+    public FunctionSupport getFunctionSupport() {
+      return functionSupport;
+    }
+
+    private final FunctionSupport functionSupport = new FunctionSupport() {
+      @Override
+      public Target createTarget(String expression) {
+        return new FunctionTarget(expression);
+      }
+    };
+  };
 }

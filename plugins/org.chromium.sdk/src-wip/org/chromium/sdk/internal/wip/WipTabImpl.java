@@ -10,7 +10,8 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.Breakpoint.Type;
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
@@ -217,6 +218,11 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
+  public BreakpointTypeExtension getBreakpointTypeExtension() {
+    return WipBreakpointImpl.TYPE_EXTENSION;
+  }
+
+  @Override
   public void getScripts(final ScriptsCallback callback)
       throws MethodIsBlockingException {
 
@@ -242,10 +248,10 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
-  public void setBreakpoint(Type type, String target, int line, int column,
+  public void setBreakpoint(Breakpoint.Target target, int line, int column,
       boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
-    breakpointManager.setBreakpoint(type, target, line, column, enabled, condition,
+    breakpointManager.setBreakpoint(target, line, column, enabled, condition,
         ignoreCount, callback, syncCallback);
   }
 

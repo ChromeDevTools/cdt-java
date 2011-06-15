@@ -89,7 +89,8 @@ public class Main {
 
     // Setting a breakpoint.
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    tab.setBreakpoint(Breakpoint.Type.SCRIPT_NAME, scriptOne.getName(), breakLine, 0, true, null,
+    Breakpoint.Target breakpointTarget = new Breakpoint.Target.ScriptName(scriptOne.getName());
+    tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
         0, null, callbackSemaphore);
     callbackSemaphore.acquireDefault();
 

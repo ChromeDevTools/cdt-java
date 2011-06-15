@@ -8,6 +8,7 @@ import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -40,7 +41,8 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
           return vmResourceId.getEclipseSourceName();
         } else if (object instanceof Breakpoint) {
           Breakpoint breakpoint = (Breakpoint) object;
-          return breakpoint.getScriptName();
+          VmResourceId resourceId = breakpoint.getTarget().accept(BREAKPOINT_RESOURCE_VISITOR);
+          return resourceId.getEclipseSourceName();
         } else if (object instanceof VmResourceId) {
           VmResourceId resourceId = (VmResourceId) object;
           return resourceId.getEclipseSourceName();
@@ -51,6 +53,19 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     };
     addParticipants(new ISourceLookupParticipant[] { participant } );
   }
+
+  private static final Breakpoint.Target.Visitor<VmResourceId> BREAKPOINT_RESOURCE_VISITOR =
+      new Breakpoint.Target.Visitor<VmResourceId>() {
+        @Override public VmResourceId visitScriptName(String scriptName) {
+          return VmResourceId.forName(scriptName);
+        }
+        @Override public VmResourceId visitScriptId(long scriptId) {
+          return VmResourceId.forId(scriptId);
+        }
+        @Override public VmResourceId visitUnknown(Breakpoint.Target target) {
+          return null;
+        }
+      };
 
   public void initializeVProjectContainers(IProject project, ResourceManager resourceManager) {
     this.resourceManager = resourceManager;

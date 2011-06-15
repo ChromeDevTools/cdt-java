@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
@@ -476,16 +477,26 @@ public class BreakpointSynchronizer {
 
     @Override
     VmResourceId getVmResourceId(Breakpoint breakpoint) {
-      if (breakpoint.getType() == Breakpoint.Type.SCRIPT_NAME) {
-        return VmResourceId.forName(breakpoint.getScriptName());
-      } else {
-        Long scriptId = breakpoint.getScriptId();
-        if (scriptId == null) {
-          return null;
-        }
-        return VmResourceId.forId(scriptId);
-      }
+      return breakpoint.getTarget().accept(getTargetVisitor);
     }
+
+    private final Breakpoint.Target.Visitor<VmResourceId> getTargetVisitor =
+        new Breakpoint.Target.Visitor<VmResourceId>() {
+          @Override
+          public VmResourceId visitScriptName(String scriptName) {
+            return VmResourceId.forName(scriptName);
+          }
+
+          @Override
+          public VmResourceId visitScriptId(long scriptId) {
+            return VmResourceId.forId(scriptId);
+          }
+
+          @Override
+          public VmResourceId visitUnknown(Breakpoint.Target target) {
+            return null;
+          }
+        };
   };
 
   /**
@@ -610,7 +621,7 @@ public class BreakpointSynchronizer {
     Set<WrappedBreakpoint> result = new HashSet<WrappedBreakpoint>();
 
     BreakpointWrapManager wrapManager = ChromiumDebugPlugin.getDefault().getBreakpointWrapManager();
-    
+
     for (JavaScriptBreakpointAdapter adapter : wrapManager.getAdapters()) {
       for (IBreakpoint breakpoint : breakpointManager.getBreakpoints(adapter.getModelId())) {
         WrappedBreakpoint breakpointWrapper = adapter.tryWrapBreakpoint(breakpoint);

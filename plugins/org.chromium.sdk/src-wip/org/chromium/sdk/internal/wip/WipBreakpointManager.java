@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.Breakpoint.Type;
+import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.SyncCallback;
@@ -33,28 +33,14 @@ public class WipBreakpointManager {
     this.tabImpl = tabImpl;
   }
 
-  void setBreakpoint(Type type, String target, final int line, final int column,
+  void setBreakpoint(Breakpoint.Target target, final int line, final int column,
       final boolean enabled, String condition, int ignoreCount,
       final BreakpointCallback callback, SyncCallback syncCallback) {
-
-    final ScriptUrlOrId script;
-    switch (type) {
-    case FUNCTION:
-      throw new UnsupportedOperationException();
-    case SCRIPT_ID:
-      script = ScriptUrlOrId.forId(Long.parseLong(target));
-      break;
-    case SCRIPT_NAME:
-      script = ScriptUrlOrId.forUrl(target);
-      break;
-    default:
-      throw new UnsupportedOperationException();
-    }
 
     int sdkId = breakpointUniqueId.getAndAdd(1);
 
     final WipBreakpointImpl breakpointImpl = new WipBreakpointImpl(this, sdkId,
-        script, line, column, condition, enabled);
+        target, line, column, condition, enabled);
 
     db.addBreakpoint(breakpointImpl);
 
@@ -84,7 +70,7 @@ public class WipBreakpointManager {
         }
       };
 
-      WipBreakpointImpl.sendSetBreakpointRequest(script, line, column, condition,
+      WipBreakpointImpl.sendSetBreakpointRequest(target, line, column, condition,
           wrappedCallback, syncCallback, tabImpl.getCommandProcessor());
     } else {
       callback.success(breakpointImpl);
@@ -102,7 +88,7 @@ public class WipBreakpointManager {
       public Void visitAllBreakpoints(Set<WipBreakpointImpl> breakpoints) {
         List<WipBreakpointImpl> deleteList = new ArrayList<WipBreakpointImpl>();
         for (WipBreakpointImpl breakpoint : breakpoints) {
-          if (breakpoint.getType() == Breakpoint.Type.SCRIPT_ID) {
+          if (breakpoint.getTarget().accept(IS_SCRIPT_ID_VISITOR)) {
             deleteList.add(breakpoint);
           } else {
             breakpoint.clearActualLocations();
@@ -115,6 +101,24 @@ public class WipBreakpointManager {
       }
     });
   }
+
+  private static final Breakpoint.Target.Visitor<Boolean> IS_SCRIPT_ID_VISITOR =
+      new Breakpoint.Target.Visitor<Boolean>() {
+    @Override
+    public Boolean visitScriptName(String scriptName) {
+      return Boolean.FALSE;
+    }
+
+    @Override
+    public Boolean visitScriptId(long scriptId) {
+      return Boolean.TRUE;
+    }
+
+    @Override
+    public Boolean visitUnknown(Target target) {
+      return Boolean.FALSE;
+    }
+  };
 
   WipCommandProcessor getCommandProcessor() {
     return tabImpl.getCommandProcessor();

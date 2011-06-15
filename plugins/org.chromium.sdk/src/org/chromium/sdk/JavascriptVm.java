@@ -100,7 +100,7 @@ public interface JavascriptVm {
    * @param callback to invoke when the evaluation result is ready,
    *        may be {@code null}
    */
-  void setBreakpoint(Breakpoint.Type type, String target, int line, int column, boolean enabled,
+  void setBreakpoint(Breakpoint.Target target, int line, int column, boolean enabled,
       String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
@@ -165,4 +165,9 @@ public interface JavascriptVm {
    *     does not support this feature
    */
   EvaluateWithContextExtension getEvaluateWithContextExtension();
+
+  /**
+   * @return extension to standard breakpoint target types
+   */
+  BreakpointTypeExtension getBreakpointTypeExtension();
 }
