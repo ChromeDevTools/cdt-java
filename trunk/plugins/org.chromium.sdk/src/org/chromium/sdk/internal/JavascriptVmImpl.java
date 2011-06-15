@@ -7,11 +7,13 @@ package org.chromium.sdk.internal;
 import java.io.IOException;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
+import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
 
 /**
@@ -36,11 +38,11 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
     }
   }
 
-  public void setBreakpoint(Breakpoint.Type type, String target, int line,
+  public void setBreakpoint(Breakpoint.Target target, int line,
       int column, boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
     getDebugSession().getBreakpointManager()
-        .setBreakpoint(type, target, line, column, enabled, condition, ignoreCount, callback,
+        .setBreakpoint(target, line, column, enabled, condition, ignoreCount, callback,
         syncCallback);
   }
 
@@ -68,6 +70,11 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
       return null;
     }
     return JsEvaluateContextImpl.EVALUATE_WITH_CONTEXT_EXTENSION;
+  }
+
+  @Override
+  public BreakpointTypeExtension getBreakpointTypeExtension() {
+    return BreakpointImpl.TYPE_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

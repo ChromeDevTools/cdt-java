@@ -8,25 +8,22 @@ import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonArray;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.Breakpoint.Type;
-import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.chromium.sdk.internal.tools.ToolName;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceCommand;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
@@ -35,10 +32,9 @@ import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 import org.chromium.sdk.internal.tools.v8.DebuggerToolCommand;
 import org.chromium.sdk.internal.tools.v8.V8Protocol;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolParserAccess;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 import org.chromium.sdk.internal.transport.ChromeStub;
-import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
+import org.chromium.sdk.internal.transport.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -235,7 +231,7 @@ public class FixtureChromeStub implements ChromeStub {
       }
 
       @Override
-      public void setBreakpoint(Type type, String target, int line, int position,
+      public void setBreakpoint(Breakpoint.Target target, int line, int position,
           boolean enabled, String condition, int ignoreCount, BreakpointCallback callback,
           SyncCallback syncCallback) {
       }
@@ -303,7 +299,8 @@ public class FixtureChromeStub implements ChromeStub {
           long id = (debuggerCommand == DebuggerCommand.SETBREAKPOINT)
               ? nextBreakpointId()
               : JsonUtil.getAsLong(args, "breakpoint");
-          breakpoints.put(id, new FakeBreakpoint(Type.SCRIPT_NAME, id,
+          Breakpoint.Target target = new Breakpoint.Target.ScriptName("abcde.js");
+          breakpoints.put(id, new FakeBreakpoint(id, target,
               JsonUtil.getAsBoolean(args, "enabled"),
               JsonUtil.getAsLong(args, "ignoreCount").intValue(),
               JsonUtil.getAsString(args, "condition")));
@@ -634,8 +631,9 @@ public class FixtureChromeStub implements ChromeStub {
   }
 
   private static class FakeBreakpoint extends BreakpointImpl {
-    public FakeBreakpoint(Type type, long id, boolean enabled, int ignoreCount, String condition) {
-      super(type, id, "abcde.js", 17L, 15, enabled, ignoreCount, condition,
+    public FakeBreakpoint(long id, Target target, boolean enabled, int ignoreCount,
+        String condition) {
+      super(id, target, 15, enabled, ignoreCount, condition,
           NULL_BREAKPOINT_MANAGER);
     }
   }

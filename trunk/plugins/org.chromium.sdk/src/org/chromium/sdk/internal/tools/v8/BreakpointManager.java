@@ -48,28 +48,12 @@ public class BreakpointManager {
     this.debugSession = debugSession;
   }
 
-  public void setBreakpoint(final Breakpoint.Type type, final String target,
+  public void setBreakpoint(final Breakpoint.Target target,
       final int line, int column, final boolean enabled, final String condition,
       final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
       SyncCallback syncCallback) {
-
-    final String scriptName;
-    final Long scriptId;
-    Object targetObject;
-    if (type == Breakpoint.Type.SCRIPT_ID) {
-      scriptName = null;
-      scriptId = Long.parseLong(target);
-      targetObject = scriptId;
-    } else if (type == Breakpoint.Type.SCRIPT_NAME) {
-      scriptName = target;
-      scriptId = null;
-      targetObject = scriptName;
-    } else {
-      throw new IllegalArgumentException("Unsupported breakpoint type " + type);
-    }
-
     debugSession.sendMessageAsync(
-        DebuggerMessageFactory.setBreakpoint(type, targetObject, toNullableInteger(line),
+        DebuggerMessageFactory.setBreakpoint(target, toNullableInteger(line),
             toNullableInteger(column), enabled, condition,
             toNullableInteger(ignoreCount)),
         true,
@@ -87,7 +71,7 @@ public class BreakpointManager {
                 long id = body.breakpoint();
 
                 final BreakpointImpl breakpoint =
-                    new BreakpointImpl(type, id, scriptName, scriptId, line, enabled, ignoreCount,
+                    new BreakpointImpl(id, target, line, enabled, ignoreCount,
                         condition, BreakpointManager.this);
 
                 callback.success(breakpoint);

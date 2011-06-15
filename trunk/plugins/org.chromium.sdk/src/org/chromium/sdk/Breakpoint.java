@@ -12,15 +12,6 @@ package org.chromium.sdk;
 public interface Breakpoint {
 
   /**
-   * Known breakpoint types.
-   */
-  enum Type {
-    FUNCTION,
-    SCRIPT_NAME,
-    SCRIPT_ID
-  }
-
-  /**
    * This value is used when the corresponding parameter is absent.
    *
    * @see #getIgnoreCount()
@@ -36,24 +27,15 @@ public interface Breakpoint {
   long INVALID_ID = -1;
 
   /**
-   * @return the breakpoint type
+   * @return where this breakpoint was targeted to (e.g. script with a particular name or
+   *     script with specified id)
    */
-  Type getType();
+  Target getTarget();
 
   /**
    * @return the breakpoint ID as reported by the JavaScript VM debugger
    */
   long getId();
-
-  /**
-   * @return scriptName as reported by the JavaScript VM debugger; may be null
-   */
-  String getScriptName();
-
-  /**
-   * @return scriptId as reported by the JavaScript VM debugger; may be null
-   */
-  Long getScriptId();
 
   /**
    * Returns line number of the breakpoint. As source is changed (typically with LiveEdit feature,
@@ -118,4 +100,46 @@ public interface Breakpoint {
    * @param callback to invoke once the operation result is available
    */
   void flush(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
+
+
+  /**
+   * An abstraction over possible breakpoint targets: script name, script id etc.
+   * This is essentially an Algebraic Type with several cases (see {@link Target.ScriptName},
+   * {@link Target.ScriptId}). Some cases may be provided as extension
+   * (see {@link BreakpointTypeExtension}).
+   */
+  abstract class Target {
+    /**
+     * Dispatches call on the actual Target type.
+     * @param visitor user-provided {@link Visitor} that may also implement some additional
+     *     interfaces (for extended types) that is checked on runtime
+     */
+    public abstract <R> R accept(Visitor<R> visitor);
+
+    public interface Visitor<R> {
+      R visitScriptName(String scriptName);
+      R visitScriptId(long scriptId);
+      R visitUnknown(Target target);
+    }
+
+    public static class ScriptName extends Target {
+      private final String name;
+      public ScriptName(String name) {
+        this.name = name;
+      }
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitScriptName(name);
+      }
+    }
+
+    public static class ScriptId extends Target {
+      private final long id;
+      public ScriptId(long id) {
+        this.id = id;
+      }
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitScriptId(id);
+      }
+    }
+  }
 }

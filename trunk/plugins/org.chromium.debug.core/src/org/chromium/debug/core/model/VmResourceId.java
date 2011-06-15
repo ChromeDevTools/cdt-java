@@ -57,19 +57,12 @@ public class VmResourceId {
   /**
    * @return parameter for {@link JavascriptVm#setBreakpoint} method.
    */
-  public Breakpoint.Type getTypeForBreakpoint() {
+  public Breakpoint.Target getTargetForBreakpoint() {
     if (value instanceof String) {
-      return Breakpoint.Type.SCRIPT_NAME;
+      return new Breakpoint.Target.ScriptName((String) value);
     } else {
-      return Breakpoint.Type.SCRIPT_ID;
+      return new Breakpoint.Target.ScriptId((Long) value);
     }
-  }
-
-  /**
-   * @return parameter for {@link JavascriptVm#setBreakpoint} method.
-   */
-  public String getTargetForBreakpoint() {
-    return value.toString();
   }
 
   String createFileNameTemplate(boolean isEval) {

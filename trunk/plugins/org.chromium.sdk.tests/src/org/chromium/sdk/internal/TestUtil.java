@@ -7,6 +7,7 @@ package org.chromium.sdk.internal;
 import junit.framework.Assert;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandler;
 import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
 
@@ -19,8 +20,23 @@ public class TestUtil {
     Assert.assertEquals(bpExpected.getId(), bpHit.getId());
     Assert.assertEquals(bpExpected.getCondition(), bpHit.getCondition());
     Assert.assertEquals(bpExpected.getIgnoreCount(), bpHit.getIgnoreCount());
-    Assert.assertEquals(bpExpected.getType(), bpHit.getType());
+    Assert.assertEquals(bpExpected.getTarget().accept(BREAKPOINT_TARGET_DUMPER),
+        bpHit.getTarget().accept(BREAKPOINT_TARGET_DUMPER));
   }
+
+  private static final Breakpoint.Target.Visitor<String> BREAKPOINT_TARGET_DUMPER =
+      new Breakpoint.Target.Visitor<String>() {
+    @Override public String visitScriptName(String scriptName) {
+      return "name=" + scriptName;
+    }
+    @Override public String visitScriptId(long scriptId) {
+      return "id=" + scriptId;
+    }
+    @Override public String visitUnknown(Target target) {
+      return "unknown " + target;
+    }
+
+  };
 
   public static DevToolsServiceHandler getDevToolsServiceHandler(BrowserImpl browserImpl) {
     return browserImpl.getDevToolsServiceHandlerForTests();

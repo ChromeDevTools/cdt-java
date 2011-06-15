@@ -4,25 +4,15 @@
 
 package org.chromium.sdk.internal.tools.v8.request;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.Breakpoint.Target;
+import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
 import org.chromium.sdk.internal.tools.v8.DebuggerCommand;
 
 /**
  * Represents a "setbreakpoint" V8 request message.
  */
 public class SetBreakpointMessage extends ContextlessDebuggerMessage {
-
-  private static final Map<Breakpoint.Type, String> typeToV8Type =
-      new HashMap<Breakpoint.Type, String>();
-
-  static {
-    typeToV8Type.put(Breakpoint.Type.FUNCTION, "function");
-    typeToV8Type.put(Breakpoint.Type.SCRIPT_NAME, "script");
-    typeToV8Type.put(Breakpoint.Type.SCRIPT_ID, "scriptId");
-  }
 
   /**
    * @param type ("function", "handle", or "script")
@@ -34,16 +24,48 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
    * @param ignoreCount nullable number specifying the amount of break point hits to ignore.
    *        Default is 0
    */
-  public SetBreakpointMessage(Breakpoint.Type type, Object target,
+  public SetBreakpointMessage(Breakpoint.Target target,
       Integer line, Integer column, Boolean enabled, String condition,
       Integer ignoreCount) {
     super(DebuggerCommand.SETBREAKPOINT.value);
-    putArgument("type", typeToV8Type.get(type));
-    putArgument("target", target);
+    putArgument("type", target.accept(GET_TYPE_VISITOR));
+    putArgument("target", target.accept(GET_TARGET_VISITOR));
     putArgument("line", line);
     putArgument("column", column);
     putArgument("enabled", enabled);
     putArgument("condition", condition);
     putArgument("ignoreCount", ignoreCount);
   }
+
+  private static final BreakpointImpl.TargetExtendedVisitor<String> GET_TYPE_VISITOR =
+      new BreakpointImpl.TargetExtendedVisitor<String>() {
+    @Override public String visitFunction(String expression) {
+      return "function";
+    }
+    @Override public String visitScriptName(String scriptName) {
+      return "script";
+    }
+    @Override public String visitScriptId(long scriptId) {
+      return "scriptId";
+    }
+    @Override public String visitUnknown(Target target) {
+      throw new IllegalArgumentException();
+    }
+  };
+
+  private static final BreakpointImpl.TargetExtendedVisitor<Object> GET_TARGET_VISITOR =
+      new BreakpointImpl.TargetExtendedVisitor<Object>() {
+    @Override public Object visitFunction(String expression) {
+      return expression;
+    }
+    @Override public Object visitScriptName(String scriptName) {
+      return scriptName;
+    }
+    @Override public Object visitScriptId(long scriptId) {
+      return Long.valueOf(scriptId);
+    }
+    @Override public Object visitUnknown(Target target) {
+      throw new IllegalArgumentException();
+    }
+  };
 }

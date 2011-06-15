@@ -46,9 +46,9 @@ public class DebuggerMessageFactory {
     return new SourceMessage(frame, fromLine, toLine);
   }
 
-  public static ContextlessDebuggerMessage setBreakpoint(Breakpoint.Type type, Object target,
+  public static ContextlessDebuggerMessage setBreakpoint(Breakpoint.Target target,
       Integer line, Integer column, Boolean enabled, String condition, Integer ignoreCount) {
-    return new SetBreakpointMessage(type, target, line, column, enabled, condition, ignoreCount);
+    return new SetBreakpointMessage(target, line, column, enabled, condition, ignoreCount);
   }
 
   public static ContextlessDebuggerMessage changeBreakpoint(Breakpoint breakpoint) {

@@ -13,9 +13,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.Breakpoint.Type;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.TestUtil;
@@ -61,7 +60,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       final CountDownLatch latch = new CountDownLatch(1);
 
       // The "create" part
-      browserTab.setBreakpoint(Type.SCRIPT_NAME, "1", 4, 1, true, "false", 3,
+      browserTab.setBreakpoint(new Breakpoint.Target.ScriptName("1"), 4, 1, true, "false", 3,
           new BreakpointCallback() {
             public void failure(String errorMessage) {
               resultMessage[0] = errorMessage;
@@ -113,7 +112,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
 
   @Test(timeout = 5000)
   public void testClear() throws Exception {
-    BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, "abc.js", 17L, 10, true, 0, null,
+    BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"),
+        10, true, 0, null,
         new TestBreakpointManager(browserTab.getDebugSession()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
@@ -143,7 +143,8 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     String condition = "true";
     int ignoreCount = 3;
     boolean enabled = true;
-    BreakpointImpl bp = new BreakpointImpl(Type.SCRIPT_NAME, 1, "abc.js", 17L, 10, enabled,
+    BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"), 10,
+        enabled,
         ignoreCount, condition, new TestBreakpointManager(browserTab.getDebugSession()));
 
     bp.setCondition(condition);

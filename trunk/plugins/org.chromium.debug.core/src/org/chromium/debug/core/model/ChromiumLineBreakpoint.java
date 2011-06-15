@@ -141,8 +141,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       SourcePosition vmPosition =
           map.translatePosition(scriptId, line, 0,TranslateDirection.USER_TO_VM);
 
-      javascriptVm.setBreakpoint(scriptId.getTypeForBreakpoint(),
-          vmPosition.getId().getTargetForBreakpoint(),
+      javascriptVm.setBreakpoint(vmPosition.getId().getTargetForBreakpoint(),
           vmPosition.getLine(),
           vmPosition.getColumn(),
           uiBreakpoint.getInner().isEnabled(),
