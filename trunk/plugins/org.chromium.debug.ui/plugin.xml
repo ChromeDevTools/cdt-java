@@ -453,4 +453,14 @@
             id="org.chromium.debug.core.jsnature.image">
       </image>
    </extension>
+  
+  <extension point="org.eclipse.core.expressions.propertyTesters">
+    <propertyTester
+       namespace="org.chromium.debug.core"
+       id="org.chromium.debug.ui.propertypages.FileEditorInputPropertyTester"
+       properties="isJsFile"
+       type="org.eclipse.ui.IFileEditorInput"
+       class="org.chromium.debug.ui.propertypages.FileEditorInputPropertyTester">
+    </propertyTester>
+  </extension>
 </plugin>
