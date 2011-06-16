@@ -4,10 +4,12 @@
 
 package org.chromium.debug.ui.propertypages;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.ChromiumJavascriptDecorator;
@@ -118,12 +120,24 @@ public class ScriptFilePage extends PropertyPage {
   }
 
   private void fillScriptProperties(ScriptProperties properties, ScriptTargetMapping input) {
-    IFile vprojectFile = input.getFile();
-    String fileName =
-        ChromiumJavascriptDecorator.getDecoratedText(vprojectFile.getName(), vprojectFile);
-    properties.getLocalFileName().setText(fileName);
+    String fileName;
 
-    properties.getScriptName().setText(input.getVmResource().getId().getEclipseSourceName());
+    Collection<? extends VmResource> vmResources = input.getVmResources();
+    String text;
+    if (vmResources.size() == 1) {
+      VmResource resource = vmResources.iterator().next();
+      text = resource.getId().getVisibleName();
+      IFile vprojectFile = resource.getVProjectFile();
+      fileName =
+          ChromiumJavascriptDecorator.getDecoratedText(vprojectFile.getName(), vprojectFile);
+    } else {
+      // TODO: provide better UI for this case.
+      text = Messages.ScriptFilePage_MULTIPLE_INACCURATE_MATCH;
+      fileName = Messages.ScriptFilePage_MULTIPLE_INACCURATE_MATCH;
+    }
+
+    properties.getLocalFileName().setText(fileName);
+    properties.getScriptName().setText(text);
   }
 
   private interface ScriptProperties {

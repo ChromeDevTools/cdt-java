@@ -4,9 +4,12 @@
 
 package org.chromium.debug.core.util;
 
+import java.util.Collection;
+
 import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
 
 /**
@@ -14,16 +17,23 @@ import org.eclipse.core.resources.IFile;
  * on remote VM {@link VmResource}. A file may participate in several mappings simultaneously.
  */
 public class ScriptTargetMapping {
+
+  /** Original file that is being mapped, may be workspace file or virtual project file. */
   private final IFile file;
-  private final VmResource vmResource;
-  private final VmResource.ScriptHolder scriptHolder;
+
+  /** Debug session this resource was mapped within. */
   private final ConnectedTargetData connectedTargetData;
 
-  public ScriptTargetMapping(IFile file, VmResource vmResource,
-      VmResource.ScriptHolder scriptHolder, ConnectedTargetData connectedTargetData) {
+  /**
+   * Set of VmResource's that the file gets mapped to. Must be non-empty. Several resources
+   * are only possible in inaccurate source lookup mode.
+   */
+  private final Collection<? extends VmResource> vmResources;
+
+  public ScriptTargetMapping(IFile file, Collection<? extends VmResource> vmResources,
+      ConnectedTargetData connectedTargetData) {
     this.file = file;
-    this.vmResource = vmResource;
-    this.scriptHolder = scriptHolder;
+    this.vmResources = vmResources;
     this.connectedTargetData = connectedTargetData;
   }
 
@@ -31,12 +41,8 @@ public class ScriptTargetMapping {
     return file;
   }
 
-  public VmResource getVmResource() {
-    return vmResource;
-  }
-
-  public VmResource.ScriptHolder getScriptHolder() {
-    return scriptHolder;
+  public Collection<? extends VmResource> getVmResources() {
+    return vmResources;
   }
 
   public JavascriptVm getJavascriptVm() {
@@ -45,5 +51,22 @@ public class ScriptTargetMapping {
 
   public ConnectedTargetData getConnectedTargetData() {
     return connectedTargetData;
+  }
+
+  /**
+   * Utility method that works in the most cases.
+   * TODO: re-design program and handle errors nicer than RuntimeException's
+   */
+  public Script getSingleScript() {
+    Collection<? extends VmResource> vmResources = getVmResources();
+    if (vmResources.size() != 1) {
+      throw new RuntimeException("Several resources found");
+    }
+    VmResource resource = vmResources.iterator().next();
+    if (resource.getMetadata() instanceof VmResource.ScriptHolder == false) {
+      throw new RuntimeException("Unsupported type of resource: " + resource.getMetadata());
+    }
+    VmResource.ScriptHolder scriptHolder = (VmResource.ScriptHolder) resource.getMetadata();
+    return scriptHolder.getSingleScript();
   }
 }

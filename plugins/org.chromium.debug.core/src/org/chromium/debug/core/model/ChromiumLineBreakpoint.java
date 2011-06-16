@@ -115,6 +115,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
    * SDK {@link JavascriptVm}'s simultaneously.
    */
   public static class Helper {
+    // TODO: rename 'remove' -> 'remote'.
     public interface CreateOnRemoveCallback {
       void success(Breakpoint breakpoint);
       void failure(String errorMessage);

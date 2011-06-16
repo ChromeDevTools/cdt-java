@@ -5,9 +5,12 @@
 package org.chromium.debug.ui.actions;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.model.VmResource.ScriptHolder;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer;
@@ -60,8 +63,8 @@ public class PushChangesAction extends V8ScriptAction {
 
   public static void execute(final ScriptTargetMapping filePair,
       UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
-    Script script = filePair.getScriptHolder().getSingleScript();
-
+    // TODO: fix the rough behavior (inside this call).
+    Script script = filePair.getSingleScript();
     byte[] fileData;
     try {
       fileData = ChromiumDebugPluginUtil.readFileContents(filePair.getFile());

@@ -66,8 +66,10 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
    * A "side" of transformation -- either "original" or "vm".
    */
   private static class Side {
-    private final Map<VmResourceId, ResourceData> resourceMap =
-        new HashMap<VmResourceId, PositionMapBuilderImpl.ResourceData>();
+    private final Map<String, ResourceData> scriptNameToData =
+        new HashMap<String, ResourceData>();
+    private final Map<Long, ResourceData> scriptIdToData =
+        new HashMap<Long, ResourceData>();
     private final TextSectionMapping.Direction direction;
 
     Side(TextSectionMapping.Direction direction) {
@@ -75,7 +77,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     }
 
     SourcePosition transformImpl(VmResourceId id, int line, int column) {
-      ResourceData resourceData = resourceMap.get(id);
+      ResourceData resourceData = findResourceData(id);
       if (resourceData != null) {
         TextPoint originalPoint = new TextPoint(line, column);
         SourcePosition resultPosition = resourceData.transform(originalPoint, direction);
@@ -86,6 +88,46 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
       return new SourcePosition(id, line, column);
     }
 
+    private ResourceData findResourceData(VmResourceId resourceId) {
+      Long scriptId = resourceId.getId();
+      if (scriptId != null) {
+        ResourceData result = getSafe(scriptIdToData, scriptId);
+        if (result != null) {
+          return result;
+        }
+      }
+      String scriptName = resourceId.getName();
+      if (scriptName != null) {
+        ResourceData result = getSafe(scriptNameToData, scriptName);
+        if (result != null) {
+          return result;
+        }
+      }
+      return null;
+    }
+
+    private void putResourceData(VmResourceId resourceId, ResourceData data) {
+      Long scriptId = resourceId.getId();
+      if (scriptId != null) {
+        scriptIdToData.put(scriptId, data);
+      }
+      String scriptName = resourceId.getName();
+      if (scriptName != null) {
+        scriptNameToData.put(scriptName, data);
+      }
+    }
+
+    private void removeResourceData(VmResourceId resourceId) {
+      Long scriptId = resourceId.getId();
+      if (scriptId != null) {
+        scriptIdToData.remove(scriptId);
+      }
+      String scriptName = resourceId.getName();
+      if (scriptName != null) {
+        scriptNameToData.remove(scriptName);
+      }
+    }
+
     /**
      * Checks whether adding the resource section to map is possible.
      * @return {@link RangeAdder} object that can be used to perform "add" operation; not null
@@ -93,7 +135,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
      */
     private RangeAdder checkCanAddRange(ResourceSection section) throws CannotAddException {
       final VmResourceId resourceId = section.getResourceId();
-      final ResourceData data = resourceMap.get(resourceId);
+      final ResourceData data = findResourceData(resourceId);
       final Range range = Range.create(section);
 
       if (data != null) {
@@ -104,10 +146,10 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
          * Commits 'add' operation. No conflicts are expected at this stage.
          */
         public RangeDeleter commit(TextSectionMapping mapTable, VmResourceId destinationResource) {
-          ResourceData commitData = getSafe(resourceMap, resourceId);
+          ResourceData commitData = findResourceData(resourceId);
           if (commitData == null) {
             commitData = new ResourceData();
-            resourceMap.put(resourceId, commitData);
+            putResourceData(resourceId, commitData);
           }
 
           final ResourceData commitDataFinal = commitData;
@@ -117,7 +159,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
             public void delete() {
               commitDataFinal.removeRange(range);
               if (commitDataFinal.isEmpty()) {
-                resourceMap.remove(resourceId);
+                removeResourceData(resourceId);
               }
             }
           };

@@ -4,12 +4,16 @@
 
 package org.chromium.debug.core;
 
+import java.util.ArrayList;
+
 import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
+import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.Script;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
@@ -25,42 +29,89 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   private volatile IProject project = null;
   private volatile ReverseSourceLookup reverseSourceLookup = null;
 
-
   public void initializeParticipants() {
-    ISourceLookupParticipant participant = new AbstractSourceLookupParticipant() {
-      public String getSourceName(Object object) throws CoreException {
-        if (object instanceof Script) {
-          Script script = (Script) object;
-          return VmResourceId.forScript(script).getEclipseSourceName();
-        } else if (object instanceof StackFrame) {
-          StackFrame jsStackFrame = (StackFrame) object;
-          VmResourceId vmResourceId = jsStackFrame.getVmResourceId();
-          if (vmResourceId == null) {
-            return null;
+    ISourceLookupParticipant participant = new AccurateLookupParticipant();
+    addParticipants(new ISourceLookupParticipant[] { participant } );
+  }
+
+  private static class AccurateLookupParticipant extends AbstractSourceLookupParticipant {
+    public String getSourceName(Object object) throws CoreException {
+      return getSourceNameImpl(object);
+    }
+
+    @Override
+    public Object[] findSourceElements(Object object) throws CoreException {
+      Object[] result = super.findSourceElements(object);
+      if (result.length > 0) {
+        ArrayList<Object> filtered = new ArrayList<Object>(result.length);
+        for (Object obj : result) {
+          if (obj instanceof ResourceManager) {
+            ResourceManager resourceManager = (ResourceManager) obj;
+            expandResourceManagerResult(resourceManager, object, filtered);
+          } else {
+            filtered.add(obj);
           }
-          return vmResourceId.getEclipseSourceName();
-        } else if (object instanceof Breakpoint) {
-          Breakpoint breakpoint = (Breakpoint) object;
-          VmResourceId resourceId = breakpoint.getTarget().accept(BREAKPOINT_RESOURCE_VISITOR);
-          return resourceId.getEclipseSourceName();
-        } else if (object instanceof VmResourceId) {
-          VmResourceId resourceId = (VmResourceId) object;
-          return resourceId.getEclipseSourceName();
-        } else {
-          return null;
         }
       }
-    };
-    addParticipants(new ISourceLookupParticipant[] { participant } );
+      return result;
+    }
+  }
+
+  private static String getSourceNameImpl(Object object) throws CoreException {
+    VmResourceId vmResourceId = getVmResourceId(object);
+    if (vmResourceId == null) {
+      return null;
+    }
+    String name = vmResourceId.getName();
+    if (name == null) {
+      // Do not return null, this will cancel look-up.
+      // Return empty string. Virtual project container will pass us some data.
+      name = "";
+    }
+    return name;
+  }
+
+  private static VmResourceId getVmResourceId(Object object) throws CoreException {
+    if (object instanceof Script) {
+      Script script = (Script) object;
+      return VmResourceId.forScript(script);
+    } else if (object instanceof StackFrame) {
+      StackFrame jsStackFrame = (StackFrame) object;
+      return jsStackFrame.getVmResourceId();
+    } else if (object instanceof Breakpoint) {
+      Breakpoint breakpoint = (Breakpoint) object;
+      return breakpoint.getTarget().accept(BREAKPOINT_RESOURCE_VISITOR);
+    } else if (object instanceof VmResourceId) {
+      VmResourceId resourceId = (VmResourceId) object;
+      return resourceId;
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Virtual project container cannot properly resolve from a sting name. Instead it returns
+   * {@link ResourceManager} object that can be processed here, where we have full
+   * {@link VmResourceId}.
+   */
+  private static void expandResourceManagerResult(ResourceManager resourceManager, Object object,
+      ArrayList<Object> output) throws CoreException {
+    VmResourceId resourceId = getVmResourceId(object);
+    if (resourceId.getId() != null) {
+      VmResource vmResource = resourceManager.getVmResource(resourceId);
+      if (vmResource != null) {
+        output.add(vmResource.getVProjectFile());
+      }
+    }
   }
 
   private static final Breakpoint.Target.Visitor<VmResourceId> BREAKPOINT_RESOURCE_VISITOR =
       new Breakpoint.Target.Visitor<VmResourceId>() {
         @Override public VmResourceId visitScriptName(String scriptName) {
-          return VmResourceId.forName(scriptName);
+          return new VmResourceId(scriptName, null);
         }
         @Override public VmResourceId visitScriptId(long scriptId) {
-          return VmResourceId.forId(scriptId);
+          return new VmResourceId(null, scriptId);
         }
         @Override public VmResourceId visitUnknown(Breakpoint.Target target) {
           return null;
@@ -71,6 +122,10 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     this.resourceManager = resourceManager;
     this.project = project;
     this.reverseSourceLookup = new ReverseSourceLookup(this);
+  }
+
+  public VmResourceId findVmResource(IFile file) throws CoreException {
+    return reverseSourceLookup.findVmResource(file);
   }
 
   public ReverseSourceLookup getReverseSourceLookup() {
