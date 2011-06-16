@@ -136,12 +136,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     });
   }
 
-  public VmResource findVmResourceFromWorkspaceFile(IFile resource) throws CoreException {
+  public Collection<? extends VmResource> findVmResourceFromWorkspaceFile(IFile resource)
+      throws CoreException {
     VmResourceId id = findVmResourceIdFromWorkspaceFile(resource);
     if (id == null) {
       return null;
     }
-    return resourceManager.getVmResource(id);
+    return Collections.singletonList(resourceManager.getVmResource(id));
   }
 
   public VmResource getVProjectVmResource(IFile file) {
@@ -158,7 +159,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   }
 
   private VmResourceId findVmResourceIdFromWorkspaceFile(IFile resource) throws CoreException {
-    return sourceDirector.getReverseSourceLookup().findVmResource(resource);
+    return sourceDirector.findVmResource(resource);
   }
 
   public void reloadScript(Script script) {
@@ -445,7 +446,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       if (script == null) {
         scriptName = Messages.StackFrame_UnknownScriptName;
       } else {
-        scriptName = VmResourceId.forScript(script).getEclipseSourceName();
+        scriptName = VmResourceId.forScript(script).getVisibleName();
       }
       int line = stackFrame.getLineNumber();
       if (line != -1) {

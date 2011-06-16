@@ -49,11 +49,7 @@ public class VProjectSourceContainer implements ISourceContainer {
       return new Object[0];
     }
     ResourceManager resourceManager = chromiumSourceDirector.getResourceManager();
-    IFile file = resourceManager.getFile(name);
-    if (file == null) {
-      return new Object[0];
-    }
-    return new Object[] { file };
+    return new Object[] { resourceManager };
   }
 
   public String getName() {

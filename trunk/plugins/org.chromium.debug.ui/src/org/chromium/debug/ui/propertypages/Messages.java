@@ -31,6 +31,8 @@ public class Messages extends NLS {
 
   public static String ScriptFilePage_CURRENTLY_LINKED_TO_LABEL;
 
+  public static String ScriptFilePage_MULTIPLE_INACCURATE_MATCH;
+
   public static String ScriptFilePage_NAME_IN_VPROJECT;
 
   public static String ScriptFilePage_SCRIPT_NAME;

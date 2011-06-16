@@ -6,6 +6,7 @@ package org.chromium.debug.core;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -94,21 +95,16 @@ public class ChromiumDebugPlugin extends Plugin {
         new ArrayList<ScriptTargetMapping>(targetDataList.size());
 
     for (ConnectedTargetData targetData : targetDataList) {
-      VmResource script;
+      Collection<? extends VmResource> resources;
       try {
-        script = targetData.getVmResource(localFile);
+        resources = targetData.getVmResource(localFile);
       } catch (CoreException e) {
         throw new RuntimeException("Failed to resolve script from the file " + localFile, e);
       }
-      if (script == null) {
+      if (resources == null || resources.isEmpty()) {
         continue;
       }
-      Metadata metadata = script.getMetadata();
-      if (metadata instanceof VmResource.ScriptHolder == false) {
-        continue;
-      }
-      VmResource.ScriptHolder scriptHolder = (VmResource.ScriptHolder) metadata;
-      result.add(new ScriptTargetMapping(localFile, script, scriptHolder, targetData));
+      result.add(new ScriptTargetMapping(localFile, resources, targetData));
     }
     return result;
   }

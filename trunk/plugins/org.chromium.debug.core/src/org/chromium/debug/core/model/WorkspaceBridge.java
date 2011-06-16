@@ -51,7 +51,8 @@ public interface WorkspaceBridge {
     JsLabelProvider getLabelProvider();
   }
 
-  VmResource findVmResourceFromWorkspaceFile(IFile resource) throws CoreException;
+  Collection<? extends VmResource> findVmResourceFromWorkspaceFile(IFile resource)
+      throws CoreException;
 
   /**
    * Called after session has been started. It should start process of debug session initialization

@@ -4,6 +4,9 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
+import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.removeSafe;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +29,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 public class ResourceManager {
   private final IProject debugProject;
 
-  private final Map<VmResourceId, VmResourceInfo> vmResourceId2Info =
-      new HashMap<VmResourceId, VmResourceInfo>();
+  private final Map<String, VmResourceInfo> scriptName2Info =
+      new HashMap<String, VmResourceInfo>();
+  private final Map<Long, VmResourceInfo> scriptId2Info =
+      new HashMap<Long, VmResourceInfo>();
+
   private final Map<IFile, VmResourceInfo> file2Info = new HashMap<IFile, VmResourceInfo>();
 
   public ResourceManager(IProject debugProject) {
@@ -35,28 +41,31 @@ public class ResourceManager {
   }
 
   public synchronized VmResource getVmResource(VmResourceId id) {
-    VmResourceInfo info = vmResourceId2Info.get(id);
+    VmResourceInfo info = getVmResourceInfo(id);
     if (info == null) {
       return null;
     }
     return info.vmResourceImpl;
   }
 
-  /**
-   * @param eclipseSourceName eclipse source file name
-   *   (what {@link VmResourceId#getEclipseSourceName()} returns)
-   */
-  public IFile getFile(String eclipseSourceName) {
-    VmResourceId id = VmResourceId.parseString(eclipseSourceName);
-    VmResourceInfo info = vmResourceId2Info.get(id);
-    if (info == null) {
-      return null;
+  private VmResourceInfo getVmResourceInfo(VmResourceId id) {
+    if (id.getId() != null) {
+      VmResourceInfo info = getSafe(scriptId2Info, id.getId());
+      if (info != null) {
+        return info;
+      }
     }
-    return info.file;
+    if (id.getName() != null) {
+      VmResourceInfo info = getSafe(scriptName2Info, id.getName());
+      if (info != null) {
+        return info;
+      }
+    }
+    return null;
   }
 
   public synchronized VmResourceId getResourceId(IFile resource) {
-    VmResourceInfo info = file2Info.get(resource);
+    VmResourceInfo info = getSafe(file2Info, resource);
     if (info == null) {
       return null;
     }
@@ -65,7 +74,7 @@ public class ResourceManager {
 
   public synchronized void addScript(Script newScript) {
     VmResourceId id = VmResourceId.forScript(newScript);
-    VmResourceInfo info = vmResourceId2Info.get(id);
+    VmResourceInfo info = getVmResourceInfo(id);
     ScriptSet scriptSet;
     if (info == null) {
       scriptSet = new ScriptSet();
@@ -85,11 +94,12 @@ public class ResourceManager {
     UniqueKeyGenerator.Factory<VmResourceInfo> factory =
         new UniqueKeyGenerator.Factory<VmResourceInfo>() {
           public VmResourceInfo tryCreate(String uniqueName) {
-            VmResourceId id = VmResourceId.forName(uniqueName);
-            VmResourceInfo info = vmResourceId2Info.get(id);
+            VmResourceInfo info = getSafe(scriptName2Info, uniqueName);
             if (info != null) {
               return null;
             }
+            // Temporary file has no script id.
+            VmResourceId id = new VmResourceId(uniqueName, null);
             return createAndRegisterResourceFile(id, metadata);
           }
     };
@@ -106,9 +116,17 @@ public class ResourceManager {
     IFile scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, fileNameTemplate);
     VmResourceInfo info = new VmResourceInfo(scriptFile, id, metadata);
     Object conflict;
-    conflict = vmResourceId2Info.put(id, info);
-    if (conflict != null) {
-      throw new RuntimeException();
+    if (id.getName() != null) {
+      conflict = scriptName2Info.put(id.getName(), info);
+      if (conflict != null) {
+        throw new RuntimeException();
+      }
+    }
+    if (id.getId() != null) {
+      conflict = scriptId2Info.put(id.getId(), info);
+      if (conflict != null) {
+        throw new RuntimeException();
+      }
     }
     conflict = file2Info.put(scriptFile, info);
     if (conflict != null) {
@@ -124,7 +142,7 @@ public class ResourceManager {
 
   public synchronized void reloadScript(Script script) {
     VmResourceId id = VmResourceId.forScript(script);
-    VmResourceInfo info = vmResourceId2Info.get(id);
+    VmResourceInfo info = getVmResourceInfo(id);
     if (info == null) {
       throw new RuntimeException("Script file not found"); //$NON-NLS-1$
     }
@@ -136,7 +154,8 @@ public class ResourceManager {
   public synchronized void clear() {
     deleteAllScriptFiles();
 
-    vmResourceId2Info.clear();
+    scriptName2Info.clear();
+    scriptId2Info.clear();
     file2Info.clear();
   }
 
@@ -150,7 +169,15 @@ public class ResourceManager {
   }
 
   private String createFileNameTemplate(VmResourceId id) {
-    return id.createFileNameTemplate(true);
+    if (id.getName() != null) {
+      return id.getName();
+    } else {
+      if (true) {
+        return "<eval #" + id.getId() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+      } else {
+        return "<no name #" + id.getId() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+      }
+    }
   }
 
   private static void writeScriptSource(Collection<Script> scripts, IFile file) {
@@ -184,8 +211,13 @@ public class ResourceManager {
         return file;
       }
       public void deleteResourceAndFile() {
-        ChromiumDebugPluginUtil.removeSafe(vmResourceId2Info, id);
-        ChromiumDebugPluginUtil.removeSafe(file2Info, file);
+        if (id.getName() != null) {
+          removeSafe(scriptName2Info, id.getName());
+        }
+        if (id.getId() != null) {
+          removeSafe(scriptId2Info, id.getId());
+        }
+        removeSafe(file2Info, file);
 
         try {
           file.delete(false, new NullProgressMonitor());

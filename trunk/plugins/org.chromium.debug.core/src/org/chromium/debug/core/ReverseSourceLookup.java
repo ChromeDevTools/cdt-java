@@ -65,7 +65,7 @@ public class ReverseSourceLookup {
       if (name == null) {
         return null;
       }
-      return VmResourceId.forName(name);
+      return new VmResourceId(name, null);
     }
   }
 

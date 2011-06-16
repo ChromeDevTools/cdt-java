@@ -366,6 +366,22 @@ public class ChromiumDebugPluginUtil {
     return collection.remove(value);
   }
 
+  public static <T> boolean eq(T left, T right) {
+    if (left == null) {
+      return right == null;
+    } else {
+      return left.equals(right);
+    }
+  }
+
+  public static int hashCode(Object obj) {
+    if (obj == null) {
+      return 0;
+    } else {
+      return obj.hashCode();
+    }
+  }
+
   public static String getStacktraceString(Exception exception) {
     StringWriter stringWriter = new StringWriter();
     PrintWriter printWriter = new PrintWriter(stringWriter);

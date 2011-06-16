@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.Collection;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugTargetImpl.ListenerBlock;
 import org.chromium.debug.core.model.DebugTargetImpl.State;
@@ -110,7 +112,7 @@ public class ConnectedTargetData {
     DebugTargetImpl.fireDebugEvent(new DebugEvent(debugTargetImpl, DebugEvent.RESUME, detail));
   }
 
-  public VmResource getVmResource(IFile resource) throws CoreException {
+  public Collection<? extends VmResource> getVmResource(IFile resource) throws CoreException {
     return workspaceRelations.findVmResourceFromWorkspaceFile(resource);
   }
 

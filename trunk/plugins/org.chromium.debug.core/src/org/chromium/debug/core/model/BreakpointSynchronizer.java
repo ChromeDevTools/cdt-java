@@ -4,6 +4,8 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.SyncCallback;
@@ -218,6 +219,9 @@ public class BreakpointSynchronizer {
     for (Breakpoint sdkBreakpoint : sdkBreakpointsToCreate) {
       Object sourceElement = sourceDirector.getSourceElement(sdkBreakpoint);
       if (sourceElement instanceof IFile == false) {
+        statusBuilder.getReportBuilder().addProblem(
+            ReportBuilder.Problem.UNRESOLVED_REMOTE_BREAKPOINT,
+            sdkBreakpoint.getTarget().accept(BREAKPOINT_DEBUG_DESTINATION_VISITOR));
         continue;
       }
       // We do not actually support working files for scripts with offset.
@@ -254,6 +258,20 @@ public class BreakpointSynchronizer {
           createTaskHelper);
     }
   }
+
+  private static final Breakpoint.Target.Visitor<String> BREAKPOINT_DEBUG_DESTINATION_VISITOR =
+      new Breakpoint.Target.Visitor<String>() {
+        @Override public String visitScriptName(String scriptName) {
+          return "script_name=" + scriptName;
+        }
+        @Override public String visitScriptId(long scriptId) {
+          return "script_id" + scriptId;
+        }
+        @Override public String visitUnknown(Breakpoint.Target target) {
+          return "Unknown target: + " + target;
+        }
+      };
+
 
   private static class BreakpointMerger extends Merger<WrappedBreakpoint, Breakpoint> {
     private final Direction direction;
@@ -396,8 +414,16 @@ public class BreakpointSynchronizer {
       }
     }
 
+    enum Problem {
+      UNRESOLVED_REMOTE_BREAKPOINT;
+      String getVisibleName() {
+        return toString();
+      }
+    }
+
     private final Direction direction;
     private final Map<Property, AtomicInteger> counters;
+    private final Map<Problem, List<String>> problems;
 
     ReportBuilder(Direction direction) {
       this.direction = direction;
@@ -405,10 +431,20 @@ public class BreakpointSynchronizer {
       for (Property property : Property.class.getEnumConstants()) {
         counters.put(property, new AtomicInteger(0));
       }
+      problems = new HashMap<Problem, List<String>>(1);
     }
 
     public void increment(Property property) {
       counters.get(property).addAndGet(1);
+    }
+
+    public synchronized void addProblem(Problem problem, String message) {
+      List<String> list = getSafe(problems, problem);
+      if (list == null) {
+        list = new ArrayList<String>();
+        problems.put(problem, list);
+      }
+      list.add(message);
     }
 
     public String build() {
@@ -421,6 +457,9 @@ public class BreakpointSynchronizer {
         }
         builder.append(" ").append(en.getKey().getVisibleName()); //$NON-NLS-1$
         builder.append("=").append(number); //$NON-NLS-1$
+      }
+      if (!problems.isEmpty()) {
+        builder.append('\n').append(problems.toString());
       }
       return builder.toString();
     }
@@ -484,12 +523,12 @@ public class BreakpointSynchronizer {
         new Breakpoint.Target.Visitor<VmResourceId>() {
           @Override
           public VmResourceId visitScriptName(String scriptName) {
-            return VmResourceId.forName(scriptName);
+            return new VmResourceId(scriptName, null);
           }
 
           @Override
           public VmResourceId visitScriptId(long scriptId) {
-            return VmResourceId.forId(scriptId);
+            return new VmResourceId(null, scriptId);
           }
 
           @Override
