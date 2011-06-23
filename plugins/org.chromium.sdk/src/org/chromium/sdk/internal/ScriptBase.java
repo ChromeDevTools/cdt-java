@@ -11,10 +11,9 @@ import java.util.Map;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
-import org.chromium.sdk.internal.protocol.data.LiveEditResult;
-import org.chromium.sdk.internal.protocol.data.LiveEditResult.OldTreeNode;
 import org.chromium.sdk.internal.protocol.data.ScriptHandle;
 import org.chromium.sdk.internal.protocol.data.SomeHandle;
+import org.chromium.sdk.internal.protocol.liveedit.LiveEditResult;
 import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
 
 /**
@@ -261,7 +260,7 @@ public abstract class ScriptBase implements Script {
     private static final Wrapper<LiveEditResult.OldTreeNode, OldFunctionNode> OLD_WRAPPER =
         new Wrapper<LiveEditResult.OldTreeNode, OldFunctionNode>() {
           @Override
-          OldFunctionNode wrap(OldTreeNode original) {
+          OldFunctionNode wrap(LiveEditResult.OldTreeNode original) {
             return new OldFunctionNodeImpl(original);
           }
     };

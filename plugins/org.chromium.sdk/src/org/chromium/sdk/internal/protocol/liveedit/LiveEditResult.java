@@ -1,4 +1,4 @@
-package org.chromium.sdk.internal.protocol.data;
+package org.chromium.sdk.internal.protocol.liveedit;
 
 import java.util.List;
 

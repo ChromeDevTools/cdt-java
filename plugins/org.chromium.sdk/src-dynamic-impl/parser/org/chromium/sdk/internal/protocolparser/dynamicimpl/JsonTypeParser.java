@@ -92,21 +92,21 @@ class JsonTypeParser<T> extends SlowParser<ObjectData> {
     String typeName = scope.getTypeImplReference(refToType.get());
     scope.startLine(typeName + " " + resultRef + ";\n");
 
-    if (isNullable) {
-      scope.startLine("if (" + valueRef+ " == null) {\n");
-      scope.startLine("  " + resultRef+ " = null;\n");
-      scope.startLine("}\n");
-    }
     scope.startLine("if (" + valueRef+ " == null) {\n");
-    scope.startLine("  throw new " + Util.BASE_PACKAGE +
-        ".JsonProtocolParseException(\"null input\");\n");
-    scope.startLine("}\n");
+    if (isNullable) {
+      scope.startLine("  " + resultRef+ " = null;\n");
+    } else {
+      scope.startLine("  throw new " + Util.BASE_PACKAGE +
+          ".JsonProtocolParseException(\"null input\");\n");
+    }
+    scope.startLine("} else {\n");
     if (isSubtyping) {
-      scope.startLine(resultRef + " = new " + typeName + "(" + valueRef + ", " +
+      scope.startLine("  " + resultRef + " = new " + typeName + "(" + valueRef + ", " +
           superValueRef + ");\n");
     } else {
-      scope.startLine(resultRef + " = " + typeName + ".parse(" + valueRef + ");\n");
+      scope.startLine("  " + resultRef + " = " + typeName + ".parse(" + valueRef + ");\n");
     }
+    scope.startLine("}\n");
   }
 
   @Override

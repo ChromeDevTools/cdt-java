@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.chromium.sdk.internal.protocol.AfterCompileBody;
 import org.chromium.sdk.internal.protocol.BacktraceCommandBody;
 import org.chromium.sdk.internal.protocol.BreakEventBody;
@@ -27,7 +30,6 @@ import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 import org.chromium.sdk.internal.protocol.data.ContextData;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
 import org.chromium.sdk.internal.protocol.data.FunctionValueHandle;
-import org.chromium.sdk.internal.protocol.data.LiveEditResult;
 import org.chromium.sdk.internal.protocol.data.ObjectValueHandle;
 import org.chromium.sdk.internal.protocol.data.PropertyObject;
 import org.chromium.sdk.internal.protocol.data.PropertyWithRef;
@@ -40,8 +42,8 @@ import org.chromium.sdk.internal.protocol.data.SomeRef;
 import org.chromium.sdk.internal.protocol.data.SomeSerialized;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
+import org.chromium.sdk.internal.tools.v8.liveedit.LiveEditDynamicParser;
 
 /**
  * A dynamic implementation of a v8 protocol parser.
@@ -54,8 +56,7 @@ public class V8DynamicParser {
   private static final DynamicParserImpl parser;
   static {
     try {
-      // TODO(peter.rybin): change to ParserHolder.
-      parser = new DynamicParserImpl(new Class<?>[] {
+      List<Class<?>> interfaces = Arrays.asList(
           IncomingMessage.class,
           EventNotification.class,
           SuccessCommandResponse.class,
@@ -91,13 +92,12 @@ public class V8DynamicParser {
           ContextHandle.class,
           ContextData.class,
           BreakpointInfo.class,
-          ScriptWithId.class,
-          LiveEditResult.class,
-          LiveEditResult.OldTreeNode.class,
-          LiveEditResult.NewTreeNode.class,
-          LiveEditResult.Positions.class,
-          LiveEditResult.TextualDiff.class,
-      });
+          ScriptWithId.class
+          );
+
+      List<DynamicParserImpl> basePackages = Arrays.asList(LiveEditDynamicParser.get());
+
+      parser = new DynamicParserImpl(interfaces, basePackages, false);
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
     }
