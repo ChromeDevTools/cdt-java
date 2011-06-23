@@ -5,6 +5,7 @@
 package org.chromium.debug.core;
 
 import org.chromium.debug.core.model.ResourceManager;
+import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResourceId;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -49,7 +50,8 @@ public class VProjectSourceContainer implements ISourceContainer {
       return new Object[0];
     }
     ResourceManager resourceManager = chromiumSourceDirector.getResourceManager();
-    return new Object[] { resourceManager };
+    LookupResult lookupResult = new LookupResult(resourceManager);
+    return new Object[] { lookupResult };
   }
 
   public String getName() {
@@ -98,6 +100,26 @@ public class VProjectSourceContainer implements ISourceContainer {
 
     public String getMemento(ISourceContainer container) throws CoreException {
       return "VProjectSourceContainer.memento.stub"; //$NON-NLS-1$
+    }
+  }
+
+  /**
+   * Result that {@link VProjectSourceContainer#findSourceElements(String)} returns instead of
+   * IFile that other containers normally return. This result is could be converted to file
+   * later in {@link ChromiumSourceDirector} where scriptId is available.
+   * <p>If source director failed to process result, the back-up strategy could be to do
+   * something in our implementation of ISourcePresentation.
+   *
+   */
+  public static class LookupResult {
+    private final ResourceManager resourceManager;
+
+    LookupResult(ResourceManager resourceManager) {
+      this.resourceManager = resourceManager;
+    }
+
+    public VmResource getVmResource(VmResourceId resourceId) {
+      return resourceManager.getVmResource(resourceId);
     }
   }
 }
