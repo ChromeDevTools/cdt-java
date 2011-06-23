@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal.protocol;
 
-import org.chromium.sdk.internal.protocol.data.LiveEditResult;
+import org.chromium.sdk.internal.protocol.liveedit.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonNullable;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
