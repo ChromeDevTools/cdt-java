@@ -82,7 +82,7 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   @Override
   public BreakpointTypeExtension getBreakpointTypeExtension() {
-    return BreakpointImpl.TYPE_EXTENSION;
+    return getDebugSession().getBreakpointManager().getBreakpointTypeExtension();
   }
 
   protected abstract DebugSession getDebugSession();

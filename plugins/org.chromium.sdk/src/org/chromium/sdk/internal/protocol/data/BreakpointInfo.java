@@ -38,6 +38,7 @@ public interface BreakpointInfo {
   enum Type {
     SCRIPTNAME,
     SCRIPTID,
+    SCRIPTREGEXP,
     FUNCTION
   }
 }

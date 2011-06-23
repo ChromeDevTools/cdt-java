@@ -48,6 +48,9 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
     @Override public String visitScriptId(long scriptId) {
       return "scriptId";
     }
+    @Override public String visitRegExp(String regExp) {
+      return "scriptRegexp";
+    }
     @Override public String visitUnknown(Target target) {
       throw new IllegalArgumentException();
     }
@@ -63,6 +66,9 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
     }
     @Override public Object visitScriptId(long scriptId) {
       return Long.valueOf(scriptId);
+    }
+    @Override public Object visitRegExp(String regExp) {
+      return regExp;
     }
     @Override public Object visitUnknown(Target target) {
       throw new IllegalArgumentException();
