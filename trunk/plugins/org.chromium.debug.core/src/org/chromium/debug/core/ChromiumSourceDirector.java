@@ -45,13 +45,15 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       if (result.length > 0) {
         ArrayList<Object> filtered = new ArrayList<Object>(result.length);
         for (Object obj : result) {
-          if (obj instanceof ResourceManager) {
-            ResourceManager resourceManager = (ResourceManager) obj;
-            expandResourceManagerResult(resourceManager, object, filtered);
+          if (obj instanceof VProjectSourceContainer.LookupResult) {
+            VProjectSourceContainer.LookupResult vprojectResult =
+                (VProjectSourceContainer.LookupResult) obj;
+            expandVProjectResult(vprojectResult, object, filtered);
           } else {
             filtered.add(obj);
           }
         }
+        result = filtered.toArray();
       }
       return result;
     }
@@ -94,11 +96,11 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
    * {@link ResourceManager} object that can be processed here, where we have full
    * {@link VmResourceId}.
    */
-  private static void expandResourceManagerResult(ResourceManager resourceManager, Object object,
-      ArrayList<Object> output) throws CoreException {
+  private static void expandVProjectResult(VProjectSourceContainer.LookupResult lookupResult,
+      Object object, ArrayList<Object> output) throws CoreException {
     VmResourceId resourceId = getVmResourceId(object);
     if (resourceId.getId() != null) {
-      VmResource vmResource = resourceManager.getVmResource(resourceId);
+      VmResource vmResource = lookupResult.getVmResource(resourceId);
       if (vmResource != null) {
         output.add(vmResource.getVProjectFile());
       }
