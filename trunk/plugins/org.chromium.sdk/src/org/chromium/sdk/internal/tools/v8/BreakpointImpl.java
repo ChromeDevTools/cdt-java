@@ -171,6 +171,7 @@ public class BreakpointImpl implements Breakpoint {
     switch (infoType) {
       case SCRIPTID: return new Target.ScriptId(info.script_id());
       case SCRIPTNAME: return new Target.ScriptName(info.script_name());
+      case SCRIPTREGEXP: return new ScriptRegExpTarget(info.script_name());
       case FUNCTION: return new FunctionTarget(null);
     }
     throw new RuntimeException("Unknown type: " + infoType);
@@ -180,7 +181,27 @@ public class BreakpointImpl implements Breakpoint {
    * Visitor interface that includes all extensions.
    */
   public interface TargetExtendedVisitor<R> extends
-      BreakpointTypeExtension.FunctionSupport.Visitor<R> {
+      BreakpointTypeExtension.FunctionSupport.Visitor<R>,
+      BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R> {
+  }
+
+  static class ScriptRegExpTarget extends Target {
+    private final String regExp;
+
+    ScriptRegExpTarget(String regExp) {
+      this.regExp = regExp;
+    }
+
+    @Override
+    public <R> R accept(Visitor<R> visitor) {
+      if (visitor instanceof BreakpointTypeExtension.ScriptRegExpSupport.Visitor) {
+        BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R> regExpVisitor =
+            (BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R>) visitor;
+        return regExpVisitor.visitRegExp(regExp);
+      } else {
+        return visitor.visitUnknown(this);
+      }
+    }
   }
 
   static class FunctionTarget extends Target {
@@ -200,18 +221,4 @@ public class BreakpointImpl implements Breakpoint {
       }
     }
   }
-
-  public static final BreakpointTypeExtension TYPE_EXTENSION = new BreakpointTypeExtension() {
-    @Override
-    public FunctionSupport getFunctionSupport() {
-      return functionSupport;
-    }
-
-    private final FunctionSupport functionSupport = new FunctionSupport() {
-      @Override
-      public Target createTarget(String expression) {
-        return new FunctionTarget(expression);
-      }
-    };
-  };
 }

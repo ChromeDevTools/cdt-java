@@ -112,7 +112,7 @@ public class DebugSession {
     return javascriptVm;
   }
 
-  Version getVmVersion() {
+  public Version getVmVersion() {
     return vmVersion;
   }
 

@@ -35,4 +35,25 @@ public interface BreakpointTypeExtension {
    * @return null if 'function' target type is unsupported.
    */
   FunctionSupport getFunctionSupport();
+
+  /**
+   * Support for 'regexp' breakpoint target: breakpoint is set on a script
+   * whose name matches the regexp.
+   */
+  interface ScriptRegExpSupport {
+    Breakpoint.Target createTarget(String regExp);
+
+    interface Visitor<R> extends Breakpoint.Target.Visitor<R> {
+      /**
+       * @param regExp regular expression pattern (as specified in JavaScript) that will be
+       *     used to match script names
+       */
+      R visitRegExp(String regExp);
+    }
+  }
+
+  /**
+   * @return null if 'regexp' target type is unsupported.
+   */
+  ScriptRegExpSupport getScriptRegExpSupport();
 }

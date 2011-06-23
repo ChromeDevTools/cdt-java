@@ -9,20 +9,21 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.Breakpoint.Target;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
-import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
 import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
+import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DebugSession;
+import org.chromium.sdk.internal.V8VersionFeatures;
 import org.chromium.sdk.internal.protocol.BreakpointBody;
-import org.chromium.sdk.internal.protocol.CommandResponse;
 import org.chromium.sdk.internal.protocol.CommandResponseBody;
 import org.chromium.sdk.internal.protocol.FlagsBody;
 import org.chromium.sdk.internal.protocol.FlagsBody.FlagInfo;
@@ -30,6 +31,8 @@ import org.chromium.sdk.internal.protocol.ListBreakpointsBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.tools.v8.BreakpointImpl.FunctionTarget;
+import org.chromium.sdk.internal.tools.v8.BreakpointImpl.ScriptRegExpTarget;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.FlagsMessage;
 import org.chromium.sdk.internal.tools.v8.request.ListBreakpointsMessage;
@@ -48,6 +51,10 @@ public class BreakpointManager {
 
   public BreakpointManager(DebugSession debugSession) {
     this.debugSession = debugSession;
+  }
+
+  public BreakpointTypeExtension getBreakpointTypeExtension() {
+    return breakpointTypeExtension;
   }
 
   public RelayOk setBreakpoint(final Breakpoint.Target target,
@@ -285,4 +292,34 @@ public class BreakpointManager {
       }
     }
   }
+
+  private final BreakpointTypeExtension breakpointTypeExtension = new BreakpointTypeExtension() {
+    @Override
+    public FunctionSupport getFunctionSupport() {
+      return functionSupport;
+    }
+
+    private final FunctionSupport functionSupport = new FunctionSupport() {
+      @Override
+      public Target createTarget(String expression) {
+        return new FunctionTarget(expression);
+      }
+    };
+
+    @Override
+    public ScriptRegExpSupport getScriptRegExpSupport() {
+      if (!V8VersionFeatures.isRegExpBreakpointSupported(debugSession.getVmVersion())) {
+        return null;
+      }
+      return scriptRegExpSupport;
+    }
+
+    private final ScriptRegExpSupport scriptRegExpSupport = new ScriptRegExpSupport() {
+      @Override
+      public Target createTarget(String regExp) {
+        return new ScriptRegExpTarget(regExp);
+      }
+    };
+
+  };
 }

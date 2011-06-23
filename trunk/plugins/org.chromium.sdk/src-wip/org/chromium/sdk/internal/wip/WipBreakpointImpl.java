@@ -79,6 +79,10 @@ public class WipBreakpointImpl implements Breakpoint {
     public FunctionSupport getFunctionSupport() {
       return null;
     }
+    @Override
+    public ScriptRegExpSupport getScriptRegExpSupport() {
+      return null;
+    }
   };
 
   @Override
