@@ -16,6 +16,7 @@ import java.util.Map.Entry;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.data.ContextHandle;
@@ -221,19 +222,22 @@ public class FixtureChromeStub implements ChromeStub {
     new BreakpointManager(null) {
 
       @Override
-      public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+      public RelayOk changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
           SyncCallback syncCallback) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
-      public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
-          SyncCallback syncCallback) {
+      public RelayOk clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+          SyncCallback syncCallback, long originalId) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
-      public void setBreakpoint(Breakpoint.Target target, int line, int position,
+      public RelayOk setBreakpoint(Breakpoint.Target target, int line, int position,
           boolean enabled, String condition, int ignoreCount, BreakpointCallback callback,
           SyncCallback syncCallback) {
+        throw new UnsupportedOperationException();
       }
     };
 

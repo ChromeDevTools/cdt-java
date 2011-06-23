@@ -6,8 +6,10 @@ package org.chromium.sdk.internal;
 
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsValue;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.LoadableString;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * A base class that represents a JavaScript VM variable value (compound values
@@ -43,7 +45,7 @@ class JsValueImpl implements JsValue {
     return stringValue != null && stringValue.needsReload();
   }
 
-  public void reloadHeavyValue(final ReloadBiggerCallback callback,
+  public RelayOk reloadHeavyValue(final ReloadBiggerCallback callback,
       SyncCallback syncCallback) {
 
     LoadableString stringValue = this.valueData.getStringValue();
@@ -57,12 +59,10 @@ class JsValueImpl implements JsValue {
         public void failure(Exception e) {
         }
       };
-      stringValue.reloadBigger(innerCallback, syncCallback);
+      return stringValue.reloadBigger(innerCallback, syncCallback);
 
     } else {
-      if (syncCallback != null) {
-        syncCallback.callbackDone(null);
-      }
+      return RelaySyncCallback.finish(syncCallback);
     }
   }
 

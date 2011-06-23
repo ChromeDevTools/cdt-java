@@ -14,6 +14,7 @@ import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Test;
 
@@ -53,8 +54,8 @@ public class LoadValueTest extends AbstractAttachedTest<FakeConnection>{
       }
     };
     CallbackSemaphore semaphore = new CallbackSemaphore();
-    value.reloadHeavyValue(callback, semaphore);
-    semaphore.acquireDefault();
+    RelayOk relayOk = value.reloadHeavyValue(callback, semaphore);
+    semaphore.acquireDefault(relayOk);
     assertTrue(reloadResult[0]);
 
     String reloadedValue = value.getValueString();

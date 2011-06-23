@@ -22,6 +22,7 @@ import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -645,8 +646,8 @@ public class BreakpointSynchronizer {
     CallbackImpl callback = new CallbackImpl();
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
 
-    javascriptVm.listBreakpoints(callback, callbackSemaphore);
-    boolean res = callbackSemaphore.tryAcquireDefault();
+    RelayOk relayOk = javascriptVm.listBreakpoints(callback, callbackSemaphore);
+    boolean res = callbackSemaphore.tryAcquireDefault(relayOk);
     if (!res) {
       throw new RuntimeException("Timeout"); //$NON-NLS-1$
     }

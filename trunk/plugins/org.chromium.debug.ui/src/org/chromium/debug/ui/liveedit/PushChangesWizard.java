@@ -21,6 +21,7 @@ import org.chromium.debug.ui.actions.PushChangesAction;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.Input;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.SingleInput;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.UpdatableScript;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -299,8 +300,8 @@ public class PushChangesWizard {
     };
 
     CallbackSemaphore syncCallback = new CallbackSemaphore();
-    PushChangesAction.execute(filePair, callback, syncCallback, false);
-    syncCallback.acquireDefault();
+    RelayOk relayOk = PushChangesAction.execute(filePair, callback, syncCallback, false);
+    syncCallback.acquireDefault(relayOk);
 
     monitor.done();
 

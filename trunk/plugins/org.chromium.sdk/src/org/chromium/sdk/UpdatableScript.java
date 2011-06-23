@@ -14,13 +14,13 @@ public interface UpdatableScript {
    * Demands that script text should be replaced with a new one if possible.
    * @param newSource new text of script
    */
-  void setSourceOnRemote(String newSource, UpdateCallback callback, SyncCallback syncCallback);
+  RelayOk setSourceOnRemote(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
   /**
    * Same as {@link #setSourceOnRemote}, but does not actually update a script, only provides
    * a description of the planned changes.
    */
-  void previewSetSource(String newSource, UpdateCallback callback, SyncCallback syncCallback);
+  RelayOk previewSetSource(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
   interface UpdateCallback {
     /**

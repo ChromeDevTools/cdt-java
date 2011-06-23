@@ -48,7 +48,7 @@ public interface EvaluateWithContextExtension {
    * @param evaluateCallback to report the evaluation result to
    * @param syncCallback to report the end of any processing
    */
-  void evaluateAsync(JsEvaluateContext evaluateContext, String expression,
+  RelayOk evaluateAsync(JsEvaluateContext evaluateContext, String expression,
       Map<String, String> additionalContext, EvaluateCallback evaluateCallback,
       SyncCallback syncCallback);
 }

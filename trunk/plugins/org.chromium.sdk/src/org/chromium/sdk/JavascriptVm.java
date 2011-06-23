@@ -100,7 +100,7 @@ public interface JavascriptVm {
    * @param callback to invoke when the evaluation result is ready,
    *        may be {@code null}
    */
-  void setBreakpoint(Breakpoint.Target target, int line, int column, boolean enabled,
+  RelayOk setBreakpoint(Breakpoint.Target target, int line, int column, boolean enabled,
       String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
@@ -120,7 +120,7 @@ public interface JavascriptVm {
    * Asynchronously reads breakpoints from remote VM. The now-effective collection of breakpoints
    * is returned to callback. Already existing {@link Breakpoint} instances are preserved.
    */
-  void listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
+  RelayOk listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
 
   /**
    * A generic callback used in operations that a remote variable value.
@@ -139,7 +139,7 @@ public interface JavascriptVm {
    * 'enabled' may be null, in this case the remote value is not modified and can be
    * obtained inside the callback.
    */
-  void enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
+  RelayOk enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
       SyncCallback syncCallback);
 
   enum ExceptionCatchType {
@@ -152,7 +152,7 @@ public interface JavascriptVm {
    * 'enabled' may be null, in this case the remote value is not modified and can be
    * obtained inside the callback.
    */
-  void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
+  RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
       GenericCallback<Boolean> callback, SyncCallback syncCallback);
 
   /**

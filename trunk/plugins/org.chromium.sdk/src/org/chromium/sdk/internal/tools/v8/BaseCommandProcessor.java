@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.CloseableMap;
 
@@ -51,7 +52,7 @@ public class BaseCommandProcessor<SEQ_KEY, OUTGOING, INCOMING, INCOMING_WITH_SEQ
     this.handler = handler;
   }
 
-  public void send(OUTGOING message, boolean isImmediate,
+  public RelayOk send(OUTGOING message, boolean isImmediate,
       Callback<? super INCOMING_WITH_SEQ> callback, SyncCallback syncCallback) {
     SEQ_KEY seq = handler.getUpdatedSeq(message);
     boolean callbackAdded;
@@ -77,6 +78,7 @@ public class BaseCommandProcessor<SEQ_KEY, OUTGOING, INCOMING, INCOMING_WITH_SEQ
       }
       throw e;
     }
+    return WE_SENT_IT_RELAY_OK;
   }
 
   public void processIncoming(INCOMING incomingParsed) {
@@ -190,4 +192,6 @@ public class BaseCommandProcessor<SEQ_KEY, OUTGOING, INCOMING, INCOMING_WITH_SEQ
       }
     }
   }
+
+  private static final RelayOk WE_SENT_IT_RELAY_OK = new RelayOk() {};
 }

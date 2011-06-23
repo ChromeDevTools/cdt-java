@@ -7,8 +7,10 @@ package org.chromium.sdk.internal.tools.v8;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.data.BreakpointInfo;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * A generic implementation of the Breakpoint interface.
@@ -136,22 +138,24 @@ public class BreakpointImpl implements Breakpoint {
     return left == right || (left != null && left.equals(right));
   }
 
-  public void clear(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
-    breakpointManager.clearBreakpoint(this, callback, syncCallback);
-    // The order must be preserved, otherwise the breakpointProcessor will not be able
-    // to identify the original breakpoint ID.
+  @Override
+  public RelayOk clear(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
+    // TODO: make this code thread-safe.
+    long originalId = this.id;
     this.id = INVALID_ID;
+    return breakpointManager.clearBreakpoint(this, callback, syncCallback, originalId);
   }
 
-  public void flush(final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
+  @Override
+  public RelayOk flush(final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
     if (!isDirty()) {
       if (callback != null) {
         callback.success(this);
       }
-      return;
+      return RelaySyncCallback.finish(syncCallback);
     }
-    breakpointManager.changeBreakpoint(this, callback, syncCallback);
     setDirty(false);
+    return breakpointManager.changeBreakpoint(this, callback, syncCallback);
   }
 
   private void setDirty(boolean isDirty) {

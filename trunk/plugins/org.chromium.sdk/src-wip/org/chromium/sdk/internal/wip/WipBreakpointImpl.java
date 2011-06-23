@@ -15,6 +15,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
@@ -25,9 +26,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.RemoveBreakpointParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointByUrlParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointParams;
-import org.chromium.sdk.util.Destructable;
-import org.chromium.sdk.util.DestructableWrapper;
-import org.chromium.sdk.util.DestructingGuard;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * Wip-based breakpoint implementation.
@@ -154,11 +153,12 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   @Override
-  public void clear(final BreakpointCallback callback, SyncCallback syncCallback) {
+  public RelayOk clear(final BreakpointCallback callback, SyncCallback syncCallback) {
+    // TODO: make sure this is thread-safe.
     if (protocolId == null) {
       breakpointManager.getDb().removeBreakpoint(this);
       callback.success(this);
-      syncCallback.callbackDone(null);
+      return RelaySyncCallback.finish(syncCallback);
     }
 
     RemoveBreakpointParams params = new RemoveBreakpointParams(protocolId);
@@ -179,32 +179,35 @@ public class WipBreakpointImpl implements Breakpoint {
       };
     }
 
-    breakpointManager.getCommandProcessor().send(params, commandCallback, syncCallback);
+    return breakpointManager.getCommandProcessor().send(params, commandCallback, syncCallback);
   }
 
   @Override
-  public void flush(final BreakpointCallback callback, final SyncCallback syncCallback) {
-    if (!isDirty) {
-      return;
-    }
-    isDirty = false;
+  public RelayOk flush(final BreakpointCallback callback, final SyncCallback syncCallback) {
+    final RelaySyncCallback relay = new RelaySyncCallback(syncCallback);
 
-    final Destructable callbackAsDestructable =
-        DestructableWrapper.callbackAsDestructable(syncCallback);
+    if (!isDirty) {
+      if (callback != null) {
+        callback.success(this);
+      }
+      return RelaySyncCallback.finish(syncCallback);
+    }
+
+    isDirty = false;
 
     if (protocolId == null) {
       // Breakpoint was disabled, it doesn't exist in VM, immediately start step 2.
-      recreateBreakpointAsync(callback, callbackAsDestructable);
+      return recreateBreakpointAsync(callback, relay);
     } else {
       // Call syncCallback if something goes wrong after we sent request.
-      final DestructingGuard guard = new DestructingGuard();
+      final RelaySyncCallback.Guard guard = relay.newGuard();
 
       WipCommandCallback removeCallback = new WipCommandCallback.Default() {
         @Override
         protected void onSuccess(Success success) {
           setRemoteData(null, Collections.<ActualLocation>emptyList());
-          recreateBreakpointAsync(callback, callbackAsDestructable);
-          guard.discharge();
+          RelayOk relayOk = recreateBreakpointAsync(callback, relay);
+          guard.discharge(relayOk);
         }
 
         @Override
@@ -214,9 +217,8 @@ public class WipBreakpointImpl implements Breakpoint {
       };
 
       // Call syncCallback if something goes wrong.
-      guard.addValue(callbackAsDestructable);
-      breakpointManager.getCommandProcessor().send(new RemoveBreakpointParams(protocolId),
-          removeCallback, DestructableWrapper.guardAsCallback(guard));
+      return breakpointManager.getCommandProcessor().send(new RemoveBreakpointParams(protocolId),
+          removeCallback, guard.asSyncCallback());
     }
   }
 
@@ -256,8 +258,8 @@ public class WipBreakpointImpl implements Breakpoint {
     }
   }
 
-  private void recreateBreakpointAsync(final BreakpointCallback flushCallback,
-      Destructable callbackAsDestructable) {
+  private RelayOk recreateBreakpointAsync(final BreakpointCallback flushCallback,
+      RelaySyncCallback relay) {
 
     if (enabled) {
       SetBreakpointCallback setCommandCallback = new SetBreakpointCallback() {
@@ -277,18 +279,25 @@ public class WipBreakpointImpl implements Breakpoint {
         }
       };
 
-      DestructingGuard guard = new DestructingGuard();
-      guard.addValue(callbackAsDestructable);
+      RelaySyncCallback.Guard guard = relay.newGuard();
 
       if (condition == null) {
         condition = "";
       }
-      sendSetBreakpointRequest(target, lineNumber, columnNumber, condition,
-          setCommandCallback, DestructableWrapper.guardAsCallback(guard),
+      return sendSetBreakpointRequest(target, lineNumber, columnNumber, condition,
+          setCommandCallback, guard.asSyncCallback(),
           breakpointManager.getCommandProcessor());
     } else {
       // Breakpoint is disabled, do not create it.
-      callbackAsDestructable.destruct();
+      RelayOk relayOk;
+      try {
+        if (flushCallback != null) {
+          flushCallback.success(WipBreakpointImpl.this);
+        }
+      } finally {
+        relayOk = relay.finish();
+      }
+      return relayOk;
     }
   }
 
@@ -299,30 +308,29 @@ public class WipBreakpointImpl implements Breakpoint {
 
   /**
    * @param callback a generic callback that receives breakpoint protocol id
+   * @return
    */
-  static void sendSetBreakpointRequest(Target target, final int lineNumber,
+  static RelayOk sendSetBreakpointRequest(Target target, final int lineNumber,
       final int columnNumber, final String condition,
       final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
-    target.accept(new Target.Visitor<Void>() {
+    return target.accept(new Target.Visitor<RelayOk>() {
       @Override
-      public Void visitScriptName(String scriptName) {
-        sendRequest(scriptName, RequestHandler.FOR_URL);
-        return null;
+      public RelayOk visitScriptName(String scriptName) {
+        return sendRequest(scriptName, RequestHandler.FOR_URL);
       }
 
       @Override
-      public Void visitScriptId(long scriptId) {
-        sendRequest(scriptId, RequestHandler.FOR_ID);
-        return null;
+      public RelayOk visitScriptId(long scriptId) {
+        return sendRequest(scriptId, RequestHandler.FOR_ID);
       }
 
       @Override
-      public Void visitUnknown(Target target) {
+      public RelayOk visitUnknown(Target target) {
         throw new IllegalArgumentException();
       }
 
-      private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> void sendRequest(T parameter,
+      private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> RelayOk sendRequest(T parameter,
           final RequestHandler<T, DATA, PARAMS> handler) {
         PARAMS requestParams =
             handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
@@ -351,7 +359,7 @@ public class WipBreakpointImpl implements Breakpoint {
           };
         }
 
-        commandProcessor.send(requestParams, wrappedCallback, syncCallback);
+        return commandProcessor.send(requestParams, wrappedCallback, syncCallback);
       }
     });
   }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 
@@ -37,9 +38,10 @@ public class AsyncFutureMerger<T> {
     futureRef = new AtomicReference<AsyncFuture<List<T>>>();
     AsyncFuture.initializeReference(futureRef, new AsyncFuture.Operation<List<T>>() {
       @Override
-      public void start(Callback<List<T>> callback, SyncCallback syncCallback) {
+      public RelayOk start(Callback<List<T>> callback, SyncCallback syncCallback) {
         AsyncFutureMerger.this.callback = callback;
         AsyncFutureMerger.this.syncCallback = syncCallback;
+        return SOMEONE_CARES_ABOUT_RELAY_OK;
       }
     });
   }
@@ -96,4 +98,6 @@ public class AsyncFutureMerger<T> {
   public AsyncFuture<List<T>> getFuture() {
     return futureRef.get();
   }
+
+  private static final RelayOk SOMEONE_CARES_ABOUT_RELAY_OK = new RelayOk() {};
 }

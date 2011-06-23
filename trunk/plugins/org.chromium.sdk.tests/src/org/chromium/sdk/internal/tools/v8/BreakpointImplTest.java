@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.AbstractAttachedTest;
 import org.chromium.sdk.internal.DebugSession;
@@ -36,17 +37,17 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     }
 
     @Override
-    public void changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+    public RelayOk changeBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
         SyncCallback syncCallback) {
       BreakpointImplTest.this.isBreakpointChanged = true;
-      super.changeBreakpoint(breakpointImpl, callback, syncCallback);
+      return super.changeBreakpoint(breakpointImpl, callback, syncCallback);
     }
 
     @Override
-    public void clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
-        SyncCallback syncCallback) {
+    public RelayOk clearBreakpoint(BreakpointImpl breakpointImpl, BreakpointCallback callback,
+        SyncCallback syncCallback, long originalId) {
       BreakpointImplTest.this.isBreakpointCleared = true;
-      super.clearBreakpoint(breakpointImpl, callback, syncCallback);
+      return super.clearBreakpoint(breakpointImpl, callback, syncCallback, originalId);
     }
 
   }

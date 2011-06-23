@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 
 /**
@@ -82,16 +83,22 @@ public abstract class AsyncFuture<T> {
    */
   private static <T> void initializeReference(AtomicReference<AsyncFuture<T>> ref,
       Operation<T> operation, boolean forceRefresh) {
+    // Creating worker not yet started (with fake relayOk).
     Working<T> working = new Working<T>(ref);
     boolean updated;
     if (forceRefresh) {
+      // We exposed worker not yet started now.
       ref.set(working);
       updated = true;
     } else {
+      // We possibly exposed worker not yet started now.
       updated = ref.compareAndSet(null, working);
     }
     if (updated) {
-      working.start(operation);
+      // Make sure we started worker.
+      RelayOk relayOk = working.start(operation);
+      // It is important that this method returns RelayOk.
+      // RelayOk symbolize we have started operation as we had to.
     }
   }
 
@@ -109,7 +116,7 @@ public abstract class AsyncFuture<T> {
    * @param callback may be null
    * @param syncCallback may be null
    */
-  public abstract void getAsync(Callback<? super T> callback, SyncCallback syncCallback);
+  public abstract RelayOk getAsync(Callback<? super T> callback, SyncCallback syncCallback);
 
   /**
    * Returns whether the operation is done. If the method returns true, the following calls
@@ -136,7 +143,7 @@ public abstract class AsyncFuture<T> {
      * or its part. In this case the corresponding call to {@link AsyncFuture#initializeReference}
      * or {@link AsyncFuture#reinitializeReference} will be blocking as well.
      */
-    void start(Callback<RES> callback, SyncCallback syncCallback);
+    RelayOk start(Callback<RES> callback, SyncCallback syncCallback);
   }
 
   private static class Working<T> extends AsyncFuture<T> {
@@ -149,7 +156,7 @@ public abstract class AsyncFuture<T> {
       this.ref = ref;
     }
 
-    public void start(Operation<T> operation) {
+    public RelayOk start(Operation<T> operation) {
       Callback<T> callback = new Callback<T>() {
         @Override
         public void done(T res) {
@@ -162,19 +169,22 @@ public abstract class AsyncFuture<T> {
           resultIsReadySync(e);
         }
       };
-      operation.start(callback, syncCallback);
+      return operation.start(callback, syncCallback);
     }
 
     @Override
-    public void getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
+    public RelayOk getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
       synchronized (this) {
         if (!resultReady) {
           callbacks.add(new CallbackPair<T>(callback, syncCallback));
-          return;
+          return OPERATION_SHOULD_BE_RUNNING_RELAY_OK;
         }
       }
-      deliverResultImmediately(result, callback, syncCallback);
+      return deliverResultImmediately(result, callback, syncCallback);
     }
+
+    // We added callback to the chain. Will be called later.
+    private static final RelayOk OPERATION_SHOULD_BE_RUNNING_RELAY_OK = new RelayOk() {};
 
     @Override
     public T getSync() {
@@ -184,19 +194,19 @@ public abstract class AsyncFuture<T> {
         }
       }
       class CallbackImpl implements Callback<T> {
-        private T result;
+        private T res;
         @Override
         public synchronized void done(T res) {
-          this.result = res;
+          this.res = res;
         }
         synchronized T get() {
-          return result;
+          return res;
         }
       }
       CallbackImpl callback = new CallbackImpl();
       CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-      getAsync(callback, callbackSemaphore);
-      callbackSemaphore.acquireDefault();
+      RelayOk relayOk = getAsync(callback, callbackSemaphore);
+      callbackSemaphore.acquireDefault(relayOk);
       return callback.get();
     }
 
@@ -260,8 +270,8 @@ public abstract class AsyncFuture<T> {
     }
 
     @Override
-    public void getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
-      deliverResultImmediately(result, callback, syncCallback);
+    public RelayOk getAsync(Callback<? super T> callback, SyncCallback syncCallback) {
+      return deliverResultImmediately(result, callback, syncCallback);
     }
 
     @Override
@@ -270,16 +280,11 @@ public abstract class AsyncFuture<T> {
     }
   }
 
-  private static <T> void deliverResultImmediately(T result, Callback<T> callback,
+  private static <T> RelayOk deliverResultImmediately(T result, Callback<T> callback,
       SyncCallback syncCallback) {
-    try {
-      if (callback != null) {
-        callback.done(result);
-      }
-    } finally {
-      if (syncCallback != null) {
-        syncCallback.callbackDone(null);
-      }
+    if (callback != null) {
+      callback.done(result);
     }
+    return RelaySyncCallback.finish(syncCallback);
   }
 }

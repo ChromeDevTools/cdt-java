@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.protocol.CommandResponse;
@@ -74,14 +75,15 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
             new HandlerImpl());
   }
 
-  public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
+  @Override
+  public RelayOk sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) {
-    baseCommandProcessor.send(message, isImmediate, v8HandlerCallback, syncCallback);
+    return baseCommandProcessor.send(message, isImmediate, v8HandlerCallback, syncCallback);
   }
 
-  public void runInDispatchThread(final Runnable callback, final SyncCallback syncCallback) {
+  public RelayOk runInDispatchThread(final Runnable callback, final SyncCallback syncCallback) {
     Runnable innerRunnable = new Runnable() {
-      public void run() {
+      @Override public void run() {
         RuntimeException exception = null;
         try {
           callback.run();
@@ -96,6 +98,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       }
     };
     messageOutput.runInDispatchThread(innerRunnable);
+    return DISPATCH_THREAD_PROMISES_TO_CALL;
   }
 
   public void processIncomingJson(final JSONObject v8Json) {
@@ -147,4 +150,6 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
       }
     }
   }
+
+  private static final RelayOk DISPATCH_THREAD_PROMISES_TO_CALL = new RelayOk() {};
 }

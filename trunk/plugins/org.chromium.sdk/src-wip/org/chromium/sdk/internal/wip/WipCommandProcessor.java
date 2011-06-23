@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener.VmStatusListener;
 import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -56,13 +57,13 @@ class WipCommandProcessor {
         new BaseCommandProcessor<Integer, JSONObject, JSONObject, WipCommandResponse>(handler);
   }
 
-  void sendRaw(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
-    baseProcessor.send(message, false, callback, syncCallback);
+  RelayOk sendRaw(JSONObject message, WipCommandCallback callback, SyncCallback syncCallback) {
+    return baseProcessor.send(message, false, callback, syncCallback);
   }
 
-  void send(WipParams params, WipCommandCallback callback, SyncCallback syncCallback) {
+  RelayOk send(WipParams params, WipCommandCallback callback, SyncCallback syncCallback) {
     WipRequest request = new WipRequest(params);
-    sendRaw(request, callback, syncCallback);
+    return sendRaw(request, callback, syncCallback);
   }
 
   /**
@@ -71,7 +72,7 @@ class WipCommandProcessor {
    * @param callback a callback that accepts method-specific response or null
    * @param syncCallback may be null
    */
-  <RESPONSE> void send(final WipParamsWithResponse<RESPONSE> params,
+  <RESPONSE> RelayOk send(final WipParamsWithResponse<RESPONSE> params,
       final GenericCallback<RESPONSE> callback, SyncCallback syncCallback) {
     WipRequest request = new WipRequest(params);
 
@@ -98,7 +99,7 @@ class WipCommandProcessor {
       };
     }
 
-    sendRaw(request, commandCallback, syncCallback);
+    return sendRaw(request, commandCallback, syncCallback);
   }
 
   void acceptResponse(JSONObject message) {
@@ -229,8 +230,8 @@ class WipCommandProcessor {
     EVENT_MAP.add(FrameDetachedEventData.TYPE, null);
   }
 
-  public void runInDispatchThread(Runnable runnable) {
-    this.tabImpl.getWsSocket().runInDispatchThread(runnable);
+  public RelayOk runInDispatchThread(Runnable runnable, SyncCallback syncCallback) {
+    return this.tabImpl.getWsSocket().runInDispatchThread(runnable, syncCallback);
   }
 
   private static class EventMap {

@@ -31,7 +31,9 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.util.ByteToCharConverter;
 import org.chromium.sdk.wip.WipBrowserFactory;
@@ -90,9 +92,9 @@ public class Main {
     // Setting a breakpoint.
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     Breakpoint.Target breakpointTarget = new Breakpoint.Target.ScriptName(scriptOne.getName());
-    tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
+    RelayOk relayOk = tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
         0, null, callbackSemaphore);
-    callbackSemaphore.acquireDefault();
+    callbackSemaphore.acquireDefault(relayOk);
 
     // First time just suspend on breakpoint and go on.
     {
@@ -507,17 +509,14 @@ public class Main {
   private static class ValueHolder<T> {
     private T val = null;
     private Exception exception = null;
-    private final CallbackSemaphore semaphore = new CallbackSemaphore();
+
     void setValue(T val) {
       this.val = val;
-      semaphore.callbackDone(null);
     }
     void setException(Exception exception) {
       this.exception = exception;
-      semaphore.callbackDone(null);
     }
     T get() throws SmokeException {
-      semaphore.acquireDefault();
       if (exception != null) {
         throw new SmokeException(exception);
       }

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.protocol.ScopeBody;
@@ -280,7 +281,7 @@ public class ValueLoader {
     baseMirror.mergeFrom(alternativeMirror);
   }
 
-  private void relookupValue(long handleId, Long maxLength,
+  private RelayOk relookupValue(long handleId, Long maxLength,
       final JavascriptVm.GenericCallback<ValueHandle> callback,
       SyncCallback syncCallback) throws ContextDismissedCheckedException {
     final List<Long> ids = Collections.singletonList(handleId);
@@ -298,7 +299,7 @@ public class ValueLoader {
       }
     };
 
-    this.context.sendV8CommandAsync(message, true, innerCallback, syncCallback);
+    return this.context.sendV8CommandAsync(message, true, innerCallback, syncCallback);
   }
 
   private class StringFactory implements LoadableString.Factory {
@@ -317,7 +318,8 @@ public class ValueLoader {
           LoadedValue loadedValue = valueRef.get();
           return loadedValue.loadedSize < loadedValue.actualSize;
         }
-        public void reloadBigger(final GenericCallback<Void> callback,
+        @Override
+        public RelayOk reloadBigger(final GenericCallback<Void> callback,
             SyncCallback syncCallback) {
 
           long currentlyLoadedSize = valueRef.get().loadedSize;
@@ -340,12 +342,12 @@ public class ValueLoader {
           };
 
           try {
-            relookupValue(handleId, newRequstedSize, innerCallback, syncCallback);
+            return relookupValue(handleId, newRequstedSize, innerCallback, syncCallback);
           } catch (final ContextDismissedCheckedException e) {
             DebugSession debugSession = context.getDebugSession();
             debugSession.maybeRethrowContextException(e);
             // or
-            debugSession.sendLoopbackMessage(new Runnable() {
+            return debugSession.sendLoopbackMessage(new Runnable() {
               public void run() {
                 if (callback != null) {
                   callback.failure(e);

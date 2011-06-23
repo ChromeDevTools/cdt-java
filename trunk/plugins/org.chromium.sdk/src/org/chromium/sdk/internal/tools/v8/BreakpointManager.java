@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
@@ -32,6 +33,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.internal.tools.v8.request.FlagsMessage;
 import org.chromium.sdk.internal.tools.v8.request.ListBreakpointsMessage;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 public class BreakpointManager {
   /** The class logger. */
@@ -48,11 +50,11 @@ public class BreakpointManager {
     this.debugSession = debugSession;
   }
 
-  public void setBreakpoint(final Breakpoint.Target target,
+  public RelayOk setBreakpoint(final Breakpoint.Target target,
       final int line, int column, final boolean enabled, final String condition,
       final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
       SyncCallback syncCallback) {
-    debugSession.sendMessageAsync(
+    return debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(target, toNullableInteger(line),
             toNullableInteger(column), enabled, condition,
             toNullableInteger(ignoreCount)),
@@ -91,15 +93,15 @@ public class BreakpointManager {
     return idToBreakpoint.get(id);
   }
 
-  public void clearBreakpoint(
+  public RelayOk clearBreakpoint(
       final BreakpointImpl breakpointImpl, final BreakpointCallback callback,
-      SyncCallback syncCallback) {
-    long id = breakpointImpl.getId();
+      SyncCallback syncCallback, long originalId) {
+    long id = originalId;
     if (id == Breakpoint.INVALID_ID) {
-      return;
+      return RelaySyncCallback.finish(syncCallback);
     }
     idToBreakpoint.remove(id);
-    debugSession.sendMessageAsync(
+    return debugSession.sendMessageAsync(
         DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
         true,
         new V8CommandCallbackBase() {
@@ -119,9 +121,9 @@ public class BreakpointManager {
         syncCallback);
   }
 
-  public void changeBreakpoint(final BreakpointImpl breakpointImpl,
+  public RelayOk changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback, SyncCallback syncCallback) {
-    debugSession.sendMessageAsync(
+    return debugSession.sendMessageAsync(
         DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
         true,
         new V8CommandCallbackBase() {
@@ -143,8 +145,10 @@ public class BreakpointManager {
 
   /**
    * Reads a list of breakpoints from remote and updates local instances and the map.
+   * @return
    */
-  public void reloadBreakpoints(final ListBreakpointsCallback callback, SyncCallback syncCallback) {
+  public RelayOk reloadBreakpoints(final ListBreakpointsCallback callback,
+      SyncCallback syncCallback) {
     V8CommandCallbackBase v8Callback = new V8CommandCallbackBase() {
       @Override
       public void failure(String message) {
@@ -170,15 +174,16 @@ public class BreakpointManager {
         callback.success(Collections.unmodifiableCollection(idToBreakpoint.values()));
       }
     };
-    debugSession.sendMessageAsync(new ListBreakpointsMessage(), true, v8Callback, syncCallback);
+    return debugSession.sendMessageAsync(new ListBreakpointsMessage(), true, v8Callback,
+        syncCallback);
   }
 
-  public void enableBreakpoints(Boolean enabled, final GenericCallback<Boolean> callback,
+  public RelayOk enableBreakpoints(Boolean enabled, final GenericCallback<Boolean> callback,
       SyncCallback syncCallback) {
-    setRemoteFlag("breakPointsActive", enabled, callback, syncCallback);
+    return setRemoteFlag("breakPointsActive", enabled, callback, syncCallback);
   }
 
-  public void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
+  public RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
       final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
     String flagName;
     switch (catchType) {
@@ -191,10 +196,10 @@ public class BreakpointManager {
       default:
         throw new RuntimeException();
     }
-    setRemoteFlag(flagName, enabled, callback, syncCallback);
+    return setRemoteFlag(flagName, enabled, callback, syncCallback);
   }
 
-  private void setRemoteFlag(final String flagName, Boolean enabled,
+  private RelayOk setRemoteFlag(final String flagName, Boolean enabled,
       final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
     Map<String, Object> flagMap = Collections.singletonMap(flagName, (Object) enabled);
     V8CommandProcessor.V8HandlerCallback v8Callback;
@@ -235,7 +240,7 @@ public class BreakpointManager {
         }
       };
     }
-    debugSession.sendMessageAsync(new FlagsMessage(flagMap), true, v8Callback, syncCallback);
+    return debugSession.sendMessageAsync(new FlagsMessage(flagMap), true, v8Callback, syncCallback);
   }
 
   private static Integer toNullableInteger(int value) {
