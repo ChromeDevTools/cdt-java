@@ -90,7 +90,7 @@ public interface Breakpoint {
    *
    * @param callback to invoke once the operation result is available
    */
-  void clear(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
+  RelayOk clear(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
    * Flushes the breakpoint parameter changes (set* methods) into the browser
@@ -99,7 +99,7 @@ public interface Breakpoint {
    *
    * @param callback to invoke once the operation result is available
    */
-  void flush(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
+  RelayOk flush(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
 
 
   /**

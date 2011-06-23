@@ -24,6 +24,8 @@ import java.util.logging.Logger;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.ConnectionLogger.LoggableReader;
 import org.chromium.sdk.ConnectionLogger.LoggableWriter;
+import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.transport.SocketWrapper;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
@@ -112,15 +114,25 @@ public class WsConnection {
   }
 
 
-  public void runInDispatchThread(final Runnable runnable) {
+  public RelayOk runInDispatchThread(final Runnable runnable, final SyncCallback syncCallback) {
     MessageDispatcher messageDispatcher = new MessageDispatcher() {
       @Override
       boolean dispatch(Listener userListener) {
-        runnable.run();
+        RuntimeException ex = null;
+        try {
+          runnable.run();
+        } catch (RuntimeException e) {
+          ex = e;
+          throw e;
+        } finally {
+          syncCallback.callbackDone(ex);
+        }
         return false;
       }
     };
     dispatchQueue.add(messageDispatcher);
+    // TODO: make sure that it also calls sync callbacks in shutdown mode.
+    return DISPATCH_THREAD_PROMISES_TO_RELAY_OK;
   }
 
   public void startListening(final Listener listener) {
@@ -368,4 +380,6 @@ public class WsConnection {
       return CloseReason.CONNECTION_CLOSED;
     }
   };
+
+  private static final RelayOk DISPATCH_THREAD_PROMISES_TO_RELAY_OK = new RelayOk() {};
 }

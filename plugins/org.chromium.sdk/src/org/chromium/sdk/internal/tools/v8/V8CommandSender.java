@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.tools.v8;
 
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
 
@@ -13,6 +14,6 @@ import org.chromium.sdk.internal.tools.v8.V8CommandProcessor.V8HandlerCallback;
  * @param <EX> exception that may be thrown synchronously.
  */
 public interface V8CommandSender<MESSAGE, EX extends Exception> {
-  void sendV8CommandAsync(MESSAGE message, boolean isImmediate,
+  RelayOk sendV8CommandAsync(MESSAGE message, boolean isImmediate,
       V8HandlerCallback v8HandlerCallback, SyncCallback syncCallback) throws EX;
 }

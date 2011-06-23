@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.ChangeLiveBody;
 import org.chromium.sdk.internal.protocol.SuccessCommandResponse;
@@ -31,18 +32,18 @@ public class ScriptImpl extends ScriptBase {
   }
 
   @Override
-  public void setSourceOnRemote(String newSource, UpdateCallback callback,
+  public RelayOk setSourceOnRemote(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
     V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback, false);
-    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.FALSE),
+    return debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.FALSE),
         true, v8Callback, syncCallback);
   }
 
   @Override
-  public void previewSetSource(String newSource, UpdateCallback callback,
+  public RelayOk previewSetSource(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
     V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback, true);
-    debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.TRUE),
+    return debugSession.sendMessageAsync(new ChangeLiveMessage(getId(), newSource, Boolean.TRUE),
         true, v8Callback, syncCallback);
   }
 

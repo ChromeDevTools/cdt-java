@@ -17,6 +17,7 @@ import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
@@ -30,6 +31,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.PauseParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointsActiveParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptionsParams;
+import org.chromium.sdk.util.RelaySyncCallback;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
 import org.json.simple.JSONObject;
@@ -150,13 +152,13 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
-  public void enableBreakpoints(Boolean enabled,
+  public RelayOk enableBreakpoints(Boolean enabled,
       GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    updateVmVariable(enabled, VmState.BREAKPOINTS_ACTIVE, callback, syncCallback);
+    return updateVmVariable(enabled, VmState.BREAKPOINTS_ACTIVE, callback, syncCallback);
   }
 
   @Override
-  public void setBreakOnException(ExceptionCatchType catchType,
+  public RelayOk setBreakOnException(ExceptionCatchType catchType,
       Boolean enabled, GenericCallback<Boolean> callback, SyncCallback syncCallback) {
 
     VmState.Variable<Boolean> variable;
@@ -170,14 +172,15 @@ public class WipTabImpl implements BrowserTab {
     default:
       throw new RuntimeException();
     }
-    updateVmVariable(enabled, variable, callback, syncCallback);
+    return updateVmVariable(enabled, variable, callback, syncCallback);
   }
 
   /**
    * Updates locally saved variables state and send request to remote. If user only calls
    * the method to learn the current value, request is sent anyway, to keep responses in sequence.
+   * @return
    */
-  private <T> void updateVmVariable(T value, VmState.Variable<T> variable,
+  private <T> RelayOk updateVmVariable(T value, VmState.Variable<T> variable,
       final GenericCallback<T> callback, SyncCallback syncCallback) {
     synchronized (vmState) {
       final T newValue;
@@ -201,7 +204,7 @@ public class WipTabImpl implements BrowserTab {
           }
         };
       }
-      commandProcessor.send(params, wrappedCallback, syncCallback);
+      return commandProcessor.send(params, wrappedCallback, syncCallback);
     }
   }
 
@@ -242,16 +245,16 @@ public class WipTabImpl implements BrowserTab {
       };
     }
 
-    scriptManager.getScripts(innerCallback, callbackSemaphore);
+    RelayOk relayOk = scriptManager.getScripts(innerCallback, callbackSemaphore);
 
-    callbackSemaphore.acquireDefault();
+    callbackSemaphore.acquireDefault(relayOk);
   }
 
   @Override
-  public void setBreakpoint(Breakpoint.Target target, int line, int column,
+  public RelayOk setBreakpoint(Breakpoint.Target target, int line, int column,
       boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
-    breakpointManager.setBreakpoint(target, line, column, enabled, condition,
+    return breakpointManager.setBreakpoint(target, line, column, enabled, condition,
         ignoreCount, callback, syncCallback);
   }
 
@@ -275,14 +278,12 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
-  public void listBreakpoints(ListBreakpointsCallback callback,
+  public RelayOk listBreakpoints(ListBreakpointsCallback callback,
       SyncCallback syncCallback) {
     if (callback != null) {
       callback.success(breakpointManager.getAllBreakpoints());
     }
-    if (syncCallback != null) {
-      syncCallback.callbackDone(null);
-    }
+    return RelaySyncCallback.finish(syncCallback);
   }
 
   @Override

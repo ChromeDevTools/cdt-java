@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptBase;
@@ -26,9 +27,7 @@ import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureMerger;
 import org.chromium.sdk.util.AsyncFutureRef;
-import org.chromium.sdk.util.Destructable;
-import org.chromium.sdk.util.DestructableWrapper;
-import org.chromium.sdk.util.DestructingGuard;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * Keeps all current scripts for the debug session and handles script source loading.
@@ -52,12 +51,14 @@ class WipScriptManager {
   }
 
   // Run command in dispatch thread so that no scripts event could happen in the meantime.
-  void getScripts(final JavascriptVm.GenericCallback<Collection<Script>> callback,
+  RelayOk getScripts(final JavascriptVm.GenericCallback<Collection<Script>> callback,
       SyncCallback syncCallback) {
 
     // Async command chain here, wrap syncCallback to guaranteed calling.
-    final Destructable operationDestructable =
-        DestructableWrapper.callbackAsDestructable(syncCallback);
+    RelaySyncCallback relay = new RelaySyncCallback(syncCallback);
+
+    // Guard for the step one.
+    final RelaySyncCallback.Guard guardOne = relay.newGuard();
 
     // Chain commands are in the reverse order.
 
@@ -75,24 +76,14 @@ class WipScriptManager {
     Runnable mainRunnable = new Runnable() {
       @Override
       public void run() {
-        DestructingGuard guard = new DestructingGuard();
-        guard.addValue(operationDestructable);
-        try {
-          chainNext();
-          guard.discharge();
-        } finally {
-          guard.doFinally();
-        }
-      }
-
-      private void chainNext() {
-        DestructingGuard guard = new DestructingGuard();
-        guard.addValue(operationDestructable);
-        scriptsPreloaded.getAsync(futureCallback, DestructableWrapper.guardAsCallback(guard));
+        RelayOk relayOk =
+            scriptsPreloaded.getAsync(futureCallback, guardOne.getRelay().getSyncCallback());
+        guardOne.discharge(relayOk);
       }
     };
 
-    tabImpl.getCommandProcessor().runInDispatchThread(mainRunnable);
+    return tabImpl.getCommandProcessor().runInDispatchThread(mainRunnable,
+        guardOne.asSyncCallback());
   }
 
 
@@ -176,7 +167,7 @@ class WipScriptManager {
     }
 
     @Override
-    public void start(final Callback<Boolean> operationCallback, SyncCallback syncCallback) {
+    public RelayOk start(final Callback<Boolean> operationCallback, SyncCallback syncCallback) {
       JavascriptVm.GenericCallback<GetScriptSourceData> commandCallback =
           new JavascriptVm.GenericCallback<GetScriptSourceData>() {
         @Override
@@ -191,7 +182,7 @@ class WipScriptManager {
         }
       };
       GetScriptSourceParams params = new GetScriptSourceParams(Long.toString(sourceID));
-      tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
+      return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
     }
   }
 
@@ -209,7 +200,7 @@ class WipScriptManager {
    * (from its stack frames).
    * Must be called from Dispatch thread.
    */
-  void loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
+  RelayOk loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
       SyncCallback syncCallback) {
     Queue<ScriptData> scripts = new ArrayDeque<ScriptData>(ids.size());
     Map<Long, ScriptBase> result = new HashMap<Long, ScriptBase>(ids.size());
@@ -230,48 +221,47 @@ class WipScriptManager {
 
     // Start a chain of asynchronous operations.
     // Make sure we call this sync callback sooner or later.
-    Destructable operationDestructable = DestructableWrapper.callbackAsDestructable(syncCallback);
+    RelaySyncCallback relay =  new RelaySyncCallback(syncCallback);
 
-    loadNextScript(scripts, result, callback, operationDestructable);
+    return loadNextScript(scripts, result, callback, relay);
   }
 
   interface ScriptSourceLoadCallback {
     void done(Map<Long, ScriptBase> loadedScripts);
   }
 
-  private void loadNextScript(final Queue<ScriptData> scripts,
+  private RelayOk loadNextScript(final Queue<ScriptData> scripts,
       final Map<Long, ScriptBase> result, final ScriptSourceLoadCallback callback,
-      final Destructable operationDestructable) {
+      final RelaySyncCallback relay) {
     final ScriptData data = scripts.poll();
     if (data == null) {
       // Terminate the chain of asynchronous loads and pass a result to the callback.
+      RelayOk relayOk;
       try {
         if (callback != null) {
           callback.done(result);
         }
       } finally {
-        operationDestructable.destruct();
+        relayOk = relay.finish();
       }
-      return;
+      return relayOk;
     }
 
     // Create a guard for the case that we fail before issuing next #loadNextScript() call.
-    final DestructingGuard requestGuard = new DestructingGuard();
+    final RelaySyncCallback.Guard guard = relay.newGuard();
 
     AsyncFuture.Callback<Boolean> futureCallback = new AsyncFuture.Callback<Boolean>() {
       @Override
       public void done(Boolean res) {
-        loadNextScript(scripts, result, callback, operationDestructable);
+        RelayOk relayOk = loadNextScript(scripts, result, callback, relay);
         // We successfully relayed responsibility for operationDestructable to next async call,
         // discharge guard.
-        requestGuard.discharge();
+        guard.discharge(relayOk);
       }
     };
 
-    requestGuard.addValue(operationDestructable);
     // The async operation will call a guard even if something failed within the AsyncFuture.
-    data.sourceLoadedFuture.getAsync(futureCallback,
-        DestructableWrapper.guardAsCallback(requestGuard));
+    return data.sourceLoadedFuture.getAsync(futureCallback, relay.getSyncCallback());
   }
 
   public void pageReloaded() {
@@ -342,9 +332,9 @@ class WipScriptManager {
       AsyncFutureRef<Void> asyncFutureRef = new AsyncFutureRef<Void>();
       asyncFutureRef.initializeRunning(new AsyncFuture.Operation<Void>() {
         @Override
-        public void start(final Callback<Void> callback, SyncCallback syncCallback) {
+        public RelayOk start(final Callback<Void> callback, SyncCallback syncCallback) {
           AsyncFuture<?> innerFuture = populateAndLoadSourcesFuture.getFuture();
-          innerFuture.getAsync(new Callback<Object>() {
+          return innerFuture.getAsync(new Callback<Object>() {
                 @Override
                 public void done(Object res) {
                   callback.done(null);

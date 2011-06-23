@@ -22,15 +22,21 @@ public class CallbackSemaphore implements SyncCallback {
 
   /**
    * Tries to acquire semaphore with some reasonable default timeout.
+   * @param relayOk symbolic argument that means we made sure that it makes sense to wait
+   *     for the command
    * @return false if {@code #OPERATION_TIMEOUT_MS} was exceeded and we gave up
    * @throws MethodIsBlockingException if called from a callback
    */
-  public boolean tryAcquireDefault() throws MethodIsBlockingException {
+  public boolean tryAcquireDefault(RelayOk relayOk) throws MethodIsBlockingException {
     return tryAcquire(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
-  public void acquireDefault() throws MethodIsBlockingException {
-    boolean res = tryAcquireDefault();
+  /**
+   * @param relayOk symbolic argument that means we made sure that it makes sense to wait
+   *     for the command
+   */
+  public void acquireDefault(RelayOk relayOk) throws MethodIsBlockingException {
+    boolean res = tryAcquireDefault(relayOk);
     if (!res) {
       throw new RuntimeException("Failed to acquire semaphore (timeout)");
     }

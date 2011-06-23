@@ -9,6 +9,7 @@ import org.chromium.debug.core.util.ProgressUtil;
 import org.chromium.debug.core.util.ProgressUtil.MonitorWrapper;
 import org.chromium.debug.core.util.ProgressUtil.Stage;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.RelayOk;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -127,12 +128,13 @@ class LaunchInitializationProcedure {
         }
       };
       workspaceBridge.getBreakpointSynchronizer().syncBreakpoints(direction, callback);
+      RelayOk relayOk = SYNCHRONIZER_MUST_RELAY_OK;
       checkIsCanceled(monitor);
 
       BreakpointsWorkPlan.ANALYZE.finish(monitor);
 
       BreakpointsWorkPlan.REMOTE_CHANGES.start(monitor);
-      callbackSemaphore.tryAcquireDefault();
+      callbackSemaphore.tryAcquireDefault(relayOk);
       BreakpointsWorkPlan.REMOTE_CHANGES.finish(monitor);
 
     } finally {
@@ -145,4 +147,6 @@ class LaunchInitializationProcedure {
       throw new OperationCanceledException();
     }
   }
+
+  private static final RelayOk SYNCHRONIZER_MUST_RELAY_OK = new RelayOk() {};
 }

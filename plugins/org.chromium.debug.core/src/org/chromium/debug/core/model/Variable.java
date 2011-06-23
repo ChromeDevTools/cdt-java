@@ -16,10 +16,12 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.ReloadBiggerCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable.SetValueCallback;
+import org.chromium.sdk.util.RelaySyncCallback;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -153,11 +155,9 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       public boolean isTruncated() {
         return false;
       }
-      public void reloadHeavyValue(ReloadBiggerCallback callback,
+      public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
-        if (syncCallback != null) {
-          syncCallback.callbackDone(null);
-        }
+        return RelaySyncCallback.finish(syncCallback);
       }
     }
   }

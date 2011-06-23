@@ -6,6 +6,7 @@ package org.chromium.sdk.util;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Operation;
@@ -33,8 +34,8 @@ public class AsyncFutureRef<T> {
     return ref.get().getSync();
   }
 
-  public void getAsync(AsyncFuture.Callback<T> callback, SyncCallback syncCallback) {
-    ref.get().getAsync(callback, syncCallback);
+  public RelayOk getAsync(AsyncFuture.Callback<T> callback, SyncCallback syncCallback) {
+    return ref.get().getAsync(callback, syncCallback);
   }
 
   public boolean isDone() {

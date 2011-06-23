@@ -5,8 +5,10 @@
 package org.chromium.sdk.internal.tools.v8;
 
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.data.ValueHandle;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * Represents a string which full value is not available at the moment
@@ -43,7 +45,7 @@ public interface LoadableString {
    * Asynchronously reloads string value from remote. A newly loaded string will be bigger,
    * but again not necessarily full.
    */
-  void reloadBigger(JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback);
+  RelayOk reloadBigger(JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback);
 
   /**
    * A trivial implementation of {@link LoadableString} that never actually loads anything.
@@ -54,23 +56,19 @@ public interface LoadableString {
     public Immutable(String value) {
       this.value = value;
     }
-    public String getCurrentString() {
+    @Override public String getCurrentString() {
       return value;
     }
-    public boolean needsReload() {
+    @Override public boolean needsReload() {
       return false;
     }
-    public void reloadBigger(JavascriptVm.GenericCallback<Void> callback,
+    @Override
+    public RelayOk reloadBigger(JavascriptVm.GenericCallback<Void> callback,
         SyncCallback syncCallback) {
-      try {
-        if (callback != null) {
-          callback.success(null);
-        }
-      } finally {
-        if (syncCallback != null) {
-          syncCallback.callbackDone(null);
-        }
+      if (callback != null) {
+        callback.success(null);
       }
+      return RelaySyncCallback.finish(syncCallback);
     }
   }
 }

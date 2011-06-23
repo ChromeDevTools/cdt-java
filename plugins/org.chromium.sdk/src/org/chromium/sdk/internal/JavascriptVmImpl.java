@@ -11,6 +11,7 @@ import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.tools.v8.BreakpointImpl;
@@ -30,34 +31,41 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    getDebugSession().getScriptManagerProxy().getAllScripts(callback, callbackSemaphore);
+    RelayOk relayOk =
+        getDebugSession().getScriptManagerProxy().getAllScripts(callback, callbackSemaphore);
 
-    boolean res = callbackSemaphore.tryAcquireDefault();
+    boolean res = callbackSemaphore.tryAcquireDefault(relayOk);
     if (!res) {
       callback.failure("Timeout");
     }
   }
 
-  public void setBreakpoint(Breakpoint.Target target, int line,
+  @Override
+  public RelayOk setBreakpoint(Breakpoint.Target target, int line,
       int column, boolean enabled, String condition, int ignoreCount,
       BreakpointCallback callback, SyncCallback syncCallback) {
-    getDebugSession().getBreakpointManager()
+    return getDebugSession().getBreakpointManager()
         .setBreakpoint(target, line, column, enabled, condition, ignoreCount, callback,
         syncCallback);
   }
 
-  public void listBreakpoints(final ListBreakpointsCallback callback, SyncCallback syncCallback) {
-    getDebugSession().getBreakpointManager().reloadBreakpoints(callback, syncCallback);
-  }
-
-  public void enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
+  @Override
+  public RelayOk listBreakpoints(final ListBreakpointsCallback callback,
       SyncCallback syncCallback) {
-    getDebugSession().getBreakpointManager().enableBreakpoints(enabled, callback, syncCallback);
+    return getDebugSession().getBreakpointManager().reloadBreakpoints(callback, syncCallback);
   }
 
-  public void setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
+  @Override
+  public RelayOk enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
+      SyncCallback syncCallback) {
+    return getDebugSession().getBreakpointManager().enableBreakpoints(enabled,
+        callback, syncCallback);
+  }
+
+  @Override
+  public RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
       GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    getDebugSession().getBreakpointManager().setBreakOnException(catchType, enabled,
+    return getDebugSession().getBreakpointManager().setBreakOnException(catchType, enabled,
         callback, syncCallback);
   }
 

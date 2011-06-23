@@ -15,6 +15,7 @@ import java.util.Map;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipContextBuilder.WipDebugContextImpl;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
@@ -24,6 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * Responsible for loading values of properties. It works in pair with {@link WipValueBuilder}.
@@ -202,14 +204,9 @@ public class WipValueLoader {
     // (without occupying Dispatch thread).
     AsyncFuture.Operation<RES> syncOperation = new AsyncFuture.Operation<RES>() {
       @Override
-      public void start(AsyncFuture.Callback<RES> callback, SyncCallback syncCallback) {
-        try {
-          loadSync(callback);
-        } finally {
-          if (syncCallback != null) {
-            syncCallback.callbackDone(null);
-          }
-        }
+      public RelayOk start(AsyncFuture.Callback<RES> callback, SyncCallback syncCallback) {
+        loadSync(callback);
+        return RelaySyncCallback.finish(syncCallback);
       }
 
       private void loadSync(AsyncFuture.Callback<RES> callback) {
@@ -285,8 +282,9 @@ public class WipValueLoader {
     }
 
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    debugContextImpl.getCommandProcessor().send(request, callback, callbackSemaphore);
-    callbackSemaphore.acquireDefault();
+    RelayOk relayOk =
+        debugContextImpl.getCommandProcessor().send(request, callback, callbackSemaphore);
+    callbackSemaphore.acquireDefault(relayOk);
 
     return result[0];
   }

@@ -16,6 +16,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocol.FrameObject;
@@ -227,14 +228,15 @@ public class ContextBuilder {
       context = new UserContext(contextData);
     }
 
-    public void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
+    @Override
+    public RelayOk sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
         V8HandlerCallback commandCallback, SyncCallback syncCallback)
         throws ContextDismissedCheckedException {
       synchronized (sendContextCommandsMonitor) {
         if (!isValid) {
           throw new ContextDismissedCheckedException();
         }
-        debugSession.getV8CommandProcessor().sendV8CommandAsync(message, isImmediate,
+        return debugSession.getV8CommandProcessor().sendV8CommandAsync(message, isImmediate,
             commandCallback, syncCallback);
       }
     }

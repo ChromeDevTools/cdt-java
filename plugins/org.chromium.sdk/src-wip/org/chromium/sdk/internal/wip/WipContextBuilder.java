@@ -29,6 +29,7 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
@@ -101,7 +102,8 @@ class WipContextBuilder {
                 }
                 tabImpl.getDebugListener().getDebugEventListener().suspended(context);
               }
-            });
+            },
+            null);
           }
         });
   }
@@ -544,12 +546,11 @@ class WipContextBuilder {
       }
 
       @Override
-      public void evaluateAsync(final String expression,
+      public RelayOk evaluateAsync(final String expression,
           Map<String, String> additionalContext, final EvaluateCallback callback,
           SyncCallback syncCallback) {
         if (additionalContext != null) {
-          WipBrowserImpl.throwUnsupported();
-          return;
+          return WipBrowserImpl.throwUnsupported();
         }
         PARAMS params = createRequestParams(expression);
 
@@ -583,7 +584,7 @@ class WipContextBuilder {
             }
           };
         }
-        tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
+        return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
       }
 
       protected abstract PARAMS createRequestParams(String expression);
@@ -603,7 +604,7 @@ class WipContextBuilder {
 
     JsObject wrapperValue = new JsObject() {
       @Override
-      public void reloadHeavyValue(ReloadBiggerCallback callback,
+      public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
         throw new UnsupportedOperationException();
       }

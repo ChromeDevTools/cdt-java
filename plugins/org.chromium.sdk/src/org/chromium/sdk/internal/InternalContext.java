@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.tools.v8.V8CommandProcessor;
 import org.chromium.sdk.internal.tools.v8.V8CommandSender;
@@ -42,7 +43,7 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    * way of making sure context will be valid via this API.
    * @throws ContextDismissedCheckedException if context is not valid anymore
    */
-  void sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
+  RelayOk sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback)
       throws ContextDismissedCheckedException;
 

@@ -15,6 +15,7 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
@@ -61,7 +62,7 @@ public class PushChangesAction extends V8ScriptAction {
     execute(filePair, callback, null, false);
   }
 
-  public static void execute(final ScriptTargetMapping filePair,
+  public static RelayOk execute(final ScriptTargetMapping filePair,
       UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
     // TODO: fix the rough behavior (inside this call).
     Script script = filePair.getSingleScript();
@@ -78,9 +79,9 @@ public class PushChangesAction extends V8ScriptAction {
     String newSource = new String(fileData);
 
     if (previewOnly) {
-      script.previewSetSource(newSource, callback, syncCallback);
+      return script.previewSetSource(newSource, callback, syncCallback);
     } else {
-      script.setSourceOnRemote(newSource, callback, syncCallback);
+      return script.setSourceOnRemote(newSource, callback, syncCallback);
     }
   }
 }

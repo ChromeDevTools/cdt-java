@@ -47,7 +47,7 @@ public interface JsEvaluateContext {
    * @param evaluateCallback to report the evaluation result to
    * @param syncCallback to report the end of any processing
    */
-  void evaluateAsync(String expression, EvaluateCallback evaluateCallback,
+  RelayOk evaluateAsync(String expression, EvaluateCallback evaluateCallback,
       SyncCallback syncCallback);
 
   /**

@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.wip;
 
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptBase;
@@ -17,14 +18,14 @@ class WipScriptImpl extends ScriptBase {
   }
 
   @Override
-  public void setSourceOnRemote(String newSource, UpdateCallback callback,
+  public RelayOk setSourceOnRemote(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
-    WipBrowserImpl.throwUnsupported();
+    return WipBrowserImpl.throwUnsupported();
   }
 
   @Override
-  public void previewSetSource(String newSource, UpdateCallback callback,
+  public RelayOk previewSetSource(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
-    WipBrowserImpl.throwUnsupported();
+    return WipBrowserImpl.throwUnsupported();
   }
 }

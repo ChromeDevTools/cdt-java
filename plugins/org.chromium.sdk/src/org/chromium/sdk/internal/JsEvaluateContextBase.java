@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
@@ -24,22 +25,23 @@ public abstract class JsEvaluateContextBase implements JsEvaluateContext {
   }
 
   @Override
-  public void evaluateAsync(final String expression, final EvaluateCallback callback,
+  public RelayOk evaluateAsync(final String expression, final EvaluateCallback callback,
       SyncCallback syncCallback) {
-    evaluateAsync(expression, null, callback, syncCallback);
+    return evaluateAsync(expression, null, callback, syncCallback);
   }
 
   public void evaluateSync(String expression, Map<String, String> additionalContext,
       EvaluateCallback evaluateCallback)
       throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
-    evaluateAsync(expression, additionalContext, evaluateCallback, callbackSemaphore);
-    boolean res = callbackSemaphore.tryAcquireDefault();
+    RelayOk relayOk =
+        evaluateAsync(expression, additionalContext, evaluateCallback, callbackSemaphore);
+    boolean res = callbackSemaphore.tryAcquireDefault(relayOk);
     if (!res) {
       evaluateCallback.failure("Timeout");
     }
   }
 
-  public abstract void evaluateAsync(final String expression, Map<String, String> additionalContext,
-      final EvaluateCallback callback, SyncCallback syncCallback);
+  public abstract RelayOk evaluateAsync(String expression, Map<String, String> additionalContext,
+      EvaluateCallback callback, SyncCallback syncCallback);
 }

@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.DataWithRef;
 import org.chromium.sdk.internal.DebugSession;
@@ -56,9 +57,9 @@ public class V8Helper {
    * @param syncCallback to invoke after callback whether it normally returned
    *     or threw an exception
    */
-  public static void reloadAllScriptsAsync(final DebugSession debugSession,
+  public static RelayOk reloadAllScriptsAsync(final DebugSession debugSession,
       final ScriptLoadCallback callback, SyncCallback syncCallback) {
-    reloadScriptAsync(debugSession, null, callback, syncCallback);
+    return reloadScriptAsync(debugSession, null, callback, syncCallback);
   }
 
   /**
@@ -68,7 +69,7 @@ public class V8Helper {
    * @param syncCallback to invoke after callback, regardless of whether it has returned normally
    *        or thrown an exception
    */
-  public static void reloadScriptAsync(final DebugSession debugSession, final List<Long> ids,
+  public static RelayOk reloadScriptAsync(final DebugSession debugSession, final List<Long> ids,
       final ScriptLoadCallback callback, SyncCallback syncCallback) {
     ContextlessDebuggerMessage message = DebuggerMessageFactory.scripts(ids, true);
     if (ids == null) {
@@ -76,7 +77,7 @@ public class V8Helper {
     } else {
       message = DebuggerMessageFactory.scripts(ids, true);
     }
-    debugSession.sendMessageAsync(
+    return debugSession.sendMessageAsync(
         message,
         true,
         new V8CommandCallbackBase() {

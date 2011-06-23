@@ -17,9 +17,11 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.BreakpointResolvedEventData;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * A manager that works as factory for breakpoints.
@@ -33,7 +35,7 @@ public class WipBreakpointManager {
     this.tabImpl = tabImpl;
   }
 
-  void setBreakpoint(Breakpoint.Target target, final int line, final int column,
+  RelayOk setBreakpoint(Breakpoint.Target target, final int line, final int column,
       final boolean enabled, String condition, int ignoreCount,
       final BreakpointCallback callback, SyncCallback syncCallback) {
 
@@ -70,11 +72,11 @@ public class WipBreakpointManager {
         }
       };
 
-      WipBreakpointImpl.sendSetBreakpointRequest(target, line, column, condition,
+      return WipBreakpointImpl.sendSetBreakpointRequest(target, line, column, condition,
           wrappedCallback, syncCallback, tabImpl.getCommandProcessor());
     } else {
       callback.success(breakpointImpl);
-      syncCallback.callbackDone(null);
+      return RelaySyncCallback.finish(syncCallback);
     }
   }
 

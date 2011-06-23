@@ -114,5 +114,5 @@ public interface JsValue {
   /**
    * Asynchronously reloads object value with extended size limit.
    */
-  void reloadHeavyValue(ReloadBiggerCallback callback, SyncCallback syncCallback);
+  RelayOk reloadHeavyValue(ReloadBiggerCallback callback, SyncCallback syncCallback);
 }

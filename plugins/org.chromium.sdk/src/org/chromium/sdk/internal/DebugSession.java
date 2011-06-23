@@ -15,6 +15,7 @@ import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.JavascriptVm.SuspendCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.InternalContext.ContextDismissedCheckedException;
@@ -33,9 +34,7 @@ import org.chromium.sdk.internal.tools.v8.request.DebuggerMessageFactory;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureRef;
-import org.chromium.sdk.util.Destructable;
-import org.chromium.sdk.util.DestructableWrapper;
-import org.chromium.sdk.util.DestructingGuard;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * A class that holds and administers main parts of debug protocol implementation.
@@ -101,10 +100,11 @@ public class DebugSession {
   /**
    * Sends V8 command messages, but only those which doesn't depend on context.
    * Use {@code InternalContext} if you need to send context-specific commands.
+   * @return
    */
-  public void sendMessageAsync(ContextlessDebuggerMessage message, boolean isImmediate,
+  public RelayOk sendMessageAsync(ContextlessDebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback) {
-    v8CommandProcessor.sendV8CommandAsync(message, isImmediate,
+    return v8CommandProcessor.sendV8CommandAsync(message, isImmediate,
         commandCallback, syncCallback);
   }
 
@@ -199,54 +199,43 @@ public class DebugSession {
       this.debugSession = debugSession;
     }
 
-    public void getAllScripts(final ScriptsCallback callback, SyncCallback syncCallback) {
+    public RelayOk getAllScripts(final ScriptsCallback callback, SyncCallback syncCallback) {
       if (!scriptsLoadedFuture.isInitialized()) {
         scriptsLoadedFuture.initializeRunning(new ScriptsRequester());
       }
 
       // Operation is multi-step, so make sure that syncCallback won't be left uncalled.
-      final Destructable operationDestructable =
-          DestructableWrapper.callbackAsDestructable(syncCallback);
-
-      // Guards operationDestructable if we fail to relay in futureCallback.
-      final DestructingGuard guard = new DestructingGuard();
+      RelaySyncCallback relay = new RelaySyncCallback(syncCallback);
+      final RelaySyncCallback.Guard guard = relay.newGuard();
 
       Callback<Void> futureCallback = new Callback<Void>() {
         @Override public void done(Void res) {
           if (callback != null) {
-            getAllScriptsAsync(callback, operationDestructable);
-            guard.discharge();
+            RelayOk relayOk = getAllScriptsAsync(callback, guard.getRelay());
+            guard.discharge(relayOk);
           }
         }
       };
 
-      guard.addValue(operationDestructable);
-      scriptsLoadedFuture.getAsync(futureCallback, DestructableWrapper.guardAsCallback(guard));
+      return scriptsLoadedFuture.getAsync(futureCallback, guard.asSyncCallback());
     }
 
-    private void getAllScriptsAsync(final ScriptsCallback callback,
-        Destructable operationDestructable) {
-
-      // Construct a guard that won't be discharged and will be called in the end of async
-      // operation, because it is the end of the entire operation.
-      DestructingGuard guard = new DestructingGuard();
-      guard.addValue(operationDestructable);
-
+    private RelayOk getAllScriptsAsync(final ScriptsCallback callback, RelaySyncCallback relay) {
       // We should call the callback from Dispatch thread (so that the whole collection
       // kept fresh during the call-back).
-      debugSession.getV8CommandProcessor().runInDispatchThread(
+      return debugSession.getV8CommandProcessor().runInDispatchThread(
           new Runnable() {
             @Override
             public void run() {
               callback.success(debugSession.getScriptManager().allScripts());
             }
           },
-          DestructableWrapper.guardAsCallback(guard));
+          relay.getSyncCallback());
     }
 
     private class ScriptsRequester implements AsyncFuture.Operation<Void> {
       @Override
-      public void start(final Callback<Void> requestCallback,
+      public RelayOk start(final Callback<Void> requestCallback,
           SyncCallback syncCallback) {
         V8Helper.ScriptLoadCallback scriptLoadCallback = new V8Helper.ScriptLoadCallback() {
           @Override
@@ -261,7 +250,7 @@ public class DebugSession {
             requestCallback.done(null);
           }
         };
-        V8Helper.reloadAllScriptsAsync(debugSession, scriptLoadCallback, syncCallback);
+        return V8Helper.reloadAllScriptsAsync(debugSession, scriptLoadCallback, syncCallback);
       }
     }
   }
@@ -305,8 +294,8 @@ public class DebugSession {
     V8Helper.callV8Sync(this.v8CommandProcessor, DebuggerMessageFactory.version(), callback);
   }
 
-  public void sendLoopbackMessage(Runnable callback, SyncCallback syncCallback) {
-    this.v8CommandProcessor.runInDispatchThread(callback, syncCallback);
+  public RelayOk sendLoopbackMessage(Runnable callback, SyncCallback syncCallback) {
+    return this.v8CommandProcessor.runInDispatchThread(callback, syncCallback);
   }
 
   public void maybeRethrowContextException(ContextDismissedCheckedException e) {
