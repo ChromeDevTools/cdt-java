@@ -50,6 +50,10 @@ class WipScriptManager {
     this.scriptsPreloaded = populateMode.createAndInitMasterFuture();
   }
 
+  WipTabImpl getTabImpl() {
+    return tabImpl;
+  }
+
   // Run command in dispatch thread so that no scripts event could happen in the meantime.
   RelayOk getScripts(final JavascriptVm.GenericCallback<Collection<Script>> callback,
       SyncCallback syncCallback) {
@@ -109,7 +113,7 @@ class WipScriptManager {
 
     ScriptBase.Descriptor descriptor = new ScriptBase.Descriptor(Script.Type.NORMAL,
         sourceID, url, (int) data.startLine(), (int) data.startColumn(), -1);
-    final ScriptBase script = new WipScriptImpl(descriptor);
+    final ScriptBase script = new WipScriptImpl(this, descriptor);
     final ScriptData scriptData = new ScriptData(script);
 
     synchronized (scriptIdToData) {
