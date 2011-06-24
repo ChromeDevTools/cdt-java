@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84775
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@89368
 
 package org.chromium.sdk.internal.wip.protocol.output.page;
 
@@ -11,14 +11,10 @@ public class GetResourceContentParams extends org.chromium.sdk.internal.wip.prot
   /**
    @param frameId Frame id to get resource for.
    @param url URL of the resource to get content for.
-   @param base64EncodeOpt Requests that resource content is served as base64.
    */
-  public GetResourceContentParams(String frameId, String url, Boolean base64EncodeOpt) {
+  public GetResourceContentParams(String frameId, String url) {
     this.put("frameId", frameId);
     this.put("url", url);
-    if (base64EncodeOpt != null) {
-      this.put("base64Encode", base64EncodeOpt);
-    }
   }
 
   public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.PAGE + ".getResourceContent";

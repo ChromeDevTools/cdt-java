@@ -165,7 +165,7 @@ public abstract class ScriptBase implements Script {
   }
 
   protected static class UpdateResultParser {
-    static UpdatableScript.ChangeDescription wrapChangeDescription(
+    public static UpdatableScript.ChangeDescription wrapChangeDescription(
         final LiveEditResult previewDescription) {
       if (previewDescription == null) {
         return null;

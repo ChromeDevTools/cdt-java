@@ -57,6 +57,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.LazyConstructable;
+import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
  * Builder for {@link DebugContext} that works with Wip protocol.
@@ -71,6 +72,18 @@ class WipContextBuilder {
     this.tabImpl = tabImpl;
   }
 
+  // Called from Dispatch Thread.
+  RelayOk updateStackTrace(List<CallFrameValue> callFrames,
+      JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+    if (currentContext == null) {
+      if (callback != null) {
+        callback.success(null);
+      }
+      return RelaySyncCallback.finish(syncCallback);
+    } else {
+      return currentContext.setFrames(callFrames, callback, syncCallback);
+    }
+  }
 
   void createContext(PausedEventData data) {
     if (currentContext != null) {
@@ -81,31 +94,19 @@ class WipContextBuilder {
     final WipDebugContextImpl context = new WipDebugContextImpl(data);
     currentContext = context;
 
-    final List<Map<Long, ScriptBase>> loadedScriptsHolder = new ArrayList<Map<Long,ScriptBase>>(1);
+    JavascriptVm.GenericCallback<Void> callback = new JavascriptVm.GenericCallback<Void>() {
+      @Override
+      public void success(Void value) {
+        tabImpl.getDebugListener().getDebugEventListener().suspended(context);
+      }
 
-    tabImpl.getScriptManager().loadScriptSourcesAsync(context.getScriptIds(),
-        new WipScriptManager.ScriptSourceLoadCallback() {
-          @Override
-          public void done(Map<Long, ScriptBase> loadedScripts) {
-            loadedScriptsHolder.add(loadedScripts);
-          }
-        },
-        new SyncCallback() {
-          @Override
-          public void callbackDone(RuntimeException e) {
-            // Invoke next step from sync callback -- even if previous step failed.
-            tabImpl.getCommandProcessor().runInDispatchThread(new Runnable() {
-              @Override
-              public void run() {
-                if (!loadedScriptsHolder.isEmpty()) {
-                  context.setScripts(loadedScriptsHolder.get(0));
-                }
-                tabImpl.getDebugListener().getDebugEventListener().suspended(context);
-              }
-            },
-            null);
-          }
-        });
+      @Override
+      public void failure(Exception exception) {
+        throw new RuntimeException(exception);
+      }
+    };
+
+    context.setFrames(data.details().callFrames(), callback, null);
   }
 
   void onResumeReportedFromRemote(ResumedEventData event) {
@@ -120,7 +121,7 @@ class WipContextBuilder {
 
   class WipDebugContextImpl implements DebugContext {
     private final WipValueLoader valueLoader = new WipValueLoader(this);
-    private final List<CallFrameImpl> frames;
+    private volatile List<CallFrameImpl> frames = null;
     private final ExceptionData exceptionData;
     private final AtomicReference<CloseRequest> closeRequest =
         new AtomicReference<CloseRequest>(null);
@@ -128,11 +129,6 @@ class WipContextBuilder {
 
     public WipDebugContextImpl(PausedEventData data) {
       PausedEventData.Details details = data.details();
-      List<CallFrameValue> frameDataList = details.callFrames();
-      frames = new ArrayList<CallFrameImpl>(frameDataList.size());
-      for (CallFrameValue frameData : frameDataList) {
-        frames.add(new CallFrameImpl(frameData));
-      }
       RemoteObjectValue exceptionRemoteObject = details.exception();
       if (exceptionRemoteObject == null) {
         exceptionData = null;
@@ -153,6 +149,27 @@ class WipContextBuilder {
           return data.wasThrown();
         }
       };
+    }
+
+    RelayOk setFrames(List<CallFrameValue> frameDataList,
+        final JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+      frames = new ArrayList<CallFrameImpl>(frameDataList.size());
+      for (CallFrameValue frameData : frameDataList) {
+        frames.add(new CallFrameImpl(frameData));
+      }
+
+      return tabImpl.getScriptManager().loadScriptSourcesAsync(getScriptIds(),
+          new WipScriptManager.ScriptSourceLoadCallback() {
+            @Override
+            public void done(Map<Long, ScriptBase> loadedScripts) {
+              setScripts(loadedScripts);
+
+              if (callback != null) {
+                callback.success(null);
+              }
+            }
+          },
+          syncCallback);
     }
 
     WipValueLoader getValueLoader() {

@@ -594,27 +594,36 @@ class Generator {
           }
 
           String objectName = capitalizeFirstChar(getMemberName());
-          builder.append("  @org.chromium.sdk.internal.protocolparser.JsonType\n");
-          builder.append("  public interface " + objectName + " {\n");
 
-          for (ObjectProperty property : propertyList) {
-            if (property.description() != null) {
-              builder.append("    /**\n     " + property.description() + "\n     */\n");
+          if (propertyList == null) {
+            builder.append("  @org.chromium.sdk.internal.protocolparser.JsonType(" +
+                "allowsOtherProperties=true)\n");
+            builder.append("  public interface " + objectName +
+                " extends org.chromium.sdk.internal.protocolparser.JsonObjectBased {\n");
+            builder.append("  }\n");
+          } else {
+            builder.append("  @org.chromium.sdk.internal.protocolparser.JsonType\n");
+            builder.append("  public interface " + objectName + " {\n");
+            for (ObjectProperty property : propertyList) {
+              if (property.description() != null) {
+                builder.append("    /**\n     " + property.description() + "\n     */\n");
+              }
+
+              String methodName = generateMethodNameSubstitute(property.name(), builder);
+
+              if (property.optional() == Boolean.TRUE) {
+                builder.append(
+                    "    @org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
+              }
+
+              MemberScope memberScope = newMemberScope(property.name());
+              builder.append("    " + memberScope.getTypeName(property) + " " + methodName +
+                  "();\n");
+              builder.append("\n");
             }
-
-            String methodName = generateMethodNameSubstitute(property.name(), builder);
-
-            if (property.optional() == Boolean.TRUE) {
-              builder.append("    @org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
-            }
-
-            MemberScope memberScope = newMemberScope(property.name());
-            builder.append("    " + memberScope.getTypeName(property) + " " + methodName +
-                "();\n");
-            builder.append("\n");
+            builder.append("  }\n");
           }
 
-          builder.append("  }\n");
           addMember(objectName, builder.toString());
 
           jsonProtocolParserClassNames.add(getFullName() + "." + objectName);
