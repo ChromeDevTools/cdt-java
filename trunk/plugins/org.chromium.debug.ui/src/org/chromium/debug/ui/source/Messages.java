@@ -20,6 +20,7 @@ public class Messages extends NLS {
   public static String SourceNameMapperContainerDialog_PREFIX_NORMALLY_ENDS;
   public static String SourceNameMapperContainerDialog_SAMPLE_FILE_NAME;
   public static String SourceNameMapperContainerDialog_TYPE_LABEL;
+  public static String SourceNameMapperContainerDialogLogic_TARGET_CONTAINER_NOT_SUPPORTED0;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);
