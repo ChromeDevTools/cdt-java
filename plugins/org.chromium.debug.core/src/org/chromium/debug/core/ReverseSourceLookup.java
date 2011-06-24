@@ -7,7 +7,6 @@ package org.chromium.debug.core;
 import org.chromium.debug.core.model.VmResourceId;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -46,6 +45,10 @@ public class ReverseSourceLookup {
     return null;
   }
 
+  public static boolean isGoodTargetContainer(ISourceContainer container) {
+    return wrapNonVirtualContainer(container) != null;
+  }
+
   private VmResourceId tryForContainer(IFile sourceFile, ISourceContainer container)
       throws CoreException {
     if (container.isComposite() && isSupportedCompositeContainer(container)) {
@@ -82,30 +85,59 @@ public class ReverseSourceLookup {
    * @param container that may not wrap VProjectSourceContainer
    */
   private String tryForNonVirtualContainer(IFile resource, ISourceContainer container) {
+    ContainerWrapper wrapper = wrapNonVirtualContainer(container);
+    if (wrapper == null) {
+      return null;
+    }
+    return wrapper.lookup(resource);
+  }
+
+  private static ContainerWrapper wrapNonVirtualContainer(ISourceContainer container) {
     if (container instanceof ContainerSourceContainer) {
-      ContainerSourceContainer containerSourceContainer = (ContainerSourceContainer) container;
-      String res = lookupInResourceContainer(resource, containerSourceContainer.getContainer());
-      if (res != null) {
-        return res;
-      }
+      final ContainerSourceContainer containerSourceContainer =
+          (ContainerSourceContainer) container;
+      return new ContainerWrapper() {
+        @Override
+        public String lookup(IFile resource) {
+          return lookupInResourceContainer(resource, containerSourceContainer.getContainer());
+        }
+      };
     } else if (container instanceof WorkspaceSourceContainer) {
-      String res = lookupInResourceContainer(resource, ResourcesPlugin.getWorkspace().getRoot());
-      if (res != null) {
-        return res;
-      }
+      return new ContainerWrapper() {
+        @Override
+        public String lookup(IFile resource) {
+          return lookupInResourceContainer(resource, ResourcesPlugin.getWorkspace().getRoot());
+        }
+      };
     } else if (container instanceof SourceNameMapperContainer) {
-      SourceNameMapperContainer mappingContainer =
-          (SourceNameMapperContainer) container;
-      String subResult = tryForNonVirtualContainer(resource, mappingContainer.getTargetContainer());
-      if (subResult != null) {
-        return mappingContainer.getPrefix() + subResult;
-      }
+      SourceNameMapperContainer mappingContainer = (SourceNameMapperContainer) container;
+      final ContainerWrapper targetContainerWrapper =
+          wrapNonVirtualContainer(mappingContainer.getTargetContainer());
+      final String prefix = mappingContainer.getPrefix();
+      return new ContainerWrapper() {
+        @Override
+        public String lookup(IFile resource) {
+          String subResult = targetContainerWrapper.lookup(resource);
+          if (subResult == null) {
+            return null;
+          }
+          return prefix + subResult;
+        }
+      };
     }
 
     return null;
   }
 
-  String lookupInResourceContainer(IFile resource, IContainer resourceContainer) {
+  /**
+   * Wraps a container. This interface guarantees that original container with all inner containers
+   * are supported by our reversed lookup.
+   */
+  private interface ContainerWrapper {
+    String lookup(IFile resource);
+  }
+
+  private static String lookupInResourceContainer(IFile resource, IContainer resourceContainer) {
     IPath resourceFullPath = resource.getFullPath();
     IPath containerFullPath = resourceContainer.getFullPath();
     if (!containerFullPath.isPrefixOf(resourceFullPath)) {

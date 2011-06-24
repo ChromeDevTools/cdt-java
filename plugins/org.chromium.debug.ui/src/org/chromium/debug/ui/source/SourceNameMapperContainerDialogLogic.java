@@ -6,13 +6,16 @@ package org.chromium.debug.ui.source;
 
 import static org.chromium.debug.ui.DialogUtils.createErrorOptional;
 import static org.chromium.debug.ui.DialogUtils.createOptional;
+import static org.chromium.debug.ui.DialogUtils.createProcessor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.chromium.debug.core.ReverseSourceLookup;
 import org.chromium.debug.ui.DialogUtils.ExpressionProcessor;
+import org.chromium.debug.ui.DialogUtils.Gettable;
 import org.chromium.debug.ui.DialogUtils.Message;
 import org.chromium.debug.ui.DialogUtils.MessagePriority;
 import org.chromium.debug.ui.DialogUtils.OkButtonControl;
@@ -233,6 +236,25 @@ abstract class SourceNameMapperContainerDialogLogic {
     };
     updater.addConsumer(rootScope, showContainerTypeValue);
     updater.addDependency(showContainerTypeValue, containerFactoryButtonValue);
+
+    // Represents possible warning about unsupported container.
+    ValueProcessor<String> unsupportedContainerWarning = createProcessor(new Gettable<String>() {
+      @Override
+      public String getValue() {
+        ISourceContainer container = containerFactoryButtonValue.getValue();
+        if (container == null) {
+          return null;
+        }
+        if (ReverseSourceLookup.isGoodTargetContainer(container)) {
+          return null;
+        }
+        return Messages.SourceNameMapperContainerDialogLogic_TARGET_CONTAINER_NOT_SUPPORTED0;
+      }
+    });
+    updater.addSource(rootScope, unsupportedContainerWarning);
+    updater.addConsumer(rootScope, unsupportedContainerWarning);
+    updater.addDependency(unsupportedContainerWarning, containerFactoryButtonValue);
+    warningSources.add(unsupportedContainerWarning);
 
     // Represents expression that constructs dialog window result.
     final ValueProcessor<? extends Optional<Result>> resultValue =
