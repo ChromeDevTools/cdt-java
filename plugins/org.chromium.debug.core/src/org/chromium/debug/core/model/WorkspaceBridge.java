@@ -51,7 +51,7 @@ public interface WorkspaceBridge {
     JsLabelProvider getLabelProvider();
   }
 
-  Collection<? extends VmResource> findVmResourceFromWorkspaceFile(IFile resource)
+  Collection<? extends VmResource> findVmResourcesFromWorkspaceFile(IFile resource)
       throws CoreException;
 
   /**

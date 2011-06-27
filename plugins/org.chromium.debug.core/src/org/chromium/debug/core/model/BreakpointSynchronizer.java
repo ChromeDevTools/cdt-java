@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
@@ -89,9 +90,8 @@ public class BreakpointSynchronizer {
     /**
      * Create breakpoint on remote VM (asynchronously) and link it to uiBreakpoint.
      */
-    void createBreakpointOnRemote(WrappedBreakpoint uiBreakpoint,
-        VmResourceId vmResourceId,
-        CreateCallback createCallback, SyncCallback syncCallback);
+    RelayOk createBreakpointOnRemote(WrappedBreakpoint uiBreakpoint, VmResourceRef vmResourceRef,
+        CreateCallback createCallback, SyncCallback syncCallback) throws CoreException;
 
     interface CreateCallback {
       void failure(Exception ex);
@@ -110,7 +110,7 @@ public class BreakpointSynchronizer {
     ReportBuilder reportBuilder = new ReportBuilder(direction);
     StatusBuilder statusBuilder = new StatusBuilder(callback, reportBuilder);
 
-    statusBuilder.plan();
+    statusBuilder.plan(UNCODITIONALLY_RELAY_TO_REST_OF_METHOD_OK);
     Exception ex = null;
     try {
       syncBreakpointsImpl(direction, statusBuilder);
@@ -120,6 +120,8 @@ public class BreakpointSynchronizer {
       statusBuilder.done(ex);
     }
   }
+
+  private static final RelayOk UNCODITIONALLY_RELAY_TO_REST_OF_METHOD_OK = new RelayOk() {};
 
   private void syncBreakpointsImpl(final Direction direction, final StatusBuilder statusBuilder) {
     // Collect the remote breakpoints.
@@ -197,7 +199,8 @@ public class BreakpointSynchronizer {
           statusBuilder.getReportBuilder().increment(ReportBuilder.Property.DELETED_ON_REMOTE);
         }
       };
-      sdkBreakpoint.clear(callback, deleteTaskHelper);
+      RelayOk relayOk = sdkBreakpoint.clear(callback, deleteTaskHelper);
+      deleteTaskHelper.registerSelf(relayOk);
     }
     for (WrappedBreakpoint uiBreakpoint : uiBreakpointsToDelete) {
       ChromiumLineBreakpoint.getIgnoreList().add(uiBreakpoint);
@@ -240,8 +243,8 @@ public class BreakpointSynchronizer {
       statusBuilder.getReportBuilder().increment(ReportBuilder.Property.CREATED_LOCALLY);
     }
     for (WrappedBreakpoint uiBreakpoint : uiBreakpointsToCreate) {
-      VmResourceId vmResourceId = uiBreakpointHandler.getVmResourceId(uiBreakpoint);
-      if (vmResourceId == null) {
+      VmResourceRef vmResourceRef = uiBreakpointHandler.getVmResourceRef(uiBreakpoint);
+      if (vmResourceRef == null) {
         // Actually we should not get here, because getScript call succeeded before.
         continue;
       }
@@ -255,24 +258,31 @@ public class BreakpointSynchronizer {
           createTaskHelper.setException(ex);
         }
       };
-      breakpointHelper.createBreakpointOnRemote(uiBreakpoint, vmResourceId, createCallback,
-          createTaskHelper);
+      try {
+        RelayOk relayOk = breakpointHelper.createBreakpointOnRemote(uiBreakpoint, vmResourceRef,
+            createCallback, createTaskHelper);
+        createTaskHelper.registerSelf(relayOk);
+      } catch (CoreException e) {
+        statusBuilder.addOnStartException(e);
+      }
     }
   }
 
   private static final Breakpoint.Target.Visitor<String> BREAKPOINT_DEBUG_DESTINATION_VISITOR =
-      new Breakpoint.Target.Visitor<String>() {
+      new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<String>() {
         @Override public String visitScriptName(String scriptName) {
           return "script_name=" + scriptName;
         }
         @Override public String visitScriptId(long scriptId) {
           return "script_id" + scriptId;
         }
+        @Override public String visitRegExp(String regExp) {
+          return "RegExp: " + regExp;
+        }
         @Override public String visitUnknown(Breakpoint.Target target) {
           return "Unknown target: + " + target;
         }
       };
-
 
   private static class BreakpointMerger extends Merger<WrappedBreakpoint, Breakpoint> {
     private final Direction direction;
@@ -334,7 +344,7 @@ public class BreakpointSynchronizer {
       return reportBuilder;
     }
 
-    public synchronized void plan() {
+    public synchronized void plan(RelayOk relayOk) {
       if (alreadyReported) {
         throw new IllegalStateException();
       }
@@ -346,6 +356,10 @@ public class BreakpointSynchronizer {
       if (timeToReport) {
         reportResult();
       }
+    }
+
+    public synchronized void addOnStartException(Exception ex) {
+      exceptions.add(ex);
     }
 
     private synchronized boolean doneImpl(Exception ex) {
@@ -387,7 +401,9 @@ public class BreakpointSynchronizer {
     private volatile Exception exception = null;
     PlannedTaskHelper(StatusBuilder statusBuilder) {
       this.statusBuilder = statusBuilder;
-      statusBuilder.plan();
+    }
+    void registerSelf(RelayOk relayOk) {
+      statusBuilder.plan(relayOk);
     }
     public void callbackDone(RuntimeException e) {
       if (e != null) {
@@ -471,7 +487,7 @@ public class BreakpointSynchronizer {
    */
   private static abstract class PropertyHandler<B> {
     /** @return vm resource name or null */
-    abstract VmResourceId getVmResourceId(B breakpoint);
+    abstract VmResourceRef getVmResourceRef(B breakpoint);
     /** @return 0-based number */
     abstract long getLineNumber(B breakpoint);
   }
@@ -490,7 +506,7 @@ public class BreakpointSynchronizer {
     }
 
     @Override
-    VmResourceId getVmResourceId(WrappedBreakpoint chromiumLineBreakpoint) {
+    VmResourceRef getVmResourceRef(WrappedBreakpoint chromiumLineBreakpoint) {
       IMarker marker = chromiumLineBreakpoint.getInner().getMarker();
       if (marker == null) {
         return null;
@@ -501,7 +517,7 @@ public class BreakpointSynchronizer {
       }
       IFile file = (IFile) resource;
       try {
-        return sourceDirector.getReverseSourceLookup().findVmResource(file);
+        return sourceDirector.findVmResourceRef(file);
       } catch (CoreException e) {
         throw new RuntimeException("Failed to read script name from breakpoint", e); //$NON-NLS-1$
       }
@@ -516,24 +532,30 @@ public class BreakpointSynchronizer {
     }
 
     @Override
-    VmResourceId getVmResourceId(Breakpoint breakpoint) {
-      return breakpoint.getTarget().accept(getTargetVisitor);
+    VmResourceRef getVmResourceRef(Breakpoint breakpoint) {
+      return breakpoint.getTarget().accept(resourceRefVisitor);
     }
 
-    private final Breakpoint.Target.Visitor<VmResourceId> getTargetVisitor =
-        new Breakpoint.Target.Visitor<VmResourceId>() {
+    private final Breakpoint.Target.Visitor<VmResourceRef> resourceRefVisitor =
+        new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<VmResourceRef>() {
           @Override
-          public VmResourceId visitScriptName(String scriptName) {
-            return new VmResourceId(scriptName, null);
+          public VmResourceRef visitScriptName(String scriptName) {
+            return VmResourceRef.forVmResourceId(new VmResourceId(scriptName, null));
           }
 
           @Override
-          public VmResourceId visitScriptId(long scriptId) {
-            return new VmResourceId(null, scriptId);
+          public VmResourceRef visitScriptId(long scriptId) {
+            return VmResourceRef.forVmResourceId(new VmResourceId(null, scriptId));
           }
 
           @Override
-          public VmResourceId visitUnknown(Breakpoint.Target target) {
+          public VmResourceRef visitRegExp(String regExp) {
+            // TODO: implement.
+            return null;
+          }
+
+          @Override
+          public VmResourceRef visitUnknown(Breakpoint.Target target) {
             return null;
           }
         };
@@ -543,9 +565,9 @@ public class BreakpointSynchronizer {
    * A helping structure that holds field of complicated type.
    */
   private static class SortedBreakpoints<B> {
-    final Map<VmResourceId, Map<Long, B>> data;
+    final Map<VmResourceRef, Map<Long, B>> data;
 
-    SortedBreakpoints(Map<VmResourceId, Map<Long, B>> data) {
+    SortedBreakpoints(Map<VmResourceRef, Map<Long, B>> data) {
       this.data = data;
     }
   }
@@ -555,16 +577,16 @@ public class BreakpointSynchronizer {
    */
   private static <B> SortedBreakpoints<B> sortBreakpoints(Collection<? extends B> breakpoints,
       PropertyHandler<B> handler) {
-    Map<VmResourceId, Map<Long, B>> result = new HashMap<VmResourceId, Map<Long, B>>();
+    Map<VmResourceRef, Map<Long, B>> result = new HashMap<VmResourceRef, Map<Long, B>>();
     for (B breakpoint : breakpoints) {
-      VmResourceId vmResourceId = handler.getVmResourceId(breakpoint);
-      if (vmResourceId == null) {
+      VmResourceRef vmResourceRef = handler.getVmResourceRef(breakpoint);
+      if (vmResourceRef == null) {
         continue;
       }
-      Map<Long, B> subMap = result.get(vmResourceId);
+      Map<Long, B> subMap = result.get(vmResourceRef);
       if (subMap == null) {
         subMap = new HashMap<Long, B>(3);
-        result.put(vmResourceId, subMap);
+        result.put(vmResourceRef, subMap);
       }
       long line = handler.getLineNumber(breakpoint);
       // For simplicity we ignore multiple breakpoints on the same line.

@@ -113,7 +113,7 @@ public class ConnectedTargetData {
   }
 
   public Collection<? extends VmResource> getVmResource(IFile resource) throws CoreException {
-    return workspaceRelations.findVmResourceFromWorkspaceFile(resource);
+    return workspaceRelations.findVmResourcesFromWorkspaceFile(resource);
   }
 
   private final VmStatusListenerImpl vmStatusListener = new VmStatusListenerImpl();
