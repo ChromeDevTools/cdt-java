@@ -13,16 +13,15 @@ import java.util.Map;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
-import org.chromium.debug.core.model.JavascriptThread.ResumeReason;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.eclipse.core.resources.IFile;
@@ -136,14 +135,22 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     });
   }
 
-  public Collection<? extends VmResource> findVmResourceFromWorkspaceFile(IFile resource)
+  public Collection<? extends VmResource> findVmResourcesFromWorkspaceFile(IFile resource)
       throws CoreException {
-    VmResourceId id = findVmResourceIdFromWorkspaceFile(resource);
-    if (id == null) {
+    VmResourceRef vmResourceRef = findVmResourceRefFromWorkspaceFile(resource);
+    if (vmResourceRef == null) {
       return null;
     }
-    return Collections.singletonList(resourceManager.getVmResource(id));
+    return vmResourceRef.accept(RESOLVE_RESOURCE_VISITOR);
   }
+
+  private final VmResourceRef.Visitor<Collection<? extends VmResource>> RESOLVE_RESOURCE_VISITOR =
+      new VmResourceRef.Visitor<Collection<? extends VmResource>>() {
+    @Override
+    public Collection<? extends VmResource> visitResourceId(VmResourceId resourceId) {
+      return Collections.singletonList(resourceManager.getVmResource(resourceId));
+    }
+  };
 
   public VmResource getVProjectVmResource(IFile file) {
     VmResourceId resourceId = resourceManager.getResourceId(file);
@@ -158,8 +165,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     return resourceManager.createTemporaryFile(metadata, proposedFileName);
   }
 
-  private VmResourceId findVmResourceIdFromWorkspaceFile(IFile resource) throws CoreException {
-    return sourceDirector.findVmResource(resource);
+  private VmResourceRef findVmResourceRefFromWorkspaceFile(IFile resource) throws CoreException {
+    return sourceDirector.findVmResourceRef(resource);
   }
 
   public void reloadScript(Script script) {
@@ -226,25 +233,31 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         return;
       }
       IFile file = (IFile) lineBreakpoint.getInner().getMarker().getResource();
-      VmResourceId vmResourceId;
+      VmResourceRef vmResourceRef;
       try {
-        vmResourceId = findVmResourceIdFromWorkspaceFile(file);
+        vmResourceRef = findVmResourceRefFromWorkspaceFile(file);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(
             new Exception("Failed to resolve script for the file " + file, e)); //$NON-NLS-1$
         return;
       }
-      if (vmResourceId == null) {
+      if (vmResourceRef == null) {
         // Might be a script from a different debug target
         return;
       }
 
-      createBreakpointOnRemote(lineBreakpoint, vmResourceId, null, null);
+      try {
+        createBreakpointOnRemote(lineBreakpoint, vmResourceRef, null, null);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(new Exception("Failed to create breakpoint in " + //$NON-NLS-1$
+            getTargetNameSafe(), e));
+        throw new RuntimeException(e);
+      }
     }
 
-    public void createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
-        final VmResourceId vmResourceId,
-        final CreateCallback createCallback, SyncCallback syncCallback) {
+    public RelayOk createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
+        final VmResourceRef vmResourceRef,
+        final CreateCallback createCallback, SyncCallback syncCallback) throws CoreException {
       ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
           new ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback() {
         public void success(Breakpoint breakpoint) {
@@ -261,13 +274,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
           }
         }
       };
-      try {
-        ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceId,
-            connectedTargetData, callback, syncCallback);
-      } catch (CoreException e) {
-        ChromiumDebugPlugin.log(new Exception("Failed to create breakpoint in " + //$NON-NLS-1$
-            getTargetNameSafe(), e));
-      }
+      return ChromiumLineBreakpoint.Helper.createOnRemote(lineBreakpoint, vmResourceRef,
+          connectedTargetData, callback, syncCallback);
     }
 
     public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {

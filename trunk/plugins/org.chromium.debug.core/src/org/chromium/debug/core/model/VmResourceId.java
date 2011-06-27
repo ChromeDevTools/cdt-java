@@ -5,7 +5,6 @@
 package org.chromium.debug.core.model;
 
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
-import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Script;
 
 /**
@@ -57,18 +56,6 @@ public class VmResourceId {
   public String toString() {
     return "<" + name + " : " + id + ">";
   }
-
-  /**
-   * @return parameter for {@link JavascriptVm#setBreakpoint} method.
-   */
-  public Breakpoint.Target getTargetForBreakpoint() {
-    if (name != null) {
-      return new Breakpoint.Target.ScriptName(name);
-    } else {
-      return new Breakpoint.Target.ScriptId(id);
-    }
-  }
-
 
   public String getVisibleName() {
     String name = getName();

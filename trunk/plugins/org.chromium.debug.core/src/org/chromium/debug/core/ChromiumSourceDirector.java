@@ -10,6 +10,7 @@ import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResourceId;
+import org.chromium.debug.core.model.VmResourceRef;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.Script;
@@ -32,6 +33,14 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   public void initializeParticipants() {
     ISourceLookupParticipant participant = new AccurateLookupParticipant();
     addParticipants(new ISourceLookupParticipant[] { participant } );
+  }
+
+  public VmResourceRef findVmResourceRef(IFile file) throws CoreException {
+    VmResourceId vmResourceId = reverseSourceLookup.findVmResource(file);
+    if (vmResourceId == null) {
+      return null;
+    }
+    return VmResourceRef.forVmResourceId(vmResourceId);
   }
 
   private static class AccurateLookupParticipant extends AbstractSourceLookupParticipant {
@@ -108,12 +117,16 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   }
 
   private static final Breakpoint.Target.Visitor<VmResourceId> BREAKPOINT_RESOURCE_VISITOR =
-      new Breakpoint.Target.Visitor<VmResourceId>() {
+      new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<VmResourceId>() {
         @Override public VmResourceId visitScriptName(String scriptName) {
           return new VmResourceId(scriptName, null);
         }
         @Override public VmResourceId visitScriptId(long scriptId) {
           return new VmResourceId(null, scriptId);
+        }
+        @Override public VmResourceId visitRegExp(String regExp) {
+          // RegExp cannot be converted into VmResourceId without additional context.
+          return null;
         }
         @Override public VmResourceId visitUnknown(Breakpoint.Target target) {
           return null;
@@ -124,10 +137,6 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     this.resourceManager = resourceManager;
     this.project = project;
     this.reverseSourceLookup = new ReverseSourceLookup(this);
-  }
-
-  public VmResourceId findVmResource(IFile file) throws CoreException {
-    return reverseSourceLookup.findVmResource(file);
   }
 
   public ReverseSourceLookup getReverseSourceLookup() {

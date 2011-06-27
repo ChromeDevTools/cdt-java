@@ -13,9 +13,11 @@ import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.SyncCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -121,14 +123,16 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       void failure(String errorMessage);
     }
 
-    public static void createOnRemote(WrappedBreakpoint uiBreakpoint,
-        VmResourceId scriptId, ConnectedTargetData connectedTargetData,
+    public static RelayOk createOnRemote(final WrappedBreakpoint uiBreakpoint,
+        VmResourceRef vmResourceRef, final ConnectedTargetData connectedTargetData,
         final CreateOnRemoveCallback createOnRemoveCallback,
         SyncCallback syncCallback) throws CoreException {
-      JavascriptVm javascriptVm = connectedTargetData.getJavascriptVm();
+      final JavascriptVm javascriptVm = connectedTargetData.getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
       final int line = (uiBreakpoint.getInner().getLineNumber() - 1);
+      final int column = 0;
+
       BreakpointCallback callback = new BreakpointCallback() {
         public void success(Breakpoint sdkBreakpoint) {
           createOnRemoveCallback.success(sdkBreakpoint);
@@ -138,13 +142,42 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       };
 
-      SourcePositionMap map = connectedTargetData.getSourcePositionMap();
-      SourcePosition vmPosition =
-          map.translatePosition(scriptId, line, 0,TranslateDirection.USER_TO_VM);
+      class SdkParams {
+        SdkParams(Target target, int line, int column) {
+          this.target = target;
+          this.line = line;
+          this.column = column;
+        }
 
-      javascriptVm.setBreakpoint(vmPosition.getId().getTargetForBreakpoint(),
-          vmPosition.getLine(),
-          vmPosition.getColumn(),
+        final Breakpoint.Target target;
+        final int line;
+        final int column;
+      }
+
+      SdkParams sdkParams = vmResourceRef.accept(new VmResourceRef.Visitor<SdkParams>() {
+        @Override
+        public SdkParams visitResourceId(VmResourceId resourceId) {
+          SourcePositionMap map = connectedTargetData.getSourcePositionMap();
+          SourcePosition vmPosition =
+              map.translatePosition(resourceId, line, column,TranslateDirection.USER_TO_VM);
+          final int vmLine = vmPosition.getLine();
+          final int vmColumn = vmPosition.getColumn();
+          final Breakpoint.Target target;
+          VmResourceId vmSideVmResourceId = vmPosition.getId();
+          if (vmSideVmResourceId.getId() == null) {
+            target = new Breakpoint.Target.ScriptName(vmSideVmResourceId.getName());
+          } else {
+            target = new Breakpoint.Target.ScriptId(vmSideVmResourceId.getId());
+          }
+
+          return new SdkParams(target, vmLine, vmColumn);
+        }
+      });
+
+      return javascriptVm.setBreakpoint(
+          sdkParams.target,
+          sdkParams.line,
+          sdkParams.column,
           uiBreakpoint.getInner().isEnabled(),
           uiBreakpoint.getCondition(),
           uiBreakpoint.getIgnoreCount(),
