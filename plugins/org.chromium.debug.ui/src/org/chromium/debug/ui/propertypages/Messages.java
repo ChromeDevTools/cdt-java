@@ -13,6 +13,10 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.ui.propertypages.messages"; //$NON-NLS-1$
 
+  public static String AccuratenessControl_LESS_BUTTON;
+
+  public static String AccuratenessControl_MORE_BUTTON;
+
   public static String JavascriptLineBreakpointPage_BreakpointConditionErrorMessage;
 
   public static String JavascriptLineBreakpointPage_EnableCondition;
