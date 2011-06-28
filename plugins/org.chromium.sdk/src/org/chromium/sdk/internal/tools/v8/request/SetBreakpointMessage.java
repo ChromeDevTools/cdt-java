@@ -49,7 +49,7 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
       return "scriptId";
     }
     @Override public String visitRegExp(String regExp) {
-      return "scriptRegexp";
+      return "scriptRegExp";
     }
     @Override public String visitUnknown(Target target) {
       throw new IllegalArgumentException();
