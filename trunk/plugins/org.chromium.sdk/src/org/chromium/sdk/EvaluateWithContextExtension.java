@@ -7,7 +7,7 @@ package org.chromium.sdk;
 import java.util.Map;
 
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 
 /**
  * An extension to {@link JsEvaluateContext} interface, that supports additional context

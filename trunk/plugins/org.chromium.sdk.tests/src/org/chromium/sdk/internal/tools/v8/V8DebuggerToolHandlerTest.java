@@ -8,10 +8,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.chromium.sdk.internal.AbstractAttachedTest;
-import org.chromium.sdk.internal.MessageFactory;
 import org.chromium.sdk.internal.TestUtil;
-import org.chromium.sdk.internal.tools.ToolName;
+import org.chromium.sdk.internal.browserfixture.AbstractAttachedTest;
+import org.chromium.sdk.internal.shellprotocol.tools.MessageFactory;
+import org.chromium.sdk.internal.shellprotocol.tools.ToolName;
+import org.chromium.sdk.internal.shellprotocol.tools.v8debugger.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.Before;
 import org.junit.Test;

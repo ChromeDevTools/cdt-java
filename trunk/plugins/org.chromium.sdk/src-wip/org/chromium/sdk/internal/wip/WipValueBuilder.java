@@ -20,7 +20,7 @@ import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ObjectPropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;

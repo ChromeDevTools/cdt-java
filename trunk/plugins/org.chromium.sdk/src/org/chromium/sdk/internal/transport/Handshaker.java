@@ -12,8 +12,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import org.chromium.sdk.internal.JavascriptVmImpl;
 import org.chromium.sdk.internal.transport.Message.MalformedMessageException;
+import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
 
 /**
  * Handshaker handles "handshake" part of communication. It may write and read whatever it needs

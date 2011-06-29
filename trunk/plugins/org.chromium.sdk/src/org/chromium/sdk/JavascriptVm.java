@@ -6,7 +6,7 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to

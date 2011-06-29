@@ -7,7 +7,7 @@ package org.chromium.sdk;
 import java.util.Collection;
 import java.util.List;
 
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 
 /**
  * An object that matches the execution state of the browser JavaScript VM while

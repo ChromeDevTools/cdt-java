@@ -16,10 +16,12 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.AbstractAttachedTest;
-import org.chromium.sdk.internal.DebugSession;
 import org.chromium.sdk.internal.TestUtil;
+import org.chromium.sdk.internal.browserfixture.AbstractAttachedTest;
 import org.chromium.sdk.internal.transport.FakeConnection;
+import org.chromium.sdk.internal.v8native.BreakpointImpl;
+import org.chromium.sdk.internal.v8native.BreakpointManager;
+import org.chromium.sdk.internal.v8native.DebugSession;
 import org.junit.Test;
 
 /**

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/org.chromium.sdk/src-dynamic-impl/parser/org/chromium/sdk/internal/tools/v8/liveedit/LiveEditParserGenerator.java"/>
+<listEntry value="/org.chromium.sdk/src-dynamic-impl/parser/org/chromium/sdk/internal/liveeditprotocol/LiveEditParserGenerator.java"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="1"/>
 </listAttribute>
-<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.chromium.sdk.internal.tools.v8.liveedit.LiveEditParserGenerator"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.chromium.sdk.internal.liveeditprotocol.LiveEditParserGenerator"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--output-dir=src-static-impl/generated/"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="org.chromium.sdk"/>
 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:org.chromium.sdk}"/>

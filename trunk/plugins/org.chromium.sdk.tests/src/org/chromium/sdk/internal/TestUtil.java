@@ -8,8 +8,10 @@ import junit.framework.Assert;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
-import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandler;
-import org.chromium.sdk.internal.tools.v8.ChromeDevToolSessionManager;
+import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
+import org.chromium.sdk.internal.shellprotocol.BrowserTabImpl;
+import org.chromium.sdk.internal.shellprotocol.tools.devtools.DevToolsServiceHandler;
+import org.chromium.sdk.internal.shellprotocol.tools.v8debugger.ChromeDevToolSessionManager;
 
 /**
  * A utility for performing some common test-related operations.
