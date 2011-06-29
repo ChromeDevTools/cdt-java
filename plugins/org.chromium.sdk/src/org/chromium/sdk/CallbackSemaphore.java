@@ -7,7 +7,7 @@ package org.chromium.sdk;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 
 /**
  * Convenient implementation of {@code SyncCallback}. Client may create one,

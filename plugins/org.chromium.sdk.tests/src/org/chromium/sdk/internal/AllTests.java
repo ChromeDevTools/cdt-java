@@ -4,8 +4,14 @@
 
 package org.chromium.sdk.internal;
 
+import org.chromium.sdk.internal.browserfixture.BrowserImplTest;
 import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandlerTest;
 import org.chromium.sdk.internal.tools.v8.V8Tests;
+import org.chromium.sdk.internal.v8native.DebugContextImplTest;
+import org.chromium.sdk.internal.v8native.DebugEventListenerTest;
+import org.chromium.sdk.internal.v8native.ScriptsTest;
+import org.chromium.sdk.internal.v8native.value.JsArrayImplTest;
+import org.chromium.sdk.internal.v8native.value.JsObjectImplTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;

@@ -23,7 +23,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;

@@ -9,9 +9,10 @@ import static org.junit.Assert.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
-import org.chromium.sdk.internal.AbstractAttachedTest;
-import org.chromium.sdk.internal.BrowserImpl;
 import org.chromium.sdk.internal.TestUtil;
+import org.chromium.sdk.internal.browserfixture.AbstractAttachedTest;
+import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
+import org.chromium.sdk.internal.shellprotocol.tools.devtools.DevToolsServiceHandler;
 import org.chromium.sdk.internal.transport.ControlledFakeConnection;
 import org.junit.Before;
 import org.junit.Test;

@@ -7,7 +7,7 @@ package org.chromium.sdk.internal.wip;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.chromium.sdk.internal.tools.v8.BaseCommandProcessor;
+import org.chromium.sdk.internal.BaseCommandProcessor;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 
 /**

@@ -6,7 +6,7 @@ package org.chromium.sdk;
 
 import java.util.SortedMap;
 
-import org.chromium.sdk.internal.tools.v8.MethodIsBlockingException;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 
 /**
  * This interface adds methods for handling array elements to the JsObject.

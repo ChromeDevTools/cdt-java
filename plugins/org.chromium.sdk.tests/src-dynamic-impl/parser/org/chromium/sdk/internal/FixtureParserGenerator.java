@@ -8,7 +8,7 @@ import java.util.Collections;
 
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.GeneratedCodeMap;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.ParserGeneratorBase;
-import org.chromium.sdk.internal.tools.v8.V8ParserGenerator;
+import org.chromium.sdk.internal.v8native.protocol.input.V8ParserGenerator;
 
 /**
  * A main class that generates test Fixture static parser implementation.

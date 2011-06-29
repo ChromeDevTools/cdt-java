@@ -11,10 +11,11 @@ import java.util.Map;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
-import org.chromium.sdk.internal.protocol.data.ScriptHandle;
-import org.chromium.sdk.internal.protocol.data.SomeHandle;
-import org.chromium.sdk.internal.protocol.liveedit.LiveEditResult;
-import org.chromium.sdk.internal.tools.v8.V8ProtocolUtil;
+import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
+import org.chromium.sdk.internal.v8native.V8ContextFilter;
+import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
+import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
+import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 
 /**
  * An objects that holds data for a "script" which is a part of a resource

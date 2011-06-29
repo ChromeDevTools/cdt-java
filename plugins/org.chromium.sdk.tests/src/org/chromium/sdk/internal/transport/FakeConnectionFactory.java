@@ -6,7 +6,7 @@ package org.chromium.sdk.internal.transport;
 
 import java.io.IOException;
 
-import org.chromium.sdk.internal.ConnectionFactory;
+import org.chromium.sdk.internal.shellprotocol.ConnectionFactory;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
 
 /**

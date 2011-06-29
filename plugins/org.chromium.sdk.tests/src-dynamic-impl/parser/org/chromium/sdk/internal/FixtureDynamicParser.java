@@ -6,10 +6,10 @@ package org.chromium.sdk.internal;
 
 import java.util.Arrays;
 
-import org.chromium.sdk.internal.FixtureChromeStub.Refs;
+import org.chromium.sdk.internal.browserfixture.FixtureChromeStub.Refs;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
-import org.chromium.sdk.internal.tools.v8.V8DynamicParser;
+import org.chromium.sdk.internal.v8native.protocol.input.V8DynamicParser;
 
 /**
  * A dynamic implementation of a fixture parser.
