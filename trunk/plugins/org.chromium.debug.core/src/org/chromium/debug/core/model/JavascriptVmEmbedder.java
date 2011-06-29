@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import org.chromium.debug.core.ScriptNameManipulator;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
 import org.eclipse.core.runtime.CoreException;
@@ -53,6 +54,11 @@ public interface JavascriptVmEmbedder {
   String getTargetName();
 
   String getThreadName();
+
+  /**
+   * @return script name manipulator that knows the schema of script names in this JavaScript VM
+   */
+  ScriptNameManipulator getScriptNameManipulator();
 
   /**
    * Listener that should handle embedder-specific events.

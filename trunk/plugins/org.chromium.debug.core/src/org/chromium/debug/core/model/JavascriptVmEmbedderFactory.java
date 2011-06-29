@@ -4,14 +4,22 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.join;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.ScriptNameManipulator;
+import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.BrowserFactory;
@@ -132,8 +140,35 @@ public class JavascriptVmEmbedderFactory {
         public String getThreadName() {
           return browserTab.getUrl();
         }
+
+        @Override
+        public ScriptNameManipulator getScriptNameManipulator() {
+          return BROWSER_SCRIPT_NAME_MANIPULATOR;
+        }
       };
     }
+
+    private static final ScriptNameManipulator BROWSER_SCRIPT_NAME_MANIPULATOR =
+        new ScriptNameManipulator() {
+      @Override
+      public FilePath getFileName(String scriptName) {
+        String filePath;
+        try {
+          URI uri = new URI(scriptName);
+          filePath = uri.getPath();
+        } catch (URISyntaxException e) {
+          filePath = scriptName;
+        }
+        return new StringBasedFileName(filePath);
+      }
+
+      @Override
+      public ScriptNamePattern createPattern(List<String> components) {
+        String pathString = join(components, "/");
+        return new ScriptNamePattern(
+            JavaScriptRegExpSupport.encodeLiteral(pathString) + "/?($|\\?)");
+      }
+    };
   }
 
   public static JavascriptVmEmbedder.ConnectionToRemote connectToStandalone(String host, int port,
@@ -190,6 +225,11 @@ public class JavascriptVmEmbedderFactory {
               public String getThreadName() {
                 return ""; //$NON-NLS-1$
               }
+
+              @Override
+              public ScriptNameManipulator getScriptNameManipulator() {
+                return STANDALONE_SCRIPT_NAME_MANIPULATOR;
+              }
             };
           }
         };
@@ -200,6 +240,20 @@ public class JavascriptVmEmbedderFactory {
       }
     };
   }
+
+  private static final ScriptNameManipulator STANDALONE_SCRIPT_NAME_MANIPULATOR =
+      new ScriptNameManipulator() {
+    @Override
+    public FilePath getFileName(String scriptName) {
+      return new StringBasedFileName(scriptName);
+    }
+
+    @Override
+    public ScriptNamePattern createPattern(List<String> components) {
+      String pathString = join(components, "/");
+      return new ScriptNamePattern(JavaScriptRegExpSupport.encodeLiteral(pathString) + "/?$");
+    }
+  };
 
   private static CoreException newCoreException(String message, Throwable cause) {
     return new CoreException(
@@ -247,5 +301,53 @@ public class JavascriptVmEmbedderFactory {
 
     private final Map<SocketAddress, Browser> address2Browser =
         new HashMap<SocketAddress, Browser>();
+  }
+
+  private static class StringBasedFileName implements ScriptNameManipulator.FilePath {
+    private final String fullName;
+    private final int lastPos;
+
+    public StringBasedFileName(String fullName) {
+      this.fullName = fullName;
+      this.lastPos = fullName.lastIndexOf('/');
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return new Iterator<String>() {
+        private int currentPos = lastPos;
+        @Override
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String next() {
+          int nextPos = fullName.lastIndexOf('/', currentPos - 1);
+          String result;
+          if (nextPos == -1) {
+            result = fullName.substring(0, currentPos);
+          } else {
+            result = fullName.substring(nextPos + 1, currentPos);
+          }
+          currentPos = nextPos;
+          return result;
+        }
+
+        @Override
+        public boolean hasNext() {
+          return currentPos != -1;
+        }
+      };
+    }
+
+    @Override
+    public String getLastComponent() {
+      if (lastPos == -1) {
+        return fullName;
+      } else {
+        return fullName.substring(lastPos + 1);
+      }
+    }
   }
 }

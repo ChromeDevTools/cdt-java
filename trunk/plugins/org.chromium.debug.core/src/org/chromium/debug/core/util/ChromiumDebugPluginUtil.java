@@ -382,6 +382,19 @@ public class ChromiumDebugPluginUtil {
     }
   }
 
+  public static String join(Iterable<? extends String> components, String separator) {
+    StringBuilder builder = new StringBuilder();
+    boolean first = true;
+    for (String c : components) {
+      if (!first) {
+        builder.append(separator);
+      }
+      builder.append(c);
+      first = false;
+    }
+    return builder.toString();
+  }
+
   public static String getStacktraceString(Exception exception) {
     StringWriter stringWriter = new StringWriter();
     PrintWriter printWriter = new PrintWriter(stringWriter);
