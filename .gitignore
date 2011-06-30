@@ -14,3 +14,5 @@ plugins/org.chromium.debug.jsdtbridge/bin
 utils/org.chromium.sdk.tests.system/.settings
 utils/org.chromium.sdk.tests.system/bin
 utils/org.chromium.sdk.tests.system/build-output
+utils/org.chromium.sdk.tests.system.runner/.settings
+utils/org.chromium.sdk.tests.system.runner/bin
