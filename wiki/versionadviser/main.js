@@ -4,14 +4,15 @@
 
 var adviserImpl = (function() {
 	function Data() {
+	    var currentVersionNumber = 12;
 		this.chromiumVersions = [
 				new VersionRange(new Version([ 1 ]), new Version(
-						[ 9, Infinity ]), "old versions"),
-				new VersionRange(new Version([ 10 ]), new Version(
-						[ 10, Infinity ])),
-				new VersionRange(new Version([ 11 ]),
-				        new Version([ 11, Infinity ]), "future version"),
-				new VersionRange(new Version([ 12 ]),
+						[ currentVersionNumber - 1, Infinity ]), "old versions"),
+				new VersionRange(new Version([ currentVersionNumber ]), new Version(
+						[ currentVersionNumber, Infinity ])),
+				new VersionRange(new Version([ currentVersionNumber + 1 ]),
+				        new Version([ currentVersionNumber + 1, Infinity ]), "upcoming version"),
+				new VersionRange(new Version([ currentVersionNumber + 2 ]),
 						new Version([ Infinity ]), "future versions"), ]
 				.sort(VersionRange.compareStrict);
 
