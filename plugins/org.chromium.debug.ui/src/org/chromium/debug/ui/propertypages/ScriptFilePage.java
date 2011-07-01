@@ -10,6 +10,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.util.AccuratenessProperty;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.ChromiumJavascriptDecorator;
@@ -26,6 +27,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
@@ -36,8 +38,19 @@ import org.eclipse.ui.dialogs.PropertyPage;
  */
 public class ScriptFilePage extends PropertyPage {
 
+  private Runnable storeValueCallback = null;
+
   @Override
   protected Control createContents(Composite parent) {
+    Composite main;
+    {
+      main = new Composite(parent, SWT.NONE);
+      GridLayout topLayout = new GridLayout();
+      topLayout.numColumns = 1;
+      main.setLayout(topLayout);
+      main.setLayoutData(new GridData(GridData.FILL_BOTH));
+    }
+
 
     IAdaptable adaptable = this.getElement();
     IFile file = (IFile) adaptable.getAdapter(IFile.class);
@@ -45,11 +58,14 @@ public class ScriptFilePage extends PropertyPage {
     List<? extends ScriptTargetMapping> mappingList =
         ChromiumDebugPlugin.getScriptTargetMapping(file);
 
+    Control mappingControl;
     if (mappingList.size() == 1 && isVProjectFile(file, mappingList.get(0))) {
-      return buildVProjectFileUi(mappingList.get(0), parent);
+      mappingControl = buildVProjectFileUi(mappingList.get(0), main);
     } else {
-      return buildWorkspaceFileUi(mappingList, parent);
+      mappingControl = buildWorkspaceFileUi(mappingList, main, file);
     }
+    mappingControl.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+    return main;
   }
 
   private boolean isVProjectFile(IFile file, ScriptTargetMapping mapping) {
@@ -67,13 +83,15 @@ public class ScriptFilePage extends PropertyPage {
     return hasNature;
   }
 
-  private Control buildWorkspaceFileUi(final List<? extends ScriptTargetMapping> mappingList,
-      Composite parent) {
-    Composite main = new Composite(parent, SWT.NONE);
-    GridLayout topLayout = new GridLayout();
-    topLayout.numColumns = 1;
-    main.setLayout(topLayout);
-    main.setLayoutData(new GridData(GridData.FILL_BOTH));
+  private Composite buildWorkspaceFileUi(final List<? extends ScriptTargetMapping> mappingList,
+      Composite parent, final IFile file) {
+    Composite main;
+    {
+      main = new Composite(parent, SWT.NONE);
+      GridLayout topLayout = new GridLayout();
+      topLayout.numColumns = 1;
+      main.setLayout(topLayout);
+    }
 
     new Label(main, SWT.NONE).setText(Messages.ScriptFilePage_CURRENTLY_LINKED_TO_LABEL);
 
@@ -103,15 +121,68 @@ public class ScriptFilePage extends PropertyPage {
       });
     }
 
+    String[] pathSegments = file.getFullPath().segments();
+
+    final int oldAccuratenessValue;
+    try {
+      oldAccuratenessValue = AccuratenessProperty.read(file);
+    } catch (CoreException e) {
+      throw new RuntimeException(e);
+    }
+
+    // Padding.
+    new Label(main, SWT.NONE);
+
+    Group inaccurateGroup;
+    {
+      inaccurateGroup = new Group(main, SWT.NONE);
+      GridLayout layout = new GridLayout();
+      layout.numColumns = 1;
+      inaccurateGroup.setLayout(layout);
+    }
+    inaccurateGroup.setText("Workspace file inaccurate look-up");
+    inaccurateGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+    Label accuratenessLabel = new Label(inaccurateGroup, SWT.NONE);
+    accuratenessLabel.setText("Use short name or more:");
+
+    final AccuratenessControl accuratenessControl =
+        new AccuratenessControl(inaccurateGroup, pathSegments, oldAccuratenessValue);
+
+    storeValueCallback = new Runnable() {
+      private int storedValue = oldAccuratenessValue;
+
+      @Override
+      public void run() {
+        int value = accuratenessControl.getAccuratenessValue();
+        if (storedValue == value) {
+          return;
+        }
+        String valueString = AccuratenessProperty.Parser.write(value);
+        try {
+          file.setPersistentProperty(AccuratenessProperty.KEY, valueString);
+        } catch (CoreException e) {
+          throw new RuntimeException(e);
+        }
+        storedValue = value;
+      }
+    };
+
     return main;
   }
 
-  private Control buildVProjectFileUi(ScriptTargetMapping mapping, Composite parent) {
+  public boolean performOk() {
+    if (storeValueCallback != null) {
+      storeValueCallback.run();
+    }
+    return super.performOk();
+  }
+
+  private Composite buildVProjectFileUi(ScriptTargetMapping mapping, Composite parent) {
     Composite main = new Composite(parent, SWT.NONE);
     GridLayout topLayout = new GridLayout();
     topLayout.numColumns = 1;
     main.setLayout(topLayout);
-    main.setLayoutData(new GridData(GridData.FILL_BOTH));
     ScriptProperties properties = buildScriptProperties(main);
 
     fillScriptProperties(properties, mapping);

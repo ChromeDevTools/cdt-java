@@ -11,11 +11,19 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.ChromiumSourceDirector;
+import org.chromium.debug.core.SourceNameMapperContainer;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.chromium.debug.core.model.LaunchParams;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.sourcelookup.IPersistableSourceLocator2;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.debug.internal.ui.SWTFactory;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
 import org.eclipse.debug.ui.DebugUITools;
@@ -47,10 +55,14 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
       "add_network_console_field"; //$NON-NLS-1$
 
+  private static final String INACCURATE_SOURCE_LOOKUP =
+      "inaccurate_source_lookup"; //$NON-NLS-1$
+
    // However, recommended range is [1024, 32767].
   private static final int minimumPortValue = 0;
   private static final int maximumPortValue = 65535;
 
+  private final SourceContainerChecker sourceContainerChecker = new SourceContainerChecker();
   private final HostChecker hostChecker;
   private TabElements tabElements = null;
 
@@ -93,56 +105,76 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       }
     };
 
-    Group connectionGroup = new Group(composite, 0);
-    connectionGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-    connectionGroup.setText(Messages.ChromiumRemoteTab_CONNECTION_GROUP);
-    connectionGroup.setLayout(new GridLayout(1, false));
-
-    Composite propertiesComp = createInnerComposite(connectionGroup, 2);
-
     PreferenceStore store = new PreferenceStore();
-    // Host text field
-    final StringFieldEditor debugHost = new StringFieldEditor(HOST_FIELD_NAME,
-        Messages.ChromiumRemoteTab_HostLabel, propertiesComp);
-    debugHost.setPropertyChangeListener(modifyListener);
-    debugHost.setPreferenceStore(store);
+    final StringFieldEditor debugHost;
+    final IntegerFieldEditor debugPort;
+    final BooleanFieldEditor addNetworkConsole;
+    {
+      Group connectionGroup = new Group(composite, 0);
+      connectionGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+      connectionGroup.setText(Messages.ChromiumRemoteTab_CONNECTION_GROUP);
+      connectionGroup.setLayout(new GridLayout(1, false));
 
-    // Port text field
-    final IntegerFieldEditor debugPort = new IntegerFieldEditor(PORT_FIELD_NAME,
-        Messages.ChromiumRemoteTab_PortLabel, propertiesComp);
-    debugPort.setPropertyChangeListener(modifyListener);
-    debugPort.setPreferenceStore(store);
+      Composite propertiesComp = createInnerComposite(connectionGroup, 2);
 
-    final BooleanFieldEditor addNetworkConsole =
-        new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
-            Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication, propertiesComp);
-    addNetworkConsole.setPreferenceStore(store);
-    addNetworkConsole.setPropertyChangeListener(modifyListener);
+      // Host text field
+      debugHost = new StringFieldEditor(HOST_FIELD_NAME,
+          Messages.ChromiumRemoteTab_HostLabel, propertiesComp);
+      debugHost.setPropertyChangeListener(modifyListener);
+      debugHost.setPreferenceStore(store);
 
-    Group breakpointGroup = new Group(composite, 0);
-    breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-    breakpointGroup.setText(Messages.ChromiumRemoteTab_BREAKPOINT_GROUP);
-    breakpointGroup.setLayout(new GridLayout(1, false));
+      // Port text field
+      debugPort = new IntegerFieldEditor(PORT_FIELD_NAME,
+          Messages.ChromiumRemoteTab_PortLabel, propertiesComp);
+      debugPort.setPropertyChangeListener(modifyListener);
+      debugPort.setPreferenceStore(store);
 
-    List<Button> radioButtons = new ArrayList<Button>();
-    for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
-      Button button = new Button(breakpointGroup, SWT.RADIO);
-      button.setFont(parent.getFont());
-      button.setText(option.getLabel());
-      GridData gd = new GridData();
-      button.setLayoutData(gd);
-      SWTFactory.setButtonDimensionHint(button);
-      radioButtons.add(button);
+      addNetworkConsole =
+          new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
+              Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication, propertiesComp);
+      addNetworkConsole.setPreferenceStore(store);
+      addNetworkConsole.setPropertyChangeListener(modifyListener);
     }
 
-    RadioButtonsLogic.Listener radioButtonsListener =
-        new RadioButtonsLogic.Listener() {
-          public void selectionChanged() {
-            updateLaunchConfigurationDialog();
-          }
-        };
-    final RadioButtonsLogic breakpointRadioButtons =
-        new RadioButtonsLogic(radioButtons, radioButtonsListener);
+    final RadioButtonsLogic breakpointRadioButtons;
+    {
+      Group breakpointGroup = new Group(composite, 0);
+      breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+      breakpointGroup.setText(Messages.ChromiumRemoteTab_BREAKPOINT_GROUP);
+      breakpointGroup.setLayout(new GridLayout(1, false));
+
+      List<Button> radioButtons = new ArrayList<Button>();
+      for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
+        Button button = new Button(breakpointGroup, SWT.RADIO);
+        button.setFont(parent.getFont());
+        button.setText(option.getLabel());
+        GridData gd = new GridData();
+        button.setLayoutData(gd);
+        SWTFactory.setButtonDimensionHint(button);
+        radioButtons.add(button);
+      }
+
+      RadioButtonsLogic.Listener radioButtonsListener =
+          new RadioButtonsLogic.Listener() {
+            public void selectionChanged() {
+              updateLaunchConfigurationDialog();
+            }
+          };
+      breakpointRadioButtons =
+          new RadioButtonsLogic(radioButtons, radioButtonsListener);
+    }
+
+    final BooleanFieldEditor inaccurateSourceLookup;
+    {
+      Composite hiddenComposite = createInnerComposite(composite, 2);
+
+      // TODO: externalize user message (or better redesign control).
+      inaccurateSourceLookup =
+          new BooleanFieldEditor(INACCURATE_SOURCE_LOOKUP,
+              "Inaccurate Source Lookup", hiddenComposite);
+      inaccurateSourceLookup.setPreferenceStore(store);
+      inaccurateSourceLookup.setPropertyChangeListener(modifyListener);
+    }
 
     return new TabElements() {
       @Override public StringFieldEditor getHost() {
@@ -156,6 +188,9 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       }
       @Override public RadioButtonsLogic getBreakpointRadioButtons() {
         return breakpointRadioButtons;
+      }
+      @Override public BooleanFieldEditor getInaccurateSourceLookup() {
+        return inaccurateSourceLookup;
       }
     };
   }
@@ -219,7 +254,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         return hostWarning;
       }
     }
-    return null;
+    return sourceContainerChecker.check(config);
   }
 
   private static class MessageData {
@@ -317,6 +352,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private interface TabElements {
     StringFieldEditor getHost();
+    BooleanFieldEditor getInaccurateSourceLookup();
     IntegerFieldEditor getPort();
     BooleanFieldEditor getAddNetworkConsole();
     RadioButtonsLogic getBreakpointRadioButtons();
@@ -556,6 +592,70 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           }
         }));
 
+    list.add(new TabField<Boolean>(
+        LaunchParams.INACCURATE_SOURCE_LOOKUP, TypedMethods.BOOL,
+        new FieldEditorAccess<Boolean>(TypedMethods.BOOL) {
+          FieldEditor getFieldEditor(TabElements tabElements) {
+            return tabElements.getInaccurateSourceLookup();
+          }
+          String getEditorErrorValue() {
+            return ""; //$NON-NLS-1$
+          }
+        },
+        new DefaultsProvider<Boolean>() {
+          @Override Boolean getFallbackValue() {
+            return false;
+          }
+          @Override
+          Boolean getInitialConfigValue() {
+            return null;
+          }
+        }));
+
     TAB_FIELDS = Collections.unmodifiableList(list);
+  }
+
+  private static class SourceContainerChecker {
+    public String check(ILaunchConfiguration config) {
+      if (!ChromiumSourceDirector.isInaccurateMode(config)) {
+        return null;
+      }
+
+      ISourceLookupDirector director;
+      try {
+        director = read(config);
+      } catch (CoreException e) {
+        return null;
+      }
+      if (director == null) {
+        return null;
+      }
+      for (ISourceContainer sourceContainer : director.getSourceContainers()) {
+        if (sourceContainer instanceof SourceNameMapperContainer) {
+          return Messages.ChromiumRemoteTab_INACCURATE_CONTAINER_WARNING;
+        }
+      }
+      return null;
+    }
+
+    private ISourceLookupDirector read(ILaunchConfiguration config) throws CoreException {
+      String memento = config.getAttribute(
+          ILaunchConfiguration.ATTR_SOURCE_LOCATOR_MEMENTO, (String)null);
+      if (memento == null) {
+        return null;
+      }
+      String type = config.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, (String)null);
+      if (type == null) {
+        type = config.getType().getSourceLocatorId();
+      }
+      ILaunchManager launchManager = DebugPlugin.getDefault().getLaunchManager();
+      ISourceLocator locator = launchManager.newSourceLocator(type);
+      if (locator instanceof IPersistableSourceLocator2 == false) {
+        return null;
+      }
+      ISourceLookupDirector director = (ISourceLookupDirector) locator;
+      director.initializeFromMemento(memento, config);
+      return director;
+    }
   }
 }
