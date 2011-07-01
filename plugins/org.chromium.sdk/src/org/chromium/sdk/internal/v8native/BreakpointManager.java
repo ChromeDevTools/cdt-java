@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.v8native;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,13 +26,12 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.BreakpointImpl.FunctionTarget;
 import org.chromium.sdk.internal.v8native.BreakpointImpl.ScriptRegExpTarget;
-import org.chromium.sdk.internal.v8native.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.v8native.protocol.input.BreakpointBody;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponseBody;
 import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody;
+import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.v8native.protocol.input.ListBreakpointsBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
-import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.FlagsMessage;
@@ -43,8 +44,10 @@ public class BreakpointManager {
 
   /**
    * This map shall contain only breakpoints with valid IDs.
+   * Complex operations must be explicitly synchronized on this instance.
    */
-  private final Map<Long, BreakpointImpl> idToBreakpoint = new HashMap<Long, BreakpointImpl>();
+  private final Map<Long, BreakpointImpl> idToBreakpoint =
+      Collections.synchronizedMap(new HashMap<Long, BreakpointImpl>());
 
   private final DebugSession debugSession;
 
@@ -65,34 +68,34 @@ public class BreakpointManager {
             toNullableInteger(column), enabled, condition,
             toNullableInteger(ignoreCount)),
         true,
-        callback == null
-            ? null
-            : new V8CommandCallbackBase() {
-              @Override
-              public void success(SuccessCommandResponse successResponse) {
-                BreakpointBody body;
-                try {
-                  body = successResponse.body().asBreakpointBody();
-                } catch (JsonProtocolParseException e) {
-                  throw new RuntimeException(e);
-                }
-                long id = body.breakpoint();
+        new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
+            BreakpointBody body;
+            try {
+              body = successResponse.body().asBreakpointBody();
+            } catch (JsonProtocolParseException e) {
+              throw new RuntimeException(e);
+            }
+            long id = body.breakpoint();
 
-                final BreakpointImpl breakpoint =
-                    new BreakpointImpl(id, target, line, enabled, ignoreCount,
-                        condition, BreakpointManager.this);
+            final BreakpointImpl breakpoint =
+                new BreakpointImpl(id, target, line, enabled, ignoreCount,
+                    condition, BreakpointManager.this);
 
-                callback.success(breakpoint);
-                idToBreakpoint.put(breakpoint.getId(), breakpoint);
-              }
-              @Override
-              public void failure(String message) {
-                if (callback != null) {
-                  callback.failure(message);
-                }
-              }
-            },
-            syncCallback);
+            idToBreakpoint.put(breakpoint.getId(), breakpoint);
+            if (callback != null) {
+              callback.success(breakpoint);
+            }
+          }
+          @Override
+          public void failure(String message) {
+            if (callback != null) {
+              callback.failure(message);
+            }
+          }
+        },
+        syncCallback);
   }
 
   public Breakpoint getBreakpoint(Long id) {
@@ -108,7 +111,7 @@ public class BreakpointManager {
     }
     idToBreakpoint.remove(id);
     return debugSession.sendMessageAsync(
-        DebuggerMessageFactory.clearBreakpoint(breakpointImpl),
+        DebuggerMessageFactory.clearBreakpoint(id),
         true,
         new V8CommandCallbackBase() {
           @Override
@@ -171,13 +174,14 @@ public class BreakpointManager {
           return;
         }
         List<BreakpointInfo> infos = listBreakpointsBody.breakpoints();
+        Collection<Breakpoint> updatedBreakpoints;
         try {
-          syncBreakpoints(infos);
+          updatedBreakpoints = syncBreakpoints(infos);
         } catch (RuntimeException e) {
           callback.failure(new Exception("Failed to read server response", e));
           return;
         }
-        callback.success(Collections.unmodifiableCollection(idToBreakpoint.values()));
+        callback.success(Collections.unmodifiableCollection(updatedBreakpoints));
       }
     };
     return debugSession.sendMessageAsync(new ListBreakpointsMessage(), true, v8Callback,
@@ -255,40 +259,46 @@ public class BreakpointManager {
         : value;
   }
 
-  private void syncBreakpoints(List<BreakpointInfo> infoList) {
-    Map<Long, BreakpointImpl> actualBreakpoints = new HashMap<Long, BreakpointImpl>();
-    // Wrap all loaded BreakpointInfo as BreakpointImpl, possibly reusing old instances.
-    // Also check that all breakpoint id's in loaded list are unique.
-    for (BreakpointInfo info : infoList) {
-      if (info.type() == BreakpointInfo.Type.FUNCTION) {
-        // We does not support function type breakpoints and ignore them.
-        continue;
+  private Collection<Breakpoint> syncBreakpoints(List<BreakpointInfo> infoList) {
+    synchronized (idToBreakpoint) {
+      ArrayList<Breakpoint> result = new ArrayList<Breakpoint>();
+      Map<Long, BreakpointImpl> actualBreakpoints = new HashMap<Long, BreakpointImpl>();
+      // Wrap all loaded BreakpointInfo as BreakpointImpl, possibly reusing old instances.
+      // Also check that all breakpoint id's in loaded list are unique.
+      for (BreakpointInfo info : infoList) {
+        if (info.type() == BreakpointInfo.Type.FUNCTION) {
+          // We don't support function type breakpoints and ignore them.
+          continue;
+        }
+        BreakpointImpl breakpoint = idToBreakpoint.get(info.number());
+        if (breakpoint == null) {
+          breakpoint = new BreakpointImpl(info, this);
+        } else {
+          breakpoint.updateFromRemote(info);
+        }
+        Object conflict = actualBreakpoints.put(info.number(), breakpoint);
+        if (conflict != null) {
+          throw new RuntimeException("Duplicated breakpoint number " + info.number());
+        }
+        result.add(breakpoint);
       }
-      BreakpointImpl breakpoint = idToBreakpoint.get(info.number());
-      if (breakpoint == null) {
-        breakpoint = new BreakpointImpl(info, this);
-      } else {
-        breakpoint.updateFromRemote(info);
-      }
-      Object conflict = actualBreakpoints.put(info.number(), breakpoint);
-      if (conflict != null) {
-        throw new RuntimeException("Duplicated breakpoint number " + info.number());
-      }
-    }
 
-    // Remove all obsolete breakpoints from the map.
-    for (Iterator<Long> it = idToBreakpoint.keySet().iterator(); it.hasNext(); ) {
-      Long id = it.next();
-      if (!actualBreakpoints.containsKey(id)) {
-        it.remove();
+      // Remove all obsolete breakpoints from the map.
+      for (Iterator<Long> it = idToBreakpoint.keySet().iterator(); it.hasNext(); ) {
+        Long id = it.next();
+        if (!actualBreakpoints.containsKey(id)) {
+          it.remove();
+        }
       }
-    }
 
-    // Add breakpoints that are not in the main map yet.
-    for (BreakpointImpl breakpoint : actualBreakpoints.values()) {
-      if (!idToBreakpoint.containsKey(breakpoint.getId())) {
-        idToBreakpoint.put(breakpoint.getId(), breakpoint);
+      // Add breakpoints that are not in the main map yet.
+      for (BreakpointImpl breakpoint : actualBreakpoints.values()) {
+        if (!idToBreakpoint.containsKey(breakpoint.getId())) {
+          idToBreakpoint.put(breakpoint.getId(), breakpoint);
+          result.add(breakpoint);
+        }
       }
+      return result;
     }
   }
 

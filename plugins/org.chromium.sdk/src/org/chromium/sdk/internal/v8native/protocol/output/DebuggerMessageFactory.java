@@ -56,8 +56,8 @@ public class DebuggerMessageFactory {
         breakpoint.getCondition(), getV8IgnoreCount(breakpoint.getIgnoreCount()));
   }
 
-  public static ContextlessDebuggerMessage clearBreakpoint(Breakpoint breakpoint) {
-    return new ClearBreakpointMessage(breakpoint.getId());
+  public static ContextlessDebuggerMessage clearBreakpoint(long id) {
+    return new ClearBreakpointMessage(id);
   }
 
   public static DebuggerMessage lookup(List<Long> refs, Boolean inlineRefs) {
