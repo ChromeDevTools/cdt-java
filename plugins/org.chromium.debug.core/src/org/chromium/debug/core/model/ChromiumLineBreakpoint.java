@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
+import org.chromium.sdk.BreakpointTypeExtension.ScriptRegExpSupport;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
@@ -155,6 +157,22 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       }
 
       SdkParams sdkParams = vmResourceRef.accept(new VmResourceRef.Visitor<SdkParams>() {
+        @Override
+        public SdkParams visitInaccurate(ScriptNamePattern scriptNamePattern) {
+          // TODO: support source mapping perhaps.
+
+          ScriptRegExpSupport scriptRegExpSupport =
+              javascriptVm.getBreakpointTypeExtension().getScriptRegExpSupport();
+          if (scriptRegExpSupport == null) {
+            // TODO: check earlier in UI.
+            throw new RuntimeException("Script RegExp is not supported by VM");
+          }
+
+          final Breakpoint.Target targetValue =
+              scriptRegExpSupport.createTarget(scriptNamePattern.getJavaScriptRegExp());
+          return new SdkParams(targetValue, line, column);
+        }
+
         @Override
         public SdkParams visitResourceId(VmResourceId resourceId) {
           SourcePositionMap map = connectedTargetData.getSourcePositionMap();

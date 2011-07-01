@@ -7,9 +7,12 @@ package org.chromium.debug.core.model;
 import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
 import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.removeSafe;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.VmResource.Metadata;
@@ -46,6 +49,21 @@ public class ResourceManager {
       return null;
     }
     return info.vmResourceImpl;
+  }
+
+  public synchronized Collection<? extends VmResource> findVmResources(Pattern pattern) {
+    List<VmResource> result = new ArrayList<VmResource>(1);
+    for (VmResourceInfo info : file2Info.values()) {
+      String name = info.id.getName();
+      if (name == null) {
+        continue;
+      }
+      if (!pattern.matcher(name).find()) {
+        continue;
+      }
+      result.add(info.vmResourceImpl);
+    }
+    return result;
   }
 
   private VmResourceInfo getVmResourceInfo(VmResourceId id) {

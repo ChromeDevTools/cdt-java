@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
+import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
@@ -550,8 +551,8 @@ public class BreakpointSynchronizer {
 
           @Override
           public VmResourceRef visitRegExp(String regExp) {
-            // TODO: implement.
-            return null;
+            ScriptNamePattern pattern = new ScriptNamePattern(regExp);
+            return VmResourceRef.forInaccurate(pattern);
           }
 
           @Override
