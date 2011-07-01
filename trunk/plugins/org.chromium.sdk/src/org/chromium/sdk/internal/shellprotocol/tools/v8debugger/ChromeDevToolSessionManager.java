@@ -18,10 +18,11 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
 import org.chromium.sdk.internal.shellprotocol.BrowserTabImpl;
-import org.chromium.sdk.internal.shellprotocol.Result;
-import org.chromium.sdk.internal.shellprotocol.tools.ChromeDevToolsProtocol;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolHandler;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolOutput;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.Result;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsMessage;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParser;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.DebugSessionManager;
@@ -151,29 +152,38 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
       LOGGER.log(Level.SEVERE, "Invalid JSON received: " + message.getContent(), e);
       return;
     }
-    String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
-    DebuggerToolCommand command = DebuggerToolCommand.forName(commandString);
-    if (command != null) {
-      switch (command) {
-        case ATTACH:
-          processAttach(json);
-          break;
-        case DETACH:
-          processDetach(json);
-          break;
-        case DEBUGGER_COMMAND:
-          processDebuggerCommand(json);
-          break;
-        case NAVIGATED:
-          processNavigated(json);
-          break;
-        case CLOSED:
-          processClosed(json);
-          break;
-      }
+    ToolsMessage devToolsMessage;
+    try {
+      devToolsMessage = ToolsProtocolParser.get().parse(json, ToolsMessage.class);
+    } catch (JsonProtocolParseException e) {
+      LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;
     }
-    throw new IllegalArgumentException("Invalid command: " + commandString);
+    DebuggerToolCommand command = DebuggerToolCommand.forName(devToolsMessage.command());
+    if (command == null) {
+      throw new IllegalArgumentException("Invalid command: " + devToolsMessage.command());
+    }
+    try {
+      switch (command) {
+        case ATTACH:
+          processAttach(devToolsMessage);
+          break;
+        case DETACH:
+          processDetach(devToolsMessage);
+          break;
+        case DEBUGGER_COMMAND:
+          processDebuggerCommand(devToolsMessage);
+          break;
+        case NAVIGATED:
+          processNavigated(devToolsMessage);
+          break;
+        case CLOSED:
+          processClosed(devToolsMessage);
+          break;
+      }
+    } catch (JsonProtocolParseException e) {
+      LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
+    }
   }
 
   public void onDebuggerDetached() {
@@ -350,7 +360,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
   }
 
-  private void processClosed(JSONObject json) {
+  private void processClosed(ToolsMessage devToolsMessage) {
     notifyCallback(detachCallback, Result.OK);
     getTabDebugEventListener().closed();
     cutTheLineMyself();
@@ -375,9 +385,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
   }
 
-  private void processAttach(JSONObject json) {
-    Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
-    Result result = Result.forCode(resultValue.intValue());
+  private void processAttach(ToolsMessage toolsMessage) throws JsonProtocolParseException {
+    long resultValue = toolsMessage.result();
+    Result result = Result.forCode((int) resultValue);
     // Message destination equals context.getTabId()
     if (result == Result.OK) {
       boolean res = attachState.compareAndSet(AttachState.ATTACHING, AttachState.NORMAL);
@@ -392,9 +402,9 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     notifyCallback(attachCallback, result);
   }
 
-  private void processDetach(JSONObject json) {
-    Long resultValue = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key);
-    Result result = Result.forCode(resultValue.intValue());
+  private void processDetach(ToolsMessage toolsMessage) throws JsonProtocolParseException {
+    long resultValue = toolsMessage.result();
+    Result result = Result.forCode((int) resultValue);
     if (result == Result.OK) {
       // ignore result, we may already be in DISCONNECTED state
       attachState.compareAndSet(AttachState.DETACHING, AttachState.DETACHED);
@@ -406,16 +416,16 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     notifyCallback(detachCallback, result);
   }
 
-  private void processDebuggerCommand(JSONObject json) {
-    JSONObject v8Json = JsonUtil.getAsJSON(json, ChromeDevToolsProtocol.DATA.key);
+  private void processDebuggerCommand(ToolsMessage toolsMessage) throws JsonProtocolParseException {
+    JSONObject v8Json = toolsMessage.data().asDebuggerData();
     if (v8Json == null) {
       throw new IllegalArgumentException("'data' field not found");
     }
     debugSession.getV8CommandProcessor().processIncomingJson(v8Json);
   }
 
-  private void processNavigated(JSONObject json) {
-    String newUrl = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
+  private void processNavigated(ToolsMessage toolsMessage) throws JsonProtocolParseException {
+    String newUrl = toolsMessage.data().asNavigatedData();
 
     debugSession.getScriptManager().reset();
     browserTabImpl.setUrl(newUrl);

@@ -14,11 +14,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.internal.JsonUtil;
-import org.chromium.sdk.internal.shellprotocol.tools.ChromeDevToolsProtocol;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolHandler;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolOutput;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.DevToolsServiceCommand;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsMessage;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParser;
 import org.chromium.sdk.internal.transport.Message;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -26,6 +28,9 @@ import org.json.simple.parser.ParseException;
  * Handles the interaction with the "DevToolsService" tool.
  */
 public class DevToolsServiceHandler implements ToolHandler {
+
+  /** The class logger. */
+  private static final Logger LOGGER = Logger.getLogger(DevToolsServiceHandler.class.getName());
 
   /**
    * The debugger connection to use.
@@ -103,19 +108,32 @@ public class DevToolsServiceHandler implements ToolHandler {
           Level.SEVERE, "Invalid JSON received: {0}", message.getContent());
       return;
     }
-    String commandString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.COMMAND.key);
-    DevToolsServiceCommand command = DevToolsServiceCommand.forString(commandString);
-    if (command != null) {
+    ToolsMessage toolsResponse;
+    try {
+      toolsResponse = ToolsProtocolParser.get().parse(json, ToolsMessage.class);
+    } catch (JsonProtocolParseException e) {
+      LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
+      return;
+    }
+
+    DevToolsServiceCommand command = DevToolsServiceCommand.forString(toolsResponse.command());
+    if (command == null) {
+      return;
+    }
+    try {
       switch (command) {
-        case LIST_TABS:
-          handleListTabs(json);
-          break;
-        case VERSION:
-          handleVersion(json);
-          break;
-        default:
-          break;
+      case LIST_TABS:
+        handleListTabs(toolsResponse);
+        break;
+      case VERSION:
+        handleVersion(toolsResponse);
+        break;
+      default:
+        break;
       }
+    } catch (JsonProtocolParseException e) {
+      LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
+      return;
     }
   }
 
@@ -124,34 +142,34 @@ public class DevToolsServiceHandler implements ToolHandler {
     // all tickets
   }
 
-  private void handleVersion(JSONObject json) {
+  private void handleVersion(ToolsMessage toolsResponse) throws JsonProtocolParseException {
     VersionCallback callback;
     synchronized (lock) {
       callback = versionCallback;
       versionCallback = null;
     }
     if (callback != null) {
-      String versionString = JsonUtil.getAsString(json, ChromeDevToolsProtocol.DATA.key);
+      String versionString = toolsResponse.data().asVersionData();
       callback.versionReceived(versionString);
     }
   }
 
-  private void handleListTabs(JSONObject json) {
+  private void handleListTabs(ToolsMessage toolsResponse) throws JsonProtocolParseException {
     ListTabsCallback callback;
     synchronized (lock) {
       callback = listTabsCallback;
       listTabsCallback = null;
     }
     if (callback != null) {
-      int result = JsonUtil.getAsLong(json, ChromeDevToolsProtocol.RESULT.key).intValue();
+      int result = (int) toolsResponse.result();
       if (result != 0) {
         callback.failure(result);
         return;
       }
-      JSONArray data = JsonUtil.getAsJSONArray(json, ChromeDevToolsProtocol.DATA.key);
+      List<List<Object>> data = toolsResponse.data().asListTabsData();
       List<TabIdAndUrl> tabs = new ArrayList<TabIdAndUrl>(data.size());
       for (int i = 0; i < data.size(); ++i) {
-        JSONArray idAndUrl = (JSONArray) data.get(i);
+        List<Object> idAndUrl = data.get(i);
         int id = ((Long) idAndUrl.get(0)).intValue();
         String url = (String) idAndUrl.get(1);
         tabs.add(new TabIdAndUrl(id, url));
@@ -180,6 +198,7 @@ public class DevToolsServiceHandler implements ToolHandler {
       };
     }
     toolOutput.send(CommandFactory.listTabs());
+    // TODO: properly handle errors here, in particular throw IOException if timeout.
     try {
       if (!sem.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
         resetListTabsHandler();
