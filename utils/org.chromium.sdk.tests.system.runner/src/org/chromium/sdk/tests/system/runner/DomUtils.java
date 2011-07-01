@@ -122,21 +122,21 @@ public class DomUtils {
 
   static <R> R visitNode(Node node, NodeVisitor<R> visitor) {
     switch (node.getNodeType()) {
-    case Node.ELEMENT_NODE: return visitor.visitElement((Element) node);
-    case Node.ATTRIBUTE_NODE: return visitor.visitAttr((Attr) node);
-    case Node.TEXT_NODE: return visitor.visitText((Text) node);
-    case Node.CDATA_SECTION_NODE: return visitor.visitCDATASection((CDATASection) node);
-    case Node.ENTITY_REFERENCE_NODE: return visitor.visitEntityReference((EntityReference) node);
-    case Node.ENTITY_NODE: return visitor.visitEntity((Entity) node);
-    case Node.PROCESSING_INSTRUCTION_NODE:
-        return visitor.visitProcessingInstruction((ProcessingInstruction) node);
-    case Node.COMMENT_NODE: return visitor.visitComment((Comment) node);
-    case Node.DOCUMENT_NODE: return visitor.visitDocument((Document) node);
-    case Node.DOCUMENT_TYPE_NODE: return visitor.visitDocumentType((DocumentType) node);
-    case Node.DOCUMENT_FRAGMENT_NODE:
-        return visitor.visitDocumentFragment((DocumentFragment) node);
-    case Node.NOTATION_NODE: return visitor.visitNotation((Notation) node);
-    default: throw new RuntimeException();
+      case Node.ELEMENT_NODE: return visitor.visitElement((Element) node);
+      case Node.ATTRIBUTE_NODE: return visitor.visitAttr((Attr) node);
+      case Node.TEXT_NODE: return visitor.visitText((Text) node);
+      case Node.CDATA_SECTION_NODE: return visitor.visitCDATASection((CDATASection) node);
+      case Node.ENTITY_REFERENCE_NODE: return visitor.visitEntityReference((EntityReference) node);
+      case Node.ENTITY_NODE: return visitor.visitEntity((Entity) node);
+      case Node.PROCESSING_INSTRUCTION_NODE:
+          return visitor.visitProcessingInstruction((ProcessingInstruction) node);
+      case Node.COMMENT_NODE: return visitor.visitComment((Comment) node);
+      case Node.DOCUMENT_NODE: return visitor.visitDocument((Document) node);
+      case Node.DOCUMENT_TYPE_NODE: return visitor.visitDocumentType((DocumentType) node);
+      case Node.DOCUMENT_FRAGMENT_NODE:
+          return visitor.visitDocumentFragment((DocumentFragment) node);
+      case Node.NOTATION_NODE: return visitor.visitNotation((Notation) node);
+      default: throw new RuntimeException();
     }
   }
 

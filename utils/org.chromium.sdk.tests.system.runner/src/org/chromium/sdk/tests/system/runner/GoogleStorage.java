@@ -131,12 +131,7 @@ class GoogleStorage {
     final String key = getTextParameter(element, "Key");
     final String fullName = key.substring(0, key.length() - 1);
     int separatorPos = fullName.lastIndexOf('/');
-    final String shortName;
-    if (separatorPos == -1) {
-      shortName = fullName;
-    } else {
-      shortName = fullName.substring(separatorPos + 1);
-    }
+    final String shortName = fullName.substring(separatorPos + 1);
     return new Dir() {
       @Override
       public List<Resource> getChildren() {
