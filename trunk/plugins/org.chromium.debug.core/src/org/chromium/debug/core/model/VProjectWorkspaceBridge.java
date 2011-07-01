@@ -9,12 +9,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
+import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.ExceptionData;
@@ -80,7 +83,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     ILaunch launch = connectedTargetData.getDebugTarget().getLaunch();
 
     sourceDirector = (ChromiumSourceDirector) launch.getSourceLocator();
-    sourceDirector.initializeVProjectContainers(debugProject, resourceManager);
+    sourceDirector.initializeVProjectContainers(debugProject, resourceManager,
+        connectedTargetData.getJavascriptEmbedder().getScriptNameManipulator());
   }
 
   public BreakpointSynchronizer getBreakpointSynchronizer() {
@@ -146,6 +150,13 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
   private final VmResourceRef.Visitor<Collection<? extends VmResource>> RESOLVE_RESOURCE_VISITOR =
       new VmResourceRef.Visitor<Collection<? extends VmResource>>() {
+    @Override
+    public java.util.Collection<? extends VmResource> visitInaccurate(
+        ScriptNamePattern scriptNamePattern) {
+      Pattern pattern = JavaScriptRegExpSupport.convertToJavaPattern(scriptNamePattern);
+      return resourceManager.findVmResources(pattern);
+    }
+
     @Override
     public Collection<? extends VmResource> visitResourceId(VmResourceId resourceId) {
       return Collections.singletonList(resourceManager.getVmResource(resourceId));

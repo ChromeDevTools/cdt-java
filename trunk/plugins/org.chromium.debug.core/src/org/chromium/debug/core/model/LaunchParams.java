@@ -25,6 +25,9 @@ public class LaunchParams {
   public static final String BREAKPOINT_SYNC_DIRECTION =
       "breakpoint_startup_sync_direction"; //$NON-NLS-1$
 
+  public static final String INACCURATE_SOURCE_LOOKUP = "inaccurate_source_lookup"; //$NON-NLS-1$
+
+
   public static class BreakpointOption {
     private final String label;
     private final Direction direction;
