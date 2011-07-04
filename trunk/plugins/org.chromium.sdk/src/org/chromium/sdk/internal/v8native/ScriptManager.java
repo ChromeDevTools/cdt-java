@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal.v8native;
 
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+import static org.chromium.sdk.util.BasicUtil.removeSafe;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Script;
-import org.chromium.sdk.internal.ScriptBase;
+import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.internal.ScriptBase.Descriptor;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
@@ -37,8 +40,8 @@ public class ScriptManager {
   /**
    * Maps script id's to scripts.
    */
-  private final Map<Long, ScriptBase> idToScript =
-      Collections.synchronizedMap(new HashMap<Long, ScriptBase>());
+  private final Map<Long, ScriptImpl> idToScript =
+      Collections.synchronizedMap(new HashMap<Long, ScriptImpl>());
 
   private final V8ContextFilter contextFilter;
   private final DebugSession debugSession;
@@ -58,10 +61,10 @@ public class ScriptManager {
    */
   public synchronized Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
 
-    ScriptBase theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
+    ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
-      Descriptor desc = Descriptor.forResponse(scriptBody, refs, contextFilter);
+      Descriptor desc = createDescriptor(scriptBody, refs, contextFilter);
       if (desc == null) {
         return null;
       }
@@ -76,9 +79,9 @@ public class ScriptManager {
   }
 
   public void scriptCollected(long scriptId) {
-    ScriptBase script;
+    ScriptImpl script;
     synchronized (this) {
-      script = idToScript.remove(scriptId);
+      script = removeSafe(idToScript, scriptId);
       if (script == null) {
         return;
       }
@@ -94,7 +97,7 @@ public class ScriptManager {
    * @param body the JSON response body
    * @param script the script to associate the source with
    */
-  private void setSourceCode(ScriptHandle body, ScriptBase script) {
+  private void setSourceCode(ScriptHandle body, ScriptImpl script) {
     String src = body.source();
     if (src == null) {
       return;
@@ -108,8 +111,8 @@ public class ScriptManager {
    * @param id of the script to find
    * @return the script with {@code id == ref} or {@code null} if none found
    */
-  public ScriptBase findById(Long id) {
-    return idToScript.get(id);
+  public ScriptImpl findById(Long id) {
+    return getSafe(idToScript, id);
   }
 
   /**
@@ -164,5 +167,32 @@ public class ScriptManager {
 
   public V8ContextFilter getContextFilter() {
     return contextFilter;
+  }
+
+  private static Descriptor createDescriptor(ScriptHandle script, List<SomeHandle> refs,
+      V8ContextFilter contextFilter) {
+    script = V8ProtocolUtil.validScript(script, refs, contextFilter);
+    if (script == null) {
+      return null;
+    }
+    String name = script.name();
+    try {
+      Long scriptType = script.scriptType();
+      Type type = V8ProtocolUtil.getScriptType(scriptType);
+      if (type == null) {
+        return null;
+      }
+      int lineOffset = (int) script.lineOffset();
+      int columnOffset = (int) script.columnOffset();
+      int lineCount = (int) script.lineCount();
+      Long id = V8ProtocolUtil.getScriptIdFromResponse(script);
+      if (id == null) {
+        throw new RuntimeException("Null script id");
+      }
+      return new Descriptor(type, id, name, lineOffset, columnOffset, lineCount);
+    } catch (Exception e) {
+      // Not a script object has been passed in.
+      return null;
+    }
   }
 }

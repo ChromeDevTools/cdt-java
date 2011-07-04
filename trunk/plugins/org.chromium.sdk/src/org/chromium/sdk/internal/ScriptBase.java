@@ -12,10 +12,6 @@ import java.util.Map;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
-import org.chromium.sdk.internal.v8native.V8ContextFilter;
-import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
-import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
-import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 
 /**
  * An objects that holds data for a "script" which is a part of a resource
@@ -72,31 +68,7 @@ public abstract class ScriptBase implements Script {
           this.columnOffset == that.columnOffset &&
           this.endLine == that.endLine;
     }
-
-    public static Descriptor forResponse(ScriptHandle script, List<SomeHandle> refs,
-        V8ContextFilter contextFilter) {
-      script = V8ProtocolUtil.validScript(script, refs, contextFilter);
-      if (script == null) {
-        return null;
-      }
-      String name = script.name();
-      try {
-        Long scriptType = script.scriptType();
-        Type type = V8ProtocolUtil.getScriptType(scriptType);
-        if (type == null) {
-          return null;
-        }
-        int lineOffset = (int) script.lineOffset();
-        int columnOffset = (int) script.columnOffset();
-        int lineCount = (int) script.lineCount();
-        int id = V8ProtocolUtil.getScriptIdFromResponse(script).intValue();
-        return new Descriptor(type, id, name, lineOffset, columnOffset, lineCount);
-      } catch (Exception e) {
-        // not a script object has been passed in
-        return null;
-      }
-    }
-  }
+ }
 
   private final Descriptor descriptor;
 

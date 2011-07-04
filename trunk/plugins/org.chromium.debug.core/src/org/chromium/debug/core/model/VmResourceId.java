@@ -6,6 +6,7 @@ package org.chromium.debug.core.model;
 
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.util.BasicUtil;
 
 /**
  * Id of resources loaded in V8 VM. We only know that they may have name (typically filename or
@@ -34,8 +35,7 @@ public class VmResourceId {
 
   @Override
   public int hashCode() {
-    return ChromiumDebugPluginUtil.hashCode(getName()) +
-        31 * ChromiumDebugPluginUtil.hashCode(getId());
+    return BasicUtil.hashCode(getName()) + 31 * BasicUtil.hashCode(getId());
   }
 
   @Override
@@ -48,8 +48,7 @@ public class VmResourceId {
     }
     VmResourceId other = (VmResourceId) obj;
 
-    return ChromiumDebugPluginUtil.eq(this.name, other.name) &&
-        ChromiumDebugPluginUtil.eq(this.id, other.id);
+    return BasicUtil.eq(this.name, other.name) && BasicUtil.eq(this.id, other.id);
   }
 
   @Override

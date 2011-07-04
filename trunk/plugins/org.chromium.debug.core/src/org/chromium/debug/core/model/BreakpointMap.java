@@ -4,10 +4,12 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+import static org.chromium.sdk.util.BasicUtil.removeSafe;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 
 /**
@@ -29,11 +31,11 @@ public class BreakpointMap {
     }
 
     public synchronized Breakpoint getSdkBreakpoint(WrappedBreakpoint chromiumLineBreakpoint) {
-      return ChromiumDebugPluginUtil.getSafe(uiToSdkMap, chromiumLineBreakpoint);
+      return getSafe(uiToSdkMap, chromiumLineBreakpoint);
     }
 
     public synchronized WrappedBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
-      return ChromiumDebugPluginUtil.getSafe(sdkToUiMap, sdkBreakpoint);
+      return getSafe(sdkToUiMap, sdkBreakpoint);
     }
 
     public synchronized void add(Breakpoint sdkBreakpoint, WrappedBreakpoint uiBreakpoint) {
@@ -45,11 +47,11 @@ public class BreakpointMap {
     }
 
     public synchronized void remove(WrappedBreakpoint lineBreakpoint) {
-      Breakpoint sdkBreakpoint = ChromiumDebugPluginUtil.removeSafe(uiToSdkMap, lineBreakpoint);
+      Breakpoint sdkBreakpoint = removeSafe(uiToSdkMap, lineBreakpoint);
       if (sdkBreakpoint == null) {
         throw new RuntimeException();
       }
-      ChromiumDebugPluginUtil.removeSafe(sdkToUiMap, sdkBreakpoint);
+      removeSafe(sdkToUiMap, sdkBreakpoint);
     }
 
     public synchronized void clear() {

@@ -4,13 +4,14 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.sdk.util.BasicUtil.toArray;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
@@ -107,7 +108,7 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
     for (CallFrame jsFrame : jsFrames) {
       result.add(new StackFrame(threadState, jsFrame));
     }
-    return ChromiumDebugPluginUtil.toArray(result, StackFrameBase.class);
+    return toArray(result, StackFrameBase.class);
   }
 
   /**
@@ -442,8 +443,7 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
     }
 
     void setBreakpoints(Collection<? extends IBreakpoint> uiBreakpoints) {
-      this.breakpoints =
-          ChromiumDebugPluginUtil.<IBreakpoint>toArray(uiBreakpoints, IBreakpoint.class);
+      this.breakpoints = toArray(uiBreakpoints, IBreakpoint.class);
     }
 
     @Override boolean isSuspended() {
