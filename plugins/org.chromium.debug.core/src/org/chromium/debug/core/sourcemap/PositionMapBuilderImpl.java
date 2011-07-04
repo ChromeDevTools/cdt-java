@@ -4,7 +4,7 @@
 
 package org.chromium.debug.core.sourcemap;
 
-import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.getSafe;
+import static org.chromium.sdk.util.BasicUtil.getSafe;
 
 import java.util.HashMap;
 import java.util.Map;

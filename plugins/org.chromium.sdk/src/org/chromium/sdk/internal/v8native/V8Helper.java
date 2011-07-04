@@ -104,7 +104,7 @@ public class V8Helper {
                 continue;
               }
               Long id = V8ProtocolUtil.getScriptIdFromResponse(scriptHandle);
-              ScriptBase scriptById = scriptManager.findById(id);
+              ScriptImpl scriptById = scriptManager.findById(id);
               if (scriptById == null) {
                 scriptManager.addScript(scriptHandle, successResponse.refs());
               } else {

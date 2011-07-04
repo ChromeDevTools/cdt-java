@@ -10,6 +10,7 @@ import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.WorkspaceBridge.JsLabelProvider;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.ui.editors.JsEditor;
+import org.chromium.sdk.util.BasicUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.DebugException;
@@ -61,7 +62,7 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
       Value chromiumValue = (Value) value;
       chromiumValue.computeDetailAsync(listener);
     } else {
-      String detail = ChromiumDebugPluginUtil.getStacktraceString(
+      String detail = BasicUtil.getStacktraceString(
           new Exception("Unexpected type of value: " + value));
       listener.detailComputed(value, detail);
     }

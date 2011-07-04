@@ -320,87 +320,8 @@ public class ChromiumDebugPluginUtil {
   }
 
 
-  public static <T> T[] toArray(Collection<? extends T> collection, Class<T> clazz) {
-    T[] result = (T[]) Array.newInstance(clazz, collection.size());
-    collection.toArray(result);
-    return result;
-  }
-
   public static <T> T throwUnsupported() {
     throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Type-safe wrapper for {@link Map#remove(Object)} method. It restricts
-   * type of key and makes sure that you do not try to remove key of wrong
-   * type.
-   */
-  public static <K, V> V removeSafe(Map<K, V> map, K key) {
-    return map.remove(key);
-  }
-
-  /**
-   * Type-safe wrapper for {@link Map#get(Object)} method. It restricts
-   * type of key and makes sure that you do not try to get by key of wrong
-   * type.
-   */
-  public static <K, V> V getSafe(Map<K, V> map, K key) {
-    return map.get(key);
-  }
-
-  /**
-   * Type-safe wrapper for {@link Collection#contains(Object)} method. It restricts
-   * type of value and makes sure that you do not call method for the value
-   * wrong type.
-   */
-  public static <V> boolean containsSafe(Collection<V> collection, V value) {
-    return collection.contains(value);
-  }
-
-  /**
-   * Type-safe wrapper for {@link Collection#remove(Object)} method. It restricts
-   * type of value and makes sure that you do not call method for the value
-   * wrong type.
-   */
-  public static <V> boolean removeSafe(Collection<V> collection, V value) {
-    return collection.remove(value);
-  }
-
-  public static <T> boolean eq(T left, T right) {
-    if (left == null) {
-      return right == null;
-    } else {
-      return left.equals(right);
-    }
-  }
-
-  public static int hashCode(Object obj) {
-    if (obj == null) {
-      return 0;
-    } else {
-      return obj.hashCode();
-    }
-  }
-
-  public static String join(Iterable<? extends String> components, String separator) {
-    StringBuilder builder = new StringBuilder();
-    boolean first = true;
-    for (String c : components) {
-      if (!first) {
-        builder.append(separator);
-      }
-      builder.append(c);
-      first = false;
-    }
-    return builder.toString();
-  }
-
-  public static String getStacktraceString(Exception exception) {
-    StringWriter stringWriter = new StringWriter();
-    PrintWriter printWriter = new PrintWriter(stringWriter);
-    exception.printStackTrace(printWriter);
-    printWriter.close();
-    return stringWriter.toString();
   }
 
   private ChromiumDebugPluginUtil() {

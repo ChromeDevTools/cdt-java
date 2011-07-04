@@ -4,7 +4,7 @@
 
 package org.chromium.debug.core.model;
 
-import static org.chromium.debug.core.util.ChromiumDebugPluginUtil.join;
+import static org.chromium.sdk.util.BasicUtil.join;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

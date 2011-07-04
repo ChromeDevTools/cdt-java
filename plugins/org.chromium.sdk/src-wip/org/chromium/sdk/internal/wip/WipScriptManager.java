@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.wip;
 
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -113,7 +115,7 @@ class WipScriptManager {
 
     ScriptBase.Descriptor descriptor = new ScriptBase.Descriptor(Script.Type.NORMAL,
         sourceID, url, (int) data.startLine(), (int) data.startColumn(), -1);
-    final ScriptBase script = new WipScriptImpl(this, descriptor);
+    final WipScriptImpl script = new WipScriptImpl(this, descriptor);
     final ScriptData scriptData = new ScriptData(script);
 
     synchronized (scriptIdToData) {
@@ -162,10 +164,10 @@ class WipScriptManager {
    * Asynchronously loads script source.
    */
   private final class SourceLoadOperation implements AsyncFuture.Operation<Boolean> {
-    private final ScriptBase script;
+    private final WipScriptImpl script;
     private final long sourceID;
 
-    private SourceLoadOperation(ScriptBase script, long sourceID) {
+    private SourceLoadOperation(WipScriptImpl script, long sourceID) {
       this.script = script;
       this.sourceID = sourceID;
     }
@@ -191,10 +193,10 @@ class WipScriptManager {
   }
 
   private class ScriptData {
-    final ScriptBase scriptImpl;
+    final WipScriptImpl scriptImpl;
     final AsyncFutureRef<Boolean> sourceLoadedFuture = new AsyncFutureRef<Boolean>();
 
-    ScriptData(ScriptBase scriptImpl) {
+    ScriptData(WipScriptImpl scriptImpl) {
       this.scriptImpl = scriptImpl;
     }
   }
@@ -207,10 +209,10 @@ class WipScriptManager {
   RelayOk loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
       SyncCallback syncCallback) {
     Queue<ScriptData> scripts = new ArrayDeque<ScriptData>(ids.size());
-    Map<Long, ScriptBase> result = new HashMap<Long, ScriptBase>(ids.size());
+    Map<Long, WipScriptImpl> result = new HashMap<Long, WipScriptImpl>(ids.size());
     synchronized (scriptIdToData) {
       for (Long id : ids) {
-        ScriptData data = scriptIdToData.get(id);
+        ScriptData data = getSafe(scriptIdToData, id);
         if (data == null) {
           // We probably can't get a script source id without the script already
           // having been reported to us directly.
@@ -231,11 +233,11 @@ class WipScriptManager {
   }
 
   interface ScriptSourceLoadCallback {
-    void done(Map<Long, ScriptBase> loadedScripts);
+    void done(Map<Long, WipScriptImpl> loadedScripts);
   }
 
   private RelayOk loadNextScript(final Queue<ScriptData> scripts,
-      final Map<Long, ScriptBase> result, final ScriptSourceLoadCallback callback,
+      final Map<Long, WipScriptImpl> result, final ScriptSourceLoadCallback callback,
       final RelaySyncCallback relay) {
     final ScriptData data = scripts.poll();
     if (data == null) {

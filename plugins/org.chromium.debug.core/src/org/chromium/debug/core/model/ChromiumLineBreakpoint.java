@@ -4,6 +4,9 @@
 
 package org.chromium.debug.core.model;
 
+import static org.chromium.sdk.util.BasicUtil.containsSafe;
+import static org.chromium.sdk.util.BasicUtil.removeSafe;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +15,6 @@ import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.BreakpointTypeExtension.ScriptRegExpSupport;
@@ -240,18 +242,18 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     private final List<WrappedBreakpoint> list = new ArrayList<WrappedBreakpoint>(1);
 
     public boolean contains(WrappedBreakpoint breakpoint) {
-      return ChromiumDebugPluginUtil.containsSafe(list, breakpoint);
+      return containsSafe(list, breakpoint);
     }
 
     public void remove(WrappedBreakpoint lineBreakpoint) {
-      boolean res = ChromiumDebugPluginUtil.removeSafe(list, lineBreakpoint);
+      boolean res = removeSafe(list, lineBreakpoint);
       if (!res) {
         throw new IllegalStateException();
       }
     }
 
     public void add(WrappedBreakpoint lineBreakpoint) {
-      if (ChromiumDebugPluginUtil.containsSafe(list, lineBreakpoint)) {
+      if (containsSafe(list, lineBreakpoint)) {
         throw new IllegalStateException();
       }
       list.add(lineBreakpoint);
