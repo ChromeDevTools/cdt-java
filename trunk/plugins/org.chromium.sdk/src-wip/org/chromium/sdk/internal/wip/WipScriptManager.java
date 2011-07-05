@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.wip;
 
+import static org.chromium.sdk.util.BasicUtil.containsKeySafe;
 import static org.chromium.sdk.util.BasicUtil.getSafe;
 
 import java.util.ArrayDeque;
@@ -21,7 +22,6 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptBase;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.GetScriptSourceData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.GetScriptSourceParams;
@@ -36,7 +36,8 @@ import org.chromium.sdk.util.RelaySyncCallback;
  */
 class WipScriptManager {
   private final WipTabImpl tabImpl;
-  private final Map<Long, ScriptData> scriptIdToData = new HashMap<Long, ScriptData>();
+  // Access must be synchronized.
+  private final Map<String, ScriptData> scriptIdToData = new HashMap<String, ScriptData>();
 
   /**
    * A future for script pre-load operation. User may call {@link #getScripts} at any time,
@@ -106,20 +107,20 @@ class WipScriptManager {
   }
 
   public void scriptIsReportedParsed(ScriptParsedEventData data) {
-    final long sourceID = WipProtocol.parseSourceId(data.sourceId());
+    final String sourceID = data.sourceId();
 
     String url = data.url();
     if (url.isEmpty()) {
       url = null;
     }
 
-    ScriptBase.Descriptor descriptor = new ScriptBase.Descriptor(Script.Type.NORMAL,
+    ScriptBase.Descriptor<String> descriptor = new ScriptBase.Descriptor<String>(Script.Type.NORMAL,
         sourceID, url, (int) data.startLine(), (int) data.startColumn(), -1);
     final WipScriptImpl script = new WipScriptImpl(this, descriptor);
     final ScriptData scriptData = new ScriptData(script);
 
     synchronized (scriptIdToData) {
-      if (scriptIdToData.containsKey(sourceID)) {
+      if (containsKeySafe(scriptIdToData, sourceID)) {
         throw new IllegalStateException("Already has script with id " + sourceID);
       }
       scriptIdToData.put(sourceID, scriptData);
@@ -165,9 +166,9 @@ class WipScriptManager {
    */
   private final class SourceLoadOperation implements AsyncFuture.Operation<Boolean> {
     private final WipScriptImpl script;
-    private final long sourceID;
+    private final String sourceID;
 
-    private SourceLoadOperation(WipScriptImpl script, long sourceID) {
+    private SourceLoadOperation(WipScriptImpl script, String sourceID) {
       this.script = script;
       this.sourceID = sourceID;
     }
@@ -187,7 +188,7 @@ class WipScriptManager {
           throw new RuntimeException(exception);
         }
       };
-      GetScriptSourceParams params = new GetScriptSourceParams(Long.toString(sourceID));
+      GetScriptSourceParams params = new GetScriptSourceParams(sourceID);
       return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
     }
   }
@@ -206,19 +207,19 @@ class WipScriptManager {
    * (from its stack frames).
    * Must be called from Dispatch thread.
    */
-  RelayOk loadScriptSourcesAsync(Set<Long> ids, ScriptSourceLoadCallback callback,
+  RelayOk loadScriptSourcesAsync(Set<String> ids, ScriptSourceLoadCallback callback,
       SyncCallback syncCallback) {
     Queue<ScriptData> scripts = new ArrayDeque<ScriptData>(ids.size());
-    Map<Long, WipScriptImpl> result = new HashMap<Long, WipScriptImpl>(ids.size());
+    Map<String, WipScriptImpl> result = new HashMap<String, WipScriptImpl>(ids.size());
     synchronized (scriptIdToData) {
-      for (Long id : ids) {
+      for (String id : ids) {
         ScriptData data = getSafe(scriptIdToData, id);
         if (data == null) {
           // We probably can't get a script source id without the script already
           // having been reported to us directly.
           throw new IllegalArgumentException("Unknown script id: " + id);
         }
-        result.put(data.scriptImpl.getId(), data.scriptImpl);
+        result.put(data.scriptImpl.getIdImpl(), data.scriptImpl);
         if (!data.sourceLoadedFuture.isDone()) {
           scripts.add(data);
         }
@@ -233,11 +234,21 @@ class WipScriptManager {
   }
 
   interface ScriptSourceLoadCallback {
-    void done(Map<Long, WipScriptImpl> loadedScripts);
+    void done(Map<String, WipScriptImpl> loadedScripts);
+  }
+
+  // TODO: get rid of this method and expose string source id to user.
+  static String convertLongSourceId(long sourceId) {
+    return Long.toString(sourceId);
+  }
+
+  // TODO: get rid of this method and expose string source id to user.
+  static long parseStringSourceId(String sourceId) {
+    return Long.parseLong(sourceId);
   }
 
   private RelayOk loadNextScript(final Queue<ScriptData> scripts,
-      final Map<Long, WipScriptImpl> result, final ScriptSourceLoadCallback callback,
+      final Map<String, WipScriptImpl> result, final ScriptSourceLoadCallback callback,
       final RelaySyncCallback relay) {
     final ScriptData data = scripts.poll();
     if (data == null) {

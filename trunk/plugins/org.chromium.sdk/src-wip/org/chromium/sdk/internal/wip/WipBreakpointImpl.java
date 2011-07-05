@@ -326,7 +326,8 @@ public class WipBreakpointImpl implements Breakpoint {
 
       @Override
       public RelayOk visitScriptId(long scriptId) {
-        return sendRequest(scriptId, RequestHandler.FOR_ID);
+        String scriptIdString = WipScriptManager.convertLongSourceId(scriptId);
+        return sendRequest(scriptIdString, RequestHandler.FOR_ID);
       }
 
       @Override
@@ -398,13 +399,13 @@ public class WipBreakpointImpl implements Breakpoint {
         };
 
 
-    static final RequestHandler<Long, SetBreakpointData, SetBreakpointParams> FOR_ID =
-        new RequestHandler<Long, SetBreakpointData, SetBreakpointParams>() {
+    static final RequestHandler<String, SetBreakpointData, SetBreakpointParams> FOR_ID =
+        new RequestHandler<String, SetBreakpointData, SetBreakpointParams>() {
           @Override
-          SetBreakpointParams createRequestParams(Long sourceId,
+          SetBreakpointParams createRequestParams(String sourceId,
               long lineNumber, long columnNumber, String condition) {
             LocationParam locationParam =
-                new LocationParam(String.valueOf(sourceId), lineNumber, columnNumber);
+                new LocationParam(sourceId, lineNumber, columnNumber);
             return new SetBreakpointParams(locationParam, condition);
           }
 

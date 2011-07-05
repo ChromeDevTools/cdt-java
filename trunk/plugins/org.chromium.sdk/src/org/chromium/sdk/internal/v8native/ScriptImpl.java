@@ -19,15 +19,20 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.ChangeLiveMessage;
 import org.chromium.sdk.internal.v8native.value.HandleManager;
 
-public class ScriptImpl extends ScriptBase {
+public class ScriptImpl extends ScriptBase<Long> {
   /** The class logger. */
   private static final Logger LOGGER = Logger.getLogger(ScriptImpl.class.getName());
 
   private final DebugSession debugSession;
 
-  public ScriptImpl(Descriptor descriptor, DebugSession debugSession) {
+  public ScriptImpl(Descriptor<Long> descriptor, DebugSession debugSession) {
     super(descriptor);
     this.debugSession = debugSession;
+  }
+
+  @Override
+  public long getId() {
+    return getIdImpl();
   }
 
   @Override

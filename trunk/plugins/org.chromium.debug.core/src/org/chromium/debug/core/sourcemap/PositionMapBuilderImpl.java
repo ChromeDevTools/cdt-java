@@ -6,12 +6,12 @@ package org.chromium.debug.core.sourcemap;
 
 import static org.chromium.sdk.util.BasicUtil.getSafe;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.chromium.debug.core.model.VmResourceId;
+import org.chromium.debug.core.model.VmResourceIdMap;
 import org.chromium.debug.core.sourcemap.TextSectionMapping.TextPoint;
 
 /**
@@ -66,10 +66,8 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
    * A "side" of transformation -- either "original" or "vm".
    */
   private static class Side {
-    private final Map<String, ResourceData> scriptNameToData =
-        new HashMap<String, ResourceData>();
-    private final Map<Long, ResourceData> scriptIdToData =
-        new HashMap<Long, ResourceData>();
+    private final VmResourceIdMap<ResourceData> resourceIdToData =
+        new VmResourceIdMap<ResourceData>();
     private final TextSectionMapping.Direction direction;
 
     Side(TextSectionMapping.Direction direction) {
@@ -77,7 +75,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
     }
 
     SourcePosition transformImpl(VmResourceId id, int line, int column) {
-      ResourceData resourceData = findResourceData(id);
+      ResourceData resourceData = resourceIdToData.get(id);
       if (resourceData != null) {
         TextPoint originalPoint = new TextPoint(line, column);
         SourcePosition resultPosition = resourceData.transform(originalPoint, direction);
@@ -88,46 +86,6 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
       return new SourcePosition(id, line, column);
     }
 
-    private ResourceData findResourceData(VmResourceId resourceId) {
-      Long scriptId = resourceId.getId();
-      if (scriptId != null) {
-        ResourceData result = getSafe(scriptIdToData, scriptId);
-        if (result != null) {
-          return result;
-        }
-      }
-      String scriptName = resourceId.getName();
-      if (scriptName != null) {
-        ResourceData result = getSafe(scriptNameToData, scriptName);
-        if (result != null) {
-          return result;
-        }
-      }
-      return null;
-    }
-
-    private void putResourceData(VmResourceId resourceId, ResourceData data) {
-      Long scriptId = resourceId.getId();
-      if (scriptId != null) {
-        scriptIdToData.put(scriptId, data);
-      }
-      String scriptName = resourceId.getName();
-      if (scriptName != null) {
-        scriptNameToData.put(scriptName, data);
-      }
-    }
-
-    private void removeResourceData(VmResourceId resourceId) {
-      Long scriptId = resourceId.getId();
-      if (scriptId != null) {
-        scriptIdToData.remove(scriptId);
-      }
-      String scriptName = resourceId.getName();
-      if (scriptName != null) {
-        scriptNameToData.remove(scriptName);
-      }
-    }
-
     /**
      * Checks whether adding the resource section to map is possible.
      * @return {@link RangeAdder} object that can be used to perform "add" operation; not null
@@ -135,7 +93,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
      */
     private RangeAdder checkCanAddRange(ResourceSection section) throws CannotAddException {
       final VmResourceId resourceId = section.getResourceId();
-      final ResourceData data = findResourceData(resourceId);
+      final ResourceData data = resourceIdToData.get(resourceId);
       final Range range = Range.create(section);
 
       if (data != null) {
@@ -146,10 +104,10 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
          * Commits 'add' operation. No conflicts are expected at this stage.
          */
         public RangeDeleter commit(TextSectionMapping mapTable, VmResourceId destinationResource) {
-          ResourceData commitData = findResourceData(resourceId);
+          ResourceData commitData = resourceIdToData.get(resourceId);
           if (commitData == null) {
             commitData = new ResourceData();
-            putResourceData(resourceId, commitData);
+            resourceIdToData.put(resourceId, commitData);
           }
 
           final ResourceData commitDataFinal = commitData;
@@ -159,7 +117,7 @@ public class PositionMapBuilderImpl implements SourcePositionMapBuilder {
             public void delete() {
               commitDataFinal.removeRange(range);
               if (commitDataFinal.isEmpty()) {
-                removeResourceData(resourceId);
+                resourceIdToData.remove(resourceId);
               }
             }
           };

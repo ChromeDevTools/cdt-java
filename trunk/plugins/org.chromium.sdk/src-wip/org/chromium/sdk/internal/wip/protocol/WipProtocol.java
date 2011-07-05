@@ -28,10 +28,6 @@ public class WipProtocol {
     }
   }
 
-  public static long parseSourceId(String value) {
-    return Long.parseLong(value);
-  }
-
   public static boolean parseHasChildren(Object hasChildren) {
     return hasChildren != Boolean.FALSE;
   }
