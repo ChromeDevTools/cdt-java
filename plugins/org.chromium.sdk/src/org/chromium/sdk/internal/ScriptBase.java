@@ -18,11 +18,11 @@ import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
  * loaded into the browser, identified by its original document URL, line offset
  * in the original document, and the line count this script spans.
  */
-public abstract class ScriptBase implements Script {
+public abstract class ScriptBase<ID> implements Script {
   /**
    * An object containing data that uniquely identify a V8 script chunk.
    */
-  public static class Descriptor {
+  public static class Descriptor<ID> {
     public final Type type;
 
     public final String name;
@@ -33,9 +33,9 @@ public abstract class ScriptBase implements Script {
 
     public final int endLine;
 
-    public final long id;
+    public final ID id;
 
-    public Descriptor(Type type, long id, String name, int lineOffset, int columnOffset,
+    public Descriptor(Type type, ID id, String name, int lineOffset, int columnOffset,
         int lineCount) {
       this.type = type;
       this.id = id;
@@ -48,7 +48,7 @@ public abstract class ScriptBase implements Script {
     @Override
     public int hashCode() {
       return
-          name != null ? name.hashCode() : (int) id * 0x101 +
+          name != null ? name.hashCode() : id.hashCode() * 0x101 +
           lineOffset * 0x1001 + columnOffset * 0x10001 +
           endLine * 0x100001;
     }
@@ -61,16 +61,16 @@ public abstract class ScriptBase implements Script {
       if (!(obj instanceof Descriptor)) {
         return false;
       }
-      Descriptor that = (Descriptor) obj;
+      Descriptor<?> that = (Descriptor<?>) obj;
       // The id equality is stronger than the name equality.
-      return this.id == that.id &&
+      return this.id.equals(that.id) &&
           this.lineOffset == that.lineOffset &&
           this.columnOffset == that.columnOffset &&
           this.endLine == that.endLine;
     }
- }
+  }
 
-  private final Descriptor descriptor;
+  private final Descriptor<ID> descriptor;
 
   private volatile String source = null;
 
@@ -79,7 +79,7 @@ public abstract class ScriptBase implements Script {
   /**
    * @param descriptor of the script retrieved from a "scripts" response
    */
-  public ScriptBase(Descriptor descriptor) {
+  public ScriptBase(Descriptor<ID> descriptor) {
     this.descriptor = descriptor;
     this.source = null;
   }
@@ -110,7 +110,10 @@ public abstract class ScriptBase implements Script {
   }
 
   @Override
-  public long getId() {
+  public abstract long getId();
+
+  // TODO: merge it with #getId.
+  public ID getIdImpl() {
     return descriptor.id;
   }
 
@@ -299,7 +302,7 @@ public abstract class ScriptBase implements Script {
     if (!(obj instanceof ScriptBase)) {
       return false;
     }
-    ScriptBase that = (ScriptBase) obj;
+    ScriptBase<?> that = (ScriptBase<?>) obj;
     return this.descriptor.equals(that.descriptor) && eq(this.source, that.source);
   }
 

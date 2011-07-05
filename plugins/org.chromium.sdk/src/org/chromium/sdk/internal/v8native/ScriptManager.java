@@ -16,6 +16,7 @@ import java.util.Map;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
+import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.ScriptBase.Descriptor;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
@@ -64,7 +65,7 @@ public class ScriptManager {
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
     if (theScript == null) {
-      Descriptor desc = createDescriptor(scriptBody, refs, contextFilter);
+      Descriptor<Long> desc = createDescriptor(scriptBody, refs, contextFilter);
       if (desc == null) {
         return null;
       }
@@ -169,7 +170,7 @@ public class ScriptManager {
     return contextFilter;
   }
 
-  private static Descriptor createDescriptor(ScriptHandle script, List<SomeHandle> refs,
+  private static Descriptor<Long> createDescriptor(ScriptHandle script, List<SomeHandle> refs,
       V8ContextFilter contextFilter) {
     script = V8ProtocolUtil.validScript(script, refs, contextFilter);
     if (script == null) {
@@ -189,7 +190,7 @@ public class ScriptManager {
       if (id == null) {
         throw new RuntimeException("Null script id");
       }
-      return new Descriptor(type, id, name, lineOffset, columnOffset, lineCount);
+      return new Descriptor<Long>(type, id, name, lineOffset, columnOffset, lineCount);
     } catch (Exception e) {
       // Not a script object has been passed in.
       return null;

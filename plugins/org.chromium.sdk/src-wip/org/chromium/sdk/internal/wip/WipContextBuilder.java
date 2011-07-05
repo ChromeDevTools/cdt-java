@@ -162,7 +162,7 @@ class WipContextBuilder {
       return tabImpl.getScriptManager().loadScriptSourcesAsync(getScriptIds(),
           new WipScriptManager.ScriptSourceLoadCallback() {
             @Override
-            public void done(Map<Long, WipScriptImpl> loadedScripts) {
+            public void done(Map<String, WipScriptImpl> loadedScripts) {
               setScripts(loadedScripts);
 
               if (callback != null) {
@@ -184,10 +184,10 @@ class WipContextBuilder {
       }
     }
 
-    Set<Long> getScriptIds() {
-      Set<Long> scriptIds = new HashSet<Long>();
+    Set<String> getScriptIds() {
+      Set<String> scriptIds = new HashSet<String>();
       for (CallFrameImpl frame : frames) {
-        Long sourceId = frame.getSourceId();
+        String sourceId = frame.getSourceId();
         if (sourceId != null) {
           scriptIds.add(sourceId);
         }
@@ -195,9 +195,9 @@ class WipContextBuilder {
       return scriptIds;
     }
 
-    void setScripts(Map<Long, WipScriptImpl> loadedScripts) {
+    void setScripts(Map<String, WipScriptImpl> loadedScripts) {
       for (CallFrameImpl frame : frames) {
-        Long sourceId = frame.getSourceId();
+        String sourceId = frame.getSourceId();
         if (sourceId != null) {
           frame.setScript(getSafe(loadedScripts, sourceId));
         }
@@ -268,20 +268,19 @@ class WipContextBuilder {
       }
     }
 
-    private class CallFrameImpl implements CallFrame {
+    class CallFrameImpl implements CallFrame {
       private final String functionName;
       private final String id;
       private final LazyConstructable<List<JsScope>> scopeData;
       private final JsVariable thisObject;
       private final TextStreamPosition streamPosition;
-      private final Long sourceId;
+      private final String sourceId;
       private WipScriptImpl scriptImpl;
 
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        Object sourceIDObject = frameData.location().sourceId();
-        sourceId = Long.parseLong(sourceIDObject.toString());
+        sourceId = frameData.location().sourceId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
         scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {
@@ -335,7 +334,7 @@ class WipContextBuilder {
         };
       }
 
-      Long getSourceId() {
+      String getSourceId() {
         return sourceId;
       }
 
@@ -359,7 +358,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public Script getScript() {
+      public WipScriptImpl getScript() {
         return scriptImpl;
       }
 

@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
-import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -146,12 +145,13 @@ public class WipBreakpointManager {
   }
 
   // Accessed from Dispatch thread.
-  public Collection<? extends Breakpoint> findRelatedBreakpoints(CallFrame topFrame) {
+  public Collection<? extends Breakpoint> findRelatedBreakpoints(
+      WipContextBuilder.WipDebugContextImpl.CallFrameImpl topFrame) {
     TextStreamPosition position = topFrame.getStatementStartPosition();
     int line = position.getLine();
     int column = position.getColumn();
 
-    String scriptId = String.valueOf(topFrame.getScript().getId());
+    String scriptId = topFrame.getScript().getIdImpl();
     final WipBreakpointImpl.ActualLocation location =
         new WipBreakpointImpl.ActualLocation(scriptId, line, Long.valueOf(column));
 
