@@ -219,7 +219,7 @@ class WipScriptManager {
           // having been reported to us directly.
           throw new IllegalArgumentException("Unknown script id: " + id);
         }
-        result.put(data.scriptImpl.getIdImpl(), data.scriptImpl);
+        result.put(data.scriptImpl.getId(), data.scriptImpl);
         if (!data.sourceLoadedFuture.isDone()) {
           scripts.add(data);
         }
@@ -237,14 +237,11 @@ class WipScriptManager {
     void done(Map<String, WipScriptImpl> loadedScripts);
   }
 
-  // TODO: get rid of this method and expose string source id to user.
-  static String convertLongSourceId(long sourceId) {
-    return Long.toString(sourceId);
-  }
-
-  // TODO: get rid of this method and expose string source id to user.
-  static long parseStringSourceId(String sourceId) {
-    return Long.parseLong(sourceId);
+  static String convertAlienSourceId(Object sourceIdObj) {
+    if (sourceIdObj instanceof String == false) {
+      throw new IllegalArgumentException("Script id must be string");
+    }
+    return (String) sourceIdObj;
   }
 
   private RelayOk loadNextScript(final Queue<ScriptData> scripts,

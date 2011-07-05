@@ -325,8 +325,8 @@ public class WipBreakpointImpl implements Breakpoint {
       }
 
       @Override
-      public RelayOk visitScriptId(long scriptId) {
-        String scriptIdString = WipScriptManager.convertLongSourceId(scriptId);
+      public RelayOk visitScriptId(Object scriptId) {
+        String scriptIdString = WipScriptManager.convertAlienSourceId(scriptId);
         return sendRequest(scriptIdString, RequestHandler.FOR_ID);
       }
 

@@ -38,9 +38,11 @@ public interface Script extends UpdatableScript {
   String getName();
 
   /**
-   * @return the script ID as reported by the JavaScript VM debugger
+   * Returns the script ID as reported by the JavaScript VM debugger. The actual ID type
+   * is backend-specific, however it must provide equals/hashCode/toString methods and
+   * be serializable.
    */
-  long getId();
+  Object getId();
 
   /**
    * @return the start line of this script in the original document

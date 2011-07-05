@@ -274,7 +274,7 @@ public class BreakpointSynchronizer {
         @Override public String visitScriptName(String scriptName) {
           return "script_name=" + scriptName;
         }
-        @Override public String visitScriptId(long scriptId) {
+        @Override public String visitScriptId(Object scriptId) {
           return "script_id" + scriptId;
         }
         @Override public String visitRegExp(String regExp) {
@@ -545,7 +545,7 @@ public class BreakpointSynchronizer {
           }
 
           @Override
-          public VmResourceRef visitScriptId(long scriptId) {
+          public VmResourceRef visitScriptId(Object scriptId) {
             return VmResourceRef.forVmResourceId(new VmResourceId(null, scriptId));
           }
 

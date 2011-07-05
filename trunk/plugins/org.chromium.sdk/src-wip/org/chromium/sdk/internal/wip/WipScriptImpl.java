@@ -14,7 +14,6 @@ import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditProtocolParserAccess;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetScriptSourceParams;
@@ -29,11 +28,6 @@ class WipScriptImpl extends ScriptBase<String> {
   WipScriptImpl(WipScriptManager scriptManager, Descriptor<String> descriptor) {
     super(descriptor);
     this.scriptManager = scriptManager;
-  }
-
-  @Override
-  public long getId() {
-    return WipScriptManager.parseStringSourceId(getIdImpl());
   }
 
   @Override
@@ -55,7 +49,7 @@ class WipScriptImpl extends ScriptBase<String> {
     RelaySyncCallback relay = new RelaySyncCallback(syncCallback);
     final RelaySyncCallback.Guard guard = relay.newGuard();
 
-    SetScriptSourceParams params = new SetScriptSourceParams(getIdImpl(), newSource, preview);
+    SetScriptSourceParams params = new SetScriptSourceParams(getId(), newSource, preview);
 
     JavascriptVm.GenericCallback<SetScriptSourceData> commandCallback =
         new JavascriptVm.GenericCallback<SetScriptSourceData>() {

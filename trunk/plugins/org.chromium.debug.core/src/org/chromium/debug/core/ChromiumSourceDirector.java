@@ -332,7 +332,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
         @Override public VmResourceId visitScriptName(String scriptName) {
           return new VmResourceId(scriptName, null);
         }
-        @Override public VmResourceId visitScriptId(long scriptId) {
+        @Override public VmResourceId visitScriptId(Object scriptId) {
           return new VmResourceId(null, scriptId);
         }
         @Override public VmResourceId visitRegExp(String regExp) {

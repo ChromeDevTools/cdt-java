@@ -18,9 +18,9 @@ public class VmResourceId {
   }
 
   private final String name;
-  private final Long id;
+  private final Object id;
 
-  public VmResourceId(String name, Long id) {
+  public VmResourceId(String name, Object id) {
     this.name = name;
     this.id = id;
   }
@@ -29,7 +29,7 @@ public class VmResourceId {
     return name;
   }
 
-  public Long getId() {
+  public Object getId() {
     return id;
   }
 

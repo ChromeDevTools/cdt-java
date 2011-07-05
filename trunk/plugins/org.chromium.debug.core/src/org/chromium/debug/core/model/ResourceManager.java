@@ -220,7 +220,7 @@ public class ResourceManager {
   }
 
   private static class ScriptSet implements VmResource.ScriptHolder {
-    private final Map<Long, Script> idToScript = new HashMap<Long, Script>(2);
+    private final Map<Object, Script> idToScript = new HashMap<Object, Script>(2);
 
     public Script getSingleScript() {
       if (idToScript.size() != 1) {

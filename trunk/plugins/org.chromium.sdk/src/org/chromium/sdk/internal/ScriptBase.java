@@ -110,10 +110,7 @@ public abstract class ScriptBase<ID> implements Script {
   }
 
   @Override
-  public abstract long getId();
-
-  // TODO: merge it with #getId.
-  public ID getIdImpl() {
+  public ID getId() {
     return descriptor.id;
   }
 

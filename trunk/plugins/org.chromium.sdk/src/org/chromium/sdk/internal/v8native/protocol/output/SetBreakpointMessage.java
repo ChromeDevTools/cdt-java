@@ -8,6 +8,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.internal.v8native.BreakpointImpl;
 import org.chromium.sdk.internal.v8native.DebuggerCommand;
+import org.chromium.sdk.internal.v8native.ScriptManager;
 
 /**
  * Represents a "setbreakpoint" V8 request message.
@@ -45,7 +46,7 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
     @Override public String visitScriptName(String scriptName) {
       return "script";
     }
-    @Override public String visitScriptId(long scriptId) {
+    @Override public String visitScriptId(Object scriptId) {
       return "scriptId";
     }
     @Override public String visitRegExp(String regExp) {
@@ -64,8 +65,9 @@ public class SetBreakpointMessage extends ContextlessDebuggerMessage {
     @Override public Object visitScriptName(String scriptName) {
       return scriptName;
     }
-    @Override public Object visitScriptId(long scriptId) {
-      return Long.valueOf(scriptId);
+    @Override public Object visitScriptId(Object scriptIdObj) {
+      Long scriptId = ScriptManager.convertAlienScriptId(scriptIdObj);
+      return scriptId;
     }
     @Override public Object visitRegExp(String regExp) {
       return regExp;
