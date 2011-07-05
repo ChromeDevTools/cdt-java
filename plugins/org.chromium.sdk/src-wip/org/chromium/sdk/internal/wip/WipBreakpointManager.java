@@ -111,7 +111,7 @@ public class WipBreakpointManager {
     }
 
     @Override
-    public Boolean visitScriptId(long scriptId) {
+    public Boolean visitScriptId(Object scriptId) {
       return Boolean.TRUE;
     }
 
@@ -151,7 +151,7 @@ public class WipBreakpointManager {
     int line = position.getLine();
     int column = position.getColumn();
 
-    String scriptId = topFrame.getScript().getIdImpl();
+    String scriptId = topFrame.getScript().getId();
     final WipBreakpointImpl.ActualLocation location =
         new WipBreakpointImpl.ActualLocation(scriptId, line, Long.valueOf(column));
 

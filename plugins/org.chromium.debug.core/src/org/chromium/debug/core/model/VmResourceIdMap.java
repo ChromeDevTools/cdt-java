@@ -16,10 +16,10 @@ import java.util.Map;
  */
 public class VmResourceIdMap<T> {
   private final Map<String, T> scriptNameMap = new HashMap<String, T>();
-  private final Map<Long, T> scriptIdMap = new HashMap<Long, T>();
+  private final Map<Object, T> scriptIdMap = new HashMap<Object, T>();
 
   public T get(VmResourceId resourceId) {
-    Long scriptId = resourceId.getId();
+    Object scriptId = resourceId.getId();
     if (scriptId != null) {
       T result = getSafe(scriptIdMap, scriptId);
       if (result != null) {
@@ -40,7 +40,7 @@ public class VmResourceIdMap<T> {
   }
 
   public void put(VmResourceId resourceId, T data) {
-    Long scriptId = resourceId.getId();
+    Object scriptId = resourceId.getId();
     if (scriptId != null) {
       Object conflict = scriptIdMap.put(scriptId, data);
       if (conflict != null) {
@@ -57,7 +57,7 @@ public class VmResourceIdMap<T> {
   }
 
   public void remove(VmResourceId resourceId) {
-    Long scriptId = resourceId.getId();
+    Object scriptId = resourceId.getId();
     if (scriptId != null) {
       scriptIdMap.remove(scriptId);
     }

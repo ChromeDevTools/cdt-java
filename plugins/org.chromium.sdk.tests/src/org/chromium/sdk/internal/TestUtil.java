@@ -31,7 +31,7 @@ public class TestUtil {
     @Override public String visitScriptName(String scriptName) {
       return "name=" + scriptName;
     }
-    @Override public String visitScriptId(long scriptId) {
+    @Override public String visitScriptId(Object scriptId) {
       return "id=" + scriptId;
     }
     @Override public String visitUnknown(Target target) {

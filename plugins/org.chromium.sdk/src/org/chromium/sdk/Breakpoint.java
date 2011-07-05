@@ -118,7 +118,7 @@ public interface Breakpoint {
 
     public interface Visitor<R> {
       R visitScriptName(String scriptName);
-      R visitScriptId(long scriptId);
+      R visitScriptId(Object scriptId);
       R visitUnknown(Target target);
     }
 
@@ -133,8 +133,8 @@ public interface Breakpoint {
     }
 
     public static class ScriptId extends Target {
-      private final long id;
-      public ScriptId(long id) {
+      private final Object id;
+      public ScriptId(Object id) {
         this.id = id;
       }
       @Override public <R> R accept(Visitor<R> visitor) {

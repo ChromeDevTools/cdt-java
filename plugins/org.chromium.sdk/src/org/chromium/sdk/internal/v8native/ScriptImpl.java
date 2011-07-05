@@ -31,11 +31,6 @@ public class ScriptImpl extends ScriptBase<Long> {
   }
 
   @Override
-  public long getId() {
-    return getIdImpl();
-  }
-
-  @Override
   public RelayOk setSourceOnRemote(String newSource, UpdateCallback callback,
       SyncCallback syncCallback) {
     V8CommandProcessor.V8HandlerCallback v8Callback = createScriptUpdateCallback(callback, false);

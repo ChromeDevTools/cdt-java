@@ -206,12 +206,12 @@ public class FixtureChromeStub implements ChromeStub {
     return 5;
   }
 
-  public static int getScriptId() {
-    return 566;
+  public static Long getScriptId() {
+    return Long.valueOf(566);
   }
 
-  public static int getCompiledScriptId() {
-    return 567;
+  public static Long getCompiledScriptId() {
+    return Long.valueOf(567);
   }
 
   public static int getMouseEventRef() {
@@ -422,7 +422,7 @@ public class FixtureChromeStub implements ChromeStub {
   private JSONArray constructScripts(JSONArray ids) {
     JSONArray scripts = new JSONArray();
     for (Script script : scriptManager.allScripts()) {
-      Long id = script.getId();
+      Object id = script.getId();
       if (ids == null || ids.contains(id)) {
         scripts.add(getJsonObjectByRef(scriptIdToScriptRefMap.get(script.getId())));
       }
