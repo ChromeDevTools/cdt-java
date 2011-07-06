@@ -19,7 +19,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
-import org.chromium.sdk.internal.v8native.value.JsObjectImpl;
+import org.chromium.sdk.internal.v8native.value.JsObjectBase;
 import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
 import org.chromium.sdk.internal.v8native.value.LoadableString.Factory;
@@ -98,7 +98,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
     final List<Map.Entry<String, Integer>> dataList =
         new ArrayList<Map.Entry<String,Integer>>(source.size());
     for (final Map.Entry<String, String> en : source.entrySet()) {
-      final int refValue = JsObjectImpl.parseRefId(en.getValue());
+      final int refValue = JsObjectBase.parseRefId(en.getValue());
       Map.Entry<String, Integer> convertedEntry = new Map.Entry<String, Integer>() {
         public String getKey() {
           return en.getKey();

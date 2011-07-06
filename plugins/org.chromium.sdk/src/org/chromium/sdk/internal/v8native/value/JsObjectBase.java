@@ -20,7 +20,7 @@ import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 /**
  * A generic implementation of the JsObject interface.
  */
-public class JsObjectImpl extends JsValueImpl implements JsObject {
+public abstract class JsObjectBase extends JsValueBase implements JsObject {
 
   private final InternalContext context;
 
@@ -36,20 +36,23 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
    * @param variableFqn the fully qualified name of the variable holding this object
    * @param valueState the value data from the JS VM
    */
-  JsObjectImpl(InternalContext context, String variableFqn, ValueMirror valueState) {
+  JsObjectBase(InternalContext context, String variableFqn, ValueMirror valueState) {
     super(valueState);
     this.context = context;
     this.variableFqn = variableFqn;
   }
 
+  @Override
   public Collection<JsVariableImpl> getProperties() throws MethodIsBlockingException {
     return subproperties.getPropertiesLazily();
   }
 
+  @Override
   public Collection<JsVariableImpl> getInternalProperties() throws MethodIsBlockingException {
     return internalProperties.getPropertiesLazily();
   }
 
+  @Override
   public String getRefId() {
     int ref = getMirror().getRef();
     if (ref < 0) {
@@ -65,37 +68,16 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
   }
 
   @Override
-  public String toString() {
-    StringBuilder result = new StringBuilder();
-    result.append("[JsObject: type=").append(getType());
-    try {
-      for (JsVariable prop : getProperties()) {
-        result.append(',').append(prop);
-      }
-    } catch (MethodIsBlockingException e) {
-      return "[JsObject: Exception in retrieving data]";
-    }
-    result.append(']');
-    return result.toString();
-  }
-
-  @Override
-  public JsObjectImpl asObject() {
+  public JsObjectBase asObject() {
     return this;
   }
 
-  public JsArrayImpl asArray() {
-    return null;
-  }
-
-  public JsFunction asFunction() {
-    return null;
-  }
-
+  @Override
   public JsVariable getProperty(String name) {
     return subproperties.getProperty(name);
   }
 
+  @Override
   public String getClassName() {
     return getMirror().getClassName();
   }
@@ -202,4 +184,35 @@ public class JsObjectImpl extends JsValueImpl implements JsObject {
       return subpropertiesMirror.getInternalProperties();
     }
   };
+
+  public static class Impl extends JsObjectBase {
+    Impl(InternalContext context, String variableFqn, ValueMirror valueState) {
+      super(context, variableFqn, valueState);
+    }
+
+    @Override
+    public JsArrayImpl asArray() {
+      return null;
+    }
+
+    @Override
+    public JsFunction asFunction() {
+      return null;
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder result = new StringBuilder();
+      result.append("[JsObject: type=").append(getType());
+      try {
+        for (JsVariable prop : getProperties()) {
+          result.append(',').append(prop);
+        }
+      } catch (MethodIsBlockingException e) {
+        return "[JsObject: Exception in retrieving data]";
+      }
+      result.append(']');
+      return result.toString();
+    }
+  }
 }
