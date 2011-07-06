@@ -14,48 +14,49 @@ import org.chromium.sdk.util.RelaySyncCallback;
  * A base class that represents a JavaScript VM variable value (compound values
  * are represented by subclasses.)
  */
-class JsValueImpl implements JsValue {
+abstract class JsValueBase implements JsValue {
 
   /** The value data as reported by the JavaScript VM. */
   private final ValueMirror valueData;
 
-  JsValueImpl(ValueMirror valueData) {
+  JsValueBase(ValueMirror valueData) {
     this.valueData = valueData;
   }
 
+  @Override
   public Type getType() {
     return valueData.getType();
   }
 
+  @Override
   public String getValueString() {
     return valueData.toString();
-  }
-
-  public JsObjectImpl asObject() {
-    return null;
   }
 
   public ValueMirror getMirror() {
     return this.valueData;
   }
 
+  @Override
   public boolean isTruncated() {
     LoadableString stringValue = this.valueData.getStringValue();
     return stringValue != null && stringValue.needsReload();
   }
 
+  @Override
   public RelayOk reloadHeavyValue(final ReloadBiggerCallback callback,
       SyncCallback syncCallback) {
 
     LoadableString stringValue = this.valueData.getStringValue();
     if (stringValue != null) {
       JavascriptVm.GenericCallback<Void> innerCallback = new JavascriptVm.GenericCallback<Void>() {
+        @Override
         public void success(Void value) {
           if (callback != null) {
             callback.done();
           }
         }
-        public void failure(Exception e) {
+        @Override public void failure(Exception e) {
         }
       };
       return stringValue.reloadBigger(innerCallback, syncCallback);
@@ -65,8 +66,21 @@ class JsValueImpl implements JsValue {
     }
   }
 
-  @Override
-  public String toString() {
-    return String.format("[JsValue: type=%s,value=%s]", getType(), getValueString());
+  @Override public abstract String toString();
+
+  static class Impl extends JsValueBase {
+    Impl(ValueMirror valueData) {
+      super(valueData);
+    }
+
+    @Override
+    public JsObjectBase asObject() {
+      return null;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("[JsValue: type=%s,value=%s]", getType(), getValueString());
+    }
   }
 }

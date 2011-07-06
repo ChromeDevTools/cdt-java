@@ -4,17 +4,20 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
+import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
+import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
 
 /**
  * Generic implementation of {@link JsFunction}.
  */
-class JsFunctionImpl extends JsObjectImpl implements JsFunction {
+class JsFunctionImpl extends JsObjectBase implements JsFunction {
   private volatile TextStreamPosition openParenPosition = null;
 
   JsFunctionImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
@@ -63,7 +66,27 @@ class JsFunctionImpl extends JsObjectImpl implements JsFunction {
   }
 
   @Override
+  public JsArray asArray() {
+    return null;
+  }
+
+  @Override
   public JsFunction asFunction() {
     return this;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder result = new StringBuilder();
+    result.append("[JsFunction: type=").append(getType());
+    try {
+      for (JsVariable prop : getProperties()) {
+        result.append(',').append(prop);
+      }
+    } catch (MethodIsBlockingException e) {
+      return "[JsObject: Exception in retrieving data]";
+    }
+    result.append(']');
+    return result.toString();
   }
 }

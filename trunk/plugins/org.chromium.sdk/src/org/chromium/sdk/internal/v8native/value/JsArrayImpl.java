@@ -12,6 +12,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.v8native.InternalContext;
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
@@ -19,7 +20,7 @@ import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 /**
  * A generic implementation of the JsArray interface.
  */
-class JsArrayImpl extends JsObjectImpl implements JsArray {
+class JsArrayImpl extends JsObjectBase implements JsArray {
 
   /**
    * An indexed sparse array of elements. Keys are indices, values are elements.
@@ -44,7 +45,7 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
     SortedMap<Integer, JsVariableImpl> map =
       // TODO(peter.rybin): do we need this comparator at all?
         new TreeMap<Integer, JsVariableImpl>(new Comparator<Integer>() {
-          public int compare(Integer o1, Integer o2) {
+          @Override public int compare(Integer o1, Integer o2) {
             return o1 - o2;
           }
         });
@@ -60,16 +61,19 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
     indexToElementMap = Collections.unmodifiableSortedMap(map);
   }
 
+  @Override
   public JsVariable get(int index) throws MethodIsBlockingException {
     ensureElementsMap();
     return indexToElementMap.get(index);
   }
 
+  @Override
   public SortedMap<Integer, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException {
     ensureElementsMap();
     return indexToElementMap;
   }
 
+  @Override
   public int length() {
     // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
     // rather than JsVariableImpl
@@ -110,5 +114,10 @@ class JsArrayImpl extends JsObjectImpl implements JsArray {
   @Override
   public JsArrayImpl asArray() {
     return this;
+  }
+
+  @Override
+  public JsFunction asFunction() {
+    return null;
   }
 }

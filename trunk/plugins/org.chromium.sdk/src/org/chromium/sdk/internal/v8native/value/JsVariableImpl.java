@@ -27,7 +27,7 @@ public class JsVariableImpl implements JsVariable {
   private final String qualifiedName;
 
   /** The lazily constructed value of this variable. */
-  private final JsValueImpl value;
+  private final JsValueBase value;
 
   /** Variable name. */
   private final Object rawName;
@@ -65,7 +65,7 @@ public class JsVariableImpl implements JsVariable {
     this.value = createValue(context, valueData, qualifiedName);
   }
 
-  public static JsValueImpl createValue(InternalContext context, ValueMirror valueData,
+  public static JsValueBase createValue(InternalContext context, ValueMirror valueData,
       String qualifiedName) {
     Type type = valueData.getType();
     switch (type) {
@@ -73,11 +73,11 @@ public class JsVariableImpl implements JsVariable {
         return new JsFunctionImpl(context, qualifiedName, valueData);
       case TYPE_ERROR:
       case TYPE_OBJECT:
-        return new JsObjectImpl(context, qualifiedName, valueData);
+        return new JsObjectBase.Impl(context, qualifiedName, valueData);
       case TYPE_ARRAY:
         return new JsArrayImpl(context, qualifiedName, valueData);
       default:
-        return new JsValueImpl(valueData);
+        return new JsValueBase.Impl(valueData);
     }
   }
 
@@ -86,10 +86,12 @@ public class JsVariableImpl implements JsVariable {
    * @return a [probably compound] JsValue corresponding to this variable.
    *         {@code null} if there was an error lazy-loading the value data.
    */
-  public JsValueImpl getValue() {
+  @Override
+  public JsValueBase getValue() {
     return value;
   }
 
+  @Override
   public String getName() {
     return decoratedName;
   }
@@ -102,15 +104,18 @@ public class JsVariableImpl implements JsVariable {
     return this.rawName;
   }
 
+  @Override
   public boolean isMutable() {
     return false; // TODO(apavlov): fix once V8 supports it
   }
 
+  @Override
   public boolean isReadable() {
     // TODO(apavlov): implement once the readability metadata are available
     return true;
   }
 
+  @Override
   public synchronized void setValue(String newValue, SetValueCallback callback) {
     // TODO(apavlov): currently V8 does not support it
     if (!isMutable()) {
@@ -140,6 +145,7 @@ public class JsVariableImpl implements JsVariable {
     return valueData;
   }
 
+  @Override
   public String getFullyQualifiedName() {
     return qualifiedName != null
         ? qualifiedName

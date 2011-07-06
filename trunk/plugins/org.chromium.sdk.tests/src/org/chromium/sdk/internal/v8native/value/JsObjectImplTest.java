@@ -35,8 +35,8 @@ import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeRef;
 import org.chromium.sdk.internal.v8native.value.DataWithRef;
-import org.chromium.sdk.internal.v8native.value.JsObjectImpl;
-import org.chromium.sdk.internal.v8native.value.JsValueImpl;
+import org.chromium.sdk.internal.v8native.value.JsObjectBase;
+import org.chromium.sdk.internal.v8native.value.JsValueBase;
 import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
 import org.chromium.sdk.internal.v8native.value.SubpropertiesMirror;
@@ -108,7 +108,7 @@ public class JsObjectImplTest {
 
   @Test
   public void testObjectData() throws Exception {
-    JsObjectImpl jsObject = new JsObjectImpl(callFrame.getInternalContext(), "test_object",
+    JsObjectBase jsObject = new JsObjectBase.Impl(callFrame.getInternalContext(), "test_object",
         eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
@@ -125,8 +125,8 @@ public class JsObjectImplTest {
     names.remove(secondVar.getName());
     assertEquals(0, names.size());
 
-    JsValueImpl firstVal = firstVar.getValue();
-    JsValueImpl secondVal = firstVar.getValue();
+    JsValueBase firstVal = firstVar.getValue();
+    JsValueBase secondVal = firstVar.getValue();
     assertEquals("3", firstVal.getValueString()); //$NON-NLS-1$
     assertEquals("3", secondVal.getValueString()); //$NON-NLS-1$
     assertNull(firstVal.asObject());

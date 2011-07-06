@@ -20,7 +20,7 @@ public class ExceptionDataImpl implements ExceptionData {
   private final String name;
   private final boolean isUncaught;
   private final String exceptionText;
-  private JsValueImpl cachedException;
+  private JsValueBase cachedException;
 
   public ExceptionDataImpl(InternalContext context, ValueMirror mirror, String name,
       boolean isUncaught, String sourceText, String exceptionText) {
