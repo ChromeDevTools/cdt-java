@@ -70,7 +70,8 @@ public class FixtureChromeStub implements ChromeStub {
 
     // MouseEvent
     refToObjectMap.put(Long.valueOf(getMouseEventRef()),
-        "{\"handle\":11,\"type\":\"object\",\"className\":\"MouseEvent\"," +
+        "{\"handle\":" + getMouseEventRef() + "," +
+        "\"type\":\"object\",\"className\":\"MouseEvent\"," +
         "\"constructorFunction\":{\"ref\":19},\"protoObject\":{\"ref\":73}," +
         "\"prototypeObject\":{\"ref\":2},\"properties\":[" +
         "{\"name\":\"x\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}," +
@@ -276,28 +277,30 @@ public class FixtureChromeStub implements ChromeStub {
       JSONObject args = JsonUtil.getAsJSON(data, "arguments");
       switch (debuggerCommand) {
         case LOOKUP:
-          JSONArray handles = JsonUtil.getAsJSONArray(args, "handles");
-          for (int i = 0; i < handles.size(); i++) {
-            Long ref = (Long) handles.get(i);
-            String objectData = refToObjectMap.get(ref);
-            if (args.get("maxStringLength") != null ) {
-              String fullVersion = refToFullVersionMap.get(ref);
-              if (fullVersion != null) {
-                objectData = fullVersion;
+          {
+            JSONArray handles = JsonUtil.getAsJSONArray(args, "handles");
+            JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
+            for (int i = 0; i < handles.size(); i++) {
+              Long ref = (Long) handles.get(i);
+              String objectData = refToObjectMap.get(ref);
+              if (args.get("maxStringLength") != null ) {
+                String fullVersion = refToFullVersionMap.get(ref);
+                if (fullVersion != null) {
+                  objectData = fullVersion;
+                }
+              }
+              if (objectData != null) {
+                try {
+                  jsonBody.put(String.valueOf(ref), JsonUtil.jsonObjectFromJson(objectData));
+                } catch (ParseException e) {
+                  throw new RuntimeException(e);
+                }
+              } else {
+                success = false;
               }
             }
-            if (objectData != null) {
-              try {
-                JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
-                jsonBody.put(String.valueOf(ref), JsonUtil.jsonObjectFromJson(objectData));
-                JSONArray jsonRefs = putJsonValue("refs", new JSONArray(), nameToJsonValue);
-                jsonRefs.add(getJsonObjectByRef(getNumber3Ref()));
-              } catch (ParseException e) {
-                throw new RuntimeException(e);
-              }
-            } else {
-              success = false;
-            }
+            JSONArray jsonRefs = putJsonValue("refs", new JSONArray(), nameToJsonValue);
+            jsonRefs.add(getJsonObjectByRef(getNumber3Ref()));
           }
           break;
         case EVALUATE:
