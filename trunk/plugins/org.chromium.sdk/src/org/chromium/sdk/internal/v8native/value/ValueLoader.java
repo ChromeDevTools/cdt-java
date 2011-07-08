@@ -4,29 +4,36 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.V8BlockingCallback;
 import org.chromium.sdk.internal.v8native.V8CommandCallbackBase;
 import org.chromium.sdk.internal.v8native.V8Helper;
-import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.input.data.RefWithDisplayData;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
@@ -35,14 +42,21 @@ import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
 import org.json.simple.JSONObject;
 
 /**
- * The elaborate factory for {@link ValueMirror}'s, that loads values from remote and
+ * The elaborate factory and storage for {@link ValueMirror}'s, that loads values from remote and
  * caches them. All the data comes originally in form of JSON strings which may contain
- * less or more fields, so it creates {@link ValueMirror} or {@link PropertyHoldingValueMirror}
- * accordingly.
+ * less or more fields, so it creates {@link ValueMirror} accordingly.
+ * {@link ValueMirror} is an immutable wrapper around JSON data. Several data instances
+ * may occur, the map should always hold the fullest (and the less expired) version.
+ * <p>V8 typically sends a lot of (unsolicited) data about properties. There could be various
+ * strategies about whether to parse and add them into a map or save parsing time and ignore.
  */
 public class ValueLoader {
+
   private final ConcurrentMap<Long, ValueMirror> refToMirror =
       new ConcurrentHashMap<Long, ValueMirror>();
+
+  private final HandleManager specialHandleManager = new HandleManager();
+
   private final InternalContext context;
   private final LoadableString.Factory loadableStringFactory;
 
@@ -55,18 +69,92 @@ public class ValueLoader {
     return loadableStringFactory;
   }
 
+  public HandleManager getSpecialHandleManager() {
+    return specialHandleManager;
+  }
 
+  public void addHandleFromRefs(SomeHandle handle) {
+    if (HandleManager.isSpecialType(handle.type())) {
+      specialHandleManager.put(handle.handle(), handle);
+    } else {
+      ValueHandle valueHandle;
+      try {
+        valueHandle = handle.asValueHandle();
+      } catch (JsonProtocolParseException e) {
+        throw new RuntimeException(e);
+      }
+      addDataToMap(valueHandle);
+    }
+  }
+
+  public ValueMirror addDataToMap(RefWithDisplayData refWithDisplayData) {
+    ValueMirror mirror = ValueMirror.create(refWithDisplayData, getLoadableStringFactory());
+    return putValueMirrorIntoMapRecursive(mirror);
+  }
+
+  public ValueMirror addDataToMap(ValueHandle valueHandle) {
+    ValueMirror mirror = ValueMirror.create(valueHandle, getLoadableStringFactory());
+    return putValueMirrorIntoMapRecursive(mirror);
+  }
+
+  public ValueMirror addDataToMap(Long ref, JsValue.Type type, String className,
+      LoadableString loadableString, SubpropertiesMirror subpropertiesMirror) {
+    ValueMirror mirror =
+        ValueMirror.create(ref, type, className, loadableString, subpropertiesMirror);
+    return putValueMirrorIntoMapRecursive(mirror);
+  }
+
+  private ValueMirror putValueMirrorIntoMapRecursive(ValueMirror mirror) {
+    if (PRE_PARSE_PROPERTIES) {
+      SubpropertiesMirror subpropertiesMirror = mirror.getProperties();
+      if (subpropertiesMirror != null) {
+        subpropertiesMirror.reportAllProperties(this);
+      }
+    }
+    return mergeValueMirrorIntoMap(mirror.getRef(), mirror);
+  }
+
+  private ValueMirror mergeValueMirrorIntoMap(Long ref, ValueMirror mirror) {
+    while (true) {
+      ValueMirror old = refToMirror.putIfAbsent(ref, mirror);
+      if (old == null) {
+        return mirror;
+      }
+      ValueMirror merged = ValueMirror.merge(old, mirror);
+      if (merged == old) {
+        return merged;
+      }
+      boolean updated = refToMirror.replace(ref, old, merged);
+      if (updated) {
+        return merged;
+      }
+    }
+  }
+
+  private static final boolean PRE_PARSE_PROPERTIES = false;
 
   /**
-   * Receives {@link ValueMirror} and makes sure it has its properties loaded.
+   * Looks up {@link ValueMirror} in map, loads them if needed or reloads them
+   * if property data is unavailable (or expired).
    */
-  public PropertyHoldingValueMirror loadSubpropertiesInMirror(ValueMirror mirror) {
-    PropertyHoldingValueMirror references = mirror.getProperties();
+  public SubpropertiesMirror loadSubpropertiesInMirror(Long ref) {
+    ValueMirror mirror = getSafe(refToMirror, ref);
+
+    SubpropertiesMirror references;
+    if (mirror == null) {
+      references = null;
+    } else {
+      references = mirror.getProperties();
+    }
     if (references == null) {
       // need to look up this value again
-      List<PropertyHoldingValueMirror> loadedMirrors =
-          loadValuesFromRemote(Collections.singletonList(Long.valueOf(mirror.getRef())));
-      references = loadedMirrors.get(0);
+      List<ValueMirror> loadedMirrors =
+          loadValuesFromRemote(Collections.singletonList(ref));
+      ValueMirror loadedMirror = loadedMirrors.get(0);
+      references = loadedMirror.getProperties();
+      if (references == null) {
+        throw new RuntimeException("Failed to load properties");
+      }
     }
     return references;
   }
@@ -97,11 +185,10 @@ public class ValueLoader {
   private ObjectValueHandle readFromScopeResponse(SuccessCommandResponse response) {
     List<SomeHandle> refs = response.refs();
 
-    HandleManager handleManager = context.getHandleManager();
-    for (int i = 0; i < refs.size(); i++) {
-      SomeHandle ref = refs.get(i);
-      handleManager.put(ref);
+    for (SomeHandle handle : refs) {
+      addHandleFromRefs(handle);
     }
+
     ScopeBody body;
     try {
       body = response.body().asScopeBody();
@@ -111,34 +198,51 @@ public class ValueLoader {
     return body.object();
   }
 
-/**
+  /**
    * For each PropertyReference from propertyRefs tries to either: 1. read it from PropertyReference
    * (possibly cached value) or 2. lookup value by refId from remote
    */
   public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs) {
     ValueMirror[] result = new ValueMirror[propertyRefs.size()];
-    List<Integer> mapForLoadResults = new ArrayList<Integer>();
+    Map<Long, Integer> refToRequestIndex = new HashMap<Long, Integer>();
     List<PropertyReference> needsLoading = new ArrayList<PropertyReference>();
 
     for (int i = 0; i < propertyRefs.size(); i++) {
-      PropertyReference ref = propertyRefs.get(i);
-      ValueMirror mirror = readFromPropertyReference(ref);
+      PropertyReference property = propertyRefs.get(i);
+      DataWithRef dataWithRef = property.getValueObject();
+      Long ref = dataWithRef.ref();
+      RefWithDisplayData dataWithDisplayData = dataWithRef.getWithDisplayData();
+      ValueMirror mirror;
+      if (dataWithDisplayData == null) {
+        mirror = getSafe(refToMirror, ref);
+      } else {
+        mirror = ValueMirror.create(dataWithDisplayData, loadableStringFactory);
+      }
       if (mirror == null) {
         // We don't have the data (enough) right now. We are requesting them from server.
         // There might be simultaneous request for the same value, which is a normal though
         // undesired case.
-        needsLoading.add(ref);
-        mapForLoadResults.add(i);
+        Integer requestPos = getSafe(refToRequestIndex, ref);
+        if (requestPos == null) {
+          refToRequestIndex.put(ref, needsLoading.size());
+          needsLoading.add(property);
+        }
+      } else {
+        result[i] = mirror;
       }
-      result[i] = mirror;
     }
 
-    List<Long> refIds = getRefIdFromReferences(needsLoading);
-    List<PropertyHoldingValueMirror> loadedMirrors = loadValuesFromRemote(refIds);
-    assert refIds.size() == loadedMirrors.size();
-    for (int i = 0; i < loadedMirrors.size(); i++) {
-      int pos = mapForLoadResults.get(i);
-      result[pos] = loadedMirrors.get(i).getValueMirror();
+    if (!needsLoading.isEmpty()) {
+      List<Long> refIds = getRefIdFromReferences(needsLoading);
+      List<ValueMirror> loadedMirrors = loadValuesFromRemote(refIds);
+      assert refIds.size() == loadedMirrors.size();
+      for (int i = 0; i < propertyRefs.size(); i++) {
+        PropertyReference property = propertyRefs.get(i);
+        DataWithRef dataWithRef = property.getValueObject();
+        Long ref = dataWithRef.ref();
+        int pos = getSafe(refToRequestIndex, ref);
+        result[i] = loadedMirrors.get(pos);
+      }
     }
     return Arrays.asList(result);
   }
@@ -152,58 +256,21 @@ public class ValueLoader {
   }
 
   /**
-   * Reads data from caches or from JSON from propertyReference. Never accesses remote.
-   */
-  private ValueMirror readFromPropertyReference(PropertyReference propertyReference) {
-    Long refIdObject = propertyReference.getRef();
-
-    ValueMirror mirror = refToMirror.get(refIdObject);
-    if (mirror != null) {
-      return mirror;
-    }
-    SomeHandle cachedHandle = context.getHandleManager().getHandle(refIdObject);
-    // If we have cached handle, we reads cached handle, not using one from propertyeReference
-    // because we expect to find more complete version in cache. Is it ok?
-    if (cachedHandle != null) {
-      ValueHandle valueHandle;
-      try {
-        valueHandle = cachedHandle.asValueHandle();
-      } catch (JsonProtocolParseException e) {
-        throw new RuntimeException(e);
-      }
-      mirror = V8Helper.createValueMirrorOptional(valueHandle, loadableStringFactory);
-    } else {
-      DataWithRef handleFromProperty = propertyReference.getValueObject();
-
-      mirror = V8Helper.createValueMirrorOptional(handleFromProperty);
-    }
-    if (mirror != null) {
-      ValueMirror mirror2 = refToMirror.putIfAbsent(refIdObject, mirror);
-      if (mirror2 != null) {
-        mergeMirrors(mirror2, mirror);
-      }
-    }
-
-    return mirror;
-  }
-
-  /**
-   * Requests values from remote via "lookup" command. Automatically caches JSON objects
-   * in {@link HandleManager}.
+   * Requests values from remote via "lookup" command. Automatically caches received data.
    * @param propertyRefIds list of ref ids we need to look up
    * @return loaded value mirrors in the same order as in propertyRefIds
    */
-  public List<PropertyHoldingValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds) {
+  public List<ValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds) {
     if (propertyRefIds.isEmpty()) {
       return Collections.emptyList();
     }
 
     DebuggerMessage message = DebuggerMessageFactory.lookup(propertyRefIds, false);
 
-    V8BlockingCallback<List<PropertyHoldingValueMirror>> callback =
-        new V8BlockingCallback<List<PropertyHoldingValueMirror>>() {
+    V8BlockingCallback<List<ValueMirror>> callback =
+        new V8BlockingCallback<List<ValueMirror>>() {
       @Override
-      protected List<PropertyHoldingValueMirror> handleSuccessfulResponse(
+      protected List<ValueMirror> handleSuccessfulResponse(
           SuccessCommandResponse response) {
         return readResponseFromLookup(response, propertyRefIds);
       }
@@ -218,14 +285,34 @@ public class ValueLoader {
     }
   }
 
-  private List<PropertyHoldingValueMirror> readResponseFromLookup(
+  private List<ValueMirror> readResponseFromLookup(
       SuccessCommandResponse successResponse, List<Long> propertyRefIds) {
-    List<ValueHandle> handles = readResponseFromLookupRaw(successResponse, propertyRefIds);
-    List<PropertyHoldingValueMirror> result =
-        new ArrayList<PropertyHoldingValueMirror>(propertyRefIds.size());
+    List<ValueMirror> result = new ArrayList<ValueMirror>(propertyRefIds.size());
+    JSONObject body;
+    try {
+      body = successResponse.body().asLookupMap();
+    } catch (JsonProtocolParseException e) {
+      throw new ValueLoadException(e);
+    }
     for (int i = 0; i < propertyRefIds.size(); i++) {
       int ref = propertyRefIds.get(i).intValue();
-      result.add(readMirrorFromLookup(ref, handles.get(i)));
+      JSONObject value = JsonUtil.getAsJSON(body, String.valueOf(ref));
+      if (value == null) {
+        throw new ValueLoadException("Failed to find value for ref=" + ref);
+      }
+      ValueHandle valueHandle;
+      try {
+        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
+      } catch (JsonProtocolParseException e) {
+        throw new RuntimeException(e);
+      }
+
+      long refLong = valueHandle.handle();
+      if (refLong != ref) {
+        throw new ValueLoadException("Inconsistent ref in response, ref=" + ref);
+      }
+      ValueMirror mirror = addDataToMap(valueHandle);
+      result.add(mirror);
     }
     return result;
   }
@@ -245,41 +332,18 @@ public class ValueLoader {
       if (value == null) {
         throw new ValueLoadException("Failed to find value for ref=" + ref);
       }
-      SomeHandle smthHandle = context.getHandleManager().put((long) ref, value);
       ValueHandle valueHandle;
       try {
-        valueHandle = smthHandle.asValueHandle();
+        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
       } catch (JsonProtocolParseException e) {
         throw new ValueLoadException(e);
       }
+
+      addDataToMap(valueHandle);
+
       result.add(valueHandle);
     }
     return result;
-  }
-
-  /**
-   * Constructs a ValueMirror given a V8 debugger object specification and the
-   * value name.
-   *
-   * @param jsonValue containing the object specification from the V8 debugger
-   * @param ref
-   * @return a ValueMirror instance with the specified name, containing data
-   *         from handle, or {@code null} if {@code handle} is not a handle
-   */
-  private PropertyHoldingValueMirror readMirrorFromLookup(int ref, ValueHandle jsonValue) {
-    PropertyHoldingValueMirror propertiesMirror =
-        V8Helper.createMirrorFromLookup(jsonValue, loadableStringFactory);
-    ValueMirror newMirror = propertiesMirror.getValueMirror();
-
-    ValueMirror oldMirror = refToMirror.putIfAbsent((long)ref, newMirror);
-    if (oldMirror != null) {
-      mergeMirrors(oldMirror, newMirror);
-    }
-    return propertiesMirror;
-  }
-
-  private static void mergeMirrors(ValueMirror baseMirror, ValueMirror alternativeMirror) {
-    baseMirror.mergeFrom(alternativeMirror);
   }
 
   private RelayOk relookupValue(long handleId, Long maxLength,
@@ -304,6 +368,7 @@ public class ValueLoader {
   }
 
   private class StringFactory implements LoadableString.Factory {
+    @Override
     public LoadableString create(ValueHandle handle) {
       final long handleId = handle.handle();
       final LoadedValue initialValue = new LoadedValue(handle);
@@ -312,13 +377,17 @@ public class ValueLoader {
         private final AtomicReference<LoadedValue> valueRef =
             new AtomicReference<LoadedValue>(initialValue);
 
+        @Override
         public String getCurrentString() {
           return valueRef.get().stringValue;
         }
+
+        @Override
         public boolean needsReload() {
           LoadedValue loadedValue = valueRef.get();
           return loadedValue.loadedSize < loadedValue.actualSize;
         }
+
         @Override
         public RelayOk reloadBigger(final GenericCallback<Void> callback,
             SyncCallback syncCallback) {
@@ -328,6 +397,7 @@ public class ValueLoader {
 
           JavascriptVm.GenericCallback<ValueHandle> innerCallback =
               new JavascriptVm.GenericCallback<ValueHandle>() {
+            @Override
             public void success(ValueHandle handle) {
               LoadedValue newLoadedValue = new LoadedValue(handle);
               replaceValue(handle, newLoadedValue);
@@ -335,6 +405,8 @@ public class ValueLoader {
                 callback.success(null);
               }
             }
+
+            @Override
             public void failure(Exception e) {
               if (callback != null) {
                 callback.failure(new Exception(e));
@@ -349,6 +421,7 @@ public class ValueLoader {
             debugSession.maybeRethrowContextException(e);
             // or
             return debugSession.sendLoopbackMessage(new Runnable() {
+              @Override
               public void run() {
                 if (callback != null) {
                   callback.failure(e);
@@ -389,7 +462,7 @@ public class ValueLoader {
           this.actualSize = this.loadedSize;
         } else {
           this.loadedSize = toIndex;
-          this.actualSize = (long) handle.length();
+          this.actualSize = handle.length();
         }
       }
     }

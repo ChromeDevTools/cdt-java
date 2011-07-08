@@ -8,9 +8,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.input.data.RefWithDisplayData;
 
 /**
  * This class is intended to hold properties either already parsed or to be parsed on demand.
@@ -21,6 +23,8 @@ public abstract class SubpropertiesMirror {
   public abstract List<? extends PropertyReference> getInternalProperties();
 
   public abstract Object getAdditionalPropertyData();
+
+  public abstract void reportAllProperties(ValueLoader valueLoader);
 
   public static class ObjectValueBased extends JsonBased {
     private final ObjectValueHandle objectValueHandle;
@@ -74,6 +78,17 @@ public abstract class SubpropertiesMirror {
       return internalProperties;
     }
 
+    @Override
+    public void reportAllProperties(ValueLoader valueLoader) {
+      List<DataWithRef> refs = V8ProtocolUtil.extractAllPropertyRefs(getObjectValue());
+      for (DataWithRef dataWithRef : refs) {
+        RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
+        if (refWithDisplayData != null) {
+          valueLoader.addDataToMap(refWithDisplayData);
+        }
+      }
+    }
+
     protected abstract ObjectValueHandle getObjectValue();
   }
 
@@ -98,6 +113,17 @@ public abstract class SubpropertiesMirror {
     public Object getAdditionalPropertyData() {
       return EMPTY_OBJECT;
     }
+
+    @Override
+    public void reportAllProperties(ValueLoader valueLoader) {
+      for (PropertyReference ref : list) {
+        DataWithRef dataWithRef = ref.getValueObject();
+        RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
+        if (refWithDisplayData != null) {
+          valueLoader.addDataToMap(refWithDisplayData);
+        }
+      }
+    }
   }
 
   static final SubpropertiesMirror EMPTY = new SubpropertiesMirror() {
@@ -114,6 +140,9 @@ public abstract class SubpropertiesMirror {
     @Override
     public Object getAdditionalPropertyData() {
       return EMPTY_OBJECT;
+    }
+    @Override
+    public void reportAllProperties(ValueLoader valueLoader) {
     }
   };
 

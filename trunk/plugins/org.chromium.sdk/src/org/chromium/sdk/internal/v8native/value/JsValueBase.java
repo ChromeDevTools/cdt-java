@@ -15,31 +15,27 @@ import org.chromium.sdk.util.RelaySyncCallback;
  * are represented by subclasses.)
  */
 abstract class JsValueBase implements JsValue {
-
-  /** The value data as reported by the JavaScript VM. */
-  private final ValueMirror valueData;
+  private final Type type;
+  private final LoadableString loadableString;
 
   JsValueBase(ValueMirror valueData) {
-    this.valueData = valueData;
+    this.type = valueData.getType();
+    this.loadableString = valueData.getStringValue();
   }
 
   @Override
   public Type getType() {
-    return valueData.getType();
+    return type;
   }
 
-  @Override
-  public String getValueString() {
-    return valueData.toString();
+  protected LoadableString getLoadableString() {
+    return loadableString;
   }
 
-  public ValueMirror getMirror() {
-    return this.valueData;
-  }
 
   @Override
   public boolean isTruncated() {
-    LoadableString stringValue = this.valueData.getStringValue();
+    LoadableString stringValue = loadableString;
     return stringValue != null && stringValue.needsReload();
   }
 
@@ -47,8 +43,7 @@ abstract class JsValueBase implements JsValue {
   public RelayOk reloadHeavyValue(final ReloadBiggerCallback callback,
       SyncCallback syncCallback) {
 
-    LoadableString stringValue = this.valueData.getStringValue();
-    if (stringValue != null) {
+    if (loadableString != null) {
       JavascriptVm.GenericCallback<Void> innerCallback = new JavascriptVm.GenericCallback<Void>() {
         @Override
         public void success(Void value) {
@@ -59,7 +54,7 @@ abstract class JsValueBase implements JsValue {
         @Override public void failure(Exception e) {
         }
       };
-      return stringValue.reloadBigger(innerCallback, syncCallback);
+      return loadableString.reloadBigger(innerCallback, syncCallback);
 
     } else {
       return RelaySyncCallback.finish(syncCallback);
@@ -76,6 +71,12 @@ abstract class JsValueBase implements JsValue {
     @Override
     public JsObjectBase asObject() {
       return null;
+    }
+
+    @Override
+    public String getValueString() {
+      LoadableString s = getLoadableString();
+      return s == null ? "" : s.getCurrentString();
     }
 
     @Override

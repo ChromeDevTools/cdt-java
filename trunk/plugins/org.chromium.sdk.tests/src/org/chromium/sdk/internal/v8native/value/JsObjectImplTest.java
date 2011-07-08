@@ -19,13 +19,12 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.BrowserFactoryImpl;
 import org.chromium.sdk.internal.BrowserFactoryImplTestGate;
 import org.chromium.sdk.internal.browserfixture.FixtureChromeStub;
 import org.chromium.sdk.internal.browserfixture.StubListener;
-import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
@@ -34,13 +33,6 @@ import org.chromium.sdk.internal.v8native.InternalContext;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeRef;
-import org.chromium.sdk.internal.v8native.value.DataWithRef;
-import org.chromium.sdk.internal.v8native.value.JsObjectBase;
-import org.chromium.sdk.internal.v8native.value.JsValueBase;
-import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
-import org.chromium.sdk.internal.v8native.value.PropertyReference;
-import org.chromium.sdk.internal.v8native.value.SubpropertiesMirror;
-import org.chromium.sdk.internal.v8native.value.ValueMirror;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.junit.Before;
@@ -75,13 +67,14 @@ public class JsObjectImplTest {
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
     SomeRef someRef = V8ProtocolParserAccess.get().parse(valueObject, SomeRef.class);
     DataWithRef dataWithRef = DataWithRef.fromSomeRef(someRef);
-    eventMirror = ValueMirror.createObject(
-        11, new SubpropertiesMirror.ListBased(
-            new PropertyReference("x", dataWithRef),
-            new PropertyReference("y", dataWithRef)
-        ), Type.TYPE_OBJECT, null).getValueMirror();
-
+    SubpropertiesMirror.ListBased subpropertiesMirror = new SubpropertiesMirror.ListBased(
+        new PropertyReference("x", dataWithRef),
+        new PropertyReference("y", dataWithRef)
+    );
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
+    eventMirror = internalContext.getValueLoader().addDataToMap(Long.valueOf(11),
+        Type.TYPE_OBJECT, null, null,
+        subpropertiesMirror);
 
     FrameObject frameObject;
     {

@@ -22,7 +22,6 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory
 import org.chromium.sdk.internal.v8native.value.JsObjectBase;
 import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
-import org.chromium.sdk.internal.v8native.value.LoadableString.Factory;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -55,10 +54,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
               throw new RuntimeException(e);
             }
             InternalContext internalContext = getInternalContext();
-            Factory stringFactory =
-                internalContext.getValueLoader().getLoadableStringFactory();
-            ValueMirror mirror =
-                V8Helper.createMirrorFromLookup(body, stringFactory).getValueMirror();
+            ValueMirror mirror = internalContext.getValueLoader().addDataToMap(body);
             JsVariable variable = new JsVariableImpl(internalContext, mirror, expression);
             callback.success(variable);
           }

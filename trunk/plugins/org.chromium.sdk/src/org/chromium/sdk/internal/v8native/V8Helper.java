@@ -13,39 +13,27 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.shellprotocol.tools.v8debugger.ChromeDevToolSessionManager;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
-import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
-import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.PropertyObject;
-import org.chromium.sdk.internal.v8native.protocol.input.data.RefWithDisplayData;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.ScriptsMessage;
-import org.chromium.sdk.internal.v8native.value.DataWithRef;
 import org.chromium.sdk.internal.v8native.value.JsDataTypeUtil;
 import org.chromium.sdk.internal.v8native.value.LoadableString;
-import org.chromium.sdk.internal.v8native.value.PropertyHoldingValueMirror;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
-import org.chromium.sdk.internal.v8native.value.SubpropertiesMirror;
 import org.chromium.sdk.internal.v8native.value.ValueLoadException;
-import org.chromium.sdk.internal.v8native.value.ValueMirror;
 
 /**
  * A helper class for performing complex V8-related operations.
  */
 public class V8Helper {
-
-  public V8Helper(DebugSession debugSession) {
-  }
 
   public interface ScriptLoadCallback {
     void success();
@@ -165,56 +153,7 @@ public class V8Helper {
         V8ProtocolUtil.PropertyNameGetter.THIS);
   }
 
-  /**
-   * Constructs a ValueMirror given a V8 debugger object specification.
-   *
-   * @param jsonValue containing the object specification from the V8 debugger
-   * @return a {@link PropertyHoldingValueMirror} instance, containing data
-   *         from jsonValue; not null
-   */
-  public static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle,
-      LoadableString.Factory stringFactory) {
-    String text = valueHandle.text();
-    if (text == null) {
-      throw new ValueLoadException("Bad lookup result");
-    }
-    String typeString = valueHandle.type();
-    String className = valueHandle.className();
-    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
-    if (type == null) {
-      throw new ValueLoadException("Bad lookup result: type field not recognized: " + typeString);
-    }
-    return createMirrorFromLookup(valueHandle, type, stringFactory);
-  }
-
-  /**
-   * Constructs a {@link ValueMirror} given a V8 debugger object specification if it's possible.
-   * @return a {@link ValueMirror} instance, containing data
-   *         from {@code jsonValue}; or {@code null} if {@code jsonValue} is not a handle
-   */
-  public static ValueMirror createValueMirrorOptional(DataWithRef handleFromProperty) {
-    RefWithDisplayData withData = handleFromProperty.getWithDisplayData();
-    if (withData == null) {
-      return null;
-    }
-    return createValueMirror(withData);
-  }
-  public static ValueMirror createValueMirrorOptional(ValueHandle valueHandle,
-      LoadableString.Factory stringFactory) {
-    return createValueMirror(valueHandle, stringFactory);
-  }
-
-  private static ValueMirror createValueMirror(ValueHandle valueHandle,
-      LoadableString.Factory stringFactory) {
-    String className = valueHandle.className();
-    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(valueHandle.type(), className);
-    if (type == null) {
-      type = Type.TYPE_OBJECT;
-    }
-    return createMirrorFromLookup(valueHandle, type, stringFactory).getValueMirror();
-  }
-
-  private static LoadableString createLoadableString(ValueHandle handle,
+  public static LoadableString createLoadableString(ValueHandle handle,
       LoadableString.Factory stringFactory) {
     Long len = handle.length();
     Long toIndex = handle.toIndex();
@@ -225,49 +164,16 @@ public class V8Helper {
     return new LoadableString.Immutable(handle.text());
   }
 
-  private static ValueMirror createValueMirror(RefWithDisplayData jsonValue) {
-    String className = jsonValue.className();
-    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(jsonValue.type(), className);
+  public static Type calculateType(String typeString, String className, boolean tolerateNullType) {
+    Type type = JsDataTypeUtil.fromJsonTypeAndClassName(typeString, className);
     if (type == null) {
-      throw new ValueLoadException("Bad value object");
-    }
-    { // try another format
-      if (Type.isObjectType(type)) {
-        int refId = (int) jsonValue.ref();
-        return ValueMirror.createObjectUnknownProperties(refId, type, className);
+      if (tolerateNullType) {
+        type = Type.TYPE_OBJECT;
       } else {
-        // try another format
-        Object valueObj = jsonValue.value();
-        String valueStr;
-        if (valueObj == null) {
-          valueStr = jsonValue.type(); // e.g. "undefined"
-        } else {
-          valueStr = valueObj.toString();
-        }
-
-        LoadableString stringValue = new LoadableString.Immutable(valueStr);
-        return ValueMirror.createScalar(stringValue, type, className).getValueMirror();
+        throw new ValueLoadException("Bad value object");
       }
     }
-  }
-
-  private static PropertyHoldingValueMirror createMirrorFromLookup(ValueHandle valueHandle,
-      Type type, LoadableString.Factory stringFactory) {
-    if (Type.isObjectType(type)) {
-      ObjectValueHandle objectValueHandle = valueHandle.asObject();
-      int refId = (int) valueHandle.handle();
-      SubpropertiesMirror subpropertiesMirror;
-      if (type == Type.TYPE_FUNCTION) {
-        FunctionValueHandle functionValueHandle = objectValueHandle.asFunction();
-        subpropertiesMirror = new SubpropertiesMirror.FunctionValueBased(functionValueHandle);
-      } else {
-        subpropertiesMirror = new SubpropertiesMirror.ObjectValueBased(objectValueHandle);
-      }
-      return ValueMirror.createObject(refId, subpropertiesMirror, type, valueHandle.className());
-    } else {
-      return ValueMirror.createScalar(createLoadableString(valueHandle, stringFactory), type,
-          valueHandle.className());
-    }
+    return type;
   }
 
   public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
@@ -286,10 +192,12 @@ public class V8Helper {
     final List<RES> resBuff = new ArrayList<RES>(Collections.nCopies(1, (RES)null));
     V8CommandProcessor.V8HandlerCallback callbackWrapper =
         new V8CommandProcessor.V8HandlerCallback() {
+      @Override
       public void failure(String message) {
         exBuff[0] = new Exception("Failure: " + message);
       }
 
+      @Override
       public void messageReceived(CommandResponse response) {
         RES result = callback.messageReceived(response);
         resBuff.set(0, result);

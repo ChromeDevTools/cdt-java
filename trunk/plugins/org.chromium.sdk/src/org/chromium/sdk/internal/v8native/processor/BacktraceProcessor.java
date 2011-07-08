@@ -21,7 +21,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
-import org.chromium.sdk.internal.v8native.value.HandleManager;
+import org.chromium.sdk.internal.v8native.value.ValueLoader;
 
 /**
  * Handles the "backtrace" V8 command replies.
@@ -74,10 +74,10 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
       jsonFrames = Collections.emptyList();
     }
 
-    HandleManager handleManager = step2.getInternalContext().getHandleManager();
-
-    List<SomeHandle> refs = response.refs();
-    handleManager.putAll(refs);
+    ValueLoader valueLoader = step2.getInternalContext().getValueLoader();
+    for (SomeHandle handle : response.refs()) {
+      valueLoader.addHandleFromRefs(handle);
+    }
 
     return step2.setFrames(jsonFrames);
   }

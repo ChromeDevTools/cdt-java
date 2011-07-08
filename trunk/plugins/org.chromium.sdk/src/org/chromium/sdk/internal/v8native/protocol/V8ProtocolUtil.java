@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.v8native.protocol;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,6 +105,21 @@ public class V8ProtocolUtil {
       putMirror(objProps, constructorFunction, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
     }
     return objProps;
+  }
+
+  public static List<DataWithRef> extractAllPropertyRefs(ObjectValueHandle handle) {
+    final List<PropertyReference> properties = new ArrayList<PropertyReference>();
+    properties.addAll(extractObjectProperties(handle));
+    properties.addAll(extractObjectInternalProperties(handle));
+    return new AbstractList<DataWithRef>() {
+      @Override public int size() {
+        return properties.size();
+      }
+
+      @Override public DataWithRef get(int index) {
+        return properties.get(index).getValueObject();
+      }
+    };
   }
 
   public static <OBJ> void putMirror(List<PropertyReference> refs, OBJ propertyObject,

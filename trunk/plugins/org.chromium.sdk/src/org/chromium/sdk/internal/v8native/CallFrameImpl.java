@@ -17,12 +17,9 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
-import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
-import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 import org.chromium.sdk.internal.v8native.value.JsScopeImpl;
 import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
@@ -106,20 +103,8 @@ public class CallFrameImpl implements CallFrame {
       currentLine++;
     }
     Long scriptRef = V8ProtocolUtil.getObjectRef(frameObject.script());
-
-    Long scriptId = -1L;
-    if (scriptRef != null) {
-      SomeHandle handle = context.getHandleManager().getHandle(scriptRef);
-      if (handle != null) {
-        ScriptHandle scriptHandle;
-        try {
-          scriptHandle = handle.asScriptHandle();
-        } catch (JsonProtocolParseException e) {
-          throw new RuntimeException(e);
-        }
-        scriptId = scriptHandle.id();
-      }
-    }
+    long scriptId =
+        ScriptImpl.getScriptId(context.getValueLoader().getSpecialHandleManager(), scriptRef);
 
     this.scriptId = scriptId;
     this.lineNumber = currentLine;

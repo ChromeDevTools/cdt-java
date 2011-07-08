@@ -41,6 +41,7 @@ public class ExceptionDataImpl implements ExceptionData {
   @Override
   public JsValue getExceptionValue() {
     if (cachedException == null) {
+      // TODO: make it thread-safe.
       cachedException = JsVariableImpl.createValue(context, mirror, "<exception>");
     }
     return cachedException;

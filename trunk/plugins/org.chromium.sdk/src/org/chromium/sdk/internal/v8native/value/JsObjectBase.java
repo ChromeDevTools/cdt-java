@@ -22,6 +22,10 @@ import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
  */
 public abstract class JsObjectBase extends JsValueBase implements JsObject {
 
+  private final long ref;
+
+  private final String className;
+
   private final InternalContext context;
 
   /**
@@ -36,9 +40,11 @@ public abstract class JsObjectBase extends JsValueBase implements JsObject {
    * @param variableFqn the fully qualified name of the variable holding this object
    * @param valueState the value data from the JS VM
    */
-  JsObjectBase(InternalContext context, String variableFqn, ValueMirror valueState) {
-    super(valueState);
+  JsObjectBase(InternalContext context, String variableFqn, ValueMirror mirror) {
+    super(mirror);
     this.context = context;
+    this.ref = mirror.getRef();
+    this.className = mirror.getClassName();
     this.variableFqn = variableFqn;
   }
 
@@ -54,7 +60,6 @@ public abstract class JsObjectBase extends JsValueBase implements JsObject {
 
   @Override
   public String getRefId() {
-    int ref = getMirror().getRef();
     if (ref < 0) {
       // Negative handle means that it's transient. We don't expose it.
       return null;
@@ -79,7 +84,20 @@ public abstract class JsObjectBase extends JsValueBase implements JsObject {
 
   @Override
   public String getClassName() {
-    return getMirror().getClassName();
+    return className;
+  }
+
+  @Override
+  public String getValueString() {
+    switch (getType()) {
+      case TYPE_OBJECT:
+      case TYPE_ARRAY:
+        return "[" + getClassName() + "]";
+      case TYPE_FUNCTION:
+        return "[Function]";
+      default:
+        return "";
+    }
   }
 
   protected InternalContext getInternalContext() {
@@ -91,7 +109,7 @@ public abstract class JsObjectBase extends JsValueBase implements JsObject {
   }
 
   protected SubpropertiesMirror getSubpropertiesMirror() {
-    return context.getValueLoader().loadSubpropertiesInMirror(getMirror()).getSubpropertiesMirror();
+    return context.getValueLoader().loadSubpropertiesInMirror(ref);
   }
 
   abstract class Subproperties {

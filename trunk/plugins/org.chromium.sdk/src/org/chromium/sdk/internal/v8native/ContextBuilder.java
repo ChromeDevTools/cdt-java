@@ -154,7 +154,6 @@ public class ContextBuilder {
   }
 
   private class PreContext implements InternalContext {
-    private final HandleManager handleManager = new HandleManager();
     private final ValueLoader valueLoader = new ValueLoader(this);
 
     /**
@@ -208,11 +207,6 @@ public class ContextBuilder {
     public CallFrameImpl getTopFrameImpl() {
       assertValid();
       return getContext().data.frames.getCallFrames().get(0);
-    }
-
-    public HandleManager getHandleManager() {
-      // tolerates dismissed context
-      return handleManager;
     }
 
     public ValueLoader getValueLoader() {
@@ -397,8 +391,6 @@ public class ContextBuilder {
     private boolean scriptsLinkedToFrames;
 
     Frames(List<FrameObject> jsonFrames, InternalContext internalContext) {
-      HandleManager handleManager = internalContext.getHandleManager();
-
       CallFrameImpl[] callFrames = new CallFrameImpl[jsonFrames.size()];
 
       for (FrameObject frameObject : jsonFrames) {
