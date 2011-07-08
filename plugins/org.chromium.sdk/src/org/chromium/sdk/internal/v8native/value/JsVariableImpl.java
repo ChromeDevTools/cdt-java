@@ -14,11 +14,6 @@ import org.chromium.sdk.internal.v8native.InternalContext;
  */
 public class JsVariableImpl implements JsVariable {
 
-  /**
-   * The variable value data as reported by the JavaScript VM (is used to
-   * construct the variable value.)
-   */
-  private final ValueMirror valueData;
 
   /** The context this variable belongs in. */
   private final InternalContext context;
@@ -57,7 +52,6 @@ public class JsVariableImpl implements JsVariable {
   JsVariableImpl(InternalContext context, ValueMirror valueData, Object rawName,
       String decoratedName, String qualifiedName) {
     this.context = context;
-    this.valueData = valueData;
     this.rawName = rawName;
     this.decoratedName = decoratedName;
     this.qualifiedName = qualifiedName;
@@ -139,10 +133,6 @@ public class JsVariableImpl implements JsVariable {
    */
   protected InternalContext getInternalContext() {
     return context;
-  }
-
-  public ValueMirror getMirror() {
-    return valueData;
   }
 
   @Override

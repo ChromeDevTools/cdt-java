@@ -30,12 +30,6 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
   // TODO(peter.rybin): document this
   boolean isValid();
 
-  /**
-   * Handle manager makes sense only for a particular context.
-   * @return HandleManager of this context
-   */
-  HandleManager getHandleManager();
-
   CallFrameImpl getTopFrameImpl();
 
   /**
@@ -50,6 +44,10 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
   class ContextDismissedCheckedException extends Exception {
   }
 
+  /**
+   * {@link ValueLoader} makes sense only for a particular context.
+   * @return {@link ValueLoader} of this context
+   */
   ValueLoader getValueLoader();
 
   DebugContext getUserContext();

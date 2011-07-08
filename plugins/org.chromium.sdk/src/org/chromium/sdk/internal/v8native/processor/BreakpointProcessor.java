@@ -16,7 +16,6 @@ import org.chromium.sdk.internal.v8native.BreakpointManager;
 import org.chromium.sdk.internal.v8native.ContextBuilder;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.protocol.V8Protocol;
 import org.chromium.sdk.internal.v8native.protocol.input.BreakEventBody;
@@ -26,8 +25,8 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.value.ExceptionDataImpl;
-import org.chromium.sdk.internal.v8native.value.LoadableString;
-import org.chromium.sdk.internal.v8native.value.PropertyHoldingValueMirror;
+import org.chromium.sdk.internal.v8native.value.ValueLoader;
+import org.chromium.sdk.internal.v8native.value.ValueMirror;
 
 /**
  * Handles the suspension-related V8 command replies and events.
@@ -114,18 +113,19 @@ public class BreakpointProcessor extends V8EventProcessor {
       InternalContext internalContext) {
     List<SomeHandle> refs = response.refs();
     ValueHandle exception = body.exception();
-    List<SomeHandle> handles = new ArrayList<SomeHandle>(refs.size() + 1);
-    handles.addAll(refs);
-    handles.add(exception.getSuper());
-    internalContext.getHandleManager().putAll(handles);
+    ValueLoader valueLoader = internalContext.getValueLoader();
+    for (SomeHandle handle : refs) {
+      valueLoader.addHandleFromRefs(handle);
+    }
+    valueLoader.addHandleFromRefs(exception.getSuper());
 
     // source column is not exposed ("sourceColumn" in "body")
     String sourceText = body.sourceLineText();
 
-    PropertyHoldingValueMirror propertyHoldingMirror =
-        V8Helper.createMirrorFromLookup(exception, LoadableString.Factory.IMMUTABLE);
+    ValueMirror mirror = valueLoader.addDataToMap(exception);
+
     return new ExceptionDataImpl(internalContext,
-        propertyHoldingMirror.getValueMirror(),
+        mirror,
         EXCEPTION_NAME,
         body.uncaught(),
         sourceText,

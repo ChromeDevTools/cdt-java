@@ -146,11 +146,9 @@ public abstract class JsScopeImpl<D> implements JsScope {
     @Override
     protected DeferredData loadDeferredData(ValueLoader valueLoader) {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
-      PropertyHoldingValueMirror mirror = V8Helper.createMirrorFromLookup(scopeObject.getSuper(),
-          valueLoader.getLoadableStringFactory());
-      ValueMirror valueData = mirror.getValueMirror();
+      ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
       JsValue jsValue = JsVariableImpl.createValue(getCallFrameImpl().getInternalContext(),
-          valueData, "<with object>");
+          mirror, "<with object>");
       return new DeferredData(jsValue);
     }
 

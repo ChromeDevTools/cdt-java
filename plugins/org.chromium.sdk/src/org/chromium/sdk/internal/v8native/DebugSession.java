@@ -40,9 +40,6 @@ public class DebugSession {
 
   private final V8CommandProcessor v8CommandProcessor;
 
-  /** A helper for performing complex V8-related actions. */
-  private final V8Helper v8Helper = new V8Helper(this);
-
   private final ContextBuilder contextBuilder;
 
   /** Our manager. */
@@ -122,10 +119,6 @@ public class DebugSession {
 
   public ScriptManagerProxy getScriptManagerProxy() {
     return scriptManagerProxy;
-  }
-
-  public V8Helper getV8Helper() {
-    return v8Helper;
   }
 
   public ContextBuilder getContextBuilder() {

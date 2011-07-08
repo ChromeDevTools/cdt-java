@@ -28,14 +28,9 @@ import org.chromium.sdk.internal.transport.FakeConnectionFactory;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
 import org.chromium.sdk.internal.v8native.ContextBuilder;
 import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
-import org.chromium.sdk.internal.v8native.value.JsArrayImpl;
-import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
-import org.chromium.sdk.internal.v8native.value.LoadableString;
-import org.chromium.sdk.internal.v8native.value.ValueMirror;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.junit.Before;
@@ -83,10 +78,9 @@ public class JsArrayImplTest {
     ValueHandle valueHandle =
         V8ProtocolParserAccess.get().parse(valueHandleJson, ValueHandle.class);
 
-    arrayMirror = V8Helper.createMirrorFromLookup(valueHandle, LoadableString.Factory.IMMUTABLE)
-        .getValueMirror();
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
+    arrayMirror = internalContext.getValueLoader().addDataToMap(valueHandle);
 
     FrameObject frameObject;
     {
