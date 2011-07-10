@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86959
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@90626
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -35,5 +35,10 @@ public interface FrameValue {
    Frame document's URL.
    */
   String url();
+
+  /**
+   Frame document's mimeType as determined by the browser.
+   */
+  String mimeType();
 
 }
