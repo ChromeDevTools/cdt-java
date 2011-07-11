@@ -57,4 +57,4 @@ SDK changes reflect the new features described above. Some of the most noticeabl
 || *Java:* || J2SE-1.6 or newer. ||
 
 Optional:
-|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer.||
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
