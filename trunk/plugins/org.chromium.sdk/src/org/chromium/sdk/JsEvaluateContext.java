@@ -52,6 +52,7 @@ public interface JsEvaluateContext {
 
   /**
    * @return {@link DebugContext} this {@link JsEvaluateContext} was created within
+   * TODO: consider removing this method
    */
   DebugContext getDebugContext();
 }

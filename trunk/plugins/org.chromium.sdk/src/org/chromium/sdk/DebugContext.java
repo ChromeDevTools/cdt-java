@@ -112,4 +112,9 @@ public interface DebugContext {
    * @return {@link JavascriptVm} instance this context was created for
    */
   JavascriptVm getJavascriptVm();
+
+  /**
+   * @return value mapping that all values have by default
+   */
+  RemoteValueMapping getDefaultRemoteValueMapping();
 }

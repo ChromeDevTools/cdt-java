@@ -22,6 +22,10 @@ public class AsyncFutureRef<T> {
     AsyncFuture.initializeReference(ref, requester);
   }
 
+  public void reinitializeRunning(Operation<T> requester) {
+    AsyncFuture.reinitializeReference(ref, requester);
+  }
+
   public void initializeTrivial(T value) {
     AsyncFuture.initializeTrivial(ref, value);
   }

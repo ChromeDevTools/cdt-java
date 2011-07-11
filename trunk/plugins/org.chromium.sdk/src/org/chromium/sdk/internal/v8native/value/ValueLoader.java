@@ -14,12 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -50,7 +52,7 @@ import org.json.simple.JSONObject;
  * <p>V8 typically sends a lot of (unsolicited) data about properties. There could be various
  * strategies about whether to parse and add them into a map or save parsing time and ignore.
  */
-public class ValueLoader {
+public class ValueLoader implements RemoteValueMapping {
 
   private final ConcurrentMap<Long, ValueMirror> refToMirror =
       new ConcurrentHashMap<Long, ValueMirror>();
@@ -59,6 +61,8 @@ public class ValueLoader {
 
   private final InternalContext context;
   private final LoadableString.Factory loadableStringFactory;
+
+  private final AtomicInteger cacheStateRef = new AtomicInteger(1);
 
   public ValueLoader(InternalContext context) {
     this.context = context;
@@ -71,6 +75,16 @@ public class ValueLoader {
 
   public HandleManager getSpecialHandleManager() {
     return specialHandleManager;
+  }
+
+  @Override
+  public void clearCaches() {
+    cacheStateRef.incrementAndGet();
+    refToMirror.clear();
+  }
+
+  int getCurrentCacheState() {
+    return cacheStateRef.get();
   }
 
   public void addHandleFromRefs(SomeHandle handle) {

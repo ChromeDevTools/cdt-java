@@ -11,11 +11,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipContextBuilder.WipDebugContextImpl;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
@@ -32,12 +34,18 @@ import org.chromium.sdk.util.RelaySyncCallback;
  * TODO: add a cache for already loaded values if remote protocol ever has
  * permanent object ids (same object reported under the same id within a debug context).
  */
-public class WipValueLoader {
+public class WipValueLoader implements RemoteValueMapping {
   private final WipDebugContextImpl debugContextImpl;
+  private final AtomicInteger cacheStateRef = new AtomicInteger(1);
   private final WipValueBuilder valueBuilder = new WipValueBuilder(this);
 
   public WipValueLoader(WipDebugContextImpl debugContextImpl) {
     this.debugContextImpl = debugContextImpl;
+  }
+
+  @Override
+  public void clearCaches() {
+    cacheStateRef.incrementAndGet();
   }
 
   WipValueBuilder getValueBuilder() {
@@ -53,10 +61,14 @@ public class WipValueLoader {
    * @param output future object that will hold result of load operation
    */
   void loadJsObjectPropertiesAsync(final String objectId,
-      PropertyNameBuilder innerNameBuilder,
+      PropertyNameBuilder innerNameBuilder, boolean reload, int currentCacheState,
       AsyncFutureRef<Getter<ObjectProperties>> output) {
     ObjectPropertyProcessor propertyProcessor = new ObjectPropertyProcessor(innerNameBuilder);
-    loadPropertiesAsync(objectId, propertyProcessor, output);
+    loadPropertiesAsync(objectId, propertyProcessor, reload, currentCacheState, output);
+  }
+
+  int getCacheState() {
+    return cacheStateRef.get();
   }
 
   /**
@@ -97,6 +109,7 @@ public class WipValueLoader {
     JsVariable getProperty(String name);
 
     List<? extends JsVariable> internalProperties();
+    int getCacheState();
   }
 
   /**
@@ -105,7 +118,7 @@ public class WipValueLoader {
    * scopes.
    */
   interface LoadPostprocessor<RES> {
-    RES process(List<? extends RemotePropertyValue> propertyList);
+    RES process(List<? extends RemotePropertyValue> propertyList, int currentCacheState);
     RES getEmptyResult();
     RES forException(Exception exception);
   }
@@ -119,7 +132,7 @@ public class WipValueLoader {
 
     @Override
     public Getter<ObjectProperties> process(
-        List<? extends RemotePropertyValue> propertyList) {
+        List<? extends RemotePropertyValue> propertyList, final int currentCacheState) {
       final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
       final List<JsVariable> internalProperties = new ArrayList<JsVariable>(2);
 
@@ -165,6 +178,11 @@ public class WipValueLoader {
           }
           return map.get(name);
         }
+
+        @Override
+        public int getCacheState() {
+          return currentCacheState;
+        }
       };
       return Getter.newNormal(result);
     }
@@ -191,10 +209,14 @@ public class WipValueLoader {
         @Override public List<? extends JsVariable> internalProperties() {
           return Collections.emptyList();
         }
+        @Override public int getCacheState() {
+          return Integer.MAX_VALUE;
+        }
       }));
 
   <RES> void loadPropertiesAsync(final String objectId,
-      final LoadPostprocessor<RES> propertyPostprocessor, AsyncFutureRef<RES> output) {
+      final LoadPostprocessor<RES> propertyPostprocessor, boolean reload,
+      final int currentCacheState, AsyncFutureRef<RES> output) {
     if (objectId == null) {
       output.initializeTrivial(propertyPostprocessor.getEmptyResult());
       return;
@@ -202,6 +224,7 @@ public class WipValueLoader {
 
     // The entire operation that first loads properties from remote and then postprocess them
     // (without occupying Dispatch thread).
+    // The operation is sync because we don't want to do postprocessing in Dispatch thread.
     AsyncFuture.Operation<RES> syncOperation = new AsyncFuture.Operation<RES>() {
       @Override
       public RelayOk start(AsyncFuture.Callback<RES> callback, SyncCallback syncCallback) {
@@ -218,7 +241,7 @@ public class WipValueLoader {
           @Override
           public RES visitData(GetPropertiesData data) {
             // TODO: check exception.
-            return propertyPostprocessor.process(data.result());
+            return propertyPostprocessor.process(data.result(), currentCacheState);
           }
 
           @Override
@@ -234,7 +257,15 @@ public class WipValueLoader {
 
     // This is blocking (unless we concur with someone; in this case we're going to wait for result
     // later, on AsyncFuture getter).
-    output.initializeRunning(syncOperation);
+    if (reload) {
+      output.reinitializeRunning(syncOperation);
+    } else {
+      output.initializeRunning(syncOperation);
+    }
+  }
+
+  public String getObjectGroupId() {
+    return null;
   }
 
   /**

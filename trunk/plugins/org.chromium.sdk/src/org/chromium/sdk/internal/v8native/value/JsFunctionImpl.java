@@ -17,7 +17,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandl
 /**
  * Generic implementation of {@link JsFunction}.
  */
-class JsFunctionImpl extends JsObjectBase implements JsFunction {
+class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implements JsFunction {
   private volatile TextStreamPosition openParenPosition = null;
 
   JsFunctionImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
@@ -62,7 +62,8 @@ class JsFunctionImpl extends JsObjectBase implements JsFunction {
   }
 
   private FunctionValueHandle getAdditionalPropertyData() {
-    return (FunctionValueHandle) getSubpropertiesMirror().getAdditionalPropertyData();
+    SubpropertiesMirror subpropertiesMirror = getBasicPropertyData(false).getSubpropertiesMirror();
+    return (FunctionValueHandle) subpropertiesMirror.getAdditionalPropertyData();
   }
 
   @Override
@@ -73,6 +74,16 @@ class JsFunctionImpl extends JsObjectBase implements JsFunction {
   @Override
   public JsFunction asFunction() {
     return this;
+  }
+
+  @Override
+  protected BasicPropertyData wrapBasicData(BasicPropertyData basicPropertyData) {
+    return basicPropertyData;
+  }
+
+  @Override
+  protected BasicPropertyData unwrapBasicData(BasicPropertyData additionalPropertyStore) {
+    return additionalPropertyStore;
   }
 
   @Override
