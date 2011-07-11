@@ -53,8 +53,8 @@ SDK changes reflect the new features described above. Some of the most noticeabl
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
-|| *Eclipse version:* ||  Eclipse 3.4 minimum, Eclipse 3.5 and Eclipse 3.6 are tested. ||
+|| *Eclipse version:* ||  Eclipse 3.4 minimum, Eclipse 3.5 and Eclipse 3.6 are also tested. ||
 || *Java:* || J2SE-1.6 or newer. ||
 
 Optional:
-|| *JSDT version:* ||  1.0 or newer. ||
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer.||
