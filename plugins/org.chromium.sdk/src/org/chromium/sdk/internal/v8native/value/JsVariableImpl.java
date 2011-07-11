@@ -5,18 +5,13 @@
 package org.chromium.sdk.internal.v8native.value;
 
 
-import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.JsVariable;
 
 /**
  * A generic implementation of the JsVariable interface.
  */
 public class JsVariableImpl implements JsVariable {
-
-
-  /** The context this variable belongs in. */
-  private final InternalContext context;
 
   /** The fully qualified name of this variable. */
   private final String qualifiedName;
@@ -34,42 +29,41 @@ public class JsVariableImpl implements JsVariable {
    * Constructs a variable contained in the given context with the given
    * value mirror.
    *
-   * @param context that owns this variable
+   * @param valueLoader that owns this variable
    * @param valueData value data for this variable
    */
-  public JsVariableImpl(InternalContext context, ValueMirror valueData, String name) {
-    this(context, valueData, name, name, name);
+  public JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, String name) {
+    this(valueLoader, valueData, name, name, name);
   }
 
   /**
    * Constructs a variable contained in the given context with the given
    * value mirror.
    *
-   * @param context that owns this variable
+   * @param valueLoader that owns this variable
    * @param valueData for this variable
    * @param qualifiedName the fully qualified name of this variable
    */
-  JsVariableImpl(InternalContext context, ValueMirror valueData, Object rawName,
+  JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, Object rawName,
       String decoratedName, String qualifiedName) {
-    this.context = context;
     this.rawName = rawName;
     this.decoratedName = decoratedName;
     this.qualifiedName = qualifiedName;
 
-    this.value = createValue(context, valueData, qualifiedName);
+    this.value = createValue(valueLoader, valueData, qualifiedName);
   }
 
-  public static JsValueBase createValue(InternalContext context, ValueMirror valueData,
+  public static JsValueBase createValue(ValueLoader valueLoader, ValueMirror valueData,
       String qualifiedName) {
     Type type = valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
-        return new JsFunctionImpl(context, qualifiedName, valueData);
+        return new JsFunctionImpl(valueLoader, qualifiedName, valueData);
       case TYPE_ERROR:
       case TYPE_OBJECT:
-        return new JsObjectBase.Impl(context, qualifiedName, valueData);
+        return new JsObjectBase.Impl(valueLoader, qualifiedName, valueData);
       case TYPE_ARRAY:
-        return new JsArrayImpl(context, qualifiedName, valueData);
+        return new JsArrayImpl(valueLoader, qualifiedName, valueData);
       default:
         return new JsValueBase.Impl(valueData);
     }
@@ -126,13 +120,6 @@ public class JsVariableImpl implements JsVariable {
         .append(getValue())
         .append(']')
         .toString();
-  }
-
-  /**
-   * Returns the context owning this variable.
-   */
-  protected InternalContext getInternalContext() {
-    return context;
   }
 
   @Override

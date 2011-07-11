@@ -26,6 +26,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.value.ExceptionDataImpl;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
+import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
 
 /**
@@ -113,7 +114,7 @@ public class BreakpointProcessor extends V8EventProcessor {
       InternalContext internalContext) {
     List<SomeHandle> refs = response.refs();
     ValueHandle exception = body.exception();
-    ValueLoader valueLoader = internalContext.getValueLoader();
+    ValueLoaderImpl valueLoader = internalContext.getValueLoader();
     for (SomeHandle handle : refs) {
       valueLoader.addHandleFromRefs(handle);
     }

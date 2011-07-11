@@ -15,7 +15,6 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
-import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
@@ -62,7 +61,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
     return deferredData;
   }
 
-  protected abstract D loadDeferredData(ValueLoader valueLoader);
+  protected abstract D loadDeferredData(ValueLoaderImpl valueLoader);
 
   protected abstract List<? extends JsVariable> getVariables(D data);
 
@@ -70,7 +69,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
     return callFrameImpl;
   }
 
-  protected ObjectValueHandle loadScopeObject(ValueLoader valueLoader) {
+  protected ObjectValueHandle loadScopeObject(ValueLoaderImpl valueLoader) {
     return valueLoader.loadScopeFields(scopeIndex, callFrameImpl.getIdentifier());
   }
 
@@ -107,7 +106,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected List<? extends JsVariable> loadDeferredData(ValueLoader valueLoader) {
+    protected List<? extends JsVariable> loadDeferredData(ValueLoaderImpl valueLoader) {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       if (scopeObject == null) {
         return Collections.emptyList();
@@ -121,8 +120,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
       for (int i = 0; i < propertyMirrors.size(); i++) {
         // This name should be string. We are making it string as a fall-back strategy.
         String varNameStr = propertyRefs.get(i).getName().toString();
-        properties.add(new JsVariableImpl(getCallFrameImpl().getInternalContext(),
-            propertyMirrors.get(i), varNameStr));
+        properties.add(new JsVariableImpl(valueLoader, propertyMirrors.get(i), varNameStr));
       }
       return properties;
     }
@@ -144,11 +142,10 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected DeferredData loadDeferredData(ValueLoader valueLoader) {
+    protected DeferredData loadDeferredData(ValueLoaderImpl valueLoader) {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
-      JsValue jsValue = JsVariableImpl.createValue(getCallFrameImpl().getInternalContext(),
-          mirror, "<with object>");
+      JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror, "<with object>");
       return new DeferredData(jsValue);
     }
 

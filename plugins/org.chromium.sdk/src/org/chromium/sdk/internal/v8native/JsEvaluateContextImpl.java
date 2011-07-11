@@ -55,7 +55,8 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
             }
             InternalContext internalContext = getInternalContext();
             ValueMirror mirror = internalContext.getValueLoader().addDataToMap(body);
-            JsVariable variable = new JsVariableImpl(internalContext, mirror, expression);
+            JsVariable variable = new JsVariableImpl(internalContext.getValueLoader(),
+                mirror, expression);
             callback.success(variable);
           }
           @Override

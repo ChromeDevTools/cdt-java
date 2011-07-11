@@ -42,7 +42,7 @@ public class ExceptionDataImpl implements ExceptionData {
   public JsValue getExceptionValue() {
     if (cachedException == null) {
       // TODO: make it thread-safe.
-      cachedException = JsVariableImpl.createValue(context, mirror, "<exception>");
+      cachedException = JsVariableImpl.createValue(context.getValueLoader(), mirror, "<exception>");
     }
     return cachedException;
   }

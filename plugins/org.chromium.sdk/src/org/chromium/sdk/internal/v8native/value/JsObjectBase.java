@@ -35,7 +35,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
 
   private final String className;
 
-  private final InternalContext context;
+  private final ValueLoader valueLoader;
 
   /**
    * Fully qualified name of variable holding this object.
@@ -53,13 +53,13 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   /**
    * This constructor implies the lazy resolution of object properties.
    *
-   * @param context where this instance belongs in
+   * @param valueLoader where this instance belongs in
    * @param variableFqn the fully qualified name of the variable holding this object
    * @param valueState the value data from the JS VM
    */
-  JsObjectBase(InternalContext context, String variableFqn, ValueMirror mirror) {
+  JsObjectBase(ValueLoader valueLoader, String variableFqn, ValueMirror mirror) {
     super(mirror);
-    this.context = context;
+    this.valueLoader = valueLoader;
     this.ref = mirror.getRef();
     this.className = mirror.getClassName();
     this.variableFqn = variableFqn;
@@ -87,7 +87,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
 
   @Override
   public ValueLoader getRemoteValueMapping() {
-    return context.getValueLoader();
+    return valueLoader;
   }
 
   public static int parseRefId(String value) {
@@ -123,7 +123,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   protected InternalContext getInternalContext() {
-    return context;
+    return valueLoader.getInternalContext();
   }
 
   protected long getRef() {
@@ -172,7 +172,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       public RelayOk start(Callback<D> callback, SyncCallback syncCallback) {
 
         SubpropertiesMirror subpropertiesMirror =
-            getRemoteValueMapping().loadSubpropertiesInMirror(ref);
+            getRemoteValueMapping().getOrLoadSubproperties(ref);
 
         List<JsVariableImpl> properties = wrapProperties(subpropertiesMirror.getProperties());
         List<JsVariableImpl> internalProperties =
@@ -186,7 +186,6 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       }
 
       private List<JsVariableImpl> wrapProperties(List<? extends PropertyReference> propertyRefs) {
-        ValueLoader valueLoader = context.getValueLoader();
         List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
         List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
@@ -283,7 +282,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
         continue;
       }
       String decoratedName = JsVariableImpl.NameDecorator.decorateVarName(varName);
-      result.add(new JsVariableImpl(context, mirror, varName, decoratedName, fqn));
+      result.add(new JsVariableImpl(valueLoader, mirror, varName, decoratedName, fqn));
     }
     return result;
   }
@@ -303,8 +302,8 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   public static class Impl extends JsObjectBase<BasicPropertyData> {
-    Impl(InternalContext context, String variableFqn, ValueMirror valueState) {
-      super(context, variableFqn, valueState);
+    Impl(ValueLoader valueLoader, String variableFqn, ValueMirror valueState) {
+      super(valueLoader, variableFqn, valueState);
     }
 
     @Override

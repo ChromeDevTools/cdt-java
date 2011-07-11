@@ -30,6 +30,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.value.HandleManager;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
+import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 import org.json.simple.JSONObject;
 
 public class ContextBuilder {
@@ -155,7 +156,7 @@ public class ContextBuilder {
   }
 
   private class PreContext implements InternalContext {
-    private final ValueLoader valueLoader = new ValueLoader(this);
+    private final ValueLoaderImpl valueLoader = new ValueLoaderImpl(this);
 
     /**
      * We synchronize {@link #isValid} state with commands that are being sent
@@ -210,7 +211,7 @@ public class ContextBuilder {
       return getContext().data.frames.getCallFrames().get(0);
     }
 
-    public ValueLoader getValueLoader() {
+    public ValueLoaderImpl getValueLoader() {
       return valueLoader;
     }
 

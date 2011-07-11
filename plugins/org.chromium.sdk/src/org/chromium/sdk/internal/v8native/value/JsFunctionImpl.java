@@ -20,8 +20,8 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandl
 class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implements JsFunction {
   private volatile TextStreamPosition openParenPosition = null;
 
-  JsFunctionImpl(InternalContext context, String parentFqn, ValueMirror valueState) {
-    super(context, parentFqn, valueState);
+  JsFunctionImpl(ValueLoader valueLoader, String parentFqn, ValueMirror valueState) {
+    super(valueLoader, parentFqn, valueState);
   }
 
   @Override
