@@ -171,7 +171,7 @@ public class CallFrameImpl implements CallFrame {
           valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
       // This name should be string. We are making it string as a fall-back strategy.
       String varNameStr = ref.getName().toString();
-      result = new JsVariableImpl(this.context, mirror, varNameStr);
+      result = new JsVariableImpl(valueLoader, mirror, varNameStr);
     }
     if (result != null) {
       receiverVariableRef.compareAndSet(null, result);
@@ -218,7 +218,7 @@ public class CallFrameImpl implements CallFrame {
     for (int i = 0; i < refs.size(); i++) {
       // This name should be string. We are making it string as a fall-back strategy.
       String varNameStr = refs.get(i).getName().toString();
-      result.add(new JsVariableImpl(this.context, mirrors.get(i), varNameStr));
+      result.add(new JsVariableImpl(this.context.getValueLoader(), mirrors.get(i), varNameStr));
     }
     return result;
   }

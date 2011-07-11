@@ -10,6 +10,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.value.HandleManager;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
+import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 
 /**
  * Internal API to DebugContext implementation. The actual object might
@@ -48,7 +49,7 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    * {@link ValueLoader} makes sense only for a particular context.
    * @return {@link ValueLoader} of this context
    */
-  ValueLoader getValueLoader();
+  ValueLoaderImpl getValueLoader();
 
   DebugContext getUserContext();
 }

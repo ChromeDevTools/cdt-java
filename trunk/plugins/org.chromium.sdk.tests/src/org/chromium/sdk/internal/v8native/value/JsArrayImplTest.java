@@ -51,7 +51,8 @@ public class JsArrayImplTest {
   @Before
   public void setUpBefore() throws Exception {
     this.messageResponder = new FixtureChromeStub();
-    Browser browser = BrowserFactoryImplTestGate.create((BrowserFactoryImpl) BrowserFactory.getInstance(),
+    Browser browser = BrowserFactoryImplTestGate.create(
+        (BrowserFactoryImpl) BrowserFactory.getInstance(),
         new FakeConnectionFactory(messageResponder));
     BrowserTab browserTab = browser.createTabFetcher().getTabs().get(0).attach(listener);
 
@@ -107,8 +108,8 @@ public class JsArrayImplTest {
 
   @Test
   public void testArrayData() throws Exception {
-    JsArrayImpl jsArray = new JsArrayImpl(callFrame.getInternalContext(), "test_array",
-        arrayMirror);
+    JsArrayImpl jsArray = new JsArrayImpl(callFrame.getInternalContext().getValueLoader(),
+        "test_array", arrayMirror);
     assertNotNull(jsArray.asArray());
     Collection<JsVariableImpl> properties = jsArray.getProperties();
     assertEquals(2 + 1, properties.size()); // 2 array element properties and one length property.

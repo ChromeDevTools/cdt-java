@@ -101,8 +101,8 @@ public class JsObjectImplTest {
 
   @Test
   public void testObjectData() throws Exception {
-    JsObjectBase<?> jsObject = new JsObjectBase.Impl(callFrame.getInternalContext(), "test_object",
-        eventMirror);
+    JsObjectBase<?> jsObject = new JsObjectBase.Impl(
+        callFrame.getInternalContext().getValueLoader(), "test_object", eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
     Collection<JsVariableImpl> variables = jsObject.getProperties();

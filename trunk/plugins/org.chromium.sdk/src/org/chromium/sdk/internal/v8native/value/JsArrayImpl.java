@@ -28,8 +28,8 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
    * @param variableFqn the fully qualified name of the variable holding this array
    * @param valueState the mirror corresponding to this array
    */
-  JsArrayImpl(InternalContext context, String variableFqn, ValueMirror valueState) {
-    super(context, variableFqn, valueState);
+  JsArrayImpl(ValueLoader valueLoader, String variableFqn, ValueMirror valueState) {
+    super(valueLoader, variableFqn, valueState);
   }
 
   @Override

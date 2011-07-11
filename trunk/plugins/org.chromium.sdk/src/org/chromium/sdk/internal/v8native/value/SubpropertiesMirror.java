@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
@@ -24,7 +23,7 @@ public abstract class SubpropertiesMirror {
 
   public abstract Object getAdditionalPropertyData();
 
-  public abstract void reportAllProperties(ValueLoader valueLoader);
+  public abstract void reportAllProperties(ValueLoaderImpl valueLoader);
 
   public static class ObjectValueBased extends JsonBased {
     private final ObjectValueHandle objectValueHandle;
@@ -79,7 +78,7 @@ public abstract class SubpropertiesMirror {
     }
 
     @Override
-    public void reportAllProperties(ValueLoader valueLoader) {
+    public void reportAllProperties(ValueLoaderImpl valueLoader) {
       List<DataWithRef> refs = V8ProtocolUtil.extractAllPropertyRefs(getObjectValue());
       for (DataWithRef dataWithRef : refs) {
         RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
@@ -96,7 +95,11 @@ public abstract class SubpropertiesMirror {
     private final List<PropertyReference> list;
 
     ListBased(PropertyReference ... refs) {
-      this.list = Collections.unmodifiableList(Arrays.asList(refs));
+      this(Collections.unmodifiableList(Arrays.asList(refs)));
+    }
+
+    ListBased(List<PropertyReference> refs) {
+      this.list = refs;
     }
 
     @Override
@@ -115,7 +118,7 @@ public abstract class SubpropertiesMirror {
     }
 
     @Override
-    public void reportAllProperties(ValueLoader valueLoader) {
+    public void reportAllProperties(ValueLoaderImpl valueLoader) {
       for (PropertyReference ref : list) {
         DataWithRef dataWithRef = ref.getValueObject();
         RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
@@ -142,7 +145,7 @@ public abstract class SubpropertiesMirror {
       return EMPTY_OBJECT;
     }
     @Override
-    public void reportAllProperties(ValueLoader valueLoader) {
+    public void reportAllProperties(ValueLoaderImpl valueLoader) {
     }
   };
 
