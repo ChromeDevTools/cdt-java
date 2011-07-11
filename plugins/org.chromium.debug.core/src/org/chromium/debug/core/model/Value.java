@@ -11,8 +11,6 @@ import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
-import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsArray;
@@ -69,6 +67,8 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
 
   public IVariable[] getVariables() throws DebugException {
     try {
+      // TODO: make this thread-safe.
+      // TODO: support clearing with cache clear.
       if (variables == null) {
         if (value.asObject() != null) {
           variables = StackFrame.wrapVariables(getEvaluateContext(),
@@ -80,6 +80,8 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
       }
       return variables;
     } catch (RuntimeException e) {
+      // Log it, because Eclipse is likely to ignore it.
+      ChromiumDebugPlugin.log(e);
       // We shouldn't throw RuntimeException from here, because calling
       // ElementContentProvider#update will forget to call update.done().
       throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
