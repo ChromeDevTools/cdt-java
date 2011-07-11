@@ -32,7 +32,7 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.Script;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.v8native.JsEvaluateContextBase;
@@ -140,7 +140,8 @@ class WipContextBuilder {
       }
       globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
         @Override protected EvaluateParams createRequestParams(String expression) {
-          return new EvaluateParams(expression, "watch-group", false);
+          String groupId = valueLoader.getObjectGroupId();
+          return new EvaluateParams(expression, groupId, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
           return data.result();
@@ -250,6 +251,11 @@ class WipContextBuilder {
     @Override
     public JsEvaluateContext getGlobalEvaluateContext() {
       return globalContext;
+    }
+
+    @Override
+    public RemoteValueMapping getDefaultRemoteValueMapping() {
+      return valueLoader;
     }
 
     public WipTabImpl getTab() {
@@ -386,7 +392,8 @@ class WipContextBuilder {
       private final WipEvaluateContextImpl<?,?> evaluateContext =
           new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
         @Override protected EvaluateOnCallFrameParams createRequestParams(String expression) {
-          return new EvaluateOnCallFrameParams(id, expression, "watch-group", false);
+          String groupId = valueLoader.getObjectGroupId();
+          return new EvaluateOnCallFrameParams(id, expression, groupId, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
           return data.result();
@@ -477,49 +484,67 @@ class WipContextBuilder {
 
       @Override
       public List<? extends JsVariable> getVariables() {
-        if (!propertiesRef.isInitialized()) {
-          WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
-              new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
-            @Override
-            public Getter<ScopeVariables> process(
-                List<? extends RemotePropertyValue> propertyList) {
-              final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
-
-              WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
-              for (RemotePropertyValue property : propertyList) {
-                final String name = property.name();
-
-                ValueNameBuilder valueNameBuilder =
-                    WipExpressionBuilder.createRootName(name, false);
-                JsVariable variable =
-                    valueBuilder.createVariable(property.value(), valueNameBuilder);
-                properties.add(variable);
-              }
-              final ScopeVariables scopeVariables = new ScopeVariables(properties);
-              return new Getter<ScopeVariables>() {
-                @Override
-                ScopeVariables get() {
-                  return scopeVariables;
-                }
-              };
-            }
-
-            @Override
-            public Getter<ScopeVariables> getEmptyResult() {
-              return EMPTY_SCOPE_VARIABLES_OPTIONAL;
-            }
-
-            @Override
-            public Getter<ScopeVariables> forException(Exception exception) {
-              return WipValueLoader.Getter.newFailure(exception);
-            }
-          };
-          // This is blocking.
-          valueLoader.loadPropertiesAsync(objectId, processor, propertiesRef);
+        int currentCacheState = valueLoader.getCacheState();
+        if (propertiesRef.isInitialized()) {
+          ScopeVariables result = propertiesRef.getSync().get();
+          if (result.cacheState == currentCacheState) {
+            return result.variables;
+          }
+          startLoadOperation(true, currentCacheState);
+        } else {
+          startLoadOperation(false, currentCacheState);
         }
 
         // This is blocking.
         return propertiesRef.getSync().get().variables;
+      }
+
+      /**
+       * Starts load operation that works synchronously, i.e. it may block the calling method.
+       * This is done because some thread must take post-processing anyway and it shouldn't
+       * be the Dispatch thread.
+       * The method may not be blocking, if another thread is already doing the same operation.
+       */
+      private void startLoadOperation(boolean reload, int currentCacheState) {
+        WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
+            new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
+          @Override
+          public Getter<ScopeVariables> process(
+              List<? extends RemotePropertyValue> propertyList, int currentCacheState) {
+            final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
+
+            WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
+            for (RemotePropertyValue property : propertyList) {
+              final String name = property.name();
+
+              ValueNameBuilder valueNameBuilder =
+                  WipExpressionBuilder.createRootName(name, false);
+              JsVariable variable =
+                  valueBuilder.createVariable(property.value(), valueNameBuilder);
+              properties.add(variable);
+            }
+            final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);
+            return new Getter<ScopeVariables>() {
+              @Override
+              ScopeVariables get() {
+                return scopeVariables;
+              }
+            };
+          }
+
+          @Override
+          public Getter<ScopeVariables> getEmptyResult() {
+            return EMPTY_SCOPE_VARIABLES_OPTIONAL;
+          }
+
+          @Override
+          public Getter<ScopeVariables> forException(Exception exception) {
+            return WipValueLoader.Getter.newFailure(exception);
+          }
+        };
+        // This is blocking.
+        valueLoader.loadPropertiesAsync(objectId, processor, reload, currentCacheState,
+            propertiesRef);
       }
     }
 
@@ -652,6 +677,11 @@ class WipContextBuilder {
       }
 
       @Override
+      public RemoteValueMapping getRemoteValueMapping() {
+        return null;
+      }
+
+      @Override
       public JsVariable getProperty(String name) {
         if (name.equals(property.getName())) {
           return property;
@@ -717,16 +747,18 @@ class WipContextBuilder {
 
   private static class ScopeVariables {
     final List<JsVariable> variables;
+    final int cacheState;
 
-    ScopeVariables(List<JsVariable> variables) {
+    ScopeVariables(List<JsVariable> variables, int cacheState) {
       this.variables = variables;
+      this.cacheState = cacheState;
     }
   }
 
   private final Getter<ScopeVariables> EMPTY_SCOPE_VARIABLES_OPTIONAL =
       new Getter<ScopeVariables>() {
         private final ScopeVariables value =
-          new ScopeVariables(Collections.<JsVariable>emptyList());
+          new ScopeVariables(Collections.<JsVariable>emptyList(), Integer.MAX_VALUE);
 
         @Override ScopeVariables get() {
           return value;

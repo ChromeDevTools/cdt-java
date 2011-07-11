@@ -17,6 +17,7 @@ import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -336,6 +337,11 @@ public class ContextBuilder {
       @Override
       public JavascriptVm getJavascriptVm() {
         return debugSession.getJavascriptVm();
+      }
+
+      @Override
+      public RemoteValueMapping getDefaultRemoteValueMapping() {
+        return valueLoader;
       }
 
       /**

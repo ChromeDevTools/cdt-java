@@ -58,4 +58,10 @@ public interface JsObject extends JsValue {
    * @return object id or null
    */
   String getRefId();
+
+  /**
+   * @return value mapping this object is associated with or null for special-case
+   *     immutable objects
+   */
+  RemoteValueMapping getRemoteValueMapping();
 }

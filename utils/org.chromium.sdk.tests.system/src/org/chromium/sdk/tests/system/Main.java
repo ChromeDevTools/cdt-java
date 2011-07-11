@@ -14,6 +14,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +28,10 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.ConnectionLogger.Factory;
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -106,6 +109,28 @@ public class Main {
     // Second time check variables and expressions.
     {
       DebugContext context = stateManager.expectEvent(EXPECT_SUSPENDED_VISITOR);
+
+      {
+        // Check cache dropping.
+        JsObject root = evaluateSync(context.getGlobalEvaluateContext(),
+            "(debug_value_1 = {a:2})").getValue().asObject();
+        if (root == null) {
+          throw new RuntimeException();
+        }
+        String aValue;
+        aValue = root.getProperty("a").getValue().getValueString();
+        if (!"2".equals(aValue)) {
+          throw new RuntimeException();
+        }
+        evaluateSync(context.getGlobalEvaluateContext(), "debug_value_1.a = 3");
+
+        root.getRemoteValueMapping().clearCaches();
+
+        aValue = root.getProperty("a").getValue().getValueString();
+        if (!"3".equals(aValue)) {
+          throw new RuntimeException();
+        }
+      }
 
       // Do not block dispatcher thread.
       stateManager.setDefaultReceiver(IGNORE_SCRIPTS_VISITOR);
@@ -522,5 +547,31 @@ public class Main {
       }
       return val;
     }
+  }
+
+  static class EvalCallbackImpl implements JsEvaluateContext.EvaluateCallback {
+    JsVariable variable = null;
+    String failure = null;
+    @Override
+    public void success(JsVariable variable) {
+      this.variable = variable;
+    }
+
+    @Override
+    public void failure(String errorMessage) {
+      this.failure = errorMessage;
+    }
+    JsVariable get() {
+      if (failure != null) {
+        throw new RuntimeException("Failed to evaluate: " + failure);
+      }
+      return variable;
+    }
+  }
+
+  private static JsVariable evaluateSync(JsEvaluateContext evaluateContext, String expression) {
+    EvalCallbackImpl callbackImpl = new EvalCallbackImpl();
+    evaluateContext.evaluateSync(expression, callbackImpl);
+    return callbackImpl.get();
   }
 }

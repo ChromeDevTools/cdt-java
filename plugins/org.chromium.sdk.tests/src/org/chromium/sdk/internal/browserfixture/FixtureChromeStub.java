@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.browserfixture;
 
+import static org.chromium.sdk.tests.internal.JsonBuilderUtil.convertToRealJson;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonArray;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
@@ -77,6 +78,12 @@ public class FixtureChromeStub implements ChromeStub {
         "{\"name\":\"x\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}," +
         "{\"name\":\"y\",\"propertyType\":3,\"ref\":" + getNumber3Ref() + "}]," +
         "\"text\":\"#<an Object>\"}");
+
+    // Fake constructor function handle.
+    refToObjectMap.put(19L, convertToRealJson("{'handle':19,'type':'null','text':'null'}"));
+    // Fake proto object handle.
+    refToObjectMap.put(73L, convertToRealJson("{'handle':73,'type':'null','text':'null'}"));
+
     // Script
     refToObjectMap.put(Long.valueOf(getScriptRef()),
         jsonObject(

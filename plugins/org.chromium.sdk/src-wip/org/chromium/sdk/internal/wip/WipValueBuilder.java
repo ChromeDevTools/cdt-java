@@ -16,6 +16,7 @@ import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -197,14 +198,26 @@ class WipValueBuilder {
         return objectId;
       }
 
+      @Override
+      public WipValueLoader getRemoteValueMapping() {
+        return valueLoader;
+      }
+
       protected ObjectProperties getLoadedProperties() {
-        if (!loadedPropertiesRef.isInitialized()) {
-          doLoadProperties();
+        int currentCacheState = getRemoteValueMapping().getCacheState();
+        if (loadedPropertiesRef.isInitialized()) {
+          ObjectProperties result = loadedPropertiesRef.getSync().get();
+          if (currentCacheState == result.getCacheState()) {
+            return result;
+          }
+          doLoadProperties(true, currentCacheState);
+        } else {
+          doLoadProperties(false, currentCacheState);
         }
         return loadedPropertiesRef.getSync().get();
       }
 
-      private void doLoadProperties() {
+      private void doLoadProperties(boolean reload, int currentCacheState) {
         PropertyNameBuilder innerNameBuilder;
         QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
         if (qualifiedNameBuilder == null) {
@@ -213,7 +226,7 @@ class WipValueBuilder {
           innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
         }
         valueLoader.loadJsObjectPropertiesAsync(valueData.objectId(), innerNameBuilder,
-            loadedPropertiesRef);
+            reload, currentCacheState, loadedPropertiesRef);
       }
     }
   }

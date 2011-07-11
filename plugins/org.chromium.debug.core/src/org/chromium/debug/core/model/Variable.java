@@ -17,6 +17,7 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsValue.ReloadBiggerCallback;
 import org.chromium.sdk.JsValue.Type;
@@ -117,22 +118,22 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
      * Wraps JsScope as an object value with properties representing scope variables.
      */
     class ScopeObjectVariable implements JsObject {
-      public JsArray asArray() {
+      @Override public JsArray asArray() {
         return null;
       }
-      public JsFunction asFunction() {
+      @Override public JsFunction asFunction() {
         return null;
       }
-      public String getClassName() {
+      @Override public String getClassName() {
         return "#Scope";
       }
-      public Collection<? extends JsVariable> getProperties() {
+      @Override public Collection<? extends JsVariable> getProperties() {
         return jsScope.getVariables();
       }
-      public Collection<? extends JsVariable> getInternalProperties() {
+      @Override public Collection<? extends JsVariable> getInternalProperties() {
         return Collections.emptyList();
       }
-      public JsVariable getProperty(String name) {
+      @Override public JsVariable getProperty(String name) {
         for (JsVariable var : getProperties()) {
           if (var.getName().equals(name)) {
             return var;
@@ -140,22 +141,25 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
         }
         return null;
       }
-      public JsObject asObject() {
+      @Override public JsObject asObject() {
         return this;
       }
-      public Type getType() {
+      @Override public Type getType() {
         return Type.TYPE_OBJECT;
       }
-      public String getValueString() {
+      @Override public String getValueString() {
         return getClassName();
       }
-      public String getRefId() {
+      @Override public String getRefId() {
         return null;
       }
-      public boolean isTruncated() {
+      @Override public RemoteValueMapping getRemoteValueMapping() {
+        return null;
+      }
+      @Override public boolean isTruncated() {
         return false;
       }
-      public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
+      @Override public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
           SyncCallback syncCallback) {
         return RelaySyncCallback.finish(syncCallback);
       }

@@ -4,9 +4,8 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -20,12 +19,7 @@ import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 /**
  * A generic implementation of the JsArray interface.
  */
-class JsArrayImpl extends JsObjectBase implements JsArray {
-
-  /**
-   * An indexed sparse array of elements. Keys are indices, values are elements.
-   */
-  private SortedMap<Integer, JsVariableImpl> indexToElementMap;
+class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements JsArray {
 
   /**
    * This constructor implies lazy resolution of object properties.
@@ -38,39 +32,14 @@ class JsArrayImpl extends JsObjectBase implements JsArray {
     super(context, variableFqn, valueState);
   }
 
-  private synchronized void ensureElementsMap() throws MethodIsBlockingException {
-    if (indexToElementMap != null) {
-      return;
-    }
-    SortedMap<Integer, JsVariableImpl> map =
-      // TODO(peter.rybin): do we need this comparator at all?
-        new TreeMap<Integer, JsVariableImpl>(new Comparator<Integer>() {
-          @Override public int compare(Integer o1, Integer o2) {
-            return o1 - o2;
-          }
-        });
-
-    for (JsVariableImpl prop : getProperties()) {
-      Object name = prop.getRawNameAsObject();
-      if (name instanceof Number == false) {
-        continue;
-      }
-      Number index = (Number) name;
-      map.put(index.intValue(), prop);
-    }
-    indexToElementMap = Collections.unmodifiableSortedMap(map);
-  }
-
   @Override
   public JsVariable get(int index) throws MethodIsBlockingException {
-    ensureElementsMap();
-    return indexToElementMap.get(index);
+    return getPropertyData(true).ensureElementsMap().get(index);
   }
 
   @Override
   public SortedMap<Integer, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException {
-    ensureElementsMap();
-    return indexToElementMap;
+    return getPropertyData(true).ensureElementsMap();
   }
 
   @Override
@@ -78,7 +47,7 @@ class JsArrayImpl extends JsObjectBase implements JsArray {
     // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
     // rather than JsVariableImpl
     int lastIndex = -1;
-    List<JsVariableImpl> properties = getSubpropertiesHelper().getPropertiesLazily();
+    Collection<JsVariableImpl> properties = getProperties();
     // TODO(peter.rybin): rename propRefs
     for (JsVariableImpl prop : properties) {
       Object name = prop.getRawNameAsObject();
@@ -119,5 +88,57 @@ class JsArrayImpl extends JsObjectBase implements JsArray {
   @Override
   public JsFunction asFunction() {
     return null;
+  }
+
+  @Override
+  protected ArrayPropertyData wrapBasicData(BasicPropertyData basicPropertyData) {
+    return new ArrayPropertyData(basicPropertyData);
+  }
+
+  @Override
+  protected BasicPropertyData unwrapBasicData(ArrayPropertyData wrappedBasicData) {
+    return wrappedBasicData.getBasicPropertyData();
+  }
+
+  /**
+   * Wraps basic property data and contains lazy-initialized field indexToElementMap.
+   * This is needed because {@link JsObjectBase} will dispose of it when caches
+   * become reset.
+   */
+  static class ArrayPropertyData {
+    private final BasicPropertyData basicPropertyData;
+
+    /**
+     * An indexed sparse array of elements. Keys are indices, values are elements.
+     */
+    private SortedMap<Integer, JsVariableImpl> indexToElementMap = null;
+
+    ArrayPropertyData(BasicPropertyData basicPropertyData) {
+      this.basicPropertyData = basicPropertyData;
+    }
+
+    BasicPropertyData getBasicPropertyData() {
+      return basicPropertyData;
+    }
+
+    private synchronized SortedMap<Integer, JsVariableImpl> ensureElementsMap()
+        throws MethodIsBlockingException {
+      if (indexToElementMap == null) {
+        SortedMap<Integer, JsVariableImpl> map = new TreeMap<Integer, JsVariableImpl>();
+
+        for (JsVariableImpl prop : basicPropertyData.getPropertyList()) {
+          Object name = prop.getRawNameAsObject();
+          if (name instanceof Number == false) {
+            continue;
+          }
+          Number index = (Number) name;
+          map.put(index.intValue(), prop);
+        }
+        // We make map synchronized for such methods as entrySet, that are not thread-safe.
+        indexToElementMap =
+            Collections.unmodifiableSortedMap(Collections.synchronizedSortedMap(map));
+      }
+      return indexToElementMap;
+    }
   }
 }
