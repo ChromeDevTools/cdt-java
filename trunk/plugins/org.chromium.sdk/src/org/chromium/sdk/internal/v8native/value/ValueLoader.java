@@ -251,11 +251,13 @@ public class ValueLoader implements RemoteValueMapping {
       List<ValueMirror> loadedMirrors = loadValuesFromRemote(refIds);
       assert refIds.size() == loadedMirrors.size();
       for (int i = 0; i < propertyRefs.size(); i++) {
-        PropertyReference property = propertyRefs.get(i);
-        DataWithRef dataWithRef = property.getValueObject();
-        Long ref = dataWithRef.ref();
-        int pos = getSafe(refToRequestIndex, ref);
-        result[i] = loadedMirrors.get(pos);
+        if (result[i] == null) {
+          PropertyReference property = propertyRefs.get(i);
+          DataWithRef dataWithRef = property.getValueObject();
+          Long ref = dataWithRef.ref();
+          int pos = getSafe(refToRequestIndex, ref);
+          result[i] = loadedMirrors.get(pos);
+        }
       }
     }
     return Arrays.asList(result);

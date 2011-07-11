@@ -148,8 +148,13 @@ public class WipBrowserImpl implements WipBrowser {
     @Override
     public BrowserTab attach(TabDebugEventListener listener) throws IOException {
       ConnectionLogger connectionLogger = connectionLoggerFactory.newTabConnectionLogger();
+      String webSocketDebuggerUrl = description.webSocketDebuggerUrl();
 
-      URI uri = URI.create(description.webSocketDebuggerUrl());
+      if (webSocketDebuggerUrl == null) {
+        throw new IOException("Tab is already attached");
+      }
+
+      URI uri = URI.create(webSocketDebuggerUrl);
       WsConnection socket = WsConnection.connect(socketAddress,
           DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
 
