@@ -25,7 +25,7 @@ Both types of exceptions are controlled from the _"Break on !JavaScript Exceptio
 ==Basic JSDT Integration==
 The previous release expanded out of the VirtualProject premises to let you work with regular workspace source files directly. However, the default !JavaScript editor from the JSDT project could not really be used: all breakpoints set in the editor made no effect on the running VM. Now we fix this problem. The breakpoints added from the !JavaScript editor should work fine. Still, you may notice that they are slightly different from this in [VirtualProject]s; this shouldn't make any trouble though.
 
-Please note that this integration is deployed as a separate Eclipse feature: _"Chromium !JavaScript Debugger Bridge to JSDT"_. This feature comes together with the others, but you need to manually select it when installing/upgrading. A separate feature is needed to keep core Debugger deployable independent of a JSDT installation.
+Please note that this integration is deployed as a separate Eclipse feature: _"Chromium !JavaScript Debugger Bridge to JSDT"_. This feature comes together with the others, but you need to manually select it when installing/upgrading. A separate feature is needed to keep core Debugger deployable independent of a JSDT installation. See version dependency table below.
 
 ==Temporarily Format Source==
 A new experimental feature that adjoins the JSDT integration works with !JavaScript scripts that lack formatting. In order to format your regular work files you may run the JSDT formatter manually, and the new feature is to be used with scripts from a VirtualProject. Open the context menu on a script under VirtualProject and choose the _V8 Debugging -> Temporarily Format Source_ action.
