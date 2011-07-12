@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.util.BasicUtil;
 
