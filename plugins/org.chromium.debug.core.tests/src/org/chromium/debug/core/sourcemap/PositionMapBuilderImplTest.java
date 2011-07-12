@@ -27,20 +27,20 @@ public class PositionMapBuilderImplTest {
   @Test
   public void basicTest() throws CannotAddException {
     SourcePositionMapBuilder builder = new PositionMapBuilderImpl();
-    builder.addMapping(new ResourceSection(VmResourceId.forName("source1.js"), 0, 0, 5, 0),
-        new ResourceSection(VmResourceId.forName("compiled.js"), 0, 0, 1, 0),
+    builder.addMapping(new ResourceSection(new VmResourceId("source1.js", null), 0, 0, 5, 0),
+        new ResourceSection(new VmResourceId("compiled.js", null), 0, 0, 1, 0),
         new TextSectionMappingImpl(
             new StringMappingData(new int [] { 0,0, 1,0,  2,0,  3,0,  4,0 } , 5, 0),
             new StringMappingData(new int [] { 0,0, 0,10, 0,20, 0,30, 0,40 }, 0, 50)));
 
-    builder.addMapping(new ResourceSection(VmResourceId.forName("source2.js"), 0, 0, 5, 0),
-        new ResourceSection(VmResourceId.forName("compiled.js"), 1, 0, 2, 0),
+    builder.addMapping(new ResourceSection(new VmResourceId("source2.js", null), 0, 0, 5, 0),
+        new ResourceSection(new VmResourceId("compiled.js", null), 1, 0, 2, 0),
         new TextSectionMappingImpl(
             new StringMappingData(new int [] { 0,0, 1,0,  2,0,  3,0,  4,0}, 5, 0),
             new StringMappingData(new int [] { 1,0, 1,10, 1,20, 1,30, 1,40}, 1, 50)));
 
-    builder.addMapping(new ResourceSection(VmResourceId.forName("source3.js"), 0, 0, 5, 0),
-        new ResourceSection(VmResourceId.forName("compiled.js"), 2, 0, 3, 0),
+    builder.addMapping(new ResourceSection(new VmResourceId("source3.js", null), 0, 0, 5, 0),
+        new ResourceSection(new VmResourceId("compiled.js", null), 2, 0, 3, 0),
         new TextSectionMappingImpl(
             new StringMappingData(new int [] {0,0, 1,0,  2,0,  3,0,  4,0}, 5, 0),
             new StringMappingData(new int [] {2,0, 2,10, 2,20, 2,30, 2,40}, 2, 50)));
@@ -71,9 +71,9 @@ public class PositionMapBuilderImplTest {
   private static SourcePosition checkOneWay(SourcePositionMap map,
       String fromFile, int fromLine, int fromColumn,
       String toFile, int toLine, int toColumn, TranslateDirection direction) {
-    SourcePosition result = map.translatePosition(VmResourceId.forName(fromFile),
+    SourcePosition result = map.translatePosition(new VmResourceId(fromFile, null),
         fromLine, fromColumn, direction);
-    Assert.assertEquals(new SourcePosition(VmResourceId.forName(toFile), toLine, toColumn),
+    Assert.assertEquals(new SourcePosition(new VmResourceId(toFile, null), toLine, toColumn),
         result);
     return result;
   }
@@ -82,9 +82,9 @@ public class PositionMapBuilderImplTest {
       String fromFile, int fromLine, int fromColumn,
       String toFile, int toLine, int toColumn, TranslateDirection direction) {
     checkOneWay(map, fromFile, fromLine, fromColumn, toFile, toLine, toColumn, direction);
-    SourcePosition result = map.translatePosition(VmResourceId.forName(toFile), toLine, toColumn,
+    SourcePosition result = map.translatePosition(new VmResourceId(toFile, null), toLine, toColumn,
         direction.opposite());
-    Assert.assertEquals(new SourcePosition(VmResourceId.forName(fromFile), fromLine, fromColumn),
+    Assert.assertEquals(new SourcePosition(new VmResourceId(fromFile, null), fromLine, fromColumn),
         result);
   }
 
@@ -97,7 +97,7 @@ public class PositionMapBuilderImplTest {
   }
 
   private static abstract class MultiRangeMapTestFrameworkBase {
-    static final VmResourceId COMPILED_JS_ID = VmResourceId.forName("compiled.js");
+    static final VmResourceId COMPILED_JS_ID = new VmResourceId("compiled.js", null);
     static ResourceSection[] GOOD_SECTIONS = {
       new ResourceSection(COMPILED_JS_ID, 1, 0, 2, 0),
       new ResourceSection(COMPILED_JS_ID, 3, 0, 3, 0),
@@ -139,7 +139,7 @@ public class PositionMapBuilderImplTest {
     protected static MappingHandle addSection(SourcePositionMapBuilder builder,
         ResourceSection vmSection, int index) throws CannotAddException {
       ResourceSection originalSection =
-          new ResourceSection(VmResourceId.forName("source" + index + ".js"), 0, 0, 5, 0);
+          new ResourceSection(new VmResourceId(("source" + index + ".js"), null), 0, 0, 5, 0);
 
       TextSectionMappingImpl textMapping = new TextSectionMappingImpl(
           new StringMappingData(
