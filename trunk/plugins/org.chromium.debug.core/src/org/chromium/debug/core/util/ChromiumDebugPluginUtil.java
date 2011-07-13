@@ -7,7 +7,6 @@ package org.chromium.debug.core.util;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -16,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.efs.ChromiumScriptFileSystem;
@@ -23,6 +23,7 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IWorkspace;
@@ -219,20 +220,38 @@ public class ChromiumDebugPluginUtil {
   /**
    * Creates an empty file with the given filename in the given project.
    *
-   * @param project to create the file in
-   * @param filename the base file name to create (will be sanitized for
+   * @param container to create the file in
+   * @param filename the base short file name to create (will be sanitized for
    *        illegal chars and, in the case of a name clash, suffixed with "(N)")
    * @return the result of IFile.getName(), or {@code null} if the creation
    *         has failed
    */
-  public static IFile createFile(final IProject project, String filename) {
-    String patchedName = new File(filename).getName().replace('?', '_'); // simple name
+  public static IFile createFile(IProject container, String filename) {
+    return createFile(container, FileContainerHandler.FOR_PROJECT, filename);
+  }
+
+  /**
+   * Creates an empty file with the given filename in the given project.
+   *
+   * @param container to create the file in
+   * @param filename the base short file name to create (will be sanitized for
+   *        illegal chars and, in the case of a name clash, suffixed with "(N)")
+   * @return the result of IFile.getName(), or {@code null} if the creation
+   *         has failed
+   */
+  public static IFile createFile(IFolder container, String filename) {
+    return createFile(container, FileContainerHandler.FOR_FOLDER, filename);
+  }
+
+  private static <C> IFile createFile(final C container, final FileContainerHandler<C> handler,
+      String filename) {
+    String patchedName = FILE_NAME_BAD_CHARS.matcher(filename).replaceAll("_");
 
     UniqueKeyGenerator.Factory<IFile> factory =
         new UniqueKeyGenerator.Factory<IFile>() {
       public IFile tryCreate(String uniqueName) {
         String filePathname = uniqueName + CHROMIUM_EXTENSION_SUFFIX;
-        IFile file = project.getFile(filePathname);
+        IFile file = handler.getFile(container, filePathname);
         if (file.exists()) {
           return null;
         }
@@ -247,6 +266,28 @@ public class ChromiumDebugPluginUtil {
 
     // Can we have 1000 same-named files?
     return UniqueKeyGenerator.createUniqueKey(patchedName, 1000, factory);
+  }
+
+  private static final Pattern FILE_NAME_BAD_CHARS = Pattern.compile("[?<>/]");
+
+  /**
+   * Helper class that provides polymorphic access to {@link IProject} and {@link IContainer}.
+   * Used for uniform access to "getFile" methods from both interfaces.
+   */
+  private static abstract class FileContainerHandler<T> {
+    abstract IFile getFile(T container, String name);
+
+    static final FileContainerHandler<IProject> FOR_PROJECT = new FileContainerHandler<IProject>() {
+      @Override IFile getFile(IProject project, String name) {
+        return project.getFile(name);
+      }
+    };
+
+    static final FileContainerHandler<IFolder> FOR_FOLDER = new FileContainerHandler<IFolder>() {
+      @Override IFile getFile(IFolder folder, String name) {
+        return folder.getFile(name);
+      }
+    };
   }
 
   /**
