@@ -20,6 +20,7 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.UniqueKeyGenerator;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -112,8 +113,16 @@ public class ResourceManager {
 
   private VmResourceInfo createAndRegisterResourceFile(VmResourceId id,
       VmResource.Metadata metadata) {
-    String fileNameTemplate = createFileNameTemplate(id);
-    IFile scriptFile = ChromiumDebugPluginUtil.createFile(debugProject, fileNameTemplate);
+    IFile scriptFile;
+    if (id.getName() == null) {
+      IFolder specialDir = getOrCreateUnnamedScriptFolder(debugProject);
+      scriptFile = ChromiumDebugPluginUtil.createFile(specialDir,
+          getFileNameForScriptId(id.getId()));
+    } else {
+      scriptFile = ChromiumDebugPluginUtil.createFile(debugProject,
+          getFileNameForScriptName(id.getName()));
+    }
+
     VmResourceInfo info = new VmResourceInfo(scriptFile, id, metadata);
     resourceIdToInfo.put(id, info);
     Object conflict = file2Info.put(scriptFile, info);
@@ -121,6 +130,29 @@ public class ResourceManager {
       throw new RuntimeException();
     }
     return info;
+  }
+
+  private static String getFileNameForScriptName(String scriptName) {
+    // Simply take component after the last slash.
+    // We may want to use ScriptNameManipulator for this for more accurate work.
+    int slashPos = scriptName.lastIndexOf('/');
+    return scriptName.substring(slashPos + 1);
+  }
+
+  private static String getFileNameForScriptId(Object scriptId) {
+    return scriptId.toString();
+  }
+
+  private IFolder getOrCreateUnnamedScriptFolder(IProject project) {
+    IFolder unnamedDir = project.getFolder(UNNAMED_SCRIPTS_FOLDER_NAME);
+    if (!unnamedDir.exists()) {
+      try {
+        unnamedDir.create(true, true, null);
+      } catch (CoreException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return unnamedDir;
   }
 
 
@@ -152,18 +184,6 @@ public class ResourceManager {
           file2Info.keySet().toArray(new IFile[file2Info.size()]), true, null);
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
-    }
-  }
-
-  private String createFileNameTemplate(VmResourceId id) {
-    if (id.getName() != null) {
-      return id.getName();
-    } else {
-      if (true) {
-        return "<eval #" + id.getId() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-      } else {
-        return "<no name #" + id.getId() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-      }
     }
   }
 
@@ -241,4 +261,6 @@ public class ResourceManager {
       return idToScript.values();
     }
   }
+
+  private static final String UNNAMED_SCRIPTS_FOLDER_NAME = "unnamed scripts";
 }
