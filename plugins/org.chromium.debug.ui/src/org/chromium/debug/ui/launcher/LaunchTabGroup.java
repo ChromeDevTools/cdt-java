@@ -17,27 +17,27 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
   public static class Chromium extends LaunchTabGroup {
     @Override
     protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(ChromiumRemoteTab.HostChecker.FOR_CHROME);
+      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.CHROME);
     }
   }
 
   public static class StandaloneV8 extends LaunchTabGroup {
     @Override
     protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(null);
+      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.STANDALONE);
+    }
+  }
+
+  public static class Wip extends LaunchTabGroup {
+    @Override
+    protected ChromiumRemoteTab createRemoteTab() {
+      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.WIP);
     }
   }
 
   public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
     setTabs(new ILaunchConfigurationTab[] { createRemoteTab(),
         new SourceLookupTab(), new CommonTab() });
-  }
-
-  public static class Wip extends LaunchTabGroup {
-    @Override
-    protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(null);
-    }
   }
 
   protected abstract ChromiumRemoteTab createRemoteTab();

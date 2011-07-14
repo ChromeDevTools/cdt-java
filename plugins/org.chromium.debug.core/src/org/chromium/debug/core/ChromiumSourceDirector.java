@@ -11,12 +11,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
+import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.LaunchParams;
+import org.chromium.debug.core.model.LaunchParams.LookupAccurateness;
 import org.chromium.debug.core.model.ResourceManager;
-import org.chromium.debug.core.model.VmResourceRef;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.model.VmResourceId;
+import org.chromium.debug.core.model.VmResourceRef;
 import org.chromium.debug.core.util.AccuratenessProperty;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
@@ -29,8 +31,10 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupParticipant;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
-import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupParticipant;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
 
 /**
  * A source lookup director implementation that provides a simple participant and
@@ -40,79 +44,117 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   private volatile ResourceManager resourceManager = null;
   private volatile IProject project = null;
   private volatile ReverseSourceLookup reverseSourceLookup = null;
-  private volatile ScriptNameManipulator scriptNameManipulator = null;
+  private volatile JavascriptVmEmbedder javascriptVmEmbedder = null;
 
   public void initializeParticipants() {
-    ISourceLookupParticipant participant;
-    if (isInaccurateMode()) {
-      participant = new InaccurateLookupParticipant();
-    } else {
-      participant = new AccurateLookupParticipant();
-    }
+    ISourceLookupParticipant participant = new LookupParticipant(this);
     addParticipants(new ISourceLookupParticipant[] { participant } );
+
+    // Check mode post factum.
+    checkSupportedLookupMode();
   }
 
   public VmResourceRef findVmResourceRef(IFile file) throws CoreException {
-    if (isInaccurateMode()) {
-      {
-        // Try inside virtual project.
-        VmResourceId resourceId = resourceManager.getResourceId(file);
-        if (resourceId != null) {
-          return VmResourceRef.forVmResourceId(resourceId);
-        }
-      }
-      IPath path = file.getFullPath();
-      int accurateness = AccuratenessProperty.read(file);
-      if (accurateness > path.segmentCount()) {
-        accurateness = path.segmentCount();
-      }
-      int offset = path.segmentCount() - accurateness;
-      List<String> components = new ArrayList<String>(accurateness);
-      for (int i = 0; i < accurateness; i++) {
-        components.add(path.segment(i + offset));
-      }
-      ScriptNamePattern pattern = scriptNameManipulator.createPattern(components);
-      return VmResourceRef.forInaccurate(pattern);
+    return getLookupMode().findVmResourceRef(file);
+  }
+
+  public static LookupAccurateness readLookupAccurateness(ILaunchConfiguration launchConfiguration)
+      throws CoreException {
+    String accuratenessValue = launchConfiguration.getAttribute(
+        LaunchParams.SOURCE_LOOKUP_ACCURATENESS, (String) null);
+    LookupAccurateness value;
+    if (accuratenessValue == null) {
+      value = LookupAccurateness.DEFAULT_VALUE;
     } else {
-      VmResourceId vmResourceId = reverseSourceLookup.findVmResource(file);
-      if (vmResourceId == null) {
-        return null;
-      }
-      return VmResourceRef.forVmResourceId(vmResourceId);
+      value = LookupAccurateness.STRING_CONVERTER.decode(accuratenessValue);
     }
+    return value;
   }
 
-  private boolean isInaccurateMode() {
-    return isInaccurateMode(getLaunchConfiguration());
+  private LookupMode readLookupMode(ILaunchConfiguration launchConfiguration)
+      throws CoreException {
+    LookupAccurateness value = readLookupAccurateness(launchConfiguration);
+    return value.accept(new LookupAccurateness.Visitor<LookupMode>() {
+      @Override
+      public LookupMode visitAccurate() {
+        return ACCURATE_LOOKUP_MODE;
+      }
+
+      @Override
+      public LookupMode visitInaccurate() {
+        return INACCURATE_LOOKUP_MODE;
+      }
+    });
   }
 
-  public static boolean isInaccurateMode(ILaunchConfiguration launchConfiguration) {
-    // TODO: support default value from eclipse variables.
-    // TODO: move method closer to LaunchParams.
+  private LookupMode getLookupMode() {
     try {
-      return launchConfiguration.getAttribute(LaunchParams.INACCURATE_SOURCE_LOOKUP,
-          false);
+      return readLookupMode(getLaunchConfiguration());
     } catch (CoreException e) {
-      throw new RuntimeException(e);
+      ChromiumDebugPlugin.log(e);
+      return ACCURATE_LOOKUP_MODE;
     }
   }
 
   @Override
   public boolean isFindDuplicates() {
-    if (isInaccurateMode()) {
-      return true;
-    }
-    return super.isFindDuplicates();
+    return getLookupMode().forceFindDuplicates() || super.isFindDuplicates();
   }
 
-  private static class AccurateLookupParticipant extends AbstractSourceLookupParticipant {
+  /**
+   * A single implementation of look participant. This way the participant may decide to become
+   * accurate/inaccurate after it is created, because javascriptVm instances comes too late after
+   * everything is created.
+   */
+  private static class LookupParticipant extends AbstractSourceLookupParticipant {
+    private final SuperClassAccess superClassAccess = new SuperClassAccess();
+    private final ChromiumSourceDirector chromiumSourceDirector;
+
+    LookupParticipant(ChromiumSourceDirector chromiumSourceDirector) {
+      this.chromiumSourceDirector = chromiumSourceDirector;
+    }
+
     public String getSourceName(Object object) throws CoreException {
       return getSourceNameImpl(object);
     }
 
     @Override
     public Object[] findSourceElements(Object object) throws CoreException {
-      Object[] result = super.findSourceElements(object);
+      Delegate delegate = chromiumSourceDirector.getLookupMode().getDelegate();
+      return delegate.findSourceElements(object, superClassAccess);
+    }
+
+    private Object[] findSourceElementsSuper(Object object) throws CoreException {
+      return super.findSourceElements(object);
+    }
+
+
+    static abstract class Delegate {
+      abstract Object[] findSourceElements(Object object, SuperClassAccess superClass)
+          throws CoreException;
+    }
+
+    class SuperClassAccess {
+      Object[] findSourceElements(Object object) throws CoreException {
+        return findSourceElementsSuper(object);
+      }
+
+      ISourceContainer[] getSourceContainers() {
+        return LookupParticipant.this.getSourceContainers();
+      }
+
+      ChromiumSourceDirector getChromiumSourceDirector() {
+        return chromiumSourceDirector;
+      }
+    }
+  }
+
+  private static final LookupParticipant.Delegate ACCURATE_DELEGATE =
+      new LookupParticipant.Delegate() {
+    @Override
+    Object[] findSourceElements(Object object, LookupParticipant.SuperClassAccess superClass)
+        throws CoreException {
+      Object[] result = superClass.findSourceElements(object);
       if (result.length > 0) {
         ArrayList<Object> filtered = new ArrayList<Object>(result.length);
         for (Object obj : result) {
@@ -128,7 +170,115 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       }
       return result;
     }
-  }
+  };
+
+  private static final LookupParticipant.Delegate INACCURATE_DELEGATE =
+      new LookupParticipant.Delegate() {
+        @Override
+        Object[] findSourceElements(Object object, LookupParticipant.SuperClassAccess superClass)
+            throws CoreException {
+          ArrayList<Object> result = new ArrayList<Object>();
+          JavascriptVmEmbedder vmEmbedder =
+              superClass.getChromiumSourceDirector().javascriptVmEmbedder;
+          ScriptNameManipulator.FilePath scriptName =
+              getParsedScriptFileName(object, vmEmbedder.getScriptNameManipulator());
+          if (scriptName != null) {
+            for (ISourceContainer container : superClass.getSourceContainers()) {
+              try {
+                findSourceElements(container, object, scriptName, result);
+              } catch (CoreException e) {
+                ChromiumDebugPlugin.log(e);
+                continue;
+              }
+              // If one container returned one file -- that's a single uncompromised result.
+              IFile oneFile = getSimpleResult(result);
+              if (oneFile != null) {
+                return new Object[] { oneFile };
+              }
+            }
+          }
+          return result.toArray();
+        }
+
+        private void findSourceElements(ISourceContainer container, Object object,
+            ScriptNameManipulator.FilePath scriptName, ArrayList<Object> output)
+            throws CoreException {
+          Object[] objects = container.findSourceElements(scriptName.getLastComponent());
+
+          if (objects.length == 0) {
+            return;
+          }
+
+          int outputStartPos = output.size();
+
+          for (Object obj : objects) {
+            if (obj instanceof IFile) {
+              IFile file = (IFile) obj;
+              if (matchFileAccurateness(file, scriptName)) {
+                output.add(obj);
+              }
+            } else if (obj instanceof VProjectSourceContainer.LookupResult) {
+              VProjectSourceContainer.LookupResult vprojectResult =
+                  (VProjectSourceContainer.LookupResult) obj;
+              expandVProjectResult(vprojectResult, object, output);
+            } else {
+              output.add(obj);
+            }
+          }
+
+          int outputEndPos = output.size();
+
+          if (outputEndPos - outputStartPos > 1) {
+            // Put short name last. They cannot be filtered out by our rules, so they may
+            // be parasite.
+            Collections.sort(output.subList(outputStartPos, outputEndPos), SHORT_NAME_LAST);
+          }
+        }
+
+        private IFile getSimpleResult(List<Object> objects) {
+          if (objects.size() != 1) {
+            return null;
+          }
+          Object oneObject = objects.get(0);
+          if (oneObject instanceof IFile == false) {
+            return null;
+          }
+          IFile file = (IFile) oneObject;
+          return file;
+        }
+
+        private boolean matchFileAccurateness(IFile file,
+            ScriptNameManipulator.FilePath scriptName) throws CoreException {
+          int accurateness = AccuratenessProperty.read(file);
+          if (accurateness > AccuratenessProperty.BASE_VALUE) {
+            IPath path = file.getFullPath();
+            int pathPos = path.segmentCount() - AccuratenessProperty.BASE_VALUE -1;
+            Iterator<String> scriptIterator = scriptName.iterator();
+            while (accurateness > AccuratenessProperty.BASE_VALUE) {
+              if (pathPos < 0 || !scriptIterator.hasNext()) {
+                return false;
+              }
+              String scriptComponent = scriptIterator.next();
+              String pathComponent = path.segment(pathPos--);
+              if (!scriptComponent.equals(pathComponent)) {
+                return false;
+              }
+              accurateness--;
+            }
+          }
+          return true;
+        }
+
+
+        private ScriptNameManipulator.FilePath getParsedScriptFileName(Object object,
+            ScriptNameManipulator nameManipulator) throws CoreException {
+          final String scriptName = getVmResourceId(object).getName();
+          if (scriptName == null) {
+            return UNKNOWN_NAME;
+          }
+          return nameManipulator.getFileName(scriptName);
+        }
+      };
 
   private static String getSourceNameImpl(Object object) throws CoreException {
     VmResourceId vmResourceId = getVmResourceId(object);
@@ -142,124 +292,6 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       name = "";
     }
     return name;
-  }
-
-  private class InaccurateLookupParticipant implements ISourceLookupParticipant {
-
-    public String getSourceName(Object object) throws CoreException {
-      return getSourceNameImpl(object);
-    }
-
-    @Override
-    public Object[] findSourceElements(Object object) throws CoreException {
-      ArrayList<Object> result = new ArrayList<Object>();
-      ScriptNameManipulator.FilePath scriptName = getParsedScriptFileName(object);
-      if (scriptName != null) {
-        for (ISourceContainer container : getSourceContainers()) {
-          try {
-            findSourceElements(container, object, scriptName, result);
-          } catch (CoreException e) {
-            ChromiumDebugPlugin.log(e);
-            continue;
-          }
-          // If one container returned one file -- that's a single uncompromised result.
-          IFile oneFile = getSimpleResult(result);
-          if (oneFile != null) {
-            return new Object[] { oneFile };
-          }
-        }
-      }
-      return result.toArray();
-    }
-
-    private void findSourceElements(ISourceContainer container, Object object,
-        ScriptNameManipulator.FilePath scriptName, ArrayList<Object> output) throws CoreException {
-      Object[] objects = container.findSourceElements(scriptName.getLastComponent());
-
-      if (objects.length == 0) {
-        return;
-      }
-
-      int outputStartPos = output.size();
-
-      for (Object obj : objects) {
-        if (obj instanceof IFile) {
-          IFile file = (IFile) obj;
-          if (matchFileAccurateness(file, scriptName)) {
-            output.add(obj);
-          }
-        } else if (obj instanceof VProjectSourceContainer.LookupResult) {
-          VProjectSourceContainer.LookupResult vprojectResult =
-              (VProjectSourceContainer.LookupResult) obj;
-          expandVProjectResult(vprojectResult, object, output);
-        } else {
-          output.add(obj);
-        }
-      }
-
-      int outputEndPos = output.size();
-
-      if (outputEndPos - outputStartPos > 1) {
-        // Put short name last. They cannot be filtered out by our rules, so they may be parasite.
-        Collections.sort(output.subList(outputStartPos, outputEndPos), SHORT_NAME_LAST);
-      }
-    }
-
-    private IFile getSimpleResult(List<Object> objects) {
-      if (objects.size() != 1) {
-        return null;
-      }
-      Object oneObject = objects.get(0);
-      if (oneObject instanceof IFile == false) {
-        return null;
-      }
-      IFile file = (IFile) oneObject;
-      return file;
-    }
-
-    private boolean matchFileAccurateness(IFile file, ScriptNameManipulator.FilePath scriptName)
-        throws CoreException {
-      int accurateness = AccuratenessProperty.read(file);
-      if (accurateness > AccuratenessProperty.BASE_VALUE) {
-        IPath path = file.getFullPath();
-        int pathPos = path.segmentCount() - AccuratenessProperty.BASE_VALUE -1 ;
-        Iterator<String> scriptIterator = scriptName.iterator();
-        while (accurateness > AccuratenessProperty.BASE_VALUE) {
-          if (pathPos < 0 || !scriptIterator.hasNext()) {
-            return false;
-          }
-          String scriptComponent = scriptIterator.next();
-          String pathComponent = path.segment(pathPos--);
-          if (!scriptComponent.equals(pathComponent)) {
-            return false;
-          }
-          accurateness--;
-        }
-      }
-      return true;
-    }
-
-
-    private ScriptNameManipulator.FilePath getParsedScriptFileName(Object object)
-        throws CoreException {
-      final String scriptName = getVmResourceId(object).getName();
-      if (scriptName == null) {
-        return UNKNOWN_NAME;
-      }
-      return scriptNameManipulator.getFileName(scriptName);
-    }
-
-    @Override
-    public void init(ISourceLookupDirector director) {
-    }
-
-    @Override
-    public void dispose() {
-    }
-
-    @Override
-    public void sourceContainersChanged(ISourceLookupDirector director) {
-    }
   }
 
   private static final ScriptNameManipulator.FilePath UNKNOWN_NAME =
@@ -345,11 +377,12 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       };
 
   public void initializeVProjectContainers(IProject project, ResourceManager resourceManager,
-      ScriptNameManipulator scriptNameManipulator) {
+      JavascriptVmEmbedder javascriptVmEmbedder) {
     this.resourceManager = resourceManager;
     this.project = project;
-    this.scriptNameManipulator = scriptNameManipulator;
+    this.javascriptVmEmbedder = javascriptVmEmbedder;
     this.reverseSourceLookup = new ReverseSourceLookup(this);
+    checkSupportedLookupMode();
   }
 
   public ReverseSourceLookup getReverseSourceLookup() {
@@ -363,4 +396,106 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   IProject getProject() {
     return project;
   }
+
+  private void checkSupportedLookupMode() {
+    LookupMode lookupMode = getLookupMode();
+    if (javascriptVmEmbedder != null) {
+      lookupMode.showUnsupportedWarning(javascriptVmEmbedder);
+    }
+  }
+
+  private static abstract class LookupMode {
+    abstract LookupParticipant.Delegate getDelegate();
+
+    abstract void showUnsupportedWarning(JavascriptVmEmbedder javascriptVmEmbedder);
+
+    abstract boolean forceFindDuplicates();
+
+    abstract  VmResourceRef findVmResourceRef(IFile file) throws CoreException;
+  }
+
+  private final LookupMode ACCURATE_LOOKUP_MODE = new LookupMode() {
+    @Override LookupParticipant.Delegate getDelegate() {
+      return ACCURATE_DELEGATE;
+    }
+
+    @Override void showUnsupportedWarning(JavascriptVmEmbedder javascriptVmEmbedder) {
+    }
+
+    @Override boolean forceFindDuplicates() {
+      return false;
+    }
+
+    @Override
+    VmResourceRef findVmResourceRef(IFile file) throws CoreException {
+      VmResourceId vmResourceId = reverseSourceLookup.findVmResource(file);
+      if (vmResourceId == null) {
+        return null;
+      }
+      return VmResourceRef.forVmResourceId(vmResourceId);
+    }
+  };
+
+  private final LookupMode INACCURATE_LOOKUP_MODE = new LookupMode() {
+    @Override LookupParticipant.Delegate getDelegate() {
+      return INACCURATE_DELEGATE;
+    }
+
+    @Override
+    void showUnsupportedWarning(final JavascriptVmEmbedder javascriptVmEmbedder) {
+      BreakpointTypeExtension breakpointTypeExtension =
+          javascriptVmEmbedder.getJavascriptVm().getBreakpointTypeExtension();
+      BreakpointTypeExtension.ScriptRegExpSupport scriptRegExpSupport =
+          breakpointTypeExtension.getScriptRegExpSupport();
+      if (scriptRegExpSupport != null) {
+        return;
+      }
+      Display display = Display.getDefault();
+      display.asyncExec(new Runnable() {
+        @Override
+        public void run() {
+          Display display = Display.getDefault();
+          MessageBox messageBox = new MessageBox(display.getActiveShell(), SWT.ICON_WARNING);
+          messageBox.setText("Inaccurate Source Look-Up Problem");
+          messageBox.setMessage("You are running in 'inaccurate source look-up' mode.\n" +
+              "However the connected JavaScript VM (version=\"" +
+               javascriptVmEmbedder.getJavascriptVm().getVersion() +
+               "\") does not support it.\n" +
+              "You won't be able to set breakpoints except for on scripts in virtual project.\n" +
+              "\n" +
+              "It is recommended that you switch to accurate look-up mode " +
+              "(or get newer version of JavaScript VM).");
+          messageBox.open();
+        }
+      });
+    }
+
+    @Override boolean forceFindDuplicates() {
+      return true;
+    }
+
+    @Override
+    VmResourceRef findVmResourceRef(IFile file) throws CoreException {
+      {
+        // Try inside virtual project.
+        VmResourceId resourceId = resourceManager.getResourceId(file);
+        if (resourceId != null) {
+          return VmResourceRef.forVmResourceId(resourceId);
+        }
+      }
+      IPath path = file.getFullPath();
+      int accurateness = AccuratenessProperty.read(file);
+      if (accurateness > path.segmentCount()) {
+        accurateness = path.segmentCount();
+      }
+      int offset = path.segmentCount() - accurateness;
+      List<String> components = new ArrayList<String>(accurateness);
+      for (int i = 0; i < accurateness; i++) {
+        components.add(path.segment(i + offset));
+      }
+      ScriptNameManipulator scriptNameManipulator = javascriptVmEmbedder.getScriptNameManipulator();
+      ScriptNamePattern pattern = scriptNameManipulator.createPattern(components);
+      return VmResourceRef.forInaccurate(pattern);
+    }
+  };
 }

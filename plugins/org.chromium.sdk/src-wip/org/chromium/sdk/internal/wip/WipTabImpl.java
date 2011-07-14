@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.wip;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.logging.Level;
@@ -211,7 +212,7 @@ public class WipTabImpl implements BrowserTab {
   @Override
   public Version getVersion() {
     // TODO(peter.rybin): support it.
-    return new Version(Collections.<Integer>emptyList(), " <Unknown V8 version>");
+    return new Version(Arrays.asList(0, 0), " <Unknown V8 version>");
   }
 
   @Override

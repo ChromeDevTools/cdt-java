@@ -8,13 +8,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.SourceNameMapperContainer;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.chromium.debug.core.model.LaunchParams;
+import org.chromium.debug.core.model.LaunchParams.LookupAccurateness;
+import org.chromium.debug.core.model.LaunchParams.ValueConverter;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -45,6 +49,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 
 /**
  * The "Remote" tab for the Chromium JavaScript launch tab group.
@@ -55,16 +60,48 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
       "add_network_console_field"; //$NON-NLS-1$
 
-  private static final String INACCURATE_SOURCE_LOOKUP =
-      "inaccurate_source_lookup"; //$NON-NLS-1$
-
    // However, recommended range is [1024, 32767].
   private static final int minimumPortValue = 0;
   private static final int maximumPortValue = 65535;
 
   private final SourceContainerChecker sourceContainerChecker = new SourceContainerChecker();
-  private final HostChecker hostChecker;
+  private final Params params;
   private TabElements tabElements = null;
+
+  public static class Params {
+    private final HostChecker hostChecker;
+    private final LookupAccurateness newConfigLookupAccurateness;
+    private final String scriptNameDescription;
+
+    public Params(HostChecker hostChecker,
+        LookupAccurateness newConfigLookupAccurateness,
+        String scriptNameDescription) {
+      this.hostChecker = hostChecker;
+      this.newConfigLookupAccurateness = newConfigLookupAccurateness;
+      this.scriptNameDescription = scriptNameDescription;
+    }
+
+    HostChecker getHostChecker() {
+      return hostChecker;
+    }
+
+    LookupAccurateness getNewConfigLookupAccurateness() {
+      return newConfigLookupAccurateness;
+    }
+
+    String getScriptNameDescription() {
+      return scriptNameDescription;
+    }
+
+    public static final Params CHROME = new Params(HostChecker.LOCAL_ONLY,
+        LaunchParams.LookupAccurateness.INACCURATE, "URL");
+
+    public static final Params STANDALONE = new Params(null,
+        LaunchParams.LookupAccurateness.INACCURATE, "plain file path");
+
+    public static final Params WIP = new Params(HostChecker.LOCAL_ONLY,
+        LaunchParams.LookupAccurateness.ACCURATE, "URL");
+  }
 
   /**
    * Possibly checks host property in config.
@@ -72,7 +109,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   public static abstract class HostChecker {
     public abstract String getWarning(ILaunchConfiguration config) throws CoreException;
 
-    public static HostChecker FOR_CHROME = new HostChecker() {
+    public static HostChecker LOCAL_ONLY = new HostChecker() {
       @Override
       public String getWarning(ILaunchConfiguration config) throws CoreException {
         String host = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_HOST, ""); //$NON-NLS-1$
@@ -88,8 +125,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   }
 
 
-  ChromiumRemoteTab(HostChecker hostChecker) {
-    this.hostChecker = hostChecker;
+  ChromiumRemoteTab(Params params) {
+    this.params = params;
   }
 
   public void createControl(Composite parent) {
@@ -136,14 +173,21 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       addNetworkConsole.setPropertyChangeListener(modifyListener);
     }
 
-    final RadioButtonsLogic breakpointRadioButtons;
+    RadioButtonsLogic.Listener radioButtonsListener =
+        new RadioButtonsLogic.Listener() {
+          public void selectionChanged() {
+            updateLaunchConfigurationDialog();
+          }
+        };
+
+    final RadioButtonsLogic<Integer> breakpointRadioButtons;
     {
       Group breakpointGroup = new Group(composite, 0);
       breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
       breakpointGroup.setText(Messages.ChromiumRemoteTab_BREAKPOINT_GROUP);
       breakpointGroup.setLayout(new GridLayout(1, false));
 
-      List<Button> radioButtons = new ArrayList<Button>();
+      Map<Integer, Button> buttonMap = new LinkedHashMap<Integer, Button>(3);
       for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
         Button button = new Button(breakpointGroup, SWT.RADIO);
         button.setFont(parent.getFont());
@@ -151,30 +195,19 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         GridData gd = new GridData();
         button.setLayoutData(gd);
         SWTFactory.setButtonDimensionHint(button);
-        radioButtons.add(button);
+        int index = buttonMap.size();
+        buttonMap.put(index, button);
       }
 
-      RadioButtonsLogic.Listener radioButtonsListener =
-          new RadioButtonsLogic.Listener() {
-            public void selectionChanged() {
-              updateLaunchConfigurationDialog();
-            }
-          };
       breakpointRadioButtons =
-          new RadioButtonsLogic(radioButtons, radioButtonsListener);
+          new RadioButtonsLogic<Integer>(buttonMap, radioButtonsListener);
     }
 
-    final BooleanFieldEditor inaccurateSourceLookup;
-    {
-      Composite hiddenComposite = createInnerComposite(composite, 2);
+    InaccurateOptionControl inaccurateOptionControl =
+        new InaccurateOptionControl(composite, params.getScriptNameDescription());
 
-      // TODO: externalize user message (or better redesign control).
-      inaccurateSourceLookup =
-          new BooleanFieldEditor(INACCURATE_SOURCE_LOOKUP,
-              "Inaccurate Source Lookup", hiddenComposite);
-      inaccurateSourceLookup.setPreferenceStore(store);
-      inaccurateSourceLookup.setPropertyChangeListener(modifyListener);
-    }
+    final RadioButtonsLogic<LookupAccurateness> inaccuratenessLogic =
+        inaccurateOptionControl.createLogic(radioButtonsListener);
 
     return new TabElements() {
       @Override public StringFieldEditor getHost() {
@@ -186,11 +219,11 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       @Override public BooleanFieldEditor getAddNetworkConsole() {
         return addNetworkConsole;
       }
-      @Override public RadioButtonsLogic getBreakpointRadioButtons() {
+      @Override public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
         return breakpointRadioButtons;
       }
-      @Override public BooleanFieldEditor getInaccurateSourceLookup() {
-        return inaccurateSourceLookup;
+      @Override public RadioButtonsLogic<LookupAccurateness> getAccuratenessControl() {
+        return inaccuratenessLogic;
       }
     };
   }
@@ -200,13 +233,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   }
 
   public void initializeFrom(ILaunchConfiguration config) {
-    for (TabField<?> field : TAB_FIELDS) {
+    for (TabField<?, ?> field : TAB_FIELDS) {
       field.initializeFrom(tabElements, config);
     }
   }
 
   public void performApply(ILaunchConfigurationWorkingCopy config) {
-    for (TabField<?> field : TAB_FIELDS) {
+    for (TabField<?, ?> field : TAB_FIELDS) {
       field.saveToConfig(tabElements, config);
     }
   }
@@ -248,6 +281,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
    * Checks config for warnings and returns first found or null.
    */
   private String getWarning(ILaunchConfiguration config) throws CoreException {
+    HostChecker hostChecker = params.getHostChecker();
     if (hostChecker != null) {
       String hostWarning = hostChecker.getWarning(config);
       if (hostWarning != null) {
@@ -268,8 +302,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
 
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
-    for (TabField<?> field : TAB_FIELDS) {
-      field.setDefault(config);
+    for (TabField<?, ?> field : TAB_FIELDS) {
+      field.setDefault(config, this);
     }
   }
 
@@ -310,9 +344,9 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
   }
 
-  private static class RadioButtonsLogic {
-    private final List<Button> buttons;
-    RadioButtonsLogic(List<Button> buttons, final Listener listener) {
+  private static class RadioButtonsLogic<K> {
+    private final Map<K, Button> buttons;
+    RadioButtonsLogic(Map<K, Button> buttons, final Listener listener) {
       this.buttons = buttons;
       SelectionListener selectionListener = new SelectionListener() {
         public void widgetDefaultSelected(SelectionEvent e) {
@@ -327,22 +361,23 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         }
       };
 
-      for (Button button : buttons) {
+      for (Button button : buttons.values()) {
         button.addSelectionListener(selectionListener);
       }
     }
-    void select(int index) {
-      for (int i = 0; i < buttons.size(); i++) {
-        buttons.get(i).setSelection(i == index);
+    void select(K key) {
+      for (Map.Entry<K, Button> en : buttons.entrySet()) {
+        en.getValue().setSelection(en.getKey().equals(key));
       }
     }
-    int getSelected() {
-      for (int i = 0; i < buttons.size(); i++) {
-        if (buttons.get(i).getSelection()) {
-          return i;
+    K getSelected() {
+      for (Map.Entry<K, Button> en : buttons.entrySet()) {
+        if (en.getValue().getSelection()) {
+          return en.getKey();
+
         }
       }
-      return -1;
+      return null;
     }
 
     interface Listener {
@@ -350,54 +385,89 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
   }
 
+  private static void addRadioButtonSwitcher(final Collection<Button> buttons) {
+    SelectionListener selectionListener = new SelectionListener() {
+      public void widgetDefaultSelected(SelectionEvent e) {
+      }
+      public void widgetSelected(SelectionEvent e) {
+        if (e.widget instanceof Button) {
+          Button button = (Button) e.widget;
+          if (button.getSelection()) {
+            for (Button other : buttons) {
+              if (other != button) {
+                other.setSelection(false);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    for (Button button : buttons) {
+      if ( (button.getStyle() & SWT.NO_RADIO_GROUP) == 0) {
+        throw new IllegalArgumentException();
+      }
+      button.addSelectionListener(selectionListener);
+    }
+  }
+
   private interface TabElements {
     StringFieldEditor getHost();
-    BooleanFieldEditor getInaccurateSourceLookup();
     IntegerFieldEditor getPort();
     BooleanFieldEditor getAddNetworkConsole();
-    RadioButtonsLogic getBreakpointRadioButtons();
+    RadioButtonsLogic<Integer> getBreakpointRadioButtons();
+    RadioButtonsLogic<LookupAccurateness> getAccuratenessControl();
   }
 
   /**
    * A dialog window tab field description. It is a static description -- it has no reference to
    * a particular element instance.
-   * @param <T> type of field as stored in config; used internally
+   * @param <P> physical type of field as stored in config; used internally
+   * @param <L> logical type of field used in runtime operations
    */
-  private static class TabField<T> {
+  private static class TabField<P, L> {
     private final String configAttributeName;
-    private final TypedMethods<T> typedMethods;
-    private final FieldAccess<T> fieldAccess;
-    private final DefaultsProvider<T> defaultsProvider;
+    private final TypedMethods<P> typedMethods;
+    private final FieldAccess<L> fieldAccess;
+    private final DefaultsProvider<L> defaultsProvider;
+    private final ValueConverter<P, L> valueConverter;
 
-    TabField(String configAttributeName, TypedMethods<T> typedMethods,
-        FieldAccess<T> fieldAccess, DefaultsProvider<T> defaultsProvider) {
+    TabField(String configAttributeName, TypedMethods<P> typedMethods,
+        FieldAccess<L> fieldAccess, DefaultsProvider<L> defaultsProvider,
+        ValueConverter<P, L> valueConverter) {
       this.typedMethods = typedMethods;
       this.defaultsProvider = defaultsProvider;
       this.configAttributeName = configAttributeName;
       this.fieldAccess = fieldAccess;
+      this.valueConverter = valueConverter;
     }
 
     void saveToConfig(TabElements tabElements, ILaunchConfigurationWorkingCopy config) {
-      T value = fieldAccess.getValue(tabElements);
-      typedMethods.setConfigAttribute(config, configAttributeName, value);
+      L logicalValue = fieldAccess.getValue(tabElements);
+      P persistentValue = valueConverter.encode(logicalValue);
+      typedMethods.setConfigAttribute(config, configAttributeName, persistentValue);
     }
 
     void initializeFrom(TabElements tabElements, ILaunchConfiguration config) {
-      T fallbackValue = defaultsProvider.getFallbackValue();
-      T value;
+      L fallbackLogicalValue = defaultsProvider.getFallbackValue();
+      P fallbackPersistenValue = valueConverter.encode(fallbackLogicalValue);
+      L value;
       try {
-        value = typedMethods.getConfigAttribute(config, configAttributeName, fallbackValue);
+        P persistentValue = typedMethods.getConfigAttribute(config, configAttributeName,
+            fallbackPersistenValue);
+        value = valueConverter.decode(persistentValue);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
-        value = fallbackValue;
+        value = fallbackLogicalValue;
       }
       fieldAccess.setValue(value, tabElements);
     }
 
-    public void setDefault(ILaunchConfigurationWorkingCopy config) {
-      T value = defaultsProvider.getInitialConfigValue();
+    public void setDefault(ILaunchConfigurationWorkingCopy config, ChromiumRemoteTab tab) {
+      L value = defaultsProvider.getInitialConfigValue(tab);
       if (value != null) {
-        typedMethods.setConfigAttribute(config, configAttributeName, value);
+        P persistentValue = valueConverter.encode(value);
+        typedMethods.setConfigAttribute(config, configAttributeName, persistentValue);
       }
     }
   }
@@ -436,7 +506,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private static abstract class DefaultsProvider<T> {
     abstract T getFallbackValue();
-    abstract T getInitialConfigValue();
+    abstract T getInitialConfigValue(ChromiumRemoteTab tab);
   }
 
   /**
@@ -503,11 +573,11 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     };
   }
 
-  private static final List<TabField<?>> TAB_FIELDS;
+  private static final List<TabField<?, ?>> TAB_FIELDS;
   static {
-    List<TabField<?>> list = new ArrayList<ChromiumRemoteTab.TabField<?>>(4);
+    List<TabField<?, ?>> list = new ArrayList<ChromiumRemoteTab.TabField<?, ?>>(4);
 
-    list.add(new TabField<String>(
+    list.add(new TabField<String, String>(
         LaunchParams.CHROMIUM_DEBUG_HOST, TypedMethods.STRING,
         new FieldEditorAccess<String>(TypedMethods.STRING) {
           @Override
@@ -522,13 +592,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override String getFallbackValue() {
             return PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_HOST);
           }
-          @Override
-          String getInitialConfigValue() {
+          @Override String getInitialConfigValue(ChromiumRemoteTab dialog) {
             return getFallbackValue();
           }
-        }));
+        },
+        ValueConverter.<String>getTrivial()));
 
-    list.add(new TabField<Integer>(
+    list.add(new TabField<Integer, Integer>(
         LaunchParams.CHROMIUM_DEBUG_PORT, TypedMethods.INT,
         new FieldEditorAccess<Integer>(TypedMethods.INT) {
           @Override
@@ -543,13 +613,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override Integer getFallbackValue() {
             return PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
           }
-          @Override
-          Integer getInitialConfigValue() {
+          @Override Integer getInitialConfigValue(ChromiumRemoteTab dialog) {
             return getFallbackValue();
           }
-        }));
+        },
+        ValueConverter.<Integer>getTrivial()));
 
-    list.add(new TabField<Boolean>(
+    list.add(new TabField<Boolean, Boolean>(
         LaunchParams.ADD_NETWORK_CONSOLE, TypedMethods.BOOL,
         new FieldEditorAccess<Boolean>(TypedMethods.BOOL) {
           FieldEditor getFieldEditor(TabElements tabElements) {
@@ -563,13 +633,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override Boolean getFallbackValue() {
             return false;
           }
-          @Override
-          Boolean getInitialConfigValue() {
+          @Override Boolean getInitialConfigValue(ChromiumRemoteTab dialog) {
             return null;
           }
-        }));
+        },
+        ValueConverter.<Boolean>getTrivial()));
 
-    list.add(new TabField<String>(
+    list.add(new TabField<String, String>(
         LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING, new FieldAccess<String>() {
           @Override
           void setValue(String value, TabElements tabElements) {
@@ -586,38 +656,48 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override String getFallbackValue() {
             return Direction.MERGE.toString();
           }
-          @Override
-          String getInitialConfigValue() {
+          @Override String getInitialConfigValue(ChromiumRemoteTab dialog) {
             return null;
-          }
-        }));
-
-    list.add(new TabField<Boolean>(
-        LaunchParams.INACCURATE_SOURCE_LOOKUP, TypedMethods.BOOL,
-        new FieldEditorAccess<Boolean>(TypedMethods.BOOL) {
-          FieldEditor getFieldEditor(TabElements tabElements) {
-            return tabElements.getInaccurateSourceLookup();
-          }
-          String getEditorErrorValue() {
-            return ""; //$NON-NLS-1$
           }
         },
-        new DefaultsProvider<Boolean>() {
-          @Override Boolean getFallbackValue() {
-            return false;
+        ValueConverter.<String>getTrivial()));
+
+    list.add(new TabField<String, LookupAccurateness>(
+        LaunchParams.SOURCE_LOOKUP_ACCURATENESS, TypedMethods.STRING,
+        new FieldAccess<LookupAccurateness>() {
+          @Override
+          void setValue(LookupAccurateness value, TabElements tabElements) {
+            tabElements.getAccuratenessControl().select(value);
           }
           @Override
-          Boolean getInitialConfigValue() {
-            return null;
+          LookupAccurateness getValue(TabElements tabElements) {
+            return tabElements.getAccuratenessControl().getSelected();
           }
-        }));
+        },
+        new DefaultsProvider<LookupAccurateness>() {
+          @Override LookupAccurateness getFallbackValue() {
+            // TODO: support default value from eclipse variables.
+            return LookupAccurateness.DEFAULT_VALUE;
+          }
+          @Override LookupAccurateness getInitialConfigValue(ChromiumRemoteTab dialog) {
+            return dialog.params.getNewConfigLookupAccurateness();
+          }
+        },
+        LookupAccurateness.STRING_CONVERTER));
 
     TAB_FIELDS = Collections.unmodifiableList(list);
   }
 
   private static class SourceContainerChecker {
     public String check(ILaunchConfiguration config) {
-      if (!ChromiumSourceDirector.isInaccurateMode(config)) {
+      LookupAccurateness accurateness;
+      try {
+        accurateness = ChromiumSourceDirector.readLookupAccurateness(config);
+      } catch (CoreException e) {
+        ChromiumDebugPlugin.log(e);
+        return null;
+      }
+      if (accurateness != LookupAccurateness.INACCURATE) {
         return null;
       }
 
@@ -656,6 +736,58 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       ISourceLookupDirector director = (ISourceLookupDirector) locator;
       director.initializeFromMemento(memento, config);
       return director;
+    }
+  }
+
+  private static GridLayout createHtmlStyleGridLayout(int numberOfColumns) {
+    GridLayout layout = new GridLayout(numberOfColumns, false);
+    layout.horizontalSpacing = 0;
+    layout.verticalSpacing = 0;
+    layout.marginWidth = 0;
+    layout.marginHeight = 0;
+    return layout;
+  }
+
+  /**
+   * Dialog UI group of 2 radio buttons for lookup accurateness mode.
+   */
+  private static class InaccurateOptionControl {
+    private final Map<LookupAccurateness, Button> buttons;
+    InaccurateOptionControl(Composite container, String scriptNameFormatDescription) {
+      buttons = new LinkedHashMap<LookupAccurateness, Button>();
+      Group breakpointGroup = new Group(container, 0);
+      breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+      breakpointGroup.setText("Source look-up method for workspace files");
+      breakpointGroup.setLayout(new GridLayout(1, false));
+
+      buttons.put(LookupAccurateness.ACCURATE, createButtonBlock(breakpointGroup,
+          "Accurate", "Full script names are used.",
+          "JavaScript Source Name Mapper must be set up in Source tab."));
+      buttons.put(LookupAccurateness.INACCURATE, createButtonBlock(breakpointGroup,
+          "Inaccurate", "Only short file names are used.",
+          "Actual script names are treated as: " + scriptNameFormatDescription));
+
+      addRadioButtonSwitcher(buttons.values());
+    }
+
+    RadioButtonsLogic<LookupAccurateness> createLogic(RadioButtonsLogic.Listener listener) {
+      return new RadioButtonsLogic<LookupAccurateness>(buttons, listener);
+    }
+
+    private static Button createButtonBlock(Composite parent, String buttonLabel,
+        String descriptionLine1, String descriptionLine2) {
+      Composite buttonComposite = new Composite(parent, SWT.NONE);
+      GridLayout gridLayout = createHtmlStyleGridLayout(2);
+      buttonComposite.setLayout(gridLayout);
+      Button button = new Button(buttonComposite, SWT.RADIO | SWT.NO_RADIO_GROUP);
+      button.setText(buttonLabel + "   ");
+      Label descriptionLine1Label = new Label(buttonComposite, SWT.NONE);
+      descriptionLine1Label.setText(descriptionLine1);
+      // Extra label to fill a grid in layout.
+      new Label(buttonComposite, SWT.NONE);
+      Label descriptionLine2Label = new Label(buttonComposite, SWT.NONE);
+      descriptionLine2Label.setText(descriptionLine2);
+      return button;
     }
   }
 }

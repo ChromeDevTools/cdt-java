@@ -84,7 +84,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
     sourceDirector = (ChromiumSourceDirector) launch.getSourceLocator();
     sourceDirector.initializeVProjectContainers(debugProject, resourceManager,
-        connectedTargetData.getJavascriptEmbedder().getScriptNameManipulator());
+        connectedTargetData.getJavascriptEmbedder());
   }
 
   public BreakpointSynchronizer getBreakpointSynchronizer() {

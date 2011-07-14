@@ -10,6 +10,8 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 public class LaunchParams {
@@ -25,7 +27,73 @@ public class LaunchParams {
   public static final String BREAKPOINT_SYNC_DIRECTION =
       "breakpoint_startup_sync_direction"; //$NON-NLS-1$
 
-  public static final String INACCURATE_SOURCE_LOOKUP = "inaccurate_source_lookup"; //$NON-NLS-1$
+  public static final String SOURCE_LOOKUP_ACCURATENESS =
+      "source_lookup_accurateness"; //$NON-NLS-1$
+
+  public enum LookupAccurateness {
+    ACCURATE() {
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitAccurate();
+      }
+    },
+    INACCURATE() {
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitInaccurate();
+      }
+    };
+
+    public abstract <R> R accept(Visitor<R> visitor);
+
+    public interface Visitor<R> {
+      R visitAccurate();
+      R visitInaccurate();
+    }
+
+    public static final LookupAccurateness DEFAULT_VALUE = ACCURATE;
+
+    public static final ValueConverter<String, LookupAccurateness> STRING_CONVERTER =
+        new ValueConverter<String, LookupAccurateness>() {
+      @Override
+      public
+      String encode(LookupAccurateness logical) {
+        return logical.toString();
+      }
+
+      @Override
+      public
+      LookupAccurateness decode(String persistent) throws CoreException {
+        try {
+          return LookupAccurateness.valueOf(persistent);
+        } catch (IllegalArgumentException e) {
+          Status status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+              "Failed to parse accurateness value", e);
+          throw new CoreException(status);
+        }
+      }
+    };
+  }
+
+  public static abstract class ValueConverter<P, L> {
+    public abstract P encode(L logical);
+    public abstract L decode(P persistent) throws CoreException;
+
+    @SuppressWarnings("unchecked")
+    public
+    static <T> ValueConverter<T, T> getTrivial() {
+      return (Trivial<T>) Trivial.INSTANCE;
+    }
+
+    private static class Trivial<T> extends ValueConverter<T, T> {
+      @Override public T encode(T logical) {
+        return logical;
+      }
+
+      @Override public T decode(T persistent) {
+        return persistent;
+      }
+      private static final Trivial<?> INSTANCE = new Trivial<Void>();
+    }
+  }
 
 
   public static class BreakpointOption {
