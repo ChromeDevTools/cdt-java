@@ -17,7 +17,7 @@ import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.SourceNameMapperContainer;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.chromium.debug.core.model.LaunchParams;
-import org.chromium.debug.core.model.LaunchParams.LookupAccurateness;
+import org.chromium.debug.core.model.LaunchParams.LookupMode;
 import org.chromium.debug.core.model.LaunchParams.ValueConverter;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -70,14 +70,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   public static class Params {
     private final HostChecker hostChecker;
-    private final LookupAccurateness newConfigLookupAccurateness;
+    private final LookupMode newConfigLookupMode;
     private final String scriptNameDescription;
 
-    public Params(HostChecker hostChecker,
-        LookupAccurateness newConfigLookupAccurateness,
+    public Params(HostChecker hostChecker, LookupMode newConfigLookupMode,
         String scriptNameDescription) {
       this.hostChecker = hostChecker;
-      this.newConfigLookupAccurateness = newConfigLookupAccurateness;
+      this.newConfigLookupMode = newConfigLookupMode;
       this.scriptNameDescription = scriptNameDescription;
     }
 
@@ -85,8 +84,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       return hostChecker;
     }
 
-    LookupAccurateness getNewConfigLookupAccurateness() {
-      return newConfigLookupAccurateness;
+    LookupMode getNewConfigLookupMode() {
+      return newConfigLookupMode;
     }
 
     String getScriptNameDescription() {
@@ -94,13 +93,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
 
     public static final Params CHROME = new Params(HostChecker.LOCAL_ONLY,
-        LaunchParams.LookupAccurateness.INACCURATE, "URL");
+        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_URL);
 
     public static final Params STANDALONE = new Params(null,
-        LaunchParams.LookupAccurateness.INACCURATE, "plain file path");
+        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_FILE_PATH);
 
     public static final Params WIP = new Params(HostChecker.LOCAL_ONLY,
-        LaunchParams.LookupAccurateness.ACCURATE, "URL");
+        LaunchParams.LookupMode.EXACT_MATCH, Messages.ChromiumRemoteTab_URL);
   }
 
   /**
@@ -203,11 +202,11 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           new RadioButtonsLogic<Integer>(buttonMap, radioButtonsListener);
     }
 
-    InaccurateOptionControl inaccurateOptionControl =
-        new InaccurateOptionControl(composite, params.getScriptNameDescription());
+    LookupModeControl lookupModeControl =
+        new LookupModeControl(composite, params.getScriptNameDescription());
 
-    final RadioButtonsLogic<LookupAccurateness> inaccuratenessLogic =
-        inaccurateOptionControl.createLogic(radioButtonsListener);
+    final RadioButtonsLogic<LookupMode> lookupModeLogic =
+        lookupModeControl.createLogic(radioButtonsListener);
 
     return new TabElements() {
       @Override public StringFieldEditor getHost() {
@@ -222,8 +221,8 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       @Override public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
         return breakpointRadioButtons;
       }
-      @Override public RadioButtonsLogic<LookupAccurateness> getAccuratenessControl() {
-        return inaccuratenessLogic;
+      @Override public RadioButtonsLogic<LookupMode> getLookupMode() {
+        return lookupModeLogic;
       }
     };
   }
@@ -416,7 +415,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     IntegerFieldEditor getPort();
     BooleanFieldEditor getAddNetworkConsole();
     RadioButtonsLogic<Integer> getBreakpointRadioButtons();
-    RadioButtonsLogic<LookupAccurateness> getAccuratenessControl();
+    RadioButtonsLogic<LookupMode> getLookupMode();
   }
 
   /**
@@ -662,42 +661,42 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
         },
         ValueConverter.<String>getTrivial()));
 
-    list.add(new TabField<String, LookupAccurateness>(
-        LaunchParams.SOURCE_LOOKUP_ACCURATENESS, TypedMethods.STRING,
-        new FieldAccess<LookupAccurateness>() {
+    list.add(new TabField<String, LookupMode>(
+        LaunchParams.SOURCE_LOOKUP_MODE, TypedMethods.STRING,
+        new FieldAccess<LookupMode>() {
           @Override
-          void setValue(LookupAccurateness value, TabElements tabElements) {
-            tabElements.getAccuratenessControl().select(value);
+          void setValue(LookupMode value, TabElements tabElements) {
+            tabElements.getLookupMode().select(value);
           }
           @Override
-          LookupAccurateness getValue(TabElements tabElements) {
-            return tabElements.getAccuratenessControl().getSelected();
+          LookupMode getValue(TabElements tabElements) {
+            return tabElements.getLookupMode().getSelected();
           }
         },
-        new DefaultsProvider<LookupAccurateness>() {
-          @Override LookupAccurateness getFallbackValue() {
+        new DefaultsProvider<LookupMode>() {
+          @Override LookupMode getFallbackValue() {
             // TODO: support default value from eclipse variables.
-            return LookupAccurateness.DEFAULT_VALUE;
+            return LookupMode.DEFAULT_VALUE;
           }
-          @Override LookupAccurateness getInitialConfigValue(ChromiumRemoteTab dialog) {
-            return dialog.params.getNewConfigLookupAccurateness();
+          @Override LookupMode getInitialConfigValue(ChromiumRemoteTab dialog) {
+            return dialog.params.getNewConfigLookupMode();
           }
         },
-        LookupAccurateness.STRING_CONVERTER));
+        LookupMode.STRING_CONVERTER));
 
     TAB_FIELDS = Collections.unmodifiableList(list);
   }
 
   private static class SourceContainerChecker {
     public String check(ILaunchConfiguration config) {
-      LookupAccurateness accurateness;
+      LookupMode lookupMode;
       try {
-        accurateness = ChromiumSourceDirector.readLookupAccurateness(config);
+        lookupMode = ChromiumSourceDirector.readLookupMode(config);
       } catch (CoreException e) {
         ChromiumDebugPlugin.log(e);
         return null;
       }
-      if (accurateness != LookupAccurateness.INACCURATE) {
+      if (lookupMode != LookupMode.AUTO_DETECT) {
         return null;
       }
 
@@ -712,7 +711,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       }
       for (ISourceContainer sourceContainer : director.getSourceContainers()) {
         if (sourceContainer instanceof SourceNameMapperContainer) {
-          return Messages.ChromiumRemoteTab_INACCURATE_CONTAINER_WARNING;
+          return Messages.ChromiumRemoteTab_AUTO_DETECT_CONTAINER_WARNING;
         }
       }
       return null;
@@ -749,41 +748,45 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   }
 
   /**
-   * Dialog UI group of 2 radio buttons for lookup accurateness mode.
+   * Dialog UI group of 2 radio buttons for lookup mode.
    */
-  private static class InaccurateOptionControl {
-    private final Map<LookupAccurateness, Button> buttons;
-    InaccurateOptionControl(Composite container, String scriptNameFormatDescription) {
-      buttons = new LinkedHashMap<LookupAccurateness, Button>();
-      Group breakpointGroup = new Group(container, 0);
-      breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-      breakpointGroup.setText("Source look-up method for workspace files");
-      breakpointGroup.setLayout(new GridLayout(1, false));
+  private static class LookupModeControl {
+    private final Map<LookupMode, Button> buttons;
+    LookupModeControl(Composite container, String scriptNameFormatDescription) {
+      buttons = new LinkedHashMap<LookupMode, Button>();
+      Group group = new Group(container, 0);
+      group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+      group.setText(Messages.ChromiumRemoteTab_LOOKUP_GROUP_TITLE);
+      group.setLayout(new GridLayout(1, false));
 
-      buttons.put(LookupAccurateness.ACCURATE, createButtonBlock(breakpointGroup,
-          "Accurate", "Full script names are used.",
-          "JavaScript Source Name Mapper must be set up in Source tab."));
-      buttons.put(LookupAccurateness.INACCURATE, createButtonBlock(breakpointGroup,
-          "Inaccurate", "Only short file names are used.",
-          "Actual script names are treated as: " + scriptNameFormatDescription));
+      buttons.put(LookupMode.EXACT_MATCH, createButtonBlock(group,
+          Messages.ChromiumRemoteTab_EXACT_MATCH, Messages.ChromiumRemoteTab_EXACT_MATCH_LINE1,
+          Messages.ChromiumRemoteTab_EXACT_MATCH_LINE2));
+
+      buttons.put(LookupMode.AUTO_DETECT, createButtonBlock(group,
+          Messages.ChromiumRemoteTab_AUTODETECT, Messages.ChromiumRemoteTab_AUTODETECT_LINE1,
+          Messages.ChromiumRemoteTab_AUTODETECT_LINE2 + scriptNameFormatDescription));
 
       addRadioButtonSwitcher(buttons.values());
     }
 
-    RadioButtonsLogic<LookupAccurateness> createLogic(RadioButtonsLogic.Listener listener) {
-      return new RadioButtonsLogic<LookupAccurateness>(buttons, listener);
+    RadioButtonsLogic<LookupMode> createLogic(RadioButtonsLogic.Listener listener) {
+      return new RadioButtonsLogic<LookupMode>(buttons, listener);
     }
 
     private static Button createButtonBlock(Composite parent, String buttonLabel,
         String descriptionLine1, String descriptionLine2) {
       Composite buttonComposite = new Composite(parent, SWT.NONE);
-      GridLayout gridLayout = createHtmlStyleGridLayout(2);
+      GridLayout gridLayout = createHtmlStyleGridLayout(3);
       buttonComposite.setLayout(gridLayout);
       Button button = new Button(buttonComposite, SWT.RADIO | SWT.NO_RADIO_GROUP);
-      button.setText(buttonLabel + "   ");
+      button.setText(buttonLabel);
+      Label padding = new Label(buttonComposite, SWT.NONE);
+      padding.setText("   "); //$NON-NLS-1$
       Label descriptionLine1Label = new Label(buttonComposite, SWT.NONE);
       descriptionLine1Label.setText(descriptionLine1);
       // Extra label to fill a grid in layout.
+      new Label(buttonComposite, SWT.NONE);
       new Label(buttonComposite, SWT.NONE);
       Label descriptionLine2Label = new Label(buttonComposite, SWT.NONE);
       descriptionLine2Label.setText(descriptionLine2);

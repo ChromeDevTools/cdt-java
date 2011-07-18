@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Parses script names and generates RegExp for them as needed for inaccurate source look-up
+ * Parses script names and generates RegExp for them as needed for 'auto-detect' source look-up
  * feature. Incapsulates knowledge about script name schema. For example it may support
  * plain file names, URLs that hold file name as the 'path' part. There might be
  * more exotic implementations that parses URLs like

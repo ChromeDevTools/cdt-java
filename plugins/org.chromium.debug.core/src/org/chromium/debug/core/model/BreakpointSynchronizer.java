@@ -540,7 +540,7 @@ public class BreakpointSynchronizer {
               return null;
             }
             ScriptNamePattern pattern = new ScriptNamePattern(regExp);
-            return VmResourceRef.forInaccurate(pattern);
+            return VmResourceRef.forRegExpBased(pattern);
           }
 
           @Override

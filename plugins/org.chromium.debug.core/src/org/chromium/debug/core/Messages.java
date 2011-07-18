@@ -15,6 +15,10 @@ public class Messages extends NLS {
 
   public static String ChromiumDebugPlugin_InternalError;
 
+  public static String ChromiumSourceDirector_WARNING_TEXT_PATTERN;
+
+  public static String ChromiumSourceDirector_WARNING_TITLE;
+
   public static String SourceNameMapperContainer_NAME;
 
   public static String VProjectSourceContainer_DEFAULT_TYPE_NAME;

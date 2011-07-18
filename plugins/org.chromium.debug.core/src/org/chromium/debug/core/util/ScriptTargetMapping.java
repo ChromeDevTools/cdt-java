@@ -26,7 +26,7 @@ public class ScriptTargetMapping {
 
   /**
    * Set of VmResource's that the file gets mapped to. Must be non-empty. Several resources
-   * are only possible in inaccurate source lookup mode.
+   * are only possible in 'auto-detect' source lookup mode.
    */
   private final Collection<? extends VmResource> vmResources;
 

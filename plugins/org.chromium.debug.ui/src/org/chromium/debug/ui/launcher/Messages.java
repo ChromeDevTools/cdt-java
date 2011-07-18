@@ -27,9 +27,27 @@ public class Messages extends NLS {
 
   public static String ChromiumRemoteTab_RemoteTabName;
 
-  public static String ChromiumRemoteTab_INACCURATE_CONTAINER_WARNING;
+  public static String ChromiumRemoteTab_AUTO_DETECT_CONTAINER_WARNING;
+
+  public static String ChromiumRemoteTab_AUTODETECT;
+
+  public static String ChromiumRemoteTab_AUTODETECT_LINE1;
+
+  public static String ChromiumRemoteTab_AUTODETECT_LINE2;
+
+  public static String ChromiumRemoteTab_EXACT_MATCH;
+
+  public static String ChromiumRemoteTab_EXACT_MATCH_LINE1;
+
+  public static String ChromiumRemoteTab_EXACT_MATCH_LINE2;
+
+  public static String ChromiumRemoteTab_FILE_PATH;
 
   public static String ChromiumRemoteTab_InvalidPortNumberError;
+
+  public static String ChromiumRemoteTab_LOOKUP_GROUP_TITLE;
+
+  public static String ChromiumRemoteTab_URL;
 
   public static String LaunchType_LogConsoleLaunchName;
   static {

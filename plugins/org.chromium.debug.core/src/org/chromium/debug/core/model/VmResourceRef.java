@@ -20,23 +20,23 @@ public abstract class VmResourceRef {
    * A GoF Visitor interface for algebraic type {@link VmResourceRef}.
    */
   public interface Visitor<R> {
-    R visitInaccurate(ScriptNamePattern scriptNamePattern);
+    R visitRegExpBased(ScriptNamePattern scriptNamePattern);
     R visitResourceId(VmResourceId resourceId);
   }
 
-  public static VmResourceRef forInaccurate(ScriptNamePattern scriptNamePattern) {
-    return new ForInaccurate(scriptNamePattern);
+  public static VmResourceRef forRegExpBased(ScriptNamePattern scriptNamePattern) {
+    return new ForRegExpBased(scriptNamePattern);
   }
 
-  private static final class ForInaccurate extends VmResourceRef {
+  private static final class ForRegExpBased extends VmResourceRef {
     private final ScriptNamePattern scriptNamePattern;
 
-    ForInaccurate(ScriptNamePattern scriptNamePattern) {
+    ForRegExpBased(ScriptNamePattern scriptNamePattern) {
       this.scriptNamePattern = scriptNamePattern;
     }
 
     @Override public <R> R accept(Visitor<R> visitor) {
-      return visitor.visitInaccurate(scriptNamePattern);
+      return visitor.visitRegExpBased(scriptNamePattern);
     }
 
     @Override
@@ -44,7 +44,7 @@ public abstract class VmResourceRef {
       if (obj == null || obj.getClass() != this.getClass()) {
         return false;
       }
-      ForInaccurate that = (ForInaccurate) obj;
+      ForRegExpBased that = (ForRegExpBased) obj;
       return this.scriptNamePattern.getJavaScriptRegExp().equals(
           that.scriptNamePattern.getJavaScriptRegExp());
     }
