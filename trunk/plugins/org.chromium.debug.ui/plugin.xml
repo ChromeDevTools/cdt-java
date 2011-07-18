@@ -423,6 +423,16 @@
       </enabledWhen>
     </page>
     <page
+        name="%BreakpointTechnicalInfo.name"
+        class="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage"
+        id="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage">
+      <enabledWhen>
+        <adapt
+            type="org.chromium.debug.core.model.WrappedBreakpoint">
+        </adapt>
+      </enabledWhen>
+    </page>
+    <page
         name="%V8JsScript.name"
         class="org.chromium.debug.ui.propertypages.ScriptFilePage"
         id="org.chromium.debug.ui.propertypages.ScriptFilePage">

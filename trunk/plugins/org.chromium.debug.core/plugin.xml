@@ -15,6 +15,11 @@
         adaptableType="org.eclipse.ui.texteditor.ITextEditor">
       <adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget" /> 
     </factory>
+    <factory
+        class="org.chromium.debug.core.model.BreakpointWrapManager$EclipseAdapterFactory"
+        adaptableType="org.eclipse.debug.core.model.IBreakpoint">
+      <adapter type="org.chromium.debug.core.model.WrappedBreakpoint" /> 
+    </factory>
   </extension>
   
   <extension point="org.eclipse.debug.core.breakpoints">

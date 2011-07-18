@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
@@ -69,5 +71,20 @@ public class BreakpointWrapManager {
    */
   public Collection<? extends JavaScriptBreakpointAdapter> getAdapters() {
     return adapterList;
+  }
+
+  public static class EclipseAdapterFactory implements IAdapterFactory {
+    @Override
+    public Object getAdapter(Object adaptableObject, Class adapterType) {
+      IBreakpoint breakpoint = (IBreakpoint) adaptableObject;
+      BreakpointWrapManager breakpointWrapManager =
+          ChromiumDebugPlugin.getDefault().getBreakpointWrapManager();
+      return breakpointWrapManager.wrap(breakpoint);
+    }
+
+    @Override
+    public Class[] getAdapterList() {
+      return new Class[] { WrappedBreakpoint.class };
+    }
   }
 }

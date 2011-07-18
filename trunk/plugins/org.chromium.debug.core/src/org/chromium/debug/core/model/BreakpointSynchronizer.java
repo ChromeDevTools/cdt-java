@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
+import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
@@ -226,7 +227,7 @@ public class BreakpointSynchronizer {
       if (sourceElement instanceof IFile == false) {
         statusBuilder.getReportBuilder().addProblem(
             ReportBuilder.Problem.UNRESOLVED_REMOTE_BREAKPOINT,
-            sdkBreakpoint.getTarget().accept(BREAKPOINT_DEBUG_DESTINATION_VISITOR));
+            sdkBreakpoint.getTarget().accept(ChromiumDebugPluginUtil.BREAKPOINT_TARGET_TO_STRING));
         continue;
       }
       // We do not actually support working files for scripts with offset.
@@ -268,22 +269,6 @@ public class BreakpointSynchronizer {
       }
     }
   }
-
-  private static final Breakpoint.Target.Visitor<String> BREAKPOINT_DEBUG_DESTINATION_VISITOR =
-      new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<String>() {
-        @Override public String visitScriptName(String scriptName) {
-          return "script_name=" + scriptName;
-        }
-        @Override public String visitScriptId(Object scriptId) {
-          return "script_id" + scriptId;
-        }
-        @Override public String visitRegExp(String regExp) {
-          return "RegExp: " + regExp;
-        }
-        @Override public String visitUnknown(Breakpoint.Target target) {
-          return "Unknown target: + " + target;
-        }
-      };
 
   private static class BreakpointMerger extends Merger<WrappedBreakpoint, Breakpoint> {
     private final Direction direction;
@@ -551,6 +536,9 @@ public class BreakpointSynchronizer {
 
           @Override
           public VmResourceRef visitRegExp(String regExp) {
+            if (regExp == null) {
+              return null;
+            }
             ScriptNamePattern pattern = new ScriptNamePattern(regExp);
             return VmResourceRef.forInaccurate(pattern);
           }

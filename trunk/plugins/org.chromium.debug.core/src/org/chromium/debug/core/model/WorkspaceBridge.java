@@ -107,6 +107,11 @@ public interface WorkspaceBridge {
     boolean supportsBreakpoint(IBreakpoint breakpoint);
 
     /**
+     * @return SDK breakpoint that corresponds to UI breakpoint or null if none
+     */
+    Breakpoint getSdkBreakpoint(WrappedBreakpoint uiBreakpoint);
+
+    /**
      * Registers hit breakpoints and returns their Eclipse counterpart objects.
      * Consider splitting the operation into 2 independent operations.
      */

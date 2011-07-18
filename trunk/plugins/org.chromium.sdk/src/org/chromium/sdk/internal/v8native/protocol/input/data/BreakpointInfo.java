@@ -18,6 +18,9 @@ public interface BreakpointInfo {
   @JsonOptionalField
   Long script_id();
 
+  @JsonOptionalField
+  String script_regexp();
+
   long number();
 
   long line();
