@@ -36,7 +36,10 @@ public interface WipCommandCallback extends BaseCommandProcessor.Callback<WipCom
         } else {
           List<String> messageList = new ArrayList<String>(2);
           messageList.add(asError.error().message());
-          messageList.addAll(asError.error().data());
+          List<String> data = asError.error().data();
+          if (data != null) {
+            messageList.addAll(data);
+          }
           message = messageList.toString();
         }
         onError(message);

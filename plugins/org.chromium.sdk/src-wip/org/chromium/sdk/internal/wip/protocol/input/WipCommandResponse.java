@@ -49,6 +49,8 @@ public interface WipCommandResponse extends JsonObjectBased {
     @JsonType
     interface ErrorInfo {
       String message();
+
+      @JsonOptionalField
       List<String> data();
       long code();
     }
