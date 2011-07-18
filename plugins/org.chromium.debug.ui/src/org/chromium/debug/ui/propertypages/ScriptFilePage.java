@@ -236,7 +236,7 @@ public class ScriptFilePage extends PropertyPage {
     };
   }
 
-  private static Text createTextField(Composite parent, String title) {
+  static Text createTextField(Composite parent, String title) {
     Label label = new Label(parent, SWT.NONE);
     label.setText(title);
     GridData gd;

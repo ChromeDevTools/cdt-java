@@ -240,7 +240,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     }
   }
 
-  private Composite createComposite(Composite parent, int columns, int horizontalSpan) {
+  static Composite createComposite(Composite parent, int columns, int horizontalSpan) {
     Composite composite = new Composite(parent, SWT.NONE);
     GridLayout layout = new GridLayout(columns, false);
     layout.marginWidth = 0;

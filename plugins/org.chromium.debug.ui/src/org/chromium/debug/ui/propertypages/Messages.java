@@ -17,6 +17,12 @@ public class Messages extends NLS {
 
   public static String AccuratenessControl_MORE_BUTTON;
 
+  public static String BreakpointTechnicalInfoPage_CHOOSE_LAUNCH;
+
+  public static String BreakpointTechnicalInfoPage_NOT_SET;
+
+  public static String BreakpointTechnicalInfoPage_TARGET;
+
   public static String JavascriptLineBreakpointPage_BreakpointConditionErrorMessage;
 
   public static String JavascriptLineBreakpointPage_EnableCondition;

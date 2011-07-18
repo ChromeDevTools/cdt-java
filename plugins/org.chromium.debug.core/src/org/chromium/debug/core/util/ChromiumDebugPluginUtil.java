@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.efs.ChromiumScriptFileSystem;
+import org.chromium.sdk.Breakpoint;
+import org.chromium.sdk.BreakpointTypeExtension;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IContainer;
@@ -355,6 +357,21 @@ public class ChromiumDebugPluginUtil {
     return output.toByteArray();
   }
 
+  public static final Breakpoint.Target.Visitor<String> BREAKPOINT_TARGET_TO_STRING =
+      new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<String>() {
+        @Override public String visitScriptName(String scriptName) {
+          return "script_name=" + scriptName;
+        }
+        @Override public String visitScriptId(Object scriptId) {
+          return "script_id=" + scriptId;
+        }
+        @Override public String visitRegExp(String regExp) {
+          return "RegExp=" + regExp;
+        }
+        @Override public String visitUnknown(Breakpoint.Target target) {
+          return "Unknown target: + " + target;
+        }
+      };
 
   public static <T> T throwUnsupported() {
     throw new UnsupportedOperationException();

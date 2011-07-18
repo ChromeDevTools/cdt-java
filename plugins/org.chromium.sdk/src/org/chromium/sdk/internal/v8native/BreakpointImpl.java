@@ -171,7 +171,7 @@ public class BreakpointImpl implements Breakpoint {
     switch (infoType) {
       case SCRIPTID: return new Target.ScriptId(info.script_id());
       case SCRIPTNAME: return new Target.ScriptName(info.script_name());
-      case SCRIPTREGEXP: return new ScriptRegExpTarget(info.script_name());
+      case SCRIPTREGEXP: return new ScriptRegExpTarget(info.script_regexp());
       case FUNCTION: return new FunctionTarget(null);
     }
     throw new RuntimeException("Unknown type: " + infoType);

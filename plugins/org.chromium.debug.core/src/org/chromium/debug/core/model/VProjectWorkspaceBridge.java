@@ -219,6 +219,11 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       return tryCastBreakpoint(breakpoint) != null;
     }
 
+    @Override
+    public Breakpoint getSdkBreakpoint(WrappedBreakpoint wrappedBreakpoint) {
+      return breakpointInTargetMap.getSdkBreakpoint(wrappedBreakpoint);
+    }
+
     public WrappedBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
       if (connectedTargetData.getDebugTarget().isDisconnected()) {
         return null;
