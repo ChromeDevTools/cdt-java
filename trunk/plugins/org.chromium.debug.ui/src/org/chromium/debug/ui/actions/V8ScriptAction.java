@@ -10,8 +10,10 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.ide.IDE;
 
 /**
  * A base class for all LiveEdit actions that are scoped to a working file from user workspace.
@@ -30,6 +32,10 @@ public abstract class V8ScriptAction extends FileBasedAction.Single<IFile> {
       public void adjustAction() {
       }
       public void run(Shell shell, IWorkbenchPart workbenchPart) {
+        boolean saved = IDE.saveAllEditors(new IResource[] { file }, true);
+        if (!saved) {
+          return;
+        }
         List<? extends ScriptTargetMapping> filePairList =
             ChromiumDebugPlugin.getScriptTargetMapping(file);
         execute(filePairList, shell, workbenchPart);
