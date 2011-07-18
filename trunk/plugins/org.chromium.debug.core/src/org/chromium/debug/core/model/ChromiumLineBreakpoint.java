@@ -160,7 +160,7 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
 
       SdkParams sdkParams = vmResourceRef.accept(new VmResourceRef.Visitor<SdkParams>() {
         @Override
-        public SdkParams visitInaccurate(ScriptNamePattern scriptNamePattern) {
+        public SdkParams visitRegExpBased(ScriptNamePattern scriptNamePattern) {
           // TODO: support source mapping perhaps.
 
           ScriptRegExpSupport scriptRegExpSupport =

@@ -13,7 +13,7 @@ import java.util.List;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.LaunchParams;
-import org.chromium.debug.core.model.LaunchParams.LookupAccurateness;
+import org.chromium.debug.core.model.LaunchParams.LookupMode;
 import org.chromium.debug.core.model.ResourceManager;
 import org.chromium.debug.core.model.StackFrame;
 import org.chromium.debug.core.model.VmResource;
@@ -32,6 +32,7 @@ import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupParticipant;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupParticipant;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
@@ -55,56 +56,55 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   }
 
   public VmResourceRef findVmResourceRef(IFile file) throws CoreException {
-    return getLookupMode().findVmResourceRef(file);
+    return getLookupModeHandler().findVmResourceRef(file);
   }
 
-  public static LookupAccurateness readLookupAccurateness(ILaunchConfiguration launchConfiguration)
+  public static LookupMode readLookupMode(ILaunchConfiguration launchConfiguration)
       throws CoreException {
-    String accuratenessValue = launchConfiguration.getAttribute(
-        LaunchParams.SOURCE_LOOKUP_ACCURATENESS, (String) null);
-    LookupAccurateness value;
-    if (accuratenessValue == null) {
-      value = LookupAccurateness.DEFAULT_VALUE;
+    String lookupStringValue = launchConfiguration.getAttribute(
+        LaunchParams.SOURCE_LOOKUP_MODE, (String) null);
+    LookupMode value;
+    if (lookupStringValue == null) {
+      value = LookupMode.DEFAULT_VALUE;
     } else {
-      value = LookupAccurateness.STRING_CONVERTER.decode(accuratenessValue);
+      value = LookupMode.STRING_CONVERTER.decode(lookupStringValue);
     }
     return value;
   }
 
-  private LookupMode readLookupMode(ILaunchConfiguration launchConfiguration)
-      throws CoreException {
-    LookupAccurateness value = readLookupAccurateness(launchConfiguration);
-    return value.accept(new LookupAccurateness.Visitor<LookupMode>() {
-      @Override
-      public LookupMode visitAccurate() {
-        return ACCURATE_LOOKUP_MODE;
-      }
-
-      @Override
-      public LookupMode visitInaccurate() {
-        return INACCURATE_LOOKUP_MODE;
-      }
-    });
-  }
-
-  private LookupMode getLookupMode() {
+  private LookupModeHandler getLookupModeHandler() {
+    LookupMode mode;
     try {
-      return readLookupMode(getLaunchConfiguration());
+      mode = readLookupMode(getLaunchConfiguration());
     } catch (CoreException e) {
       ChromiumDebugPlugin.log(e);
-      return ACCURATE_LOOKUP_MODE;
+      mode = LookupMode.DEFAULT_VALUE;
     }
+    return mode.accept(MODE_TO_HANDLER_VISITOR);
   }
+
+  private final LookupMode.Visitor<LookupModeHandler> MODE_TO_HANDLER_VISITOR =
+      new LookupMode.Visitor<LookupModeHandler>() {
+        @Override
+        public LookupModeHandler visitExactMatch() {
+          return exactMatchLookupMode;
+        }
+
+        @Override
+        public LookupModeHandler visitAutoDetect() {
+          return autoDetectLookupMode;
+        }
+      };
 
   @Override
   public boolean isFindDuplicates() {
-    return getLookupMode().forceFindDuplicates() || super.isFindDuplicates();
+    return getLookupModeHandler().forceFindDuplicates() || super.isFindDuplicates();
   }
 
   /**
    * A single implementation of look participant. This way the participant may decide to become
-   * accurate/inaccurate after it is created, because javascriptVm instances comes too late after
-   * everything is created.
+   * exact match/auto-detect after it is created, because javascriptVm instances comes too late
+   * after everything is created.
    */
   private static class LookupParticipant extends AbstractSourceLookupParticipant {
     private final SuperClassAccess superClassAccess = new SuperClassAccess();
@@ -120,7 +120,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
 
     @Override
     public Object[] findSourceElements(Object object) throws CoreException {
-      Delegate delegate = chromiumSourceDirector.getLookupMode().getDelegate();
+      Delegate delegate = chromiumSourceDirector.getLookupModeHandler().getDelegate();
       return delegate.findSourceElements(object, superClassAccess);
     }
 
@@ -149,7 +149,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     }
   }
 
-  private static final LookupParticipant.Delegate ACCURATE_DELEGATE =
+  private static final LookupParticipant.Delegate EXACT_MATCH_DELEGATE =
       new LookupParticipant.Delegate() {
     @Override
     Object[] findSourceElements(Object object, LookupParticipant.SuperClassAccess superClass)
@@ -172,7 +172,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     }
   };
 
-  private static final LookupParticipant.Delegate INACCURATE_DELEGATE =
+  private static final LookupParticipant.Delegate AUTO_DETECT_DELEGATE =
       new LookupParticipant.Delegate() {
         @Override
         Object[] findSourceElements(Object object, LookupParticipant.SuperClassAccess superClass)
@@ -289,7 +289,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     if (name == null) {
       // Do not return null, this will cancel look-up.
       // Return empty string. Virtual project container will pass us some data.
-      name = "";
+      name = ""; //$NON-NLS-1$
     }
     return name;
   }
@@ -298,7 +298,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       new ScriptNameManipulator.FilePath() {
     @Override
     public String getLastComponent() {
-      return "<unknonwn source>";
+      return "<unknonwn source>"; //$NON-NLS-1$
     }
 
     @Override
@@ -398,13 +398,13 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   }
 
   private void checkSupportedLookupMode() {
-    LookupMode lookupMode = getLookupMode();
+    LookupModeHandler lookupMode = getLookupModeHandler();
     if (javascriptVmEmbedder != null) {
       lookupMode.showUnsupportedWarning(javascriptVmEmbedder);
     }
   }
 
-  private static abstract class LookupMode {
+  private static abstract class LookupModeHandler {
     abstract LookupParticipant.Delegate getDelegate();
 
     abstract void showUnsupportedWarning(JavascriptVmEmbedder javascriptVmEmbedder);
@@ -414,9 +414,9 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     abstract  VmResourceRef findVmResourceRef(IFile file) throws CoreException;
   }
 
-  private final LookupMode ACCURATE_LOOKUP_MODE = new LookupMode() {
+  private final LookupModeHandler exactMatchLookupMode = new LookupModeHandler() {
     @Override LookupParticipant.Delegate getDelegate() {
-      return ACCURATE_DELEGATE;
+      return EXACT_MATCH_DELEGATE;
     }
 
     @Override void showUnsupportedWarning(JavascriptVmEmbedder javascriptVmEmbedder) {
@@ -436,9 +436,9 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     }
   };
 
-  private final LookupMode INACCURATE_LOOKUP_MODE = new LookupMode() {
+  private final LookupModeHandler autoDetectLookupMode = new LookupModeHandler() {
     @Override LookupParticipant.Delegate getDelegate() {
-      return INACCURATE_DELEGATE;
+      return AUTO_DETECT_DELEGATE;
     }
 
     @Override
@@ -456,15 +456,11 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
         public void run() {
           Display display = Display.getDefault();
           MessageBox messageBox = new MessageBox(display.getActiveShell(), SWT.ICON_WARNING);
-          messageBox.setText("Inaccurate Source Look-Up Problem");
-          messageBox.setMessage("You are running in 'inaccurate source look-up' mode.\n" +
-              "However the connected JavaScript VM (version=\"" +
-               javascriptVmEmbedder.getJavascriptVm().getVersion() +
-               "\") does not support it.\n" +
-              "You won't be able to set breakpoints except for on scripts in virtual project.\n" +
-              "\n" +
-              "It is recommended that you switch to accurate look-up mode " +
-              "(or get newer version of JavaScript VM).");
+          messageBox.setText(Messages.ChromiumSourceDirector_WARNING_TITLE);
+          String messagePattern = Messages.ChromiumSourceDirector_WARNING_TEXT_PATTERN;
+          String message = NLS.bind(messagePattern,
+              javascriptVmEmbedder.getJavascriptVm().getVersion());
+          messageBox.setMessage(message);
           messageBox.open();
         }
       });
@@ -495,7 +491,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       }
       ScriptNameManipulator scriptNameManipulator = javascriptVmEmbedder.getScriptNameManipulator();
       ScriptNamePattern pattern = scriptNameManipulator.createPattern(components);
-      return VmResourceRef.forInaccurate(pattern);
+      return VmResourceRef.forRegExpBased(pattern);
     }
   };
 }

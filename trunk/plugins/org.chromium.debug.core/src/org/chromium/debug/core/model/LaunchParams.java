@@ -27,46 +27,45 @@ public class LaunchParams {
   public static final String BREAKPOINT_SYNC_DIRECTION =
       "breakpoint_startup_sync_direction"; //$NON-NLS-1$
 
-  public static final String SOURCE_LOOKUP_ACCURATENESS =
-      "source_lookup_accurateness"; //$NON-NLS-1$
+  public static final String SOURCE_LOOKUP_MODE = "source_lookup_mode"; //$NON-NLS-1$
 
-  public enum LookupAccurateness {
-    ACCURATE() {
+  public enum LookupMode {
+    EXACT_MATCH() {
       @Override public <R> R accept(Visitor<R> visitor) {
-        return visitor.visitAccurate();
+        return visitor.visitExactMatch();
       }
     },
-    INACCURATE() {
+    AUTO_DETECT() {
       @Override public <R> R accept(Visitor<R> visitor) {
-        return visitor.visitInaccurate();
+        return visitor.visitAutoDetect();
       }
     };
 
     public abstract <R> R accept(Visitor<R> visitor);
 
     public interface Visitor<R> {
-      R visitAccurate();
-      R visitInaccurate();
+      R visitExactMatch();
+      R visitAutoDetect();
     }
 
-    public static final LookupAccurateness DEFAULT_VALUE = ACCURATE;
+    public static final LookupMode DEFAULT_VALUE = EXACT_MATCH;
 
-    public static final ValueConverter<String, LookupAccurateness> STRING_CONVERTER =
-        new ValueConverter<String, LookupAccurateness>() {
+    public static final ValueConverter<String, LookupMode> STRING_CONVERTER =
+        new ValueConverter<String, LookupMode>() {
       @Override
       public
-      String encode(LookupAccurateness logical) {
+      String encode(LookupMode logical) {
         return logical.toString();
       }
 
       @Override
       public
-      LookupAccurateness decode(String persistent) throws CoreException {
+      LookupMode decode(String persistent) throws CoreException {
         try {
-          return LookupAccurateness.valueOf(persistent);
+          return LookupMode.valueOf(persistent);
         } catch (IllegalArgumentException e) {
           Status status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-              "Failed to parse accurateness value", e);
+              "Failed to parse lookup mode value", e);
           throw new CoreException(status);
         }
       }

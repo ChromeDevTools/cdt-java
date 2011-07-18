@@ -133,21 +133,21 @@ public class ScriptFilePage extends PropertyPage {
     // Padding.
     new Label(main, SWT.NONE);
 
-    Group inaccurateGroup;
+    Group autoDetectLookupGroup;
     {
-      inaccurateGroup = new Group(main, SWT.NONE);
+      autoDetectLookupGroup = new Group(main, SWT.NONE);
       GridLayout layout = new GridLayout();
       layout.numColumns = 1;
-      inaccurateGroup.setLayout(layout);
+      autoDetectLookupGroup.setLayout(layout);
     }
-    inaccurateGroup.setText("Workspace file inaccurate look-up");
-    inaccurateGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+    autoDetectLookupGroup.setText(Messages.ScriptFilePage_AUTODETECT_PARAMETER);
+    autoDetectLookupGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-    Label accuratenessLabel = new Label(inaccurateGroup, SWT.NONE);
+    Label accuratenessLabel = new Label(autoDetectLookupGroup, SWT.NONE);
     accuratenessLabel.setText("Use short name or more:");
 
     final AccuratenessControl accuratenessControl =
-        new AccuratenessControl(inaccurateGroup, pathSegments, oldAccuratenessValue);
+        new AccuratenessControl(autoDetectLookupGroup, pathSegments, oldAccuratenessValue);
 
     storeValueCallback = new Runnable() {
       private int storedValue = oldAccuratenessValue;
@@ -203,8 +203,8 @@ public class ScriptFilePage extends PropertyPage {
           ChromiumJavascriptDecorator.getDecoratedText(vprojectFile.getName(), vprojectFile);
     } else {
       // TODO: provide better UI for this case.
-      text = Messages.ScriptFilePage_MULTIPLE_INACCURATE_MATCH;
-      fileName = Messages.ScriptFilePage_MULTIPLE_INACCURATE_MATCH;
+      text = Messages.ScriptFilePage_MULTIPLE_AUTODETECT_MATCH;
+      fileName = Messages.ScriptFilePage_MULTIPLE_AUTODETECT_MATCH;
     }
 
     properties.getLocalFileName().setText(fileName);

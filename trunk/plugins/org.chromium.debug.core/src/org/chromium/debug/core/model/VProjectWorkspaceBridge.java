@@ -151,7 +151,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private final VmResourceRef.Visitor<Collection<? extends VmResource>> RESOLVE_RESOURCE_VISITOR =
       new VmResourceRef.Visitor<Collection<? extends VmResource>>() {
     @Override
-    public java.util.Collection<? extends VmResource> visitInaccurate(
+    public java.util.Collection<? extends VmResource> visitRegExpBased(
         ScriptNamePattern scriptNamePattern) {
       Pattern pattern = JavaScriptRegExpSupport.convertToJavaPattern(scriptNamePattern);
       return resourceManager.findVmResources(pattern);
