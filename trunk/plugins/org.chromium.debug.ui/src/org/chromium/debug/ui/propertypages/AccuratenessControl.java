@@ -17,6 +17,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 
 /**
  * UI control element that shows several last segments of the file path and allow to show more
@@ -30,25 +31,32 @@ class AccuratenessControl {
     Composite inner;
     {
       inner = new Composite(composite, SWT.NONE);
-      GridLayout topLayout = new GridLayout();
-      topLayout.numColumns = 1;
-      inner.setLayout(topLayout);
-      inner.setLayoutData(new GridData(GridData.FILL_BOTH));
+      GridLayout layout = new GridLayout(1, false);
+      layout.marginHeight = 0;
+      inner.setLayout(layout);
+      inner.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
     }
 
-    final PathLabel pathLabel = new PathLabel(inner, pathSegments);
-    pathLabel.getControl().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+    Composite topLineBlock;
+    {
+      topLineBlock = new Composite(inner, SWT.NONE);
+      GridLayout layout = new GridLayout(2, false);
+      layout.marginHeight = 0;
+      layout.marginWidth = 0;
+      topLineBlock.setLayout(layout);
+      topLineBlock.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+    }
 
-    pathLabel.setVisiblePart(initialAccuratenessValue);
+    Label label = new Label(topLineBlock, SWT.NONE);
+    label.setText(Messages.AccuratenessControl_LABEL_USE);
 
     final Button less;
     final Button more;
     {
-      Composite buttonsGroup = new Composite(inner, SWT.NONE);
-      GridLayout topLayout = new GridLayout();
-      topLayout.numColumns = 2;
-      buttonsGroup.setLayout(topLayout);
-      buttonsGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
+      Composite buttonsGroup = new Composite(topLineBlock, SWT.NONE);
+      GridLayout layout = new GridLayout(2, false);
+      layout.marginHeight = 0;
+      buttonsGroup.setLayout(layout);
 
       less = new Button(buttonsGroup, SWT.NONE);
       less.setText(Messages.AccuratenessControl_LESS_BUTTON);
@@ -56,19 +64,23 @@ class AccuratenessControl {
       more.setText(Messages.AccuratenessControl_MORE_BUTTON);
     }
 
+
+    final PathLabel pathLabel = new PathLabel(inner, pathSegments);
+    pathLabel.getControl().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+    pathLabel.setVisiblePart(initialAccuratenessValue);
+
+    // Padding
+    new Label(inner, SWT.NONE);
+
     Elements elements = new Elements() {
-      @Override
-      public AccuratenessControl.PathLabel getPathLabel() {
+      @Override public AccuratenessControl.PathLabel getPathLabel() {
         return pathLabel;
       }
-
-      @Override
-      public Button getMoreButton() {
+      @Override public Button getMoreButton() {
         return more;
       }
-
-      @Override
-      public Button getLessButton() {
+      @Override public Button getLessButton() {
         return less;
       }
     };
