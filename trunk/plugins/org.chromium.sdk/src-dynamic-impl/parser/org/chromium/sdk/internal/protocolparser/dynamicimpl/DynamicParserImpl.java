@@ -1212,21 +1212,28 @@ public class DynamicParserImpl implements JsonProtocolParser {
       @Override
       void writeCreateListCode(SlowParser<?> componentParser, MethodScope scope, String inputRef,
           String resultRef) {
-        scope.startLine("int size = " + inputRef + ".size();\n");
+        String sizeRef = scope.newMethodScopedName("size");
+        String listRef = scope.newMethodScopedName("list");
+        String indexRef = scope.newMethodScopedName("index");
+        String componentRef = scope.newMethodScopedName("arrayComponent");
+        scope.startLine("int " + sizeRef + " = " + inputRef + ".size();\n");
         scope.startLine("java.util.List<");
         componentParser.appendFinishedValueTypeNameJava(scope);
-        scope.append("> list = new java.util.ArrayList<");
+        scope.append("> " + listRef + " = new java.util.ArrayList<");
         componentParser.appendFinishedValueTypeNameJava(scope);
-        scope.append(">(size);\n");
-        scope.startLine("for (int i = 0; i < size; i++) {\n");
+        scope.append(">(" + sizeRef + ");\n");
+        scope.startLine("for (int " + indexRef + " = 0; " + indexRef + " < " + sizeRef + "; " +
+            indexRef + "++) {\n");
         scope.indentRight();
-        componentParser.writeParseCode(scope, inputRef + ".get(i)", "null", "arrayComponent");
-        scope.startLine("list.add(arrayComponent);\n");
+        componentParser.writeParseCode(scope, inputRef + ".get(" + indexRef + ")", "null",
+            componentRef);
+        scope.startLine(listRef + ".add(" + componentRef + ");\n");
         scope.indentLeft();
         scope.startLine("}\n");
         scope.startLine("java.util.List<");
         componentParser.appendFinishedValueTypeNameJava(scope);
-        scope.append("> " + resultRef + " = java.util.Collections.unmodifiableList(list);\n");
+        scope.append("> " + resultRef + " = java.util.Collections.unmodifiableList(" +
+            listRef + ");\n");
       }
     };
 
@@ -1272,7 +1279,8 @@ public class DynamicParserImpl implements JsonProtocolParser {
       @Override
       void writeCreateListCode(SlowParser<?> componentParser, MethodScope scope, String inputRef,
           String resultRef) {
-        scope.startLine("final int size = " + inputRef + ".size();\n");
+        String sizeRef = scope.newMethodScopedName("size");
+        scope.startLine("final int " + sizeRef + " = " + inputRef + ".size();\n");
         scope.startLine("java.util.List<");
         componentParser.appendFinishedValueTypeNameJava(scope);
         scope.append("> " + resultRef + " = new java.util.AbstractList<");
@@ -1283,9 +1291,9 @@ public class DynamicParserImpl implements JsonProtocolParser {
         componentParser.appendFinishedValueTypeNameJava(scope);
         scope.append("> cachedValues = new java.util.concurrent.atomic.AtomicReferenceArray<");
         componentParser.appendFinishedValueTypeNameJava(scope);
-        scope.append(">(size);\n");
+        scope.append(">(" + sizeRef + ");\n");
         scope.append("\n");
-        scope.startLine("@Override public int size() { return size; }\n");
+        scope.startLine("@Override public int size() { return " + sizeRef + "; }\n");
         scope.append("\n");
         writeGetMethodCode(componentParser, scope, inputRef);
         scope.indentLeft();
@@ -1395,9 +1403,12 @@ public class DynamicParserImpl implements JsonProtocolParser {
       scope.startLine("  throw new " + Util.BASE_PACKAGE +
           ".JsonProtocolParseException(\"Array value expected\");\n");
       scope.startLine("}\n");
-      scope.startLine("final org.json.simple.JSONArray arrayValue = (org.json.simple.JSONArray) " +
-          valueRef +  ";\n");
-      listFactory.writeCreateListCode(componentParser, scope, "arrayValue", resultRef);
+
+      String arrayValueRef = scope.newMethodScopedName("arrayValue");
+
+      scope.startLine("final org.json.simple.JSONArray " + arrayValueRef +
+          " = (org.json.simple.JSONArray) " + valueRef +  ";\n");
+      listFactory.writeCreateListCode(componentParser, scope, arrayValueRef, resultRef);
     }
 
     @Override
@@ -1493,7 +1504,8 @@ public class DynamicParserImpl implements JsonProtocolParser {
     protected void writeReturnTypeJava(ClassScope scope, Method m) {
       JsonTypeParser<?> jsonTypeParser = parser.asJsonTypeParser();
       if (jsonTypeParser == null) {
-        scope.append(m.getReturnType().getCanonicalName());
+        JavaCodeGenerator.Util.writeJavaTypeName(m.getGenericReturnType(),
+            scope.getStringBuilder());
       } else {
         String valueTypeName = scope.getTypeImplReference(jsonTypeParser.getType().get());
         scope.append(valueTypeName);
