@@ -19,7 +19,7 @@ import org.chromium.sdk.internal.shellprotocol.tools.ToolHandler;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolOutput;
 import org.chromium.sdk.internal.shellprotocol.tools.protocol.DevToolsServiceCommand;
 import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsMessage;
-import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParser;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParserAccess;
 import org.chromium.sdk.internal.transport.Message;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -110,7 +110,7 @@ public class DevToolsServiceHandler implements ToolHandler {
     }
     ToolsMessage toolsResponse;
     try {
-      toolsResponse = ToolsProtocolParser.get().parse(json, ToolsMessage.class);
+      toolsResponse = ToolsProtocolParserAccess.get().parse(json, ToolsMessage.class);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;

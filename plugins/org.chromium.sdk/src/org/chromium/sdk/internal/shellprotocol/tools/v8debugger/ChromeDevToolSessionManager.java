@@ -22,7 +22,7 @@ import org.chromium.sdk.internal.shellprotocol.tools.ToolHandler;
 import org.chromium.sdk.internal.shellprotocol.tools.ToolOutput;
 import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.Result;
 import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsMessage;
-import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParser;
+import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParserAccess;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.DebugSessionManager;
@@ -154,7 +154,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
     ToolsMessage devToolsMessage;
     try {
-      devToolsMessage = ToolsProtocolParser.get().parse(json, ToolsMessage.class);
+      devToolsMessage = ToolsProtocolParserAccess.get().parse(json, ToolsMessage.class);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;

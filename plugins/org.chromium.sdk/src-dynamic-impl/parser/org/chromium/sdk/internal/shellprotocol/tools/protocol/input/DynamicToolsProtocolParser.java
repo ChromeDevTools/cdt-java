@@ -9,14 +9,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 
 /**
  * Dynamic implementation of tools protocol parser.
  */
-public class ToolsProtocolParser {
-  public static JsonProtocolParser get() {
+public class DynamicToolsProtocolParser {
+  public static DynamicParserImpl get() {
     return PARSER;
   }
 
