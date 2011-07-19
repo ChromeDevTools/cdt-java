@@ -47,6 +47,12 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
   private volatile ReverseSourceLookup reverseSourceLookup = null;
   private volatile JavascriptVmEmbedder javascriptVmEmbedder = null;
 
+  /**
+   * Contains 'true' if we have already shown the warning about unsupported look-up mode.
+   * However this should be reset when user switches from one mode to another.
+   */
+  private volatile boolean lookupWarningShown = false;
+
   public void initializeParticipants() {
     ISourceLookupParticipant participant = new LookupParticipant(this);
     addParticipants(new ISourceLookupParticipant[] { participant } );
@@ -420,6 +426,8 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
     }
 
     @Override void showUnsupportedWarning(JavascriptVmEmbedder javascriptVmEmbedder) {
+      // 'Exact match' is chosen. Enable warning again.
+      lookupWarningShown = false;
     }
 
     @Override boolean forceFindDuplicates() {
@@ -443,6 +451,9 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
 
     @Override
     void showUnsupportedWarning(final JavascriptVmEmbedder javascriptVmEmbedder) {
+      if (lookupWarningShown) {
+        return;
+      }
       BreakpointTypeExtension breakpointTypeExtension =
           javascriptVmEmbedder.getJavascriptVm().getBreakpointTypeExtension();
       BreakpointTypeExtension.ScriptRegExpSupport scriptRegExpSupport =
@@ -450,6 +461,7 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
       if (scriptRegExpSupport != null) {
         return;
       }
+      lookupWarningShown = true;
       Display display = Display.getDefault();
       display.asyncExec(new Runnable() {
         @Override
