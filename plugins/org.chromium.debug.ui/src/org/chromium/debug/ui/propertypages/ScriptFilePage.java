@@ -143,9 +143,6 @@ public class ScriptFilePage extends PropertyPage {
     autoDetectLookupGroup.setText(Messages.ScriptFilePage_AUTODETECT_PARAMETER);
     autoDetectLookupGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-    Label accuratenessLabel = new Label(autoDetectLookupGroup, SWT.NONE);
-    accuratenessLabel.setText("Use short name or more:");
-
     final AccuratenessControl accuratenessControl =
         new AccuratenessControl(autoDetectLookupGroup, pathSegments, oldAccuratenessValue);
 
