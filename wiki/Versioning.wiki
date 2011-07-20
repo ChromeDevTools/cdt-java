@@ -30,13 +30,12 @@ A timestamp (YYYYMMDDHHmm) will be used as the "qualifier" segment for the plugi
 
 === Before-1.0 versioning scheme===
 
-Major version number "0" indicates that SDK/Debugger haven't become stable enough. This milestone will be marked as "1.0" version. Until this happen, the temporary ("0.*") version scheme is used for all plugins and features.
+Major version number "0" indicates that SDK/Debugger haven't become stable enough. This milestone will be marked as "1.0" version. Until this happens, the temporary ("0.`*`") version scheme is used for all plugins and features.
 
   * The "major" segment is 0.
   * The "minor" segment will change when the SDK API is broken or there are major user-facing improvements.
   * The "service" segment will change per release. The number is always even.
   * The "qualifier" segment is automatically generated during every build.
-rated during every build.
 
 === Planned after-1.0 scheme===
 
