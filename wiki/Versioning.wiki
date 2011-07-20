@@ -28,17 +28,29 @@ major.minor.service.qualifier
 
 A timestamp (YYYYMMDDHHmm) will be used as the "qualifier" segment for the plugins and features.
 
-=== ChromeDevToolsSdk ===
+=== Before-1.0 versioning scheme===
+
+Major version number "0" indicates that SDK/Debugger haven't become stable enough. This milestone will be marked as "1.0" version. Until this happen, the temporary ("0.*") version scheme is used for all plugins and features.
+
+  * The "major" segment is 0.
+  * The "minor" segment will change when the SDK API is broken or there are major user-facing improvements.
+  * The "service" segment will change per release. The number is always even.
+  * The "qualifier" segment is automatically generated during every build.
+rated during every build.
+
+=== Planned after-1.0 scheme===
+
+==== ChromeDevToolsSdk ====
   * The "major" segment will change when the SDK API is broken.
   * The "minor" segment will change when there are major improvements (not bugfixes) to the underlying implementation.
   * The "service" segment will change when there are bugfixes.
   * The "qualifier" segment is automatically generated during every build.
 
-=== EclipseDebugger Plugins ===
+==== EclipseDebugger Plugins ====
   * The "major" segment will always be the same as that of the SDK version used.
-  * The "minor" segment will change when there are major user-facing improvements
+  * The "minor" segment will change when there are major user-facing improvements.
   * The "service" segment will change when there are bugfixes.
   * The "qualifier" segment is automatically generated during every build.
 
-=== EclipseDebugger and ChromeDevToolsSdk Features ===
+==== EclipseDebugger and ChromeDevToolsSdk Features ====
 The feature versioning is consistent with these [http://wiki.eclipse.org/index.php/Version_Numbering#Versioning_features Feature Versioning Guidelines].
