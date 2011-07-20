@@ -10,7 +10,7 @@ Blog posts:
   * [http://www.webkit.org/blog/1620/webkit-remote-debugging/ WebKit Remote Debugging], Surfin' Safari, May 9th, 2011.
 
 == Support development process ==
-SDK is going to support new protocol together with the old two.
+SDK is going to support new protocol together with the old two (targeted to version 0.3.0).
 
 See also DesignOverview (parts marked {future}).
 
