@@ -23,9 +23,9 @@ import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.BreakpointImpl.FunctionTarget;
-import org.chromium.sdk.internal.v8native.BreakpointImpl.ScriptRegExpTarget;
 import org.chromium.sdk.internal.v8native.protocol.input.BreakpointBody;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponseBody;
 import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody;
@@ -326,7 +326,7 @@ public class BreakpointManager {
     private final ScriptRegExpSupport scriptRegExpSupport = new ScriptRegExpSupport() {
       @Override
       public Target createTarget(String regExp) {
-        return new ScriptRegExpTarget(regExp);
+        return new ScriptRegExpBreakpointTarget(regExp);
       }
     };
 

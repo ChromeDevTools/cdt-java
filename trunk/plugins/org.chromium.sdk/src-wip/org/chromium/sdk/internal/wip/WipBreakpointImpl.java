@@ -17,6 +17,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData;
@@ -81,8 +82,15 @@ public class WipBreakpointImpl implements Breakpoint {
     }
     @Override
     public ScriptRegExpSupport getScriptRegExpSupport() {
-      return null;
+      return scriptRegExpSupport;
     }
+
+    private final ScriptRegExpSupport scriptRegExpSupport = new ScriptRegExpSupport() {
+      @Override
+      public Target createTarget(String regExp) {
+        return new ScriptRegExpBreakpointTarget(regExp);
+      }
+    };
   };
 
   @Override
@@ -318,10 +326,15 @@ public class WipBreakpointImpl implements Breakpoint {
       final int columnNumber, final String condition,
       final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
-    return target.accept(new Target.Visitor<RelayOk>() {
+    return target.accept(new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<RelayOk>() {
       @Override
       public RelayOk visitScriptName(String scriptName) {
         return sendRequest(scriptName, RequestHandler.FOR_URL);
+      }
+
+      @Override
+      public RelayOk visitRegExp(String regExp) {
+        return sendRequest(regExp, RequestHandler.FOR_REGEXP);
       }
 
       @Override
@@ -335,8 +348,8 @@ public class WipBreakpointImpl implements Breakpoint {
         throw new IllegalArgumentException();
       }
 
-      private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> RelayOk sendRequest(T parameter,
-          final RequestHandler<T, DATA, PARAMS> handler) {
+      private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> RelayOk sendRequest(
+          T parameter, final RequestHandler<T, DATA, PARAMS> handler) {
         PARAMS requestParams =
             handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
 
@@ -379,25 +392,34 @@ public class WipBreakpointImpl implements Breakpoint {
 
     abstract Collection<LocationValue> getActualLocations(DATA data);
 
-    static final RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> FOR_URL =
-        new RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams>() {
-          @Override
-          SetBreakpointByUrlParams createRequestParams(String url,
-              long lineNumber, long columnNumber, String condition) {
-            return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition);
-          }
+    static class ForUrlOrRegExp
+        extends RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> {
+      private final boolean isRegExp;
 
-          @Override
-          String getBreakpointId(SetBreakpointByUrlData data) {
-            return data.breakpointId();
-          }
+      ForUrlOrRegExp(boolean isRegExp) {
+        this.isRegExp = isRegExp;
+      }
 
-          @Override
-          Collection<LocationValue> getActualLocations(SetBreakpointByUrlData data) {
-            return data.locations();
-          }
-        };
+      @Override
+      SetBreakpointByUrlParams createRequestParams(String url,
+          long lineNumber, long columnNumber, String condition) {
+        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition, isRegExp);
+      }
 
+      @Override
+      String getBreakpointId(SetBreakpointByUrlData data) {
+        return data.breakpointId();
+      }
+
+      @Override
+      Collection<LocationValue> getActualLocations(SetBreakpointByUrlData data) {
+        return data.locations();
+      }
+    }
+
+    static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp(false);
+
+    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp(true);
 
     static final RequestHandler<String, SetBreakpointData, SetBreakpointParams> FOR_ID =
         new RequestHandler<String, SetBreakpointData, SetBreakpointParams>() {

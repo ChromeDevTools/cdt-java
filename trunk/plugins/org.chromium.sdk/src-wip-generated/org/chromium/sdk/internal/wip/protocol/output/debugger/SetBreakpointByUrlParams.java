@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91461
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -13,8 +13,9 @@ public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.prot
    @param lineNumber Line number to set breakpoint at.
    @param columnNumberOpt Offset in the line to set breakpoint at.
    @param conditionOpt Expression to use as a breakpoint condition. When specified, debugger will only stop on the breakpoint if this expression evaluates to true.
+   @param isRegexOpt If true, given <code>url</code> is considered to be a regular expression.
    */
-  public SetBreakpointByUrlParams(String url, long lineNumber, Long columnNumberOpt, String conditionOpt) {
+  public SetBreakpointByUrlParams(String url, long lineNumber, Long columnNumberOpt, String conditionOpt, Boolean isRegexOpt) {
     this.put("url", url);
     this.put("lineNumber", lineNumber);
     if (columnNumberOpt != null) {
@@ -22,6 +23,9 @@ public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.prot
     }
     if (conditionOpt != null) {
       this.put("condition", conditionOpt);
+    }
+    if (isRegexOpt != null) {
+      this.put("isRegex", isRegexOpt);
     }
   }
 
