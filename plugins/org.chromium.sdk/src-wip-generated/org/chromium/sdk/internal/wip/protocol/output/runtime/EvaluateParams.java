@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84481
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91461
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -12,14 +12,18 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    @param expression Expression to evaluate.
    @param objectGroupOpt Symbolic group name that can be used to release multiple objects.
    @param includeCommandLineAPIOpt Determines whether Command Line API should be available during the evaluation.
+   @param doNotPauseOnExceptionsOpt Specifies whether evaluation should stop on exceptions. Overrides setPauseOnException state.
    */
-  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt) {
+  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsOpt) {
     this.put("expression", expression);
     if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
     }
     if (includeCommandLineAPIOpt != null) {
       this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
+    }
+    if (doNotPauseOnExceptionsOpt != null) {
+      this.put("doNotPauseOnExceptions", doNotPauseOnExceptionsOpt);
     }
   }
 

@@ -9,6 +9,7 @@ import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -171,7 +172,7 @@ public class BreakpointImpl implements Breakpoint {
     switch (infoType) {
       case SCRIPTID: return new Target.ScriptId(info.script_id());
       case SCRIPTNAME: return new Target.ScriptName(info.script_name());
-      case SCRIPTREGEXP: return new ScriptRegExpTarget(info.script_regexp());
+      case SCRIPTREGEXP: return new ScriptRegExpBreakpointTarget(info.script_regexp());
       case FUNCTION: return new FunctionTarget(null);
     }
     throw new RuntimeException("Unknown type: " + infoType);
@@ -183,25 +184,6 @@ public class BreakpointImpl implements Breakpoint {
   public interface TargetExtendedVisitor<R> extends
       BreakpointTypeExtension.FunctionSupport.Visitor<R>,
       BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R> {
-  }
-
-  static class ScriptRegExpTarget extends Target {
-    private final String regExp;
-
-    ScriptRegExpTarget(String regExp) {
-      this.regExp = regExp;
-    }
-
-    @Override
-    public <R> R accept(Visitor<R> visitor) {
-      if (visitor instanceof BreakpointTypeExtension.ScriptRegExpSupport.Visitor) {
-        BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R> regExpVisitor =
-            (BreakpointTypeExtension.ScriptRegExpSupport.Visitor<R>) visitor;
-        return regExpVisitor.visitRegExp(regExp);
-      } else {
-        return visitor.visitUnknown(this);
-      }
-    }
   }
 
   static class FunctionTarget extends Target {

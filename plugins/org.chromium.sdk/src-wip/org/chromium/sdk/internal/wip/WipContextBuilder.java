@@ -141,7 +141,9 @@ class WipContextBuilder {
       globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
         @Override protected EvaluateParams createRequestParams(String expression) {
           String groupId = valueLoader.getObjectGroupId();
-          return new EvaluateParams(expression, groupId, false);
+
+          boolean doNotPauseOnExceptions = true;
+          return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
           return data.result();
