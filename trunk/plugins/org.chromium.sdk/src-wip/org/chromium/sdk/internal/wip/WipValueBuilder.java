@@ -219,11 +219,15 @@ class WipValueBuilder {
 
       private void doLoadProperties(boolean reload, int currentCacheState) {
         PropertyNameBuilder innerNameBuilder;
-        QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-        if (qualifiedNameBuilder == null) {
+        if (nameBuilder == null) {
           innerNameBuilder = null;
         } else {
-          innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
+          QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+          if (qualifiedNameBuilder == null) {
+            innerNameBuilder = null;
+          } else {
+            innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
+          }
         }
         valueLoader.loadJsObjectPropertiesAsync(valueData.objectId(), innerNameBuilder,
             reload, currentCacheState, loadedPropertiesRef);
