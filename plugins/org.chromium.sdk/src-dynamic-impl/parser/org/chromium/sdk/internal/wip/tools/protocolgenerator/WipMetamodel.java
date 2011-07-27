@@ -153,4 +153,5 @@ public interface WipMetamodel {
   String OBJECT_TYPE = "object";
   String ARRAY_TYPE = "array";
   String UNKNOWN_TYPE = "unknown";
+  String ANY_TYPE = "any";
 }

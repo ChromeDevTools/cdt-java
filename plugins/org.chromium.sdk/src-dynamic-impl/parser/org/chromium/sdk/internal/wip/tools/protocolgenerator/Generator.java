@@ -203,25 +203,64 @@ class Generator {
       fileUpdater.update();
     }
 
+    StandaloneTypeBinding createStandaloneOutputTypeBinding(final StandaloneType type,
+        final String name) {
+      return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
+          new TypeVisitor<StandaloneTypeBinding>() {
+        @Override
+        public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
+          return new StandaloneTypeBinding() {
+            @Override
+            public String getJavaFullName() {
+              return Naming.ADDITIONAL_PARAM.getFullName(domain.domain(), name);
+            }
+
+            @Override
+            public void generate() throws IOException {
+              generateCommandAdditionalParam(type);
+            }
+          };
+        }
+
+        @Override
+        public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitRef(String refName) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitBoolean(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitString(boolean isOptional) {
+          return createTypedefTypeBinding(type, "String", Naming.OUTPUT_TYPEDEF);
+        }
+        @Override public StandaloneTypeBinding visitInteger(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitNumber(boolean isOptional) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
+          throw new RuntimeException();
+        }
+        @Override public StandaloneTypeBinding visitUnknown() {
+          throw new RuntimeException();
+        }
+      });
+    }
+
     StandaloneTypeBinding createStandaloneInputTypeBinding(final StandaloneType type) {
       return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
           new TypeVisitor<StandaloneTypeBinding>() {
         @Override
         public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
-          try {
-            return createStandaloneObjectInputTypeBinding(type, properties);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          return createStandaloneObjectInputTypeBinding(type, properties);
         }
 
         @Override
         public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
-          try {
-            return createStandaloneEnumInputTypeBinding(type, enumConstants);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          return createStandaloneEnumInputTypeBinding(type, enumConstants);
         }
 
         @Override public StandaloneTypeBinding visitRef(String refName) {
@@ -231,7 +270,7 @@ class Generator {
           throw new RuntimeException();
         }
         @Override public StandaloneTypeBinding visitString(boolean isOptional) {
-          throw new RuntimeException();
+          return createTypedefTypeBinding(type, "String", Naming.INPUT_TYPEDEF);
         }
         @Override public StandaloneTypeBinding visitInteger(boolean isOptional) {
           throw new RuntimeException();
@@ -249,7 +288,7 @@ class Generator {
     }
 
     StandaloneTypeBinding createStandaloneObjectInputTypeBinding(final StandaloneType type,
-        final List<ObjectProperty> properties) throws IOException {
+        final List<ObjectProperty> properties) {
       final String name = type.id();
       final String fullTypeName = Naming.INPUT_VALUE.getFullName(domain.domain(), name);
       jsonProtocolParserClassNames.add(fullTypeName);
@@ -290,7 +329,7 @@ class Generator {
     }
 
     StandaloneTypeBinding createStandaloneEnumInputTypeBinding(final StandaloneType type,
-        final List<String> enumConstants) throws IOException {
+        final List<String> enumConstants) {
       final String name = type.id();
       return new StandaloneTypeBinding() {
         @Override
@@ -326,6 +365,40 @@ class Generator {
           writer.write("\n");
 
           writer.write("}\n");
+
+          fileUpdater.update();
+        }
+      };
+    }
+
+    /**
+     * Typedef is an empty class that just holds description and
+     * refers to an actual type (such as String).
+     */
+    StandaloneTypeBinding createTypedefTypeBinding(final StandaloneType type,
+        String actualJavaName, final ClassNameScheme nameScheme) {
+      final String name = type.id();
+      String typedefJavaName = nameScheme.getFullName(domain.domain(), name);
+      final String javaName = actualJavaName + "/*See " + typedefJavaName + "*/";
+
+      return new StandaloneTypeBinding() {
+        @Override public String getJavaFullName() {
+          return javaName;
+        }
+        @Override public void generate() throws IOException {
+          String description = type.description();
+
+          String className = nameScheme.getShortName(name);
+          JavaFileUpdater fileUpdater = startJavaFile(nameScheme, domain, name);
+
+          Writer writer = fileUpdater.getWriter();
+
+          if (description != null) {
+            writer.write("/**\n " + description + "\n */\n");
+          }
+
+          writer.write("public class " + className +
+              " {/*Typedef class, merely holds a javadoc.*/}\n");
 
           fileUpdater.update();
         }
@@ -814,11 +887,13 @@ class Generator {
   interface Naming {
     ClassNameScheme PARAMS = new ClassNameScheme.Output("Params");
     ClassNameScheme ADDITIONAL_PARAM = new ClassNameScheme.Output("Param");
+    ClassNameScheme OUTPUT_TYPEDEF = new ClassNameScheme.Output("Typedef");
 
     ClassNameScheme COMMAND_DATA = new ClassNameScheme.Input("Data");
     ClassNameScheme EVENT_DATA = new ClassNameScheme.Input("EventData");
     ClassNameScheme INPUT_VALUE = new ClassNameScheme.Input("Value");
     ClassNameScheme INPUT_ENUM = new ClassNameScheme.Input("Enum");
+    ClassNameScheme INPUT_TYPEDEF = new ClassNameScheme.Input("Typedef");
   }
 
   private static <P> String getParamName(P param, PropertyLikeAccess<P> access) {
@@ -1068,6 +1143,8 @@ class Generator {
       return visitor.visitArray(access.getItems(typedObject));
     } else if (WipMetamodel.OBJECT_TYPE.equals(typeName)) {
       return visitor.visitObject(access.getProperties(typedObject));
+    } else if (WipMetamodel.ANY_TYPE.equals(typeName)) {
+      return visitor.visitUnknown();
     } else if (WipMetamodel.UNKNOWN_TYPE.equals(typeName)) {
       return visitor.visitUnknown();
     }
@@ -1178,17 +1255,7 @@ class Generator {
         if (type == null) {
           throw new RuntimeException();
         }
-        return new StandaloneTypeBinding() {
-          @Override
-          public String getJavaFullName() {
-            return Naming.ADDITIONAL_PARAM.getFullName(domain, name);
-          }
-
-          @Override
-          public void generate() throws IOException {
-            domainGenerator.generateCommandAdditionalParam(type);
-          }
-        };
+        return domainGenerator.createStandaloneOutputTypeBinding(type, name);
       }
     }
 
