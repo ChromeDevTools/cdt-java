@@ -466,12 +466,7 @@ class WipContextBuilder {
 
       public ScopeImpl(ScopeValue scopeData, Type type) {
         this.type = type;
-        if (!WipProtocol.parseHasChildren(scopeData.object().hasChildren())) {
-          objectId = null;
-          propertiesRef.initializeTrivial(EMPTY_SCOPE_VARIABLES_OPTIONAL);
-        } else {
-          objectId = scopeData.object().objectId();
-        }
+        this.objectId = scopeData.object().objectId();
       }
 
       @Override

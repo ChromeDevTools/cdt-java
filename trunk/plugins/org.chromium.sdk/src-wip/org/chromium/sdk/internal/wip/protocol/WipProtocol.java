@@ -27,8 +27,4 @@ public class WipProtocol {
       throw new IllegalArgumentException();
     }
   }
-
-  public static boolean parseHasChildren(Object hasChildren) {
-    return hasChildren != Boolean.FALSE;
-  }
 }

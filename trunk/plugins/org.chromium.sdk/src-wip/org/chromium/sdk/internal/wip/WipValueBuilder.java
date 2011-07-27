@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.wip;
 
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +18,6 @@ import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -28,7 +29,6 @@ import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
 
@@ -61,7 +61,7 @@ class WipValueBuilder {
 
   private static ValueType getValueType(RemoteObjectValue valueData) {
     RemoteObjectValue.Type protocolType = valueData.type();
-    ValueType result = PROTOCOL_TYPE_TO_VALUE_TYPE.get(protocolType);
+    ValueType result = getSafe(PROTOCOL_TYPE_TO_VALUE_TYPE, protocolType);
 
     if (result == null) {
       LOGGER.severe("Unexpected value type: " + protocolType);
@@ -136,9 +136,6 @@ class WipValueBuilder {
         this.valueData = valueData;
         this.valueLoader = valueLoader;
         this.nameBuilder = nameBuilder;
-        if (!WipProtocol.parseHasChildren(this.valueData.hasChildren())) {
-          WipValueLoader.setEmptyJsObjectProperties(loadedPropertiesRef);
-        }
       }
 
       @Override
@@ -235,8 +232,8 @@ class WipValueBuilder {
     }
   }
 
-  private static class ObjectType extends ObjectTypeBase {
-    ObjectType(JsValue.Type type) {
+  private static class ObjectSubtype extends ObjectTypeBase {
+    ObjectSubtype(JsValue.Type type) {
       super(type);
     }
 
@@ -429,8 +426,39 @@ class WipValueBuilder {
     }
   }
 
+  private static class ObjectType extends ValueType {
+    @Override
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
+        ValueNameBuilder nameBuilder) {
+      ValueType secondLevelValueType = getSafe(PROTOCOL_SUBTYPE_TO_VALUE_TYPE, valueData.subtype());
+
+      if (secondLevelValueType == null) {
+        LOGGER.severe("Unexpected value type: " + valueData.type() + " " + valueData.subtype());
+        secondLevelValueType = DEFAULT_VALUE_TYPE;
+      }
+
+      return secondLevelValueType.build(valueData, valueLoader, nameBuilder);
+    }
+
+    private static final Map<RemoteObjectValue.Subtype, ValueType> PROTOCOL_SUBTYPE_TO_VALUE_TYPE;
+    static {
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE = new HashMap<RemoteObjectValue.Subtype, ValueType>();
+      ObjectSubtype objectSubtype = new ObjectSubtype(JsValue.Type.TYPE_OBJECT);
+      // TODO: null?
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(null, objectSubtype);
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.NULL,
+          new PrimitiveType(JsValue.Type.TYPE_NULL));
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.ARRAY, new ArrayType());
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.REGEXP, objectSubtype);
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.DATE, objectSubtype);
+
+      PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.NODE, objectSubtype);
+      // Plus 1 for null - object.
+      assert PROTOCOL_SUBTYPE_TO_VALUE_TYPE.size() == RemoteObjectValue.Subtype.values().length + 1;
+    }
+  }
+
   private static final Map<RemoteObjectValue.Type, ValueType> PROTOCOL_TYPE_TO_VALUE_TYPE;
-  private static final ValueType DEFAULT_VALUE_TYPE;
   static {
     PROTOCOL_TYPE_TO_VALUE_TYPE = new HashMap<RemoteObjectValue.Type, ValueType>();
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.STRING,
@@ -439,23 +467,14 @@ class WipValueBuilder {
         new PrimitiveType(JsValue.Type.TYPE_BOOLEAN));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NUMBER,
         new PrimitiveType(JsValue.Type.TYPE_NUMBER));
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NULL,
-        new PrimitiveType(JsValue.Type.TYPE_NULL));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.UNDEFINED,
         new PrimitiveType(JsValue.Type.TYPE_UNDEFINED));
 
-    ObjectType objectType = new ObjectType(JsValue.Type.TYPE_OBJECT);
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.OBJECT, objectType);
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.ARRAY, new ArrayType());
+    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.OBJECT, new ObjectType());
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());
 
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.REGEXP, objectType);
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.DATE, objectType);
-
-    PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NODE, objectType);
-
     assert PROTOCOL_TYPE_TO_VALUE_TYPE.size() == RemoteObjectValue.Type.values().length;
-
-    DEFAULT_VALUE_TYPE = objectType;
   }
+
+  private static final ValueType DEFAULT_VALUE_TYPE = new ObjectSubtype(JsValue.Type.TYPE_OBJECT);
 }

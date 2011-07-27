@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@85751
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -24,11 +24,5 @@ public interface RemotePropertyValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   Boolean wasThrown();
-
-  /**
-   True if this property is getter.
-   */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  Boolean isGetter();
 
 }
