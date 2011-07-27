@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -12,7 +12,7 @@ public class GetPropertiesParams extends org.chromium.sdk.internal.wip.protocol.
    @param objectId Identifier of the object to return properties for.
    @param ignoreHasOwnProperty If true, returns properties belonging to any element of the prototype chain.
    */
-  public GetPropertiesParams(String objectId, boolean ignoreHasOwnProperty) {
+  public GetPropertiesParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectId, boolean ignoreHasOwnProperty) {
     this.put("objectId", objectId);
     this.put("ignoreHasOwnProperty", ignoreHasOwnProperty);
   }
