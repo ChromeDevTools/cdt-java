@@ -10,10 +10,12 @@ import static org.junit.Assert.fail;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
@@ -62,8 +64,11 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
       latch.await();
     }
-    Collection<? extends JsVariable> variables =
-        suspendContext.getCallFrames().get(0).getVariables();
+
+    List<? extends JsScope> variableScopes =
+        suspendContext.getCallFrames().get(0).getVariableScopes();
+
+    Collection<? extends JsVariable> variables = variableScopes.get(0).getVariables();
 
     // This call invalidates the debug context for the "lookup" operation that is invoked
     // inside "ensureProperties".
@@ -113,8 +118,11 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
       messageResponder.hitBreakpoints(Collections.singleton(bp[0].getId()));
       latch.await();
     }
-    Collection<? extends JsVariable> variables =
-        suspendContext.getCallFrames().get(0).getVariables();
+
+    List<? extends JsScope> variableScopes =
+        suspendContext.getCallFrames().get(0).getVariableScopes();
+
+    Collection<? extends JsVariable> variables = variableScopes.get(0).getVariables();
 
     JsObject jsObject = variables.iterator().next().getValue().asObject();
     // This call should finish OK

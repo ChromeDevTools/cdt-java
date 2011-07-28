@@ -13,13 +13,6 @@ import java.util.List;
 public interface CallFrame {
 
   /**
-   * @return the variables known in this frame, including the receiver variable
-   * @deprecated in favor of {@link #getVariableScopes()}
-   */
-  @Deprecated
-  Collection<? extends JsVariable> getVariables();
-
-  /**
    * @return the scopes known in this frame; ordered, innermost first, global scope last
    */
   List<? extends JsScope> getVariableScopes();

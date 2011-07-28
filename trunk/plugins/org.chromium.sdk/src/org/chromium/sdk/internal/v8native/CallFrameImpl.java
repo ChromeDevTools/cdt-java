@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal.v8native;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,10 +54,6 @@ public class CallFrameImpl implements CallFrame {
    * The associated script id value.
    */
   private final long scriptId;
-
-  /** The variables known in this call frame. */
-  private final AtomicReference<Collection<JsVariableImpl>> variablesRef =
-      new AtomicReference<Collection<JsVariableImpl>>(null);
 
   /** The scopes known in this call frame. */
   private final AtomicReference<List<? extends JsScope>> scopesRef =
@@ -117,13 +112,6 @@ public class CallFrameImpl implements CallFrame {
   }
 
   @Override
-  @Deprecated
-  public Collection<JsVariableImpl> getVariables() {
-    ensureVariables();
-    return variablesRef.get();
-  }
-
-  @Override
   public List<? extends JsScope> getVariableScopes() {
     ensureScopes();
     return scopesRef.get();
@@ -138,14 +126,6 @@ public class CallFrameImpl implements CallFrame {
   @Override
   public JsEvaluateContext getEvaluateContext() {
     return evaluateContextImpl;
-  }
-
-  private void ensureVariables() {
-    if (variablesRef.get() != null) {
-      return;
-    }
-    Collection<JsVariableImpl> result = Collections.unmodifiableCollection(createVariables());
-    variablesRef.compareAndSet(null, result);
   }
 
   private void ensureScopes() {
@@ -206,21 +186,6 @@ public class CallFrameImpl implements CallFrame {
     if (script != null) {
       this.script = script;
     }
-  }
-
-  /**
-   * Initializes this frame with variables based on the frameMirror locals.
-   */
-  private Collection<JsVariableImpl> createVariables() {
-    List<PropertyReference> refs = V8Helper.computeLocals(frameObject);
-    List<ValueMirror> mirrors = context.getValueLoader().getOrLoadValueFromRefs(refs);
-    Collection<JsVariableImpl> result = new ArrayList<JsVariableImpl>(refs.size());
-    for (int i = 0; i < refs.size(); i++) {
-      // This name should be string. We are making it string as a fall-back strategy.
-      String varNameStr = refs.get(i).getName().toString();
-      result.add(new JsVariableImpl(this.context.getValueLoader(), mirrors.get(i), varNameStr));
-    }
-    return result;
   }
 
   private List<JsScopeImpl<?>> createScopes() {
