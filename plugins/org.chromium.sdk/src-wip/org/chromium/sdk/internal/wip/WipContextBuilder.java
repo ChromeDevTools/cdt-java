@@ -351,11 +351,6 @@ class WipContextBuilder {
       }
 
       @Override
-      public Collection<? extends JsVariable> getVariables() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public List<? extends JsScope> getVariableScopes() {
         return scopeData.get();
       }

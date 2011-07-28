@@ -111,42 +111,6 @@ public class V8Helper {
         syncCallback);
   }
 
-  /**
-   * Gets all resolved locals for the call frame, caches scripts and objects in
-   * the scriptManager and handleManager.
-   *
-   * @param frame to get the data for
-   * @return the mirrors corresponding to the frame locals
-   */
-  public static List<PropertyReference> computeLocals(FrameObject frame) {
-    List<PropertyObject> args = frame.arguments();
-    List<PropertyObject> locals = frame.locals();
-
-    int maxLookups = args.size() + locals.size() + 1 /* "this" */;
-
-    List<PropertyReference> localRefs = new ArrayList<PropertyReference>(maxLookups);
-
-    {
-      // Receiver ("this")
-      SomeRef receiverObject = frame.receiver();
-      V8ProtocolUtil.putMirror(localRefs, receiverObject, V8ProtocolUtil.PropertyNameGetter.THIS);
-    }
-
-    // Arguments
-    for (int i = 0; i < args.size(); i++) {
-      PropertyObject arg = args.get(i);
-      V8ProtocolUtil.putMirror(localRefs, arg, V8ProtocolUtil.PropertyNameGetter.SUBPROPERTY);
-    }
-
-    // Locals
-    for (int i = 0; i < locals.size(); i++) {
-      PropertyObject local = locals.get(i);
-      V8ProtocolUtil.putMirror(localRefs, local, V8ProtocolUtil.PropertyNameGetter.SUBPROPERTY);
-    }
-
-    return localRefs;
-  }
-
   public static PropertyReference computeReceiverRef(FrameObject frame) {
     SomeRef receiverObject = frame.receiver();
     return V8ProtocolUtil.extractProperty(receiverObject,
