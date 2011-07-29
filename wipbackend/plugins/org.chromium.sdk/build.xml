@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+
+<!--
+  Copyright (c) 2010 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<project name="lib.org.chromium.sdk.jar" default="main" basedir=".">
+  
+  <property name="bin-dir" value="${basedir}/bin" />
+  <property name="dest-dir" value="${basedir}/build-output" />
+
+	
+  <target name="main">
+    <mkdir dir="${dest-dir}"/>
+    <jar destfile="${dest-dir}/lib.org.chromium.sdk.jar" basedir="${bin-dir}">
+      <manifest>
+        <attribute name="Class-Path" value="./json_simple-1.1.jar"/>
+      </manifest>
+    </jar>
+    <copy file="${basedir}/lib/json_simple/json_simple-1.1.jar" todir="${dest-dir}"/>
+  </target>
+
+  
+  
+</project>

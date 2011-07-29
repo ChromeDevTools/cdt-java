@@ -1,0 +1,38 @@
+<html>
+
+<!--
+  Copyright (c) 2010 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="script1.js"></script>
+    <title>org.chromium.sdk.tests.system:main.html</title>
+  </head>
+  <body>
+    <h2>Welcome to org.chromium.sdk.tests.system test web page.</h2>
+    Script is running: [<div id="status_field" style="display: inline">&nbsp;</div>]
+    
+    <script>
+      function SetStatus(text) {
+        document.getElementById('status_field').innerHTML=text;
+      }
+    </script>
+    
+    <p>
+    This script is created for test purposes for running inside
+    <a href="http://google.com/chrome">Chrome</a>/<a href="http://chromium.org">Chromium</a> browser.
+    The browser should be run from command line to have debug port open:
+    <br>
+    <code>chrome --remote-shell-port=9222</code>
+     
+    <p>
+    See also: <a href="http://code.google.com/p/chromedevtools">http://code.google.com/p/chromedevtools</a>
+
+    <div style="color: grey; font-size: 0.8em;">
+    Additional test elements: unicode symbols "хорошо".
+    </div>
+  </body>
+</html>
