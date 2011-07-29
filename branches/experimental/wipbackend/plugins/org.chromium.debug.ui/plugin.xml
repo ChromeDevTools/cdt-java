@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Copyright (c) 2009 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<plugin>
+  <extension point="org.eclipse.debug.ui.debugModelPresentations">
+    <debugModelPresentation
+        class="org.chromium.debug.ui.JsDebugModelPresentation"
+        id="org.chromium.debug">
+    </debugModelPresentation>
+  </extension>
+
+  <extension point="org.eclipse.core.variables.valueVariables">
+    <variable
+        initialValue="localhost"
+        name="org.chromium.debug.ui.chromium_debug_host"
+        description="ChromeDevTools Protocol connection target host">
+    </variable>
+    <variable
+        initialValue="9222"
+        name="org.chromium.debug.ui.chromium_debug_port"
+        description="ChromeDevTools Protocol connection port">
+    </variable>
+  </extension>
+
+  <extension point="org.eclipse.debug.core.launchConfigurationTypes">
+    <launchConfigurationType
+        id="org.chromium.debug.ui.LaunchType$Chromium"
+        delegate="org.chromium.debug.ui.launcher.ChromiumLaunchType"
+        modes="debug"
+        name="%chromiumLaunchName"
+        delegateName="Debug Chromium JavaScript"
+        delegateDescription="JavaScript debugger for Chromium"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
+    </launchConfigurationType>
+    <launchConfigurationType
+        id="org.chromium.debug.ui.LaunchType$Wip"
+        delegate="org.chromium.debug.ui.launcher.WipLaunchType"
+        modes="debug"
+        name="%wipLaunchName"
+        delegateName="Debug Chromium/Wip JavaScript"
+        delegateDescription="JavaScript debugger for Chromium via WebInspector protocol (WIP)"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
+    </launchConfigurationType>
+    <launchConfigurationType
+        id="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        delegate="org.chromium.debug.ui.launcher.StandaloneV8LaunchType"
+        modes="debug"
+        name="%standaloneV8LaunchName"
+        delegateName="Debug Standalone V8 JavaScript"
+        delegateDescription="JavaScript debugger for Standalone V8"
+        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
+        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
+    </launchConfigurationType>
+    <launchConfigurationType
+        id="org.chromium.debug.ui.ConsolePseudoConfigurationType"
+        modes="org.chromium.debug.pseudotype"
+        name="%consolePseudoLaunchName">
+    </launchConfigurationType>
+  </extension>
+
+  <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$Chromium"
+        configTypeID="org.chromium.debug.ui.LaunchType$Chromium"
+        icon="res/chromium_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$Wip"
+        configTypeID="org.chromium.debug.ui.LaunchType$Wip"
+        icon="res/chromium_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImage$StandaloneV8"
+        configTypeID="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        icon="res/standalone_v8_16.png">
+    </launchConfigurationTypeImage>
+    <launchConfigurationTypeImage
+        id="org.chromium.debug.ui.LaunchConfigTypeImageConsolePseudoConfiguration"
+        configTypeID="org.chromium.debug.ui.ConsolePseudoConfigurationType"
+        icon="res/chromium_16.png">
+    </launchConfigurationTypeImage>
+  </extension>
+
+  <extension point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+    <launchConfigurationTabGroup
+        type="org.chromium.debug.ui.LaunchType$Chromium"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$Chromium"
+        id="org.chromium.debug.ui.LaunchTabGroup$Chromium">
+    </launchConfigurationTabGroup>
+    <launchConfigurationTabGroup
+        type="org.chromium.debug.ui.LaunchType$Wip"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$Wip"
+        id="org.chromium.debug.ui.LaunchTabGroup$Wip">
+    </launchConfigurationTabGroup>
+    <launchConfigurationTabGroup
+        type="org.chromium.debug.ui.LaunchType$StandaloneV8"
+        class="org.chromium.debug.ui.launcher.LaunchTabGroup$StandaloneV8"
+        id="org.chromium.debug.ui.LaunchTabGroup$StandaloneV8">
+    </launchConfigurationTabGroup>
+  </extension>
+
+  <extension point="org.eclipse.debug.core.watchExpressionDelegates">
+    <watchExpressionDelegate
+        debugModel="org.chromium.debug"
+        delegateClass="org.chromium.debug.ui.JsWatchExpressionDelegate"/>
+  </extension>
+  
+  <extension point="org.eclipse.ui.editors">
+    <editor
+        name="JS Editor"
+        extensions="chromium"
+        default="true"
+        icon="res/chromium_16.png"
+        contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
+        class="org.chromium.debug.ui.editors.JsEditor"
+        id="org.chromium.debug.ui.editors.JsEditor">
+    </editor>
+  </extension>
+
+ <extension point="org.eclipse.debug.ui.toggleBreakpointsTargetFactories">
+    <toggleTargetFactory
+            id="org.chromium.debug.ui.ChromiumToggleBreakpointTargetFactory"
+            class="org.chromium.debug.ui.ChromiumToggleBreakpointTargetFactory">
+        <enablement>
+          <or>
+             <!-- Applicable for any text editor (java code additionally checks extension) -->
+             <instanceof value="org.eclipse.ui.texteditor.ITextEditor"/>
+             <!-- or when our debug element is in context -->
+             <with variable="debugContext">
+                <iterate>
+                  <test property="org.eclipse.debug.ui.getModelIdentifier"
+                        value="org.chromium.debug"/>
+                </iterate>
+             </with>
+          </or>
+        </enablement>
+    </toggleTargetFactory>
+ </extension>
+
+
+  <extension point="org.eclipse.ui.editorActions">
+    <editorContribution
+        targetID="org.chromium.debug.ui.editors.JsEditor"
+        id="org.chromium.debug.ui.editors.JsEditor.editorActions">
+      <action
+          label="Not Used"
+          class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+          style="push"
+          actionID="RulerDoubleClick"
+          id="org.chromium.debug.ui.editor.ruler.doubleClickBreakpointAction"/>
+      <action
+          toolbarPath="evaluationGroup"
+          id="org.chromium.debug.ui.SnippetInspect"
+          definitionId="org.chromium.debug.ui.commands.Inspect"
+          class="org.chromium.debug.ui.actions.JsInspectSnippetAction"
+          enablesFor="+"
+          label="Inspect"
+          tooltip="Inspect Result of Evaluating Selected Text">
+        <enablement>
+            <objectClass
+                name="org.eclipse.jface.text.ITextSelection"/>
+        </enablement>
+      </action>
+    </editorContribution>
+  </extension>
+
+  <extension point="org.eclipse.ui.contexts">
+    <context
+        name="Chromium Debug"
+        parentId="org.eclipse.ui.contexts.dialogAndWindow"
+        description="Debug Chromium JavaScript"
+        id="org.chromium.debug.ui.editors.JsEditor.context">
+    </context>
+  </extension>
+
+  <extension
+      point="org.eclipse.ui.decorators">
+    <decorator
+        label="%ChromiumJavascriptDecorator.label"
+        id="org.chromium.debug.ui.decorators.ChromiumJavaScript"
+        state="true"
+        class="org.chromium.debug.ui.ChromiumJavascriptDecorator">
+      <enablement>
+        <and>
+          <objectClass name="org.eclipse.core.resources.IFile"/>
+          <objectState name="name" value="*.chromium"/>
+        </and>
+      </enablement>
+    </decorator>
+  </extension>
+
+  <extension point="org.eclipse.ui.commands">
+    <command
+        categoryId="org.eclipse.debug.ui.category.run"
+        description="Modify breakpoint properties"
+        name="Breakpoint Properties..."
+        id="org.chromium.debug.ui.breakpoint.properties">
+    </command>
+    <command
+        categoryId="org.eclipse.debug.ui.category.run"
+        description="Inspect result of evaluating selected text"
+        id="org.chromium.debug.ui.commands.Inspect"
+        name="Inspect">
+    </command>
+  </extension>
+   
+  <extension point="org.eclipse.ui.bindings">
+    <key
+        sequence="M1+M2+I"
+        contextId="org.chromium.debug.ui.editors.JsEditor.context"
+        commandId="org.chromium.debug.ui.commands.Inspect"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+  </extension>
+
+  <extension point="org.eclipse.ui.popupMenus">           
+    <viewerContribution
+        targetID="org.chromium.debug.ui.editors.JsEditor.ruler"
+        id="org.chromium.debug.ui.editors.JsEditor.popupMenus">
+        <action
+            label="Toggle Breakpoint"
+            class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+            menubarPath="debug"
+            id="org.chromium.debug.ui.actions.EnableDisableBreakpointAction"/>
+        <action
+            label="Breakpoint Properties..."
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesRulerAction$Delegate"
+            menubarPath="group.properties"
+            id="org.chromium.debug.ui.actions.JavaBreakpointPropertiesRulerAction$Delegate">
+        </action>
+        <action
+            label="Toggle Enablement"
+            class="org.eclipse.debug.ui.actions.RulerEnableDisableBreakpointActionDelegate"
+            menubarPath="debug"
+            id="org.chromium.debug.ui.actions.EnableDisableBreakpointRulerActionDelegate">
+        </action>
+    </viewerContribution>
+  </extension>
+  <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.chromium.debug.core.model.ChromiumLineBreakpoint"
+            id="org.chromium.debug.core.model.ChromiumLineBreakpoint.object_actions">
+        <action
+            label="Breakpoint Properties..."
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction"
+            menubarPath="group.properties"
+            id="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction">
+        </action>
+      </objectContribution>
+         
+      <objectContribution
+            objectClass="org.chromium.debug.core.model.Variable"
+            id="org.chromium.debug.ui.ChromiumVariableActions">
+         <action
+               label="%OpenFunctionAction.label"
+               class="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable">
+         </action>
+         <action
+               label="%LoadFullValueAction.label"
+               class="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable">
+         </action>
+         <action
+               label="%PinPointValueAction.label"
+               class="org.chromium.debug.ui.actions.pinpoint.PinPointValueAction$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PinPointValueAction$ForVariable">
+         </action>
+      </objectContribution>
+      <objectContribution
+            objectClass="org.eclipse.debug.core.model.IWatchExpression"
+            id="org.chromium.debug.ui.ChromiumExpressionActions">
+         <action
+               label="%OpenFunctionAction.label"
+               class="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression">
+         </action>
+         <action
+               label="%LoadFullValueAction.label"
+               class="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.LoadFullValueAction$ForExpression">
+         </action>
+         <action
+               label="%PinPointValueAction.label"
+               class="org.chromium.debug.ui.actions.pinpoint.PinPointValueAction$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PinPointValueAction$ForExpression">
+         </action>
+      </objectContribution>
+
+      <objectContribution
+            objectClass="org.eclipse.core.resources.mapping.ResourceMapping"
+            adaptable="true"
+            id="org.chromium.debug.ui.ChromiumSourceFileActionsId">
+         <menu id="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId"
+               label="%ChromiumSourceFileActionsId.menu.label"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="%LiveEditWizardAction.label"
+               class="org.chromium.debug.ui.actions.LiveEditWizardAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.LiveEditWizardAction">
+         </action>
+         <action
+               label="%PushChangesAction.label"
+               class="org.chromium.debug.ui.actions.PushChangesAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.PushChangesAction">
+         </action>
+         <action
+               label="%TemporarilyFormatAction.label"
+               class="org.chromium.debug.ui.actions.TemporarilyFormatSourceAction"
+               menubarPath="org.chromium.debug.ui.ChromiumSourceFileActionsId.MenuId/group0"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.BeautifySourceAction">
+         </action>
+      </objectContribution>
+  </extension>
+
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.debug.ui.DebugPerspective">
+         <actionSet
+               id="org.chromium.debug.ui.ChromiumDebugActionSet">
+         </actionSet>
+      </perspectiveExtension>
+  </extension>
+
+  <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.eclipse.debug.core.ILaunch"
+            id="org.chromium.debug.ui.actions.actions-for-launch">
+         <menu id="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId"
+               label="%SynchronizeBreakpoints.menu.label"
+               path="launchGroup"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="%SynchronizeBreakpoints.ResetRemote.label"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetRemote.forLaunch">
+         </action>
+         <action
+               label="%SynchronizeBreakpoints.ResetLocal.label"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$ResetLocal.forLaunch">
+         </action>
+         <action
+               label="%SynchronizeBreakpoints.Merge.label"
+               class="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge"
+               menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge.forLaunch">
+         </action>
+         <menu id="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId"
+               label="%ExceptionBreakpoints.menu.label"
+               path="launchGroup"
+         >
+            <separator
+                  name="group0">
+            </separator>
+         </menu>
+         <action
+               label="%ExceptionBreakpoints.Caught.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught"
+               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
+         </action>
+         <action
+               label="%ExceptionBreakpoints.Uncaught.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught"
+               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught.forLaunch">
+         </action>
+      </objectContribution>
+  </extension>
+
+  <extension
+         point="org.eclipse.ui.propertyPages">
+    <page
+        name="%BreakpointProperties.name"
+        class="org.chromium.debug.ui.propertypages.JsLineBreakpointPage"
+        id="org.chromium.debug.ui.propertypages.LineBreakpoints">
+      <enabledWhen>
+        <or>
+          <instanceof
+              value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </instanceof>
+          <adapt
+              type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </adapt>
+        </or>
+      </enabledWhen>
+    </page>
+    <page
+        name="%BreakpointTechnicalInfo.name"
+        class="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage"
+        id="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage">
+      <enabledWhen>
+        <adapt
+            type="org.chromium.debug.core.model.WrappedBreakpoint">
+        </adapt>
+      </enabledWhen>
+    </page>
+    <page
+        name="%V8JsScript.name"
+        class="org.chromium.debug.ui.propertypages.ScriptFilePage"
+        id="org.chromium.debug.ui.propertypages.ScriptFilePage">
+      <enabledWhen>
+        <and>
+          <adapt type="org.eclipse.core.resources.IFile"/>
+          <test property="org.chromium.debug.core.isJsFile" value="true"/>
+        </and>  
+      </enabledWhen>
+    </page>
+  </extension>
+  
+
+  <extension point="org.eclipse.debug.ui.sourceContainerPresentations">
+      <sourceContainerPresentation
+            browserClass="org.chromium.debug.ui.source.SourceNameMapperContainerPresentation"
+            containerTypeID="org.chromium.debug.core.SourceNameMapperContainer.type"
+            icon="res/standalone_v8_16.png"
+            id="org.chromium.debug.ui.SourceNameMapperContainerPresentation">
+      </sourceContainerPresentation>
+  </extension>
+
+   <extension
+         point="org.eclipse.ui.ide.projectNatureImages">
+      <image
+            icon="res/nature_decorator_16.png"
+            natureId="org.chromium.debug.core.jsnature"
+            id="org.chromium.debug.core.jsnature.image">
+      </image>
+   </extension>
+  
+  <extension point="org.eclipse.core.expressions.propertyTesters">
+    <propertyTester
+       namespace="org.chromium.debug.core"
+       id="org.chromium.debug.ui.propertypages.FileEditorInputPropertyTester"
+       properties="isJsFile"
+       type="org.eclipse.ui.IFileEditorInput"
+       class="org.chromium.debug.ui.propertypages.FileEditorInputPropertyTester">
+    </propertyTester>
+  </extension>
+</plugin>

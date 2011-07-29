@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="org.chromium.debug">
+      <category name="chromedevtools.main"/>
+   </feature>
+   <feature id="org.chromium.sdk">
+      <category name="chromedevtools.advanced"/>
+   </feature>
+   <feature id="org.chromium.debug.jsdtbridge">
+      <category name="chromedevtools.main"/>
+   </feature>
+   <feature id="org.chromium.source">
+      <category name="chromedevtools.advanced"/>
+   </feature>
+   <category-def name="chromedevtools.main" label="Google Chrome Developer Tools"/>
+   <category-def name="chromedevtools.advanced" label="Google Chrome Developer Tools (Advanced)"/>
+</site>
