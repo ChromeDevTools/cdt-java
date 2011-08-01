@@ -9,7 +9,9 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
+import org.chromium.debug.core.model.WrappedBreakpoint.IgnoreCountData;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.sdk.Breakpoint;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -81,9 +83,16 @@ public class JsLineBreakpointPage extends PropertyPage {
   private void storePrefs() throws CoreException {
     ChromiumLineBreakpoint breakpoint = getBreakpoint();
     breakpoint.setEnabled(enabledCheckbox.getSelection());
-    breakpoint.setIgnoreCount(ignoreCountCheckbox.getSelection()
-        ? Integer.valueOf(ignoreCountText.getText())
-        : -1);
+    int ignoreCountValue;
+    try {
+      ignoreCountValue = Integer.valueOf(ignoreCountText.getText());
+    } catch (NumberFormatException e) {
+      ignoreCountValue = Breakpoint.EMPTY_VALUE;
+    }
+    IgnoreCountData.State ignoreCountState = ignoreCountCheckbox.getSelection()
+         ? IgnoreCountData.State.ENABLED : IgnoreCountData.State.DISABLED;
+    IgnoreCountData ignoreCountData = new IgnoreCountData(ignoreCountValue, ignoreCountState);
+    breakpoint.setIgnoreCountData(ignoreCountData);
     String condition = null;
     if (conditionCheckbox.getSelection()) {
       String text = conditionText.getText().trim();
@@ -128,8 +137,13 @@ public class JsLineBreakpointPage extends PropertyPage {
 
   private void createIgnoreCountControls(Composite parent) throws CoreException {
     ignoreCountCheckbox = new Button(parent, SWT.CHECK);
-    Integer ignoreCount = getBreakpoint().getIgnoreCount();
-    ignoreCountCheckbox.setSelection(ignoreCount != null);
+    IgnoreCountData ignoreCountData = getBreakpoint().getIgnoreCountData();
+    int ignoreCount = ignoreCountData.getValue();
+    IgnoreCountData.State state = ignoreCountData.getState();
+    if (state == IgnoreCountData.State.RESET) {
+      state = IgnoreCountData.State.DISABLED;
+    }
+    ignoreCountCheckbox.setSelection(state == IgnoreCountData.State.ENABLED);
     ignoreCountCheckbox.addSelectionListener(new SelectionAdapter() {
       @Override
       public void widgetSelected(SelectionEvent e) {
@@ -142,7 +156,7 @@ public class JsLineBreakpointPage extends PropertyPage {
     ignoreCountText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
     ignoreCountText.setTextLimit(10);
     ignoreCountText.setEnabled(ignoreCountCheckbox.getSelection());
-    if (ignoreCount != null) {
+    if (ignoreCount > 0) {
       ignoreCountText.setText(String.valueOf(ignoreCount));
     }
     ignoreCountText.addModifyListener(new ModifyListener() {
@@ -159,12 +173,11 @@ public class JsLineBreakpointPage extends PropertyPage {
       return;
     }
     String value = ignoreCountText.getText();
-    int ignoreCount = -1;
     if (!ChromiumDebugPluginUtil.isInteger(value)) {
       addErrorMessage(Messages.JavascriptLineBreakpointPage_IgnoreCountErrorMessage);
       return;
     }
-    ignoreCount = Integer.valueOf(value);
+    int ignoreCount = Integer.valueOf(value);
     if (ignoreCount < 1) {
       addErrorMessage(Messages.JavascriptLineBreakpointPage_IgnoreCountErrorMessage);
     } else {

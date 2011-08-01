@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -16,6 +17,7 @@ import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
 import org.chromium.debug.core.model.VmResource.Metadata;
+import org.chromium.debug.core.model.WrappedBreakpoint.MutableProperty;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Breakpoint;
@@ -307,8 +309,14 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         return;
       }
 
+      Set<MutableProperty> propertyDelta = lineBreakpoint.getChangedProperty(delta);
+
+      if (propertyDelta.isEmpty()) {
+        return;
+      }
+
       try {
-        ChromiumLineBreakpoint.Helper.updateOnRemote(sdkBreakpoint, lineBreakpoint);
+        ChromiumLineBreakpoint.Helper.updateOnRemote(sdkBreakpoint, lineBreakpoint, propertyDelta);
       } catch (RuntimeException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
@@ -374,9 +382,9 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
         if (uiBreakpoint != null) {
           try {
-            uiBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
+            uiBreakpoint.silentlyResetIgnoreCount(); // reset ignore count as we've hit it
           } catch (CoreException e) {
-            throw new RuntimeException(e);
+            ChromiumDebugPlugin.log(new Exception("Failed to reset breakpoint ignore count", e));
           }
 
           uiBreakpoints.add(uiBreakpoint.getInner());
