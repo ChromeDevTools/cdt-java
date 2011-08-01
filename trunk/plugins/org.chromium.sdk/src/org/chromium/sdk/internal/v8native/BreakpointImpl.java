@@ -6,11 +6,14 @@ package org.chromium.sdk.internal.v8native;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
+import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
+import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessage;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -39,12 +42,6 @@ public class BreakpointImpl implements Breakpoint {
   private boolean isEnabled;
 
   /**
-   * The number of times the breakpoint should be ignored
-   * by the JavaScript VM until it fires.
-   */
-  private int ignoreCount;
-
-  /**
    * The breakpoint condition (plain JavaScript) that should be {@code true}
    * for the breakpoint to fire.
    */
@@ -62,11 +59,10 @@ public class BreakpointImpl implements Breakpoint {
   private volatile boolean isDirty = false;
 
   public BreakpointImpl(long id, Target target, long lineNumber,
-      boolean enabled, int ignoreCount, String condition, BreakpointManager breakpointManager) {
+      boolean enabled, String condition, BreakpointManager breakpointManager) {
     this.target = target;
     this.id = id;
     this.isEnabled = enabled;
-    this.ignoreCount = ignoreCount;
     this.condition = condition;
     this.lineNumber = lineNumber;
     this.breakpointManager = breakpointManager;
@@ -84,10 +80,10 @@ public class BreakpointImpl implements Breakpoint {
     }
     this.lineNumber = info.line();
     this.isEnabled = info.active();
-    this.ignoreCount = (int) info.ignoreCount();
     this.condition = info.condition();
   }
 
+  @Override
   public boolean isEnabled() {
     return isEnabled;
   }
@@ -97,22 +93,22 @@ public class BreakpointImpl implements Breakpoint {
     return target;
   }
 
+  @Override
   public long getId() {
     return id;
   }
 
-  public int getIgnoreCount() {
-    return ignoreCount;
-  }
-
+  @Override
   public String getCondition() {
     return condition;
   }
 
+  @Override
   public long getLineNumber() {
     return lineNumber;
   }
 
+  @Override
   public void setEnabled(boolean enabled) {
     if (this.isEnabled != enabled) {
       setDirty(true);
@@ -120,14 +116,32 @@ public class BreakpointImpl implements Breakpoint {
     this.isEnabled = enabled;
   }
 
-  public void setIgnoreCount(int ignoreCount) {
-    if (this.ignoreCount != ignoreCount) {
-      setDirty(true);
+  private RelayOk setIgnoreCount(int ignoreCount,
+      final JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback) {
+    ChangeBreakpointMessage message = new ChangeBreakpointMessage(id, ignoreCount);
+
+    V8CommandCallbackBase wrappedCallback;
+    if (callback == null) {
+      wrappedCallback = null;
+    } else {
+      wrappedCallback = new V8CommandCallbackBase() {
+        @Override
+        public void success(SuccessCommandResponse successResponse) {
+          callback.success(null);
+        }
+
+        @Override
+        public void failure(String message) {
+          callback.failure(new Exception(message));
+        }
+      };
     }
-    this.ignoreCount = ignoreCount;
+
+    DebugSession debugSession = breakpointManager.getDebugSession();
+    return debugSession.sendMessageAsync(message, true, wrappedCallback, syncCallback);
   }
 
-
+  @Override
   public void setCondition(String condition) {
     if (!eq(this.condition, condition)) {
       setDirty(true);
@@ -157,6 +171,12 @@ public class BreakpointImpl implements Breakpoint {
     }
     setDirty(false);
     return breakpointManager.changeBreakpoint(this, callback, syncCallback);
+  }
+
+  @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    JavascriptVm javascriptVm = breakpointManager.getDebugSession().getJavascriptVm();
+    return javascriptVm.getIgnoreCountBreakpointExtension();
   }
 
   private void setDirty(boolean isDirty) {
@@ -203,4 +223,26 @@ public class BreakpointImpl implements Breakpoint {
       }
     }
   }
+
+  static final IgnoreCountBreakpointExtension IGNORE_COUNT_EXTENSION =
+      new IgnoreCountBreakpointExtension() {
+    @Override
+    public RelayOk setBreakpoint(JavascriptVm javascriptVm, Breakpoint.Target target,
+        int line, int column,
+        boolean enabled, String condition, int ignoreCount,
+        JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
+      JavascriptVmImpl javascriptVmImpl = (JavascriptVmImpl) javascriptVm;
+      BreakpointManager breakpointManager =
+          javascriptVmImpl.getDebugSession().getBreakpointManager();
+      return breakpointManager.setBreakpoint(target, line, column, enabled, condition, ignoreCount,
+          callback, syncCallback);
+    }
+
+    @Override
+    public RelayOk setIgnoreCount(Breakpoint breakpoint, int ignoreCount,
+        JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback) {
+      BreakpointImpl breakpointImpl = (BreakpointImpl) breakpoint;
+      return breakpointImpl.setIgnoreCount(ignoreCount, callback, syncCallback);
+    }
+  };
 }

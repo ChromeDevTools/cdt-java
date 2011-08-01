@@ -18,6 +18,7 @@ import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.BreakpointTypeExtension.ScriptRegExpSupport;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
@@ -194,22 +195,51 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       });
 
-      return javascriptVm.setBreakpoint(
-          sdkParams.target,
-          sdkParams.line,
-          sdkParams.column,
-          uiBreakpoint.getInner().isEnabled(),
-          uiBreakpoint.getCondition(),
-          uiBreakpoint.getIgnoreCount(),
-          callback, syncCallback);
+      IgnoreCountBreakpointExtension extension = javascriptVm.getIgnoreCountBreakpointExtension();
+      if (extension == null) {
+        if (uiBreakpoint.getIgnoreCount() != Breakpoint.EMPTY_VALUE) {
+          ChromiumDebugPlugin.log(
+              new Exception("Failed to set breakpoint ignore count as it is not supported by VM"));
+        }
+        return javascriptVm.setBreakpoint(
+            sdkParams.target,
+            sdkParams.line,
+            sdkParams.column,
+            uiBreakpoint.getInner().isEnabled(),
+            uiBreakpoint.getCondition(),
+            callback, syncCallback);
+      } else {
+        return extension.setBreakpoint(
+            javascriptVm,
+            sdkParams.target,
+            sdkParams.line,
+            sdkParams.column,
+            uiBreakpoint.getInner().isEnabled(),
+            uiBreakpoint.getCondition(),
+            uiBreakpoint.getIgnoreCount(),
+            callback, syncCallback);
+      }
+
+
     }
 
     public static void updateOnRemote(Breakpoint sdkBreakpoint,
         WrappedBreakpoint uiBreakpoint) throws CoreException {
       sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
       sdkBreakpoint.setEnabled(uiBreakpoint.getInner().isEnabled());
-      sdkBreakpoint.setIgnoreCount(uiBreakpoint.getIgnoreCount());
       sdkBreakpoint.flush(null, null);
+
+      {
+        // Ignore count is a transient property and doesn't need flush.
+        IgnoreCountBreakpointExtension extension =
+            sdkBreakpoint.getIgnoreCountBreakpointExtension();
+        if (extension == null) {
+          ChromiumDebugPlugin.log(
+              new Exception("Failed to set breakpoint ignore count as it is not supported by VM"));
+        } else {
+          extension.setIgnoreCount(sdkBreakpoint, uiBreakpoint.getIgnoreCount(), null, null);
+        }
+      }
     }
 
     public static ChromiumLineBreakpoint createLocal(Breakpoint sdkBreakpoint,
@@ -220,7 +250,6 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
           debugModelId);
       uiBreakpoint.setCondition(sdkBreakpoint.getCondition());
       uiBreakpoint.setEnabled(sdkBreakpoint.isEnabled());
-      uiBreakpoint.setIgnoreCount(sdkBreakpoint.getIgnoreCount());
       WrappedBreakpoint uiBreakpointWrapper = ChromiumBreakpointAdapter.wrap(uiBreakpoint);
       ignoreList.add(uiBreakpointWrapper);
       try {

@@ -21,7 +21,6 @@ public class TestUtil {
   public static void assertBreakpointsEqual(Breakpoint bpExpected, Breakpoint bpHit) {
     Assert.assertEquals(bpExpected.getId(), bpHit.getId());
     Assert.assertEquals(bpExpected.getCondition(), bpHit.getCondition());
-    Assert.assertEquals(bpExpected.getIgnoreCount(), bpHit.getIgnoreCount());
     Assert.assertEquals(bpExpected.getTarget().accept(BREAKPOINT_TARGET_DUMPER),
         bpHit.getTarget().accept(BREAKPOINT_TARGET_DUMPER));
   }

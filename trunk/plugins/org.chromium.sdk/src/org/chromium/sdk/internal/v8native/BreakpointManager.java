@@ -33,6 +33,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.v8native.protocol.input.ListBreakpointsBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
+import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.FlagsMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.ListBreakpointsMessage;
@@ -55,14 +56,24 @@ public class BreakpointManager {
     this.debugSession = debugSession;
   }
 
+  DebugSession getDebugSession() {
+    return debugSession;
+  }
+
   public BreakpointTypeExtension getBreakpointTypeExtension() {
     return breakpointTypeExtension;
   }
 
-  public RelayOk setBreakpoint(final Breakpoint.Target target,
-      final int line, int column, final boolean enabled, final String condition,
-      final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
-      SyncCallback syncCallback) {
+  public RelayOk setBreakpoint(final Breakpoint.Target target, final int line, int column,
+      final boolean enabled, final String condition,
+      final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
+    return setBreakpoint(target, line, column, enabled, condition, Breakpoint.EMPTY_VALUE,
+        callback, syncCallback);
+  }
+
+  RelayOk setBreakpoint(final Breakpoint.Target target, final int line, int column,
+      final boolean enabled, final String condition, final int ignoreCount,
+      final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
     return debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(target, toNullableInteger(line),
             toNullableInteger(column), enabled, condition,
@@ -80,7 +91,7 @@ public class BreakpointManager {
             long id = body.breakpoint();
 
             final BreakpointImpl breakpoint =
-                new BreakpointImpl(id, target, line, enabled, ignoreCount,
+                new BreakpointImpl(id, target, line, enabled,
                     condition, BreakpointManager.this);
 
             idToBreakpoint.put(breakpoint.getId(), breakpoint);
@@ -132,8 +143,10 @@ public class BreakpointManager {
 
   public RelayOk changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback, SyncCallback syncCallback) {
+    ChangeBreakpointMessage message = new ChangeBreakpointMessage(breakpointImpl.getId(),
+        breakpointImpl.isEnabled(), breakpointImpl.getCondition());
     return debugSession.sendMessageAsync(
-        DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
+        message,
         true,
         new V8CommandCallbackBase() {
           @Override

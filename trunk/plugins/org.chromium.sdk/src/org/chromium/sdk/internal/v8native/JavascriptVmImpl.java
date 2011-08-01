@@ -10,6 +10,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -40,11 +41,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   @Override
   public RelayOk setBreakpoint(Breakpoint.Target target, int line,
-      int column, boolean enabled, String condition, int ignoreCount,
+      int column, boolean enabled, String condition,
       BreakpointCallback callback, SyncCallback syncCallback) {
     return getDebugSession().getBreakpointManager()
-        .setBreakpoint(target, line, column, enabled, condition, ignoreCount, callback,
-        syncCallback);
+        .setBreakpoint(target, line, column, enabled, condition, callback, syncCallback);
   }
 
   @Override
@@ -81,6 +81,11 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   @Override
   public BreakpointTypeExtension getBreakpointTypeExtension() {
     return getDebugSession().getBreakpointManager().getBreakpointTypeExtension();
+  }
+
+  @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    return BreakpointImpl.IGNORE_COUNT_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

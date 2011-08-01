@@ -96,7 +96,7 @@ public class Main {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     Breakpoint.Target breakpointTarget = new Breakpoint.Target.ScriptName(scriptOne.getName());
     RelayOk relayOk = tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
-        0, null, callbackSemaphore);
+        null, callbackSemaphore);
     callbackSemaphore.acquireDefault(relayOk);
 
     // First time just suspend on breakpoint and go on.
