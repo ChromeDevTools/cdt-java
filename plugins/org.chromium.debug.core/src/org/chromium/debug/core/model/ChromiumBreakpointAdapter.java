@@ -4,6 +4,10 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.Set;
+
+import org.eclipse.core.resources.IMarkerDelta;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.ILineBreakpoint;
 
@@ -21,39 +25,44 @@ public class ChromiumBreakpointAdapter implements JavaScriptBreakpointAdapter {
     ChromiumLineBreakpoint chromiumLineBreakpoint = (ChromiumLineBreakpoint) breakpoint;
     return wrap(chromiumLineBreakpoint);
   }
-  
+
   public String getModelId() {
     return VProjectWorkspaceBridge.DEBUG_MODEL_ID;
   }
-  
+
   private boolean supportsBreakpoint(IBreakpoint breakpoint) {
     return VProjectWorkspaceBridge.DEBUG_MODEL_ID.equals(breakpoint.getModelIdentifier());
   }
-  
+
   public static WrappedBreakpoint wrap(ChromiumLineBreakpoint chromiumLineBreakpoint) {
     return new WrapperImpl(chromiumLineBreakpoint);
   }
-  
+
   private static class WrapperImpl extends WrappedBreakpoint {
     private final ChromiumLineBreakpoint chromiumLineBreakpoint;
-    
+
     WrapperImpl(ChromiumLineBreakpoint chromiumLineBreakpoint) {
       this.chromiumLineBreakpoint = chromiumLineBreakpoint;
     }
-    
-    @Override
-    public ILineBreakpoint getInner() {
+
+    @Override public ILineBreakpoint getInner() {
       return chromiumLineBreakpoint;
     }
 
-    public int getIgnoreCount() {
-      return chromiumLineBreakpoint.getIgnoreCount();
+    @Override public Set<MutableProperty> getChangedProperty(IMarkerDelta delta) {
+      return chromiumLineBreakpoint.getChangedProperty(delta);
     }
-    public String getCondition() {
+
+    @Override public String getCondition() throws CoreException {
       return chromiumLineBreakpoint.getCondition();
     }
-    public void setIgnoreCount(int ignoreCount) {
-      chromiumLineBreakpoint.setIgnoreCount(ignoreCount);
+
+    @Override public IgnoreCountData getIgnoreCountData() {
+      return chromiumLineBreakpoint.getIgnoreCountData();
+    }
+
+    @Override public void setIgnoreCountData(IgnoreCountData data) throws CoreException {
+      chromiumLineBreakpoint.setIgnoreCountData(data);
     }
   }
 }
