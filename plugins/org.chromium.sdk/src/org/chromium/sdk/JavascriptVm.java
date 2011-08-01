@@ -80,28 +80,18 @@ public interface JavascriptVm {
 
   /**
    * Sets a breakpoint with the specified parameters.
-   *
-   * @param type of the breakpoint
-   * @param target of the breakpoint, depends on the {@code type} value:
-   *        <table border=1>
-   *          <tr><td>type value</td><td>target value</td></tr>
-   *          <tr><td>FUNCTION</td><td>a function expression</td></tr>
-   *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by Script#getName())</td></tr>
-   *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by Script#getId())</td></tr>
-   *        </table>
+   * @param target of the breakpoint
    * @param line in the script or function. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param column of the target start within the line. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
-   * @param ignoreCount number specifying the amount of breakpoint hits to
-   *        ignore. If none, use {@link Breakpoint#EMPTY_VALUE}
    * @param callback to invoke when the evaluation result is ready,
    *        may be {@code null}
    */
   RelayOk setBreakpoint(Breakpoint.Target target, int line, int column, boolean enabled,
-      String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
+      String condition, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
    * Tries to suspend VM. If successful, {@link DebugEventListener#suspended(DebugContext)}
@@ -170,4 +160,10 @@ public interface JavascriptVm {
    * @return extension to standard breakpoint target types
    */
   BreakpointTypeExtension getBreakpointTypeExtension();
+
+  /**
+   * @return extension that supports ignore count property of breakpoint
+   *     or null if unsupported by VM
+   */
+  IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension();
 }

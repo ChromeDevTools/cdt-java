@@ -249,7 +249,7 @@ public class FixtureChromeStub implements ChromeStub {
 
       @Override
       public RelayOk setBreakpoint(Breakpoint.Target target, int line, int position,
-          boolean enabled, String condition, int ignoreCount, BreakpointCallback callback,
+          boolean enabled, String condition, BreakpointCallback callback,
           SyncCallback syncCallback) {
         throw new UnsupportedOperationException();
       }
@@ -322,7 +322,6 @@ public class FixtureChromeStub implements ChromeStub {
           Breakpoint.Target target = new Breakpoint.Target.ScriptName("abcde.js");
           breakpoints.put(id, new FakeBreakpoint(id, target,
               JsonUtil.getAsBoolean(args, "enabled"),
-              JsonUtil.getAsLong(args, "ignoreCount").intValue(),
               JsonUtil.getAsString(args, "condition")));
           JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
           jsonBody.put("type", "script");
@@ -651,10 +650,8 @@ public class FixtureChromeStub implements ChromeStub {
   }
 
   private static class FakeBreakpoint extends BreakpointImpl {
-    public FakeBreakpoint(long id, Target target, boolean enabled, int ignoreCount,
-        String condition) {
-      super(id, target, 15, enabled, ignoreCount, condition,
-          NULL_BREAKPOINT_MANAGER);
+    public FakeBreakpoint(long id, Target target, boolean enabled, String condition) {
+      super(id, target, 15, enabled, condition, NULL_BREAKPOINT_MANAGER);
     }
   }
 

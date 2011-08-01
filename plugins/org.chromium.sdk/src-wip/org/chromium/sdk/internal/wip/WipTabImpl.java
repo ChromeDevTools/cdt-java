@@ -17,6 +17,7 @@ import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
@@ -227,6 +228,11 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    return WipBreakpointImpl.getIgnoreCountBreakpointExtensionImpl();
+  }
+
+  @Override
   public void getScripts(final ScriptsCallback callback)
       throws MethodIsBlockingException {
 
@@ -253,10 +259,10 @@ public class WipTabImpl implements BrowserTab {
 
   @Override
   public RelayOk setBreakpoint(Breakpoint.Target target, int line, int column,
-      boolean enabled, String condition, int ignoreCount,
+      boolean enabled, String condition,
       BreakpointCallback callback, SyncCallback syncCallback) {
     return breakpointManager.setBreakpoint(target, line, column, enabled, condition,
-        ignoreCount, callback, syncCallback);
+        callback, syncCallback);
   }
 
   @Override

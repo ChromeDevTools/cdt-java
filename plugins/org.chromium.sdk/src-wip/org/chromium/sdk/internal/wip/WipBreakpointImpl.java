@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
@@ -113,17 +114,6 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   @Override
-  public int getIgnoreCount() {
-    // TODO: support.
-    return 0;
-  }
-
-  @Override
-  public void setIgnoreCount(int ignoreCount) {
-    // TODO: support.
-  }
-
-  @Override
   public String getCondition() {
     return condition;
   }
@@ -136,6 +126,17 @@ public class WipBreakpointImpl implements Breakpoint {
     this.condition = condition;
     isDirty = true;
   }
+
+  @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    return getIgnoreCountBreakpointExtensionImpl();
+  }
+
+  public static IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtensionImpl() {
+    // TODO(peter.rybin): implement when protocol supports.
+    return null;
+  }
+
 
   void setRemoteData(String protocolId, Collection<ActualLocation> actualLocations) {
     this.protocolId = protocolId;
