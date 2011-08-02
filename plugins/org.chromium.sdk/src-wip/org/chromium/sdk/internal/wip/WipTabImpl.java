@@ -7,13 +7,11 @@ package org.chromium.sdk.internal.wip;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
-import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.EvaluateWithContextExtension;
@@ -36,6 +34,8 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptio
 import org.chromium.sdk.util.RelaySyncCallback;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
+import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.wip.WipBrowserTab;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -43,7 +43,7 @@ import org.json.simple.parser.ParseException;
  * {@link BrowserTab} implementation that attaches to remote tab via WebInspector
  * protocol (WIP).
  */
-public class WipTabImpl implements BrowserTab {
+public class WipTabImpl implements WipBrowserTab, JavascriptVm {
   private static final Logger LOGGER = Logger.getLogger(WipTabImpl.class.getName());
 
   private final WsConnection socket;
@@ -294,8 +294,13 @@ public class WipTabImpl implements BrowserTab {
   }
 
   @Override
-  public Browser getBrowser() {
+  public WipBrowser getBrowser() {
     return browserImpl;
+  }
+
+  @Override
+  public JavascriptVm getJavascriptVm() {
+    return this;
   }
 
   @Override
