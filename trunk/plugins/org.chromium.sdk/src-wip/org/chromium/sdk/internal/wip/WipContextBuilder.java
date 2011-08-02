@@ -143,7 +143,8 @@ class WipContextBuilder {
           String groupId = valueLoader.getObjectGroupId();
 
           boolean doNotPauseOnExceptions = true;
-          return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions);
+          return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions,
+              null, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
           return data.result();

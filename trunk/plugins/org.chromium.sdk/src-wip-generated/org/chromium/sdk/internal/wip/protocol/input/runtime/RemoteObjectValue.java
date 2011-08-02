@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92122
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -27,7 +27,7 @@ public interface RemoteObjectValue {
   String className();
 
   /**
-   Remote object value (in case of primitive values).
+   Remote object value (in case of primitive values or JSON values if it was requested).
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   Object value();
