@@ -29,6 +29,6 @@ public class WipLaunchType extends LaunchTypeBase {
     }
 
     return JavascriptVmEmbedderFactory.connectToWipBrowser(host, port, consoleFactory,
-        consoleFactory, DialogBasedTabSelector.INSTANCE);
+        consoleFactory, DialogBasedTabSelector.WIP_INSTANCE);
   }
 }

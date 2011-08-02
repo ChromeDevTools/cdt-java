@@ -14,7 +14,6 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +21,11 @@ import java.util.Map;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.ConnectionLogger.Factory;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
@@ -36,9 +33,10 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.util.ByteToCharConverter;
+import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
 import org.chromium.sdk.wip.WipBrowserFactory;
 
 /**
@@ -62,16 +60,20 @@ public class Main {
 
     stateManager.setDefaultReceiver(EXPECT_NOTHING_VISITOR);
 
-    BrowserTab tab;
+    ConnectionLogger.Factory connectionLoggerFactory = new ConnectionLogger.Factory() {
+      public ConnectionLogger newConnectionLogger() {
+        return new SystemOutConnectionLogger();
+      }
+    };
+    JavascriptVm vm;
     try {
-      tab = connect(address, stateManager, commandLineArgs.getProtocolType());
+      vm = commandLineArgs.getProtocolType().connect(address, stateManager,
+          connectionLoggerFactory);
     } catch (IOException e) {
-      throw new SmokeException("Failed to connect", e);
-    } catch (UnsupportedVersionException e) {
       throw new SmokeException("Failed to connect", e);
     }
 
-    Collection<Script> scripts = loadScripts(tab);
+    Collection<Script> scripts = loadScripts(vm);
 
     // Finding script1.js script.
     Script scriptOne;
@@ -95,7 +97,7 @@ public class Main {
     // Setting a breakpoint.
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     Breakpoint.Target breakpointTarget = new Breakpoint.Target.ScriptName(scriptOne.getName());
-    RelayOk relayOk = tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
+    RelayOk relayOk = vm.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
         null, callbackSemaphore);
     callbackSemaphore.acquireDefault(relayOk);
 
@@ -167,7 +169,7 @@ public class Main {
     }
 
     stateManager.setDefaultReceiver(IGNORE_ALL_VISITOR);
-    tab.detach();
+    vm.detach();
 
     System.out.println("Test passed OK");
   }
@@ -247,16 +249,36 @@ public class Main {
     // Old protocol enabled by --remote-shell-port parameter
     SHELL {
       @Override
-      public Browser connect(InetSocketAddress address,
-          Factory connectionLoggerFactory) {
-        return BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+      public JavascriptVm connect(InetSocketAddress address,
+          StateManager stateManager, Factory connectionLoggerFactory)
+          throws SmokeException, IOException {
+
+        Browser browser = BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+
+        Browser.TabFetcher tabFetcher;
+        try {
+          tabFetcher = browser.createTabFetcher();
+        } catch (UnsupportedVersionException e) {
+          throw new SmokeException(e);
+        }
+        List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
+        if (tabs.isEmpty()) {
+          throw new SmokeException("No tabs");
+        }
+        Browser.TabConnector firstTab = tabs.get(0);
+        String url = firstTab.getUrl();
+        if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
+          throw new SmokeException("Unexpected URL: " + url);
+        }
+        return firstTab.attach(stateManager.getTabListener());
       }
     },
     // WIP (new) protocol enabled by --remote-debugging-port parameter
     DEBUGGING {
       @Override
-      public Browser connect(InetSocketAddress address,
-          final Factory connectionLoggerFactory) {
+      public JavascriptVm connect(InetSocketAddress address,
+          StateManager stateManager, final Factory connectionLoggerFactory)
+          throws SmokeException, IOException {
         WipBrowserFactory.LoggerFactory wipLoggerFactory = new WipBrowserFactory.LoggerFactory() {
           @Override public ConnectionLogger newBrowserConnectionLogger() {
             throw new UnsupportedOperationException();
@@ -266,11 +288,28 @@ public class Main {
             return connectionLoggerFactory.newConnectionLogger();
           }
         };
-        return WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
+        WipBrowser browser = WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
+
+        List<? extends WipTabConnector> tabs;
+        try {
+          tabs = browser.getTabs();
+        } catch (IOException e) {
+          throw new SmokeException(e);
+        }
+        if (tabs.isEmpty()) {
+          throw new SmokeException("No tabs");
+        }
+        WipBrowser.WipTabConnector firstTab = tabs.get(0);
+        String url = firstTab.getUrl();
+        if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
+          throw new SmokeException("Unexpected URL: " + url);
+        }
+        return firstTab.attach(stateManager.getTabListener()).getJavascriptVm();
       }
     };
 
-    public abstract Browser connect(InetSocketAddress address, Factory connectionLoggerFactory);
+    public abstract JavascriptVm connect(InetSocketAddress address, StateManager stateManager,
+        Factory connectionLoggerFactory) throws SmokeException, IOException;
   }
 
   private static JsVariable getVariable(JsScope scope, String name) throws SmokeException {
@@ -344,29 +383,6 @@ public class Main {
     };
     javascriptVm.getScripts(scriptsCallback);
     return result.get();
-  }
-
-  private static BrowserTab connect(InetSocketAddress address, StateManager stateManager,
-      ProtocolType protocolType) throws SmokeException, IOException, UnsupportedVersionException {
-    ConnectionLogger.Factory connectionLoggerFactory = new ConnectionLogger.Factory() {
-      public ConnectionLogger newConnectionLogger() {
-        return new SystemOutConnectionLogger();
-      }
-    };
-
-    Browser browser = protocolType.connect(address, connectionLoggerFactory);
-
-    Browser.TabFetcher tabFetcher = browser.createTabFetcher();
-    List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
-    if (tabs.isEmpty()) {
-      throw new SmokeException("No tabs");
-    }
-    Browser.TabConnector firstTab = tabs.get(0);
-    String url = firstTab.getUrl();
-    if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
-      throw new SmokeException("Unexpected URL: " + url);
-    }
-    return firstTab.attach(stateManager.getTabListener());
   }
 
   /**
