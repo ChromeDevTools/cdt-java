@@ -6,7 +6,6 @@ package org.chromium.sdk.internal.wip;
 
 import java.net.InetSocketAddress;
 
-import org.chromium.sdk.Browser;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
 

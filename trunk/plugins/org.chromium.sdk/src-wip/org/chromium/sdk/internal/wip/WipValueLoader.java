@@ -19,7 +19,6 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.wip.WipContextBuilder.WipDebugContextImpl;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
@@ -35,12 +34,12 @@ import org.chromium.sdk.util.RelaySyncCallback;
  * permanent object ids (same object reported under the same id within a debug context).
  */
 public class WipValueLoader implements RemoteValueMapping {
-  private final WipDebugContextImpl debugContextImpl;
+  private final WipTabImpl tabImpl;
   private final AtomicInteger cacheStateRef = new AtomicInteger(1);
   private final WipValueBuilder valueBuilder = new WipValueBuilder(this);
 
-  public WipValueLoader(WipDebugContextImpl debugContextImpl) {
-    this.debugContextImpl = debugContextImpl;
+  public WipValueLoader(WipTabImpl tabImpl) {
+    this.tabImpl = tabImpl;
   }
 
   @Override
@@ -50,6 +49,10 @@ public class WipValueLoader implements RemoteValueMapping {
 
   WipValueBuilder getValueBuilder() {
     return valueBuilder;
+  }
+
+  WipTabImpl getTabImpl() {
+    return tabImpl;
   }
 
   /**
@@ -264,10 +267,6 @@ public class WipValueLoader implements RemoteValueMapping {
     }
   }
 
-  public String getObjectGroupId() {
-    return null;
-  }
-
   /**
    * Response is either data or error message. We wrap whatever it is for postprocessing
    * that is conducted off Dispatch thread.
@@ -314,7 +313,7 @@ public class WipValueLoader implements RemoteValueMapping {
 
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     RelayOk relayOk =
-        debugContextImpl.getCommandProcessor().send(request, callback, callbackSemaphore);
+        tabImpl.getCommandProcessor().send(request, callback, callbackSemaphore);
     callbackSemaphore.acquireDefault(relayOk);
 
     return result[0];
