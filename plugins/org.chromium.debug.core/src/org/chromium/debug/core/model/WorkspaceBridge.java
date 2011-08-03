@@ -109,7 +109,7 @@ public interface WorkspaceBridge {
     /**
      * @return SDK breakpoint that corresponds to UI breakpoint or null if none
      */
-    Breakpoint getSdkBreakpoint(WrappedBreakpoint uiBreakpoint);
+    Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint uiBreakpoint);
 
     /**
      * Registers hit breakpoints and returns their Eclipse counterpart objects.

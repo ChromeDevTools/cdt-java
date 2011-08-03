@@ -5,6 +5,7 @@
 package org.chromium.debug.core.model;
 
 import static org.chromium.sdk.util.BasicUtil.getSafe;
+import static org.chromium.sdk.util.BasicUtil.removeSafe;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -92,7 +93,8 @@ public class BreakpointSynchronizer {
     /**
      * Create breakpoint on remote VM (asynchronously) and link it to uiBreakpoint.
      */
-    RelayOk createBreakpointOnRemote(WrappedBreakpoint uiBreakpoint, VmResourceRef vmResourceRef,
+    RelayOk createBreakpointOnRemote(ChromiumLineBreakpoint uiBreakpoint,
+        VmResourceRef vmResourceRef,
         CreateCallback createCallback, SyncCallback syncCallback) throws CoreException;
 
     interface CreateCallback {
@@ -129,7 +131,7 @@ public class BreakpointSynchronizer {
     // Collect the remote breakpoints.
     Collection<? extends Breakpoint> sdkBreakpoints = readSdkBreakpoints(javascriptVm);
     // Collect all local breakpoints.
-    Set<WrappedBreakpoint> uiBreakpoints = getUiBreakpoints();
+    Set<ChromiumLineBreakpoint> uiBreakpoints = getUiBreakpoints();
 
     List<Breakpoint> sdkBreakpoints2 = new ArrayList<Breakpoint>(sdkBreakpoints.size());
 
@@ -139,19 +141,19 @@ public class BreakpointSynchronizer {
 
     // Throw away all already linked breakpoints and put remaining into sdkBreakpoints2 list.
     for (Breakpoint sdkBreakpoint : sdkBreakpoints) {
-      WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
+      ChromiumLineBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
       if (uiBreakpoint == null) {
         // No mapping. Schedule for further processing.
         sdkBreakpoints2.add(sdkBreakpoint);
       } else {
         // There is a live mapping. This set should also contain this breakpoint.
-        uiBreakpoints.remove(uiBreakpoint);
+        removeSafe(uiBreakpoints, uiBreakpoint);
         statusBuilder.getReportBuilder().increment(ReportBuilder.Property.LINKED);
       }
     }
 
     // Sort all breakpoints by (script_name, line_number).
-    SortedBreakpoints<WrappedBreakpoint> sortedUiBreakpoints =
+    SortedBreakpoints<ChromiumLineBreakpoint> sortedUiBreakpoints =
         sortBreakpoints(uiBreakpoints, uiBreakpointHandler);
     SortedBreakpoints<Breakpoint> sortedSdkBreakpoints =
         sortBreakpoints(sdkBreakpoints2, sdkBreakpointHandler);
@@ -163,8 +165,8 @@ public class BreakpointSynchronizer {
 
     List<Breakpoint> sdkBreakpointsToDelete;
     List<Breakpoint> sdkBreakpointsToCreate;
-    List<WrappedBreakpoint> uiBreakpointsToDelete;
-    List<WrappedBreakpoint> uiBreakpointsToCreate;
+    List<ChromiumLineBreakpoint> uiBreakpointsToDelete;
+    List<ChromiumLineBreakpoint> uiBreakpointsToCreate;
 
     // Plan actions for all breakpoints without pair.
     if (direction == Direction.RESET_REMOTE) {
@@ -190,7 +192,7 @@ public class BreakpointSynchronizer {
   }
 
   private void deteleBreakpoints(List<Breakpoint> sdkBreakpointsToDelete,
-      List<WrappedBreakpoint> uiBreakpointsToDelete, final StatusBuilder statusBuilder) {
+      List<ChromiumLineBreakpoint> uiBreakpointsToDelete, final StatusBuilder statusBuilder) {
     for (Breakpoint sdkBreakpoint : sdkBreakpointsToDelete) {
       final PlannedTaskHelper deleteTaskHelper = new PlannedTaskHelper(statusBuilder);
       JavascriptVm.BreakpointCallback callback = new JavascriptVm.BreakpointCallback() {
@@ -204,11 +206,11 @@ public class BreakpointSynchronizer {
       RelayOk relayOk = sdkBreakpoint.clear(callback, deleteTaskHelper);
       deleteTaskHelper.registerSelf(relayOk);
     }
-    for (WrappedBreakpoint uiBreakpoint : uiBreakpointsToDelete) {
+    for (ChromiumLineBreakpoint uiBreakpoint : uiBreakpointsToDelete) {
       ChromiumLineBreakpoint.getIgnoreList().add(uiBreakpoint);
       try {
         try {
-          uiBreakpoint.getInner().delete();
+          uiBreakpoint.delete();
         } catch (CoreException e) {
           throw new RuntimeException(e);
         }
@@ -220,7 +222,7 @@ public class BreakpointSynchronizer {
   }
 
   private void createBreakpoints(List<Breakpoint> sdkBreakpointsToCreate,
-      List<WrappedBreakpoint> uiBreakpointsToCreate, final StatusBuilder statusBuilder) {
+      List<ChromiumLineBreakpoint> uiBreakpointsToCreate, final StatusBuilder statusBuilder) {
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
     for (Breakpoint sdkBreakpoint : sdkBreakpointsToCreate) {
       Object sourceElement = sourceDirector.getSourceElement(sdkBreakpoint);
@@ -233,18 +235,17 @@ public class BreakpointSynchronizer {
       // We do not actually support working files for scripts with offset.
       int script_line_offset = 0;
       IFile resource = (IFile) sourceElement;
-      WrappedBreakpoint uiBreakpoint;
+      ChromiumLineBreakpoint uiBreakpoint;
       try {
-        ChromiumLineBreakpoint uiBreakpointInner = ChromiumLineBreakpoint.Helper.createLocal(
+        uiBreakpoint = ChromiumLineBreakpoint.Helper.createLocal(
             sdkBreakpoint, breakpointManager, resource, script_line_offset, debugModelId);
-        uiBreakpoint = ChromiumBreakpointAdapter.wrap(uiBreakpointInner);
         breakpointInTargetMap.add(sdkBreakpoint, uiBreakpoint);
       } catch (CoreException e) {
         throw new RuntimeException(e);
       }
       statusBuilder.getReportBuilder().increment(ReportBuilder.Property.CREATED_LOCALLY);
     }
-    for (WrappedBreakpoint uiBreakpoint : uiBreakpointsToCreate) {
+    for (ChromiumLineBreakpoint uiBreakpoint : uiBreakpointsToCreate) {
       VmResourceRef vmResourceRef = uiBreakpointHandler.getVmResourceRef(uiBreakpoint);
       if (vmResourceRef == null) {
         // Actually we should not get here, because getScript call succeeded before.
@@ -270,9 +271,9 @@ public class BreakpointSynchronizer {
     }
   }
 
-  private static class BreakpointMerger extends Merger<WrappedBreakpoint, Breakpoint> {
+  private static class BreakpointMerger extends Merger<ChromiumLineBreakpoint, Breakpoint> {
     private final Direction direction;
-    private final List<WrappedBreakpoint> missingUi = new ArrayList<WrappedBreakpoint>();
+    private final List<ChromiumLineBreakpoint> missingUi = new ArrayList<ChromiumLineBreakpoint>();
     private final List<Breakpoint> missingSdk = new ArrayList<Breakpoint>();
     private final BreakpointMap.InTargetMap breakpointMap;
 
@@ -281,7 +282,7 @@ public class BreakpointSynchronizer {
       this.breakpointMap = breakpointMap;
     }
     @Override
-    void both(WrappedBreakpoint v1, Breakpoint v2) {
+    void both(ChromiumLineBreakpoint v1, Breakpoint v2) {
       if (direction == Direction.MERGE) {
         breakpointMap.add(v2, v1);
       } else {
@@ -290,14 +291,14 @@ public class BreakpointSynchronizer {
       }
     }
     @Override
-    void onlyFirst(WrappedBreakpoint v1) {
+    void onlyFirst(ChromiumLineBreakpoint v1) {
       missingUi.add(v1);
     }
     @Override
     void onlySecond(Breakpoint v2) {
       missingSdk.add(v2);
     }
-    List<WrappedBreakpoint> getMissingUi() {
+    List<ChromiumLineBreakpoint> getMissingUi() {
       return missingUi;
     }
     List<Breakpoint> getMissingSdk() {
@@ -478,22 +479,22 @@ public class BreakpointSynchronizer {
     abstract long getLineNumber(B breakpoint);
   }
 
-  private final PropertyHandler<WrappedBreakpoint> uiBreakpointHandler =
-      new PropertyHandler<WrappedBreakpoint>() {
+  private final PropertyHandler<ChromiumLineBreakpoint> uiBreakpointHandler =
+      new PropertyHandler<ChromiumLineBreakpoint>() {
       @Override
-    long getLineNumber(WrappedBreakpoint chromiumLineBreakpoint) {
+    long getLineNumber(ChromiumLineBreakpoint chromiumLineBreakpoint) {
       int lineNumber;
       try {
         // TODO(peter.rybin): Consider supporting inline scripts here.
-        return chromiumLineBreakpoint.getInner().getLineNumber() - 1;
+        return chromiumLineBreakpoint.getLineNumber() - 1;
       } catch (CoreException e) {
         throw new RuntimeException(e);
       }
     }
 
     @Override
-    VmResourceRef getVmResourceRef(WrappedBreakpoint chromiumLineBreakpoint) {
-      IMarker marker = chromiumLineBreakpoint.getInner().getMarker();
+    VmResourceRef getVmResourceRef(ChromiumLineBreakpoint chromiumLineBreakpoint) {
+      IMarker marker = chromiumLineBreakpoint.getMarker();
       if (marker == null) {
         return null;
       }
@@ -572,7 +573,7 @@ public class BreakpointSynchronizer {
       if (vmResourceRef == null) {
         continue;
       }
-      Map<Long, B> subMap = result.get(vmResourceRef);
+      Map<Long, B> subMap = getSafe(result, vmResourceRef);
       if (subMap == null) {
         subMap = new HashMap<Long, B>(3);
         result.put(vmResourceRef, subMap);
@@ -600,7 +601,7 @@ public class BreakpointSynchronizer {
   private static <K, V1, V2> void mergeMaps(Map<K, V1> map1, Map<K, V2> map2,
       Merger<V1, V2> merger) {
     for (Map.Entry<K, V1> en : map1.entrySet()) {
-      V2 v2 = map2.remove(en.getKey());
+      V2 v2 = removeSafe(map2, en.getKey());
       if (v2 == null) {
         merger.onlyFirst(en.getValue());
       } else {
@@ -667,20 +668,18 @@ public class BreakpointSynchronizer {
   }
 
   // We need this method to return Set for future purposes.
-  private Set<WrappedBreakpoint> getUiBreakpoints() {
+  private Set<ChromiumLineBreakpoint> getUiBreakpoints() {
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
-    Set<WrappedBreakpoint> result = new HashSet<WrappedBreakpoint>();
+    Set<ChromiumLineBreakpoint> result = new HashSet<ChromiumLineBreakpoint>();
 
-    BreakpointWrapManager wrapManager = ChromiumDebugPlugin.getDefault().getBreakpointWrapManager();
-
-    for (JavaScriptBreakpointAdapter adapter : wrapManager.getAdapters()) {
-      for (IBreakpoint breakpoint : breakpointManager.getBreakpoints(adapter.getModelId())) {
-        WrappedBreakpoint breakpointWrapper = adapter.tryWrapBreakpoint(breakpoint);
-        if (breakpointWrapper == null) {
-          continue;
-        }
-        result.add(breakpointWrapper);
+    for (IBreakpoint breakpoint :
+        breakpointManager.getBreakpoints(VProjectWorkspaceBridge.DEBUG_MODEL_ID)) {
+      ChromiumLineBreakpoint chromiumLineBreakpoint =
+          ChromiumBreakpointAdapter.tryCastBreakpoint(breakpoint);
+      if (chromiumLineBreakpoint == null) {
+        continue;
       }
+      result.add(chromiumLineBreakpoint);
     }
     return result;
   }

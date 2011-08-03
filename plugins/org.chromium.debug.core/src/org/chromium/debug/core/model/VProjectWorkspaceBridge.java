@@ -17,7 +17,7 @@ import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
 import org.chromium.debug.core.model.VmResource.Metadata;
-import org.chromium.debug.core.model.WrappedBreakpoint.MutableProperty;
+import org.chromium.debug.core.model.ChromiumLineBreakpoint.MutableProperty;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Breakpoint;
@@ -222,35 +222,26 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     @Override
-    public Breakpoint getSdkBreakpoint(WrappedBreakpoint wrappedBreakpoint) {
+    public Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint wrappedBreakpoint) {
       return breakpointInTargetMap.getSdkBreakpoint(wrappedBreakpoint);
     }
 
-    public WrappedBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
+    public ChromiumLineBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
       if (connectedTargetData.getDebugTarget().isDisconnected()) {
         return null;
       }
-      return ChromiumDebugPlugin.getDefault().getBreakpointWrapManager().wrap(breakpoint);
+      return ChromiumBreakpointAdapter.tryCastBreakpoint(breakpoint);
     }
 
     public void breakpointAdded(IBreakpoint breakpoint) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
       if (ChromiumLineBreakpoint.getIgnoreList().contains(lineBreakpoint)) {
         return;
       }
-      boolean enabled;
-      try {
-        enabled = lineBreakpoint.getInner().isEnabled();
-      } catch (CoreException e) {
-        throw new RuntimeException(e);
-      }
-      if (!enabled) {
-        return;
-      }
-      IFile file = (IFile) lineBreakpoint.getInner().getMarker().getResource();
+      IFile file = (IFile) lineBreakpoint.getMarker().getResource();
       VmResourceRef vmResourceRef;
       try {
         vmResourceRef = findVmResourceRefFromWorkspaceFile(file);
@@ -273,7 +264,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
-    public RelayOk createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
+    public RelayOk createBreakpointOnRemote(final ChromiumLineBreakpoint lineBreakpoint,
         final VmResourceRef vmResourceRef,
         final CreateCallback createCallback, SyncCallback syncCallback) throws CoreException {
       ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
@@ -297,7 +288,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -328,7 +319,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -379,7 +370,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       Collection<IBreakpoint> uiBreakpoints = new ArrayList<IBreakpoint>(breakpointsHit.size());
 
       for (Breakpoint sdkBreakpoint : breakpointsHit) {
-        WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
+        ChromiumLineBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
         if (uiBreakpoint != null) {
           try {
             uiBreakpoint.silentlyResetIgnoreCount(); // reset ignore count as we've hit it
@@ -387,7 +378,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
             ChromiumDebugPlugin.log(new Exception("Failed to reset breakpoint ignore count", e));
           }
 
-          uiBreakpoints.add(uiBreakpoint.getInner());
+          uiBreakpoints.add(uiBreakpoint);
         }
       }
       return uiBreakpoints;

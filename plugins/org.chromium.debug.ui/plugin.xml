@@ -427,9 +427,14 @@
         class="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage"
         id="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage">
       <enabledWhen>
-        <adapt
-            type="org.chromium.debug.core.model.WrappedBreakpoint">
-        </adapt>
+        <or>
+          <instanceof
+              value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </instanceof>
+          <adapt
+              type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </adapt>
+        </or>
       </enabledWhen>
     </page>
     <page

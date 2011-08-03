@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
-import org.chromium.debug.core.model.WrappedBreakpoint.IgnoreCountData;
+import org.chromium.debug.core.model.IgnoreCountData;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.eclipse.core.resources.IWorkspaceRunnable;
