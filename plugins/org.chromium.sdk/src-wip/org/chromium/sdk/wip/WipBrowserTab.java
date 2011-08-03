@@ -4,8 +4,6 @@
 
 package org.chromium.sdk.wip;
 
-import org.chromium.sdk.JavascriptVm;
-
 /**
  * An abstraction of a remote Browser tab. Each browser tab contains
  * a Javascript Virtual Machine.
@@ -19,7 +17,7 @@ public interface WipBrowserTab {
   /**
    * @return JavaScript VM representation of this tab
    */
-  JavascriptVm getJavascriptVm();
+  WipJavascriptVm getJavascriptVm();
 
   /**
    * @return a URL of the corresponding browser tab

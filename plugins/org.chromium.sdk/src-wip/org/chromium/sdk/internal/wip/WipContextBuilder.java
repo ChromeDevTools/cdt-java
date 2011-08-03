@@ -39,7 +39,6 @@ import org.chromium.sdk.internal.v8native.JsEvaluateContextBase;
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
@@ -121,7 +120,7 @@ class WipContextBuilder {
   }
 
   class WipDebugContextImpl implements DebugContext {
-    private final WipValueLoader valueLoader = new WipValueLoader(this);
+    private final WipValueLoader valueLoader = new WipValueLoader(tabImpl);
     private volatile List<CallFrameImpl> frames = null;
     private final ExceptionData exceptionData;
     private final AtomicReference<CloseRequest> closeRequest =
@@ -140,7 +139,7 @@ class WipContextBuilder {
       }
       globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
         @Override protected EvaluateParams createRequestParams(String expression) {
-          String groupId = valueLoader.getObjectGroupId();
+          String groupId = null;
 
           boolean doNotPauseOnExceptions = true;
           return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions,
@@ -390,7 +389,7 @@ class WipContextBuilder {
       private final WipEvaluateContextImpl<?,?> evaluateContext =
           new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
         @Override protected EvaluateOnCallFrameParams createRequestParams(String expression) {
-          String groupId = valueLoader.getObjectGroupId();
+          String groupId = null;
           return new EvaluateOnCallFrameParams(id, expression, groupId, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {

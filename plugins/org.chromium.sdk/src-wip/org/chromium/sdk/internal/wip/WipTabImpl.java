@@ -34,8 +34,10 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptio
 import org.chromium.sdk.util.RelaySyncCallback;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
+import org.chromium.sdk.wip.PermanentRemoteValueMapping;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserTab;
+import org.chromium.sdk.wip.WipJavascriptVm;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -43,7 +45,7 @@ import org.json.simple.parser.ParseException;
  * {@link BrowserTab} implementation that attaches to remote tab via WebInspector
  * protocol (WIP).
  */
-public class WipTabImpl implements WipBrowserTab, JavascriptVm {
+public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   private static final Logger LOGGER = Logger.getLogger(WipTabImpl.class.getName());
 
   private final WsConnection socket;
@@ -151,6 +153,11 @@ public class WipTabImpl implements WipBrowserTab, JavascriptVm {
   @Override
   public boolean isAttached() {
     return !closeSignalRelay.isSignalled();
+  }
+
+  @Override
+  public PermanentRemoteValueMapping createPermanentValueMapping(String id) {
+    return new PermanentRemoteValueMappingImpl(this, id);
   }
 
   @Override
@@ -299,7 +306,7 @@ public class WipTabImpl implements WipBrowserTab, JavascriptVm {
   }
 
   @Override
-  public JavascriptVm getJavascriptVm() {
+  public WipJavascriptVm getJavascriptVm() {
     return this;
   }
 
