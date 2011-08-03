@@ -13,13 +13,11 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import org.chromium.debug.core.model.BreakpointMap;
-import org.chromium.debug.core.model.BreakpointWrapManager;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
-import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.ConnectedTargetData;
+import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.VmResource;
-import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.sdk.BrowserFactory;
 import org.eclipse.core.resources.IFile;
@@ -44,8 +42,6 @@ public class ChromiumDebugPlugin extends Plugin {
 
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
-
-  private BreakpointWrapManager breakpointWrapManager = null;
 
   private final BreakpointMap breakpointMap = new BreakpointMap();
 
@@ -107,13 +103,6 @@ public class ChromiumDebugPlugin extends Plugin {
       result.add(new ScriptTargetMapping(localFile, resources, targetData));
     }
     return result;
-  }
-
-  public synchronized BreakpointWrapManager getBreakpointWrapManager() {
-    if (breakpointWrapManager == null) {
-      breakpointWrapManager = new BreakpointWrapManager();
-    }
-    return breakpointWrapManager;
   }
 
   public static boolean isDebug() {

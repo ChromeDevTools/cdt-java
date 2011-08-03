@@ -9,13 +9,7 @@
 
 <plugin>
    <extension
-         point="org.chromium.debug.core.model_JavaScriptBreakpointAdapter">
-      <breakpointAdapter class="org.chromium.debug.jsdtbridge.JsdtBreakpointAdapter"/>
-   </extension>
-
-   <extension
          point="org.chromium.debug.core.model_JavaScriptFormatter">
       <formatter class="org.chromium.debug.jsdtbridge.JsdtFormatterBridge"/>
    </extension>
-
 </plugin>

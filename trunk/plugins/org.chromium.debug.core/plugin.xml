@@ -15,11 +15,6 @@
         adaptableType="org.eclipse.ui.texteditor.ITextEditor">
       <adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget" /> 
     </factory>
-    <factory
-        class="org.chromium.debug.core.model.BreakpointWrapManager$EclipseAdapterFactory"
-        adaptableType="org.eclipse.debug.core.model.IBreakpoint">
-      <adapter type="org.chromium.debug.core.model.WrappedBreakpoint" /> 
-    </factory>
   </extension>
   
   <extension point="org.eclipse.debug.core.breakpoints">
@@ -28,14 +23,6 @@
         name="JS Line Breakpoints"
         markerType="org.chromium.debug.core.LineBP"
         id="org.chromium.debug.core.lineBreakpoint"/>
-  </extension>
-  
-  <extension-point id="model_JavaScriptBreakpointAdapter"
-      name="org.chromium.debug.core.model.JavaScriptBreakpointAdapter"/>
-
-  <extension
-      point="org.chromium.debug.core.model_JavaScriptBreakpointAdapter">
-      <breakpointAdapter class="org.chromium.debug.core.model.ChromiumBreakpointAdapter"/>
   </extension>
 
   <!-- "id" value is relative to PLUGIN_ID -->
