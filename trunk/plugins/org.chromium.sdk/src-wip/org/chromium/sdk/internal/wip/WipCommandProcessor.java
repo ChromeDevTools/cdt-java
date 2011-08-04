@@ -12,7 +12,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener.VmStatusListener;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
@@ -35,6 +34,7 @@ import org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
+import org.chromium.sdk.util.GenericCallback;
 import org.json.simple.JSONObject;
 
 /**

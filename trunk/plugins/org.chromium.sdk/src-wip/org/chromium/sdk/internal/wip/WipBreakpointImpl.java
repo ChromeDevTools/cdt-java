@@ -14,7 +14,6 @@ import java.util.Set;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -28,6 +27,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.RemoveBreakpointParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointByUrlParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointParams;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -354,11 +354,11 @@ public class WipBreakpointImpl implements Breakpoint {
         PARAMS requestParams =
             handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
 
-        JavascriptVm.GenericCallback<DATA> wrappedCallback;
+        GenericCallback<DATA> wrappedCallback;
         if (callback == null) {
           wrappedCallback = null;
         } else {
-          wrappedCallback = new JavascriptVm.GenericCallback<DATA>() {
+          wrappedCallback = new GenericCallback<DATA>() {
             @Override
             public void success(DATA data) {
               String breakpointId = handler.getBreakpointId(data);

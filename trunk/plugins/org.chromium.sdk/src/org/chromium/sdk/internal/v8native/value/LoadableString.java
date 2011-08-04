@@ -4,10 +4,10 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -45,7 +45,7 @@ public interface LoadableString {
    * Asynchronously reloads string value from remote. A newly loaded string will be bigger,
    * but again not necessarily full.
    */
-  RelayOk reloadBigger(JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback);
+  RelayOk reloadBigger(GenericCallback<Void> callback, SyncCallback syncCallback);
 
   /**
    * A trivial implementation of {@link LoadableString} that never actually loads anything.
@@ -63,7 +63,7 @@ public interface LoadableString {
       return false;
     }
     @Override
-    public RelayOk reloadBigger(JavascriptVm.GenericCallback<Void> callback,
+    public RelayOk reloadBigger(GenericCallback<Void> callback,
         SyncCallback syncCallback) {
       if (callback != null) {
         callback.success(null);

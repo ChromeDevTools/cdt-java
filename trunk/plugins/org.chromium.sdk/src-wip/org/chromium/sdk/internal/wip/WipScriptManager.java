@@ -29,6 +29,7 @@ import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureMerger;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -58,7 +59,7 @@ class WipScriptManager {
   }
 
   // Run command in dispatch thread so that no scripts event could happen in the meantime.
-  RelayOk getScripts(final JavascriptVm.GenericCallback<Collection<Script>> callback,
+  RelayOk getScripts(final GenericCallback<Collection<Script>> callback,
       SyncCallback syncCallback) {
 
     // Async command chain here, wrap syncCallback to guaranteed calling.
@@ -175,8 +176,8 @@ class WipScriptManager {
 
     @Override
     public RelayOk start(final Callback<Boolean> operationCallback, SyncCallback syncCallback) {
-      JavascriptVm.GenericCallback<GetScriptSourceData> commandCallback =
-          new JavascriptVm.GenericCallback<GetScriptSourceData>() {
+      GenericCallback<GetScriptSourceData> commandCallback =
+          new GenericCallback<GetScriptSourceData>() {
         @Override
         public void success(GetScriptSourceData data) {
           String source = data.scriptSource();

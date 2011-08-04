@@ -7,6 +7,7 @@ package org.chromium.sdk;
 import java.util.Collection;
 
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to
@@ -111,18 +112,6 @@ public interface JavascriptVm {
    * is returned to callback. Already existing {@link Breakpoint} instances are preserved.
    */
   RelayOk listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
-
-  /**
-   * A generic callback used in operations that a remote variable value.
-   */
-  interface GenericCallback<T> {
-    /**
-     * Method is called after variable has been successfully updated.
-     * @param value holds an actual new value of variable if provided or null
-     */
-    void success(T value);
-    void failure(Exception exception);
-  }
 
   /**
    * Asynchronously enables or disables all breakpoints on remote. Parameter

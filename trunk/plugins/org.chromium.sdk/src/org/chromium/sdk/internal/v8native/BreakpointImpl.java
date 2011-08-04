@@ -14,6 +14,7 @@ import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
 import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessage;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -117,7 +118,7 @@ public class BreakpointImpl implements Breakpoint {
   }
 
   private RelayOk setIgnoreCount(int ignoreCount,
-      final JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback) {
+      final GenericCallback<Void> callback, SyncCallback syncCallback) {
     ChangeBreakpointMessage message = new ChangeBreakpointMessage(id, ignoreCount);
 
     V8CommandCallbackBase wrappedCallback;
@@ -240,7 +241,7 @@ public class BreakpointImpl implements Breakpoint {
 
     @Override
     public RelayOk setIgnoreCount(Breakpoint breakpoint, int ignoreCount,
-        JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback) {
+        GenericCallback<Void> callback, SyncCallback syncCallback) {
       BreakpointImpl breakpointImpl = (BreakpointImpl) breakpoint;
       return breakpointImpl.setIgnoreCount(ignoreCount, callback, syncCallback);
     }
