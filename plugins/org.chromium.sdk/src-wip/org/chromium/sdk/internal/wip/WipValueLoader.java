@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
@@ -26,6 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -282,8 +282,8 @@ public class WipValueLoader implements RemoteValueMapping {
 
   private LoadPropertiesResponse loadRawPropertiesSync(String objectId) {
     final LoadPropertiesResponse[] result = { null };
-    JavascriptVm.GenericCallback<GetPropertiesData> callback =
-        new JavascriptVm.GenericCallback<GetPropertiesData>() {
+    GenericCallback<GetPropertiesData> callback =
+        new GenericCallback<GetPropertiesData>() {
       @Override
       public void success(final GetPropertiesData value) {
         result[0] = new LoadPropertiesResponse() {

@@ -4,9 +4,9 @@
 
 package org.chromium.sdk.wip;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * A {@link RemoteValueMapping} that outlives suspend/resume cycle of debugger.
@@ -17,5 +17,5 @@ import org.chromium.sdk.SyncCallback;
 public interface PermanentRemoteValueMapping extends RemoteValueMapping {
   String getId();
 
-  void delete(JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback);
+  void delete(GenericCallback<Void> callback, SyncCallback syncCallback);
 }

@@ -5,6 +5,7 @@
 package org.chromium.sdk;
 
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * An extension to breakpoint API that supports 'ignore count' property.
@@ -41,5 +42,5 @@ public interface IgnoreCountBreakpointExtension {
    * @param ignoreCount the new ignored hits count to set
    */
   RelayOk setIgnoreCount(Breakpoint breakpoint, int ignoreCount,
-      JavascriptVm.GenericCallback<Void> callback, SyncCallback syncCallback);
+      GenericCallback<Void> callback, SyncCallback syncCallback);
 }

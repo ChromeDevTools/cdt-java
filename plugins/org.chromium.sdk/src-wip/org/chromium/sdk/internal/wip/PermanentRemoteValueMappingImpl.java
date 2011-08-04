@@ -4,10 +4,10 @@
 
 package org.chromium.sdk.internal.wip;
 
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.ReleaseObjectGroupParams;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.wip.PermanentRemoteValueMapping;
 
 class PermanentRemoteValueMappingImpl extends WipValueLoader

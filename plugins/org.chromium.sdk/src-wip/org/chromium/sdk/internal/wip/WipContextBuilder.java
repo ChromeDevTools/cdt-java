@@ -56,6 +56,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOutParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.LazyConstructable;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -74,7 +75,7 @@ class WipContextBuilder {
 
   // Called from Dispatch Thread.
   RelayOk updateStackTrace(List<CallFrameValue> callFrames,
-      JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+      GenericCallback<Void> callback, final SyncCallback syncCallback) {
     if (currentContext == null) {
       if (callback != null) {
         callback.success(null);
@@ -94,7 +95,7 @@ class WipContextBuilder {
     final WipDebugContextImpl context = new WipDebugContextImpl(data);
     currentContext = context;
 
-    JavascriptVm.GenericCallback<Void> callback = new JavascriptVm.GenericCallback<Void>() {
+    GenericCallback<Void> callback = new GenericCallback<Void>() {
       @Override
       public void success(Void value) {
         tabImpl.getDebugListener().getDebugEventListener().suspended(context);
@@ -156,7 +157,7 @@ class WipContextBuilder {
     }
 
     RelayOk setFrames(List<CallFrameValue> frameDataList,
-        final JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+        final GenericCallback<Void> callback, final SyncCallback syncCallback) {
       frames = new ArrayList<CallFrameImpl>(frameDataList.size());
       for (CallFrameValue frameData : frameDataList) {
         frames.add(new CallFrameImpl(frameData));
@@ -588,11 +589,11 @@ class WipContextBuilder {
         }
         PARAMS params = createRequestParams(expression);
 
-        JavascriptVm.GenericCallback<DATA> commandCallback;
+        GenericCallback<DATA> commandCallback;
         if (callback == null) {
           commandCallback = null;
         } else {
-          commandCallback = new JavascriptVm.GenericCallback<DATA>() {
+          commandCallback = new GenericCallback<DATA>() {
             @Override
             public void success(DATA data) {
 

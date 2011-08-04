@@ -19,7 +19,6 @@ import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -37,6 +36,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessag
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.FlagsMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.ListBreakpointsMessage;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 public class BreakpointManager {

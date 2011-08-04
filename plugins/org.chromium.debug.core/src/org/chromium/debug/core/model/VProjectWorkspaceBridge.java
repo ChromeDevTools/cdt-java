@@ -26,6 +26,7 @@ import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -404,8 +405,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       setBreakExceptionStateImpl(catchType, Boolean.valueOf(value));
     }
     private void setBreakExceptionStateImpl(final ExceptionCatchType catchType, Boolean value) {
-      JavascriptVm.GenericCallback<Boolean> callback =
-          new JavascriptVm.GenericCallback<Boolean>() {
+      GenericCallback<Boolean> callback =
+          new GenericCallback<Boolean>() {
             public void success(Boolean newValue) {
               breakExceptionState.put(catchType, newValue);
             }

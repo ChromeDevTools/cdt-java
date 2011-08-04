@@ -15,6 +15,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * Base implementation of JavascriptVm.

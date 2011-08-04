@@ -31,6 +31,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.PauseParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointsActiveParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptionsParams;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
@@ -245,11 +246,11 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
 
     final CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
 
-    JavascriptVm.GenericCallback<Collection<Script>> innerCallback;
+    GenericCallback<Collection<Script>> innerCallback;
     if (callback == null) {
       innerCallback = null;
     } else {
-      innerCallback = new JavascriptVm.GenericCallback<Collection<Script>>() {
+      innerCallback = new GenericCallback<Collection<Script>>() {
         @Override public void success(Collection<Script> value) {
           callback.success(value);
         }

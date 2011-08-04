@@ -17,11 +17,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.DebugSession;
@@ -40,6 +38,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
+import org.chromium.sdk.util.GenericCallback;
 import org.json.simple.JSONObject;
 
 /**
@@ -367,7 +366,7 @@ public class ValueLoaderImpl extends ValueLoader {
   }
 
   private RelayOk relookupValue(long handleId, Long maxLength,
-      final JavascriptVm.GenericCallback<ValueHandle> callback,
+      final GenericCallback<ValueHandle> callback,
       SyncCallback syncCallback) throws ContextDismissedCheckedException {
     final List<Long> ids = Collections.singletonList(handleId);
     DebuggerMessage message = new LookupMessage(ids, false, maxLength);
@@ -415,8 +414,8 @@ public class ValueLoaderImpl extends ValueLoader {
           long currentlyLoadedSize = valueRef.get().loadedSize;
           long newRequstedSize = chooseNewMaxStringLength(currentlyLoadedSize);
 
-          JavascriptVm.GenericCallback<ValueHandle> innerCallback =
-              new JavascriptVm.GenericCallback<ValueHandle>() {
+          GenericCallback<ValueHandle> innerCallback =
+              new GenericCallback<ValueHandle>() {
             @Override
             public void success(ValueHandle handle) {
               LoadedValue newLoadedValue = new LoadedValue(handle);
