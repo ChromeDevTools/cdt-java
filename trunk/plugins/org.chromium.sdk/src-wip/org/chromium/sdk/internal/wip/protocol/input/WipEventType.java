@@ -28,6 +28,6 @@ public abstract class WipEventType<T> {
     return eventType;
   }
 
-  public abstract T parse(GeneratedParserDirectory parser, JSONObject obj)
+  public abstract T parse(WipGeneratedParserRoot parser, JSONObject obj)
       throws JsonProtocolParseException;
 }
