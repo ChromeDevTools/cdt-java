@@ -75,23 +75,25 @@ class WipValueBuilder {
         ValueNameBuilder nameBuilder);
   }
 
-  private static class PrimitiveType extends ValueType {
+  private static abstract class PrimitiveType extends ValueType {
     private final JsValue.Type jsValueType;
 
     PrimitiveType(JsValue.Type jsValueType) {
       this.jsValueType = jsValueType;
     }
 
+    protected abstract String getValueString(Object rawValue);
+
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
-      final String description = valueData.description();
+      final Object rawValue = valueData.value();
       return new JsValue() {
         @Override public Type getType() {
           return jsValueType;
         }
         @Override public String getValueString() {
-          return description;
+          return PrimitiveType.this.getValueString(rawValue);
         }
         @Override public JsObject asObject() {
           return null;
@@ -106,6 +108,32 @@ class WipValueBuilder {
       };
     }
   }
+
+  private static class SingletonPrimitiveType extends PrimitiveType {
+    private final String stringValue;
+
+    SingletonPrimitiveType(Type jsValueType, String stringValue) {
+      super(jsValueType);
+      this.stringValue = stringValue;
+    }
+
+    @Override
+    protected String getValueString(Object rawValue) {
+      return stringValue;
+    }
+  }
+
+  private static class RegularPrimitiveType extends PrimitiveType {
+    RegularPrimitiveType(Type jsValueType) {
+      super(jsValueType);
+    }
+
+    @Override
+    protected String getValueString(Object rawValue) {
+      return rawValue.toString();
+    }
+  }
+
 
   private static abstract class ObjectTypeBase extends ValueType {
     private final JsValue.Type jsValueType;
@@ -447,7 +475,7 @@ class WipValueBuilder {
       // TODO: null?
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(null, objectSubtype);
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.NULL,
-          new PrimitiveType(JsValue.Type.TYPE_NULL));
+          new SingletonPrimitiveType(JsValue.Type.TYPE_NULL, "null"));
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.ARRAY, new ArrayType());
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.REGEXP, objectSubtype);
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.DATE, objectSubtype);
@@ -462,13 +490,13 @@ class WipValueBuilder {
   static {
     PROTOCOL_TYPE_TO_VALUE_TYPE = new HashMap<RemoteObjectValue.Type, ValueType>();
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.STRING,
-        new PrimitiveType(JsValue.Type.TYPE_STRING));
+        new RegularPrimitiveType(JsValue.Type.TYPE_STRING));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.BOOLEAN,
-        new PrimitiveType(JsValue.Type.TYPE_BOOLEAN));
+        new RegularPrimitiveType(JsValue.Type.TYPE_BOOLEAN));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NUMBER,
-        new PrimitiveType(JsValue.Type.TYPE_NUMBER));
+        new RegularPrimitiveType(JsValue.Type.TYPE_NUMBER));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.UNDEFINED,
-        new PrimitiveType(JsValue.Type.TYPE_UNDEFINED));
+        new SingletonPrimitiveType(JsValue.Type.TYPE_UNDEFINED, "undefined"));
 
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.OBJECT, new ObjectType());
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.FUNCTION, new FunctionType());

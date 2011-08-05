@@ -45,4 +45,9 @@ class PermanentRemoteValueMappingImpl extends WipValueLoader
     }
     getTabImpl().getCommandProcessor().send(params, callbackWrapper, syncCallback);
   }
+
+  @Override
+  String getObjectGroupId() {
+    return id;
+  }
 }

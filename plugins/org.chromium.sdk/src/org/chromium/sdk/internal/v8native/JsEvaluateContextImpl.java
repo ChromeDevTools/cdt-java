@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
@@ -118,25 +118,4 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
   protected abstract Integer getFrameIdentifier();
 
   protected abstract InternalContext getInternalContext();
-
-  public static final EvaluateWithContextExtension EVALUATE_WITH_CONTEXT_EXTENSION =
-      new EvaluateWithContextExtension() {
-        @Override
-        public void evaluateSync(JsEvaluateContext evaluateContext,
-            String expression, Map<String, String> additionalContext,
-            EvaluateCallback evaluateCallback) throws MethodIsBlockingException {
-
-          JsEvaluateContextImpl evaluateContextImpl = (JsEvaluateContextImpl) evaluateContext;
-          evaluateContextImpl.evaluateSync(expression, additionalContext, evaluateCallback);
-        }
-
-        @Override
-        public RelayOk evaluateAsync(JsEvaluateContext evaluateContext,
-            String expression, Map<String, String> additionalContext,
-            EvaluateCallback evaluateCallback, SyncCallback syncCallback) {
-          JsEvaluateContextImpl evaluateContextImpl = (JsEvaluateContextImpl) evaluateContext;
-          return evaluateContextImpl.evaluateAsync(expression, additionalContext,
-              evaluateCallback, syncCallback);
-        }
-      };
 }

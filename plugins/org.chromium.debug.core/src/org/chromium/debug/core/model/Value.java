@@ -226,6 +226,11 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         jsValueDetailIsBuilt(getJsValue(), listener);
         return;
       }
+      String objectRefId = jsObject.getRefId();
+      if (objectRefId == null) {
+        stringDetailIsBuilt("", listener);
+        return;
+      }
 
       JavascriptVm javascriptVm = getConnectedData().getJavascriptVm();
       EvaluateWithContextExtension extension = javascriptVm.getEvaluateWithContextExtension();
@@ -241,7 +246,7 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
       }
 
       Map<String, String> additionalContext =
-          Collections.singletonMap(TO_STRING_ARGUMENT, jsObject.getRefId());
+          Collections.singletonMap(TO_STRING_ARGUMENT, objectRefId);
 
       JsEvaluateContext.EvaluateCallback evaluateCallback =
           new JsEvaluateContext.EvaluateCallback() {

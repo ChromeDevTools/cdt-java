@@ -2,14 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package org.chromium.sdk.internal.v8native;
+package org.chromium.sdk.internal;
 
 import java.util.Map;
 
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 
 /**
@@ -43,4 +46,25 @@ public abstract class JsEvaluateContextBase implements JsEvaluateContext {
 
   public abstract RelayOk evaluateAsync(String expression, Map<String, String> additionalContext,
       EvaluateCallback callback, SyncCallback syncCallback);
+
+  public static final EvaluateWithContextExtension EVALUATE_WITH_CONTEXT_EXTENSION =
+      new EvaluateWithContextExtension() {
+        @Override
+        public void evaluateSync(JsEvaluateContext evaluateContext,
+            String expression, Map<String, String> additionalContext,
+            EvaluateCallback evaluateCallback) throws MethodIsBlockingException {
+
+          JsEvaluateContextBase evaluateContextBase = (JsEvaluateContextBase) evaluateContext;
+          evaluateContextBase.evaluateSync(expression, additionalContext, evaluateCallback);
+        }
+
+        @Override
+        public RelayOk evaluateAsync(JsEvaluateContext evaluateContext,
+            String expression, Map<String, String> additionalContext,
+            EvaluateCallback evaluateCallback, SyncCallback syncCallback) {
+          JsEvaluateContextBase evaluateContextBase = (JsEvaluateContextBase) evaluateContext;
+          return evaluateContextBase.evaluateAsync(expression, additionalContext,
+              evaluateCallback, syncCallback);
+        }
+      };
 }
