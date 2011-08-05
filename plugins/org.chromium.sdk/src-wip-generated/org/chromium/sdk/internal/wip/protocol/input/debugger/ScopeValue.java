@@ -1,11 +1,11 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86959
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
 /**
- Debugger call frame. Array of call frames form call stack.
+ Scope description.
  */
 @org.chromium.sdk.internal.protocolparser.JsonType
 public interface ScopeValue {
@@ -15,7 +15,7 @@ public interface ScopeValue {
   Type type();
 
   /**
-   Object representing the scope.
+   Object representing the scope. For <code>global</code> and <code>with</code> scopes it represents the actual object; for the rest of the scopes, it is artificial transient object enumerating scope variables as its properties.
    */
   org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue object();
 

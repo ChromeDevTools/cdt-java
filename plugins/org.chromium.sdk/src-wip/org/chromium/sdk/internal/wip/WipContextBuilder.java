@@ -289,7 +289,7 @@ class WipContextBuilder {
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        sourceId = frameData.location().sourceId();
+        sourceId = frameData.location().scriptId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
         scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {

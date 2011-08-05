@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/92284/trunk/Source/WebCore/inspector/Inspector.json@92284
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -14,9 +14,9 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    @param includeCommandLineAPIOpt Determines whether Command Line API should be available during the evaluation.
    @param doNotPauseOnExceptionsOpt Specifies whether evaluation should stop on exceptions. Overrides setPauseOnException state.
    @param frameIdOpt Specifies in which frame to perform evaluation.
-   @param sendResultByValueOpt Whether the result is expected to be a JSON object which should be sent by value.
+   @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
    */
-  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsOpt, String frameIdOpt, Boolean sendResultByValueOpt) {
+  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsOpt, String frameIdOpt, Boolean returnByValueOpt) {
     this.put("expression", expression);
     if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
@@ -30,8 +30,8 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
     if (frameIdOpt != null) {
       this.put("frameId", frameIdOpt);
     }
-    if (sendResultByValueOpt != null) {
-      this.put("sendResultByValue", sendResultByValueOpt);
+    if (returnByValueOpt != null) {
+      this.put("returnByValue", returnByValueOpt);
     }
   }
 

@@ -108,7 +108,7 @@ class WipScriptManager {
   }
 
   public void scriptIsReportedParsed(ScriptParsedEventData data) {
-    final String sourceID = data.sourceId();
+    final String sourceID = data.scriptId();
 
     String url = data.url();
     if (url.isEmpty()) {
