@@ -8,28 +8,32 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.EnumSet;
 
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.EnumValueCondition;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
+import org.chromium.sdk.internal.protocolparser.JsonParseMethod;
+import org.chromium.sdk.internal.protocolparser.JsonParserRoot;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCondition;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionCustom;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
 
 public class SubtypingAndAggregationTest {
   @Test
-  public void testReadNamedColor() {
+  public void testReadNamedColor() throws JsonProtocolParseException {
     String semiJson = "{'color': {'name': 'blue' }}";
-    Ball ball = parse(semiJson, Ball.class);
+    JSONObject json = createJsonObject(semiJson);
+    TestParser parser = PARSER_INSTANCE.getParser();
+    Ball ball = parser.parseBall(json);
     assertNotNull(ball);
     Color color = ball.color();
     assertNotNull(color);
@@ -40,9 +44,11 @@ public class SubtypingAndAggregationTest {
   }
 
   @Test
-  public void testReadRgb() {
+  public void testReadRgb() throws JsonProtocolParseException {
     String semiJson = "{'color': {'scheme': 'rgb', 'red': 200, 'green': 50, 'blue': 5 }}";
-    Ball ball = parse(semiJson, Ball.class);
+    JSONObject json = createJsonObject(semiJson);
+    TestParser parser = PARSER_INSTANCE.getParser();
+    Ball ball = parser.parseBall(json);
     assertNotNull(ball);
     Color color = ball.color();
     assertNotNull(color);
@@ -57,9 +63,11 @@ public class SubtypingAndAggregationTest {
   }
 
   @Test
-  public void testParseAsSubtype() {
+  public void testParseAsSubtype() throws JsonProtocolParseException {
     String semiJson = "{'scheme': 'rgb', 'red': 200, 'green': 50, 'blue': 5 }";
-    RgbColor rgbColor = parse(semiJson, RgbColor.class);
+    JSONObject json = createJsonObject(semiJson);
+    TestParser parser = PARSER_INSTANCE.getParser();
+    RgbColor rgbColor = parser.parseRgbColor(json);
     assertNotNull(rgbColor);
     assertEquals(255L, rgbColor.red() + rgbColor.green() + rgbColor.blue());
   }
@@ -67,40 +75,50 @@ public class SubtypingAndAggregationTest {
   @Test
   public void testUnknownSubtype() {
     String semiJson = "{'fish': 'chips' }";
+    JSONObject json = createJsonObject(semiJson);
+    TestParser parser = PARSER_INSTANCE.getParser();
     try {
-      parse(semiJson, Color.class);
-      assertTrue("Exception expected", false);
-    } catch (RuntimeException e) {
+      parser.parseColor(json);
+      fail("Exception expected");
+    } catch (JsonProtocolParseException e) {
       // expected
     }
   }
 
   @Test
   public void testAmbiguousSubtype() {
-    String semiJson = "{'scheme': 'rgb', 'red': 200', 'green': 50, 'blue': 5, 'name': 'black' }";
+    String semiJson = "{'scheme': 'rgb', 'red': 200, 'green': 50, 'blue': 5, 'name': 'black' }";
+    JSONObject json = createJsonObject(semiJson);
+    TestParser parser = PARSER_INSTANCE.getParser();
     try {
-      parse(semiJson, Color.class);
-      assertTrue("Exception expected", false);
-    } catch (RuntimeException e) {
+      parser.parseColor(json);
+      fail("Exception expected");
+    } catch (JsonProtocolParseException e) {
       // expected
     }
   }
 
-
-  private <T> T parse(String semiJson, Class<T> type) {
+  private static JSONObject createJsonObject(String semiJson) {
     String jsonString = semiJson.replace('\'', '"');
-    JSONObject json;
     try {
-      json = JsonUtil.jsonObjectFromJson(jsonString);
+      return JsonUtil.jsonObjectFromJson(jsonString);
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }
-    DynamicParserImpl parser = PARSER_INSTANCE.getParser();
-    try {
-      return parser.parse(json, type);
-    } catch (JsonProtocolParseException e) {
-      throw new RuntimeException(e);
-    }
+  }
+
+  @JsonParserRoot
+  public interface TestParser {
+
+    @JsonParseMethod
+    Ball parseBall(JSONObject json) throws JsonProtocolParseException;
+
+    @JsonParseMethod
+    Color parseColor(JSONObject json) throws JsonProtocolParseException;
+
+    @JsonParseMethod
+    RgbColor parseRgbColor(JSONObject json) throws JsonProtocolParseException;
+
   }
 
   @JsonType
@@ -171,5 +189,6 @@ public class SubtypingAndAggregationTest {
   static final Class<?>[] ALL_JSON_INTERFACES = { Ball.class, Color.class, SchemedColor.class,
       RgbColor.class, CmykColor.class, NamedColor.class };
 
-  private static final ParserHolder PARSER_INSTANCE = new ParserHolder(ALL_JSON_INTERFACES);
+  private static final ParserHolder<TestParser> PARSER_INSTANCE =
+      new ParserHolder<TestParser>(TestParser.class, ALL_JSON_INTERFACES);
 }

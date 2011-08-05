@@ -110,7 +110,7 @@ public class DevToolsServiceHandler implements ToolHandler {
     }
     ToolsMessage toolsResponse;
     try {
-      toolsResponse = ToolsProtocolParserAccess.get().parse(json, ToolsMessage.class);
+      toolsResponse = ToolsProtocolParserAccess.get().parseToolsMessage(json);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;

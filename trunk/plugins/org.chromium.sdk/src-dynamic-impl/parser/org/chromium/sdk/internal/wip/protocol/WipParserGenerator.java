@@ -16,6 +16,6 @@ public class WipParserGenerator extends ParserGeneratorBase {
 
   public static GenerateConfiguration createConfiguration() {
     return new GenerateConfiguration("org.chromium.sdk.internal.wip.protocol",
-        "GeneratedWipProtocolParser", WipDynamicParser.get());
+        "GeneratedWipProtocolParser", WipDynamicParser.create());
   }
 }

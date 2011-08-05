@@ -15,18 +15,14 @@ import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
  * Dynamic implementation of tools protocol parser.
  */
 public class DynamicToolsProtocolParser {
-  public static DynamicParserImpl get() {
-    return PARSER;
-  }
-
-  private static final DynamicParserImpl PARSER;
-  static {
+  public static DynamicParserImpl<ToolsProtocolParser> createDynamic() {
     List<Class<?>> classes = new ArrayList<Class<?>>();
     classes.add(ToolsMessage.class);
     classes.add(ToolsMessage.Data.class);
 
     try {
-      PARSER = new DynamicParserImpl(classes, Collections.<DynamicParserImpl>emptyList(), false);
+      return new DynamicParserImpl<ToolsProtocolParser>(ToolsProtocolParser.class, classes,
+          Collections.<DynamicParserImpl<?>>emptyList(), false);
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
     }

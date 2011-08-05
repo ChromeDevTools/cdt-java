@@ -4,14 +4,14 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
+import org.chromium.sdk.internal.browserfixture.FixtureChromeStub.FixtureParser;
 
 /**
  * An accessor to generated implementation of a fixture parser.
  */
 public class FixtureParserAccess {
 
-  public static JsonProtocolParser get() {
+  public static FixtureParser get() {
     return PARSER;
   }
 

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,9 +28,9 @@ import org.chromium.sdk.internal.protocolparser.JsonNullable;
 import org.chromium.sdk.internal.protocolparser.JsonObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
+import org.chromium.sdk.internal.protocolparser.JsonParserRoot;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
@@ -45,16 +46,19 @@ import org.json.simple.JSONObject;
 /**
  * Java dynamic-proxy based implementation of {@link JsonProtocolParser}. It analyses
  * interfaces with reflection and provides their implementation by {@link Proxy} factory.
+ * User-friendly 'root' interface is available by {@link #getParserRoot()} method.
+ * @param <ROOT> root user-provided type (see {@link JsonParserRoot})
  */
-public class DynamicParserImpl implements JsonProtocolParser {
+public class DynamicParserImpl<ROOT> {
   private final Map<Class<?>, TypeHandler<?>> type2TypeHandler;
+  private final ParserRootImpl<ROOT> rootImpl;
 
   /**
    * Constructs parser from a set of type interfaces.
    */
-  public DynamicParserImpl(Class<?> ... protocolInterfaces)
+  public DynamicParserImpl(Class<ROOT> parserRootClass, List<Class<?>> protocolInterfaces)
       throws JsonProtocolModelParseException {
-    this(Arrays.asList(protocolInterfaces), Collections.<DynamicParserImpl>emptyList());
+    this(parserRootClass, protocolInterfaces, Collections.<DynamicParserImpl<?>>emptyList());
   }
 
   /**
@@ -62,38 +66,27 @@ public class DynamicParserImpl implements JsonProtocolParser {
    * may reference to type interfaces from base packages.
    * @param basePackages list of base packages in form of list of {@link DynamicParserImpl}'s
    */
-  public DynamicParserImpl(List<? extends Class<?>> protocolInterfaces,
-      List<? extends DynamicParserImpl> basePackages) throws JsonProtocolModelParseException {
-    this(protocolInterfaces, basePackages, false);
+  public DynamicParserImpl(Class<ROOT> parserRootClass,
+      List<? extends Class<?>> protocolInterfaces,
+      List<? extends DynamicParserImpl<?>> basePackages) throws JsonProtocolModelParseException {
+    this(parserRootClass, protocolInterfaces, basePackages, false);
   }
 
-  public DynamicParserImpl(List<? extends Class<?>> protocolInterfaces,
-      List<? extends DynamicParserImpl> basePackages, boolean strictMode)
+  public DynamicParserImpl(Class<ROOT> parserRootClass,
+      List<? extends Class<?>> protocolInterfaces,
+      List<? extends DynamicParserImpl<?>> basePackages, boolean strictMode)
       throws JsonProtocolModelParseException {
     type2TypeHandler = readTypes(protocolInterfaces, basePackages, strictMode);
+    rootImpl = new ParserRootImpl<ROOT>(parserRootClass, type2TypeHandler);
   }
 
-  /**
-   * Parses {@link JSONObject} as typeClass type.
-   */
-  @Override
-  public <T> T parse(JSONObject object, Class<T> typeClass) throws JsonProtocolParseException {
-    return parseAnything(object, typeClass);
-  }
-
-  /**
-   * Parses any object as typeClass type. Non-JSONObject only makes sense for
-   * types with {@link JsonType#subtypesChosenManually()} = true annotation.
-   */
-  @Override
-  public <T> T parseAnything(Object object, Class<T> typeClass) throws JsonProtocolParseException {
-    TypeHandler<T> type = type2TypeHandler.get(typeClass).cast(typeClass);
-    return type.parseRoot(object);
+  public ROOT getParserRoot() {
+    return rootImpl.getInstance();
   }
 
   private static Map<Class<?>, TypeHandler<?>> readTypes(
       List<? extends Class<?>> protocolInterfaces,
-      final List<? extends DynamicParserImpl> basePackages, boolean strictMode)
+      final List<? extends DynamicParserImpl<?>> basePackages, boolean strictMode)
       throws JsonProtocolModelParseException {
     ReadInterfacesSession session =
         new ReadInterfacesSession(protocolInterfaces, basePackages, strictMode);
@@ -104,7 +97,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
   private static class ReadInterfacesSession {
     private final Map<Class<?>, TypeHandler<?>> type2typeHandler;
-    private final List<? extends DynamicParserImpl> basePackages;
+    private final List<? extends DynamicParserImpl<?>> basePackages;
     private final boolean strictMode;
 
     final List<RefImpl<?>> refs = new ArrayList<RefImpl<?>>();
@@ -112,8 +105,9 @@ public class DynamicParserImpl implements JsonProtocolParser {
         new ArrayList<SubtypeCaster>();
 
     ReadInterfacesSession(List<? extends Class<?>> protocolInterfaces,
-        List<? extends DynamicParserImpl> basePackages, boolean strictMode) {
-      this.type2typeHandler = new HashMap<Class<?>, TypeHandler<?>>();
+        List<? extends DynamicParserImpl<?>> basePackages, boolean strictMode) {
+      // Keep interfaces ordered to keep generated parser less random.
+      this.type2typeHandler = new LinkedHashMap<Class<?>, TypeHandler<?>>();
       this.basePackages = basePackages;
       this.strictMode = strictMode;
 
@@ -287,7 +281,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
         refs.add(result);
         return result;
       }
-      for (DynamicParserImpl baseParser : basePackages) {
+      for (DynamicParserImpl<?> baseParser : basePackages) {
         TypeHandler<?> typeHandler = baseParser.type2TypeHandler.get(typeClass);
         if (typeHandler != null) {
           final TypeHandler<T> typeHandlerT = (TypeHandler<T>) typeHandler;
@@ -744,7 +738,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
     @Override
     void writeMethodImplementationJava(ClassScope classScope, Method m) {
-      writeMethodDeclarationJava(classScope, m);
+      writeMethodDeclarationJava(classScope, m, Collections.<String>emptyList());
       classScope.startLine("{\n");
 
       MethodScope scope = classScope.newMethodScope();
@@ -864,7 +858,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
       classScope.startLine("@Override public ");
       writeReturnTypeJava(classScope, m);
       classScope.append(" ");
-      appendMethodSignatureJava(classScope, m);
+      appendMethodSignatureJava(classScope, m, Collections.<String>emptyList());
       {
         Type[] exceptions = m.getGenericExceptionTypes();
         if (exceptions.length > 0) {
@@ -1063,7 +1057,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
     @Override
     void writeMethodImplementationJava(ClassScope scope, Method m) {
-      writeMethodDeclarationJava(scope, m);
+      writeMethodDeclarationJava(scope, m, Collections.<String>emptyList());
       scope.append(" {\n");
       scope.startLine("  return field_" + fieldName + ";\n");
       scope.startLine("}\n");
@@ -1425,7 +1419,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
     @Override
     void writeMethodImplementationJava(ClassScope scope, Method m) {
-      writeMethodDeclarationJava(scope, m);
+      writeMethodDeclarationJava(scope, m, Collections.<String>emptyList());
       scope.append(" {\n");
       scope.startLine("}\n");
     }
@@ -1465,7 +1459,7 @@ public class DynamicParserImpl implements JsonProtocolParser {
 
     @Override
     void writeMethodImplementationJava(ClassScope scope, Method m) {
-      writeMethodDeclarationJava(scope, m);
+      writeMethodDeclarationJava(scope, m, Collections.<String>emptyList());
       scope.append(" {\n");
       scope.startLine("  return " + AutoAlgebraicCasesDataImpl.getAutoAlgFieldNameJava(code) +
           ";\n");
@@ -1728,40 +1722,13 @@ public class DynamicParserImpl implements JsonProtocolParser {
     fileScope.append("\n");
     fileScope.startLine("package " + packageName + ";\n");
     fileScope.append("\n");
-    fileScope.startLine("public class " + className + " implements " + Util.BASE_PACKAGE +
-        ".JsonProtocolParser {\n");
+    fileScope.startLine("public class " + className + " implements " +
+        rootImpl.getType().getCanonicalName() + " {\n");
 
     ClassScope rootClassScope = fileScope.newClassScope();
     rootClassScope.indentRight();
 
-    rootClassScope.startLine(
-        "@Override public <T> T parse(org.json.simple.JSONObject object, Class<T> typeClass)");
-    rootClassScope.append(Util.THROWS_CLAUSE + " {\n");
-    rootClassScope.startLine("  return (T) map.get(typeClass).parseJson(object);\n");
-    rootClassScope.startLine("}\n");
-    rootClassScope.append("\n");
-    rootClassScope.startLine(
-        "@Override public <T> T parseAnything(Object object, Class<T> typeClass)");
-    rootClassScope.append(Util.THROWS_CLAUSE + " {\n");
-    rootClassScope.startLine("  return (T) map.get(typeClass).parseAnything(object);\n");
-    rootClassScope.startLine("}\n");
-    rootClassScope.append("\n");
-
-    rootClassScope.startLine("private static final java.util.Map<Class<?>, " + Util.BASE_PACKAGE +
-        ".implutil.GeneratedCodeLibrary.AbstractType> map;\n");
-    rootClassScope.startLine("static {\n");
-    {
-      MethodScope initializerScope = rootClassScope.newMethodScope();
-      initializerScope.indentRight();
-      initializerScope.startLine("map = new java.util.HashMap<Class<?>, " + Util.BASE_PACKAGE +
-          ".implutil.GeneratedCodeLibrary.AbstractType>();\n");
-      for (TypeHandler<?> typeHandler : type2TypeHandler.values()) {
-        typeHandler.writeMapFillJava(initializerScope, "map");
-      }
-      initializerScope.indentLeft();
-    }
-    rootClassScope.startLine("}\n");
-
+    rootImpl.writeStaticMethodJava(rootClassScope);
 
     for (TypeHandler<?> typeHandler : type2TypeHandler.values()) {
       typeHandler.writeStaticClassJava(rootClassScope);

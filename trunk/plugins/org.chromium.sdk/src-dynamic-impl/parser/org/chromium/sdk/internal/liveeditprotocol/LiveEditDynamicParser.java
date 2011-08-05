@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal.liveeditprotocol;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
@@ -12,20 +15,17 @@ import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
  * A dynamic implementation of a v8 protocol parser.
  */
 public class LiveEditDynamicParser {
-  public static DynamicParserImpl get() {
-    return parser;
-  }
-
-  private static final DynamicParserImpl parser;
-  static {
+  public static DynamicParserImpl<LiveEditProtocolParser> create() {
     try {
-      parser = new DynamicParserImpl(new Class<?>[] {
-          LiveEditResult.class,
-          LiveEditResult.OldTreeNode.class,
-          LiveEditResult.NewTreeNode.class,
-          LiveEditResult.Positions.class,
-          LiveEditResult.TextualDiff.class,
-      });
+      return new DynamicParserImpl<LiveEditProtocolParser>(LiveEditProtocolParser.class,
+          Arrays.asList(new Class<?>[] {
+              LiveEditResult.class,
+              LiveEditResult.OldTreeNode.class,
+              LiveEditResult.NewTreeNode.class,
+              LiveEditResult.Positions.class,
+              LiveEditResult.TextualDiff.class,
+              }),
+          Collections.<DynamicParserImpl<?>>emptyList(), false);
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
     }

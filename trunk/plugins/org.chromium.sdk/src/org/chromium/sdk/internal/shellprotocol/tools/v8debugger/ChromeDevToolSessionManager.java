@@ -97,7 +97,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
         JSONObject dataObject = (JSONObject) data;
         ContextData contextData;
         try {
-          contextData = V8ProtocolParserAccess.get().parse(dataObject, ContextData.class);
+          contextData = V8ProtocolParserAccess.get().parseContextData(dataObject);
         } catch (JsonProtocolParseException e) {
           throw new RuntimeException(e);
         }
@@ -154,7 +154,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
     ToolsMessage devToolsMessage;
     try {
-      devToolsMessage = ToolsProtocolParserAccess.get().parse(json, ToolsMessage.class);
+      devToolsMessage = ToolsProtocolParserAccess.get().parseToolsMessage(json);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;

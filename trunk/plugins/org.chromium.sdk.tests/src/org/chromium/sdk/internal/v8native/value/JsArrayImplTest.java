@@ -77,7 +77,7 @@ public class JsArrayImplTest {
         ).replace('\'', '"');
     JSONObject valueHandleJson = (JSONObject) JSONValue.parse(valueHandleJsonText);
     ValueHandle valueHandle =
-        V8ProtocolParserAccess.get().parse(valueHandleJson, ValueHandle.class);
+        V8ProtocolParserAccess.get().parseValueHandle(valueHandleJson);
 
 
     InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
@@ -100,7 +100,7 @@ public class JsArrayImplTest {
               )
           )
       );
-      frameObject = V8ProtocolParserAccess.get().parse(jsonObject, FrameObject.class);
+      frameObject = V8ProtocolParserAccess.get().parseFrameObject(jsonObject);
     }
 
     this.callFrame = new CallFrameImpl(frameObject, internalContext);

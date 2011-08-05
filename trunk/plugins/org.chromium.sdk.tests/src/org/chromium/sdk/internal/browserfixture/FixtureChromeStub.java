@@ -22,6 +22,8 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.FixtureParserAccess;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocolparser.JsonParseMethod;
+import org.chromium.sdk.internal.protocolparser.JsonParserRoot;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
@@ -187,7 +189,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject body = getJsonObjectByRef(getScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolParserAccess.get().parse(body, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parseScriptHandle(body);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -422,7 +424,7 @@ public class FixtureChromeStub implements ChromeStub {
   private List<SomeHandle> constructScriptRefsTyped() {
     JSONArray refs = constructScriptRefsJson();
     try {
-      return FixtureParserAccess.get().parseAnything(refs, Refs.class).asHandles();
+      return FixtureParserAccess.get().parseRefs(refs).asHandles();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -624,7 +626,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject scriptsObject = getJsonObjectByRef(getCompiledScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolParserAccess.get().parse(scriptsObject, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parseScriptHandle(scriptsObject);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -674,5 +676,13 @@ public class FixtureChromeStub implements ChromeStub {
     List<SomeHandle> asHandles() throws JsonProtocolParseException;
     @JsonSubtypeCasting
     List<? extends SomeHandle> asHandles2() throws JsonProtocolParseException;
+  }
+
+  @JsonParserRoot
+  public interface FixtureParser {
+
+    @JsonParseMethod
+    Refs parseRefs(Object refs) throws JsonProtocolParseException;
+
   }
 }
