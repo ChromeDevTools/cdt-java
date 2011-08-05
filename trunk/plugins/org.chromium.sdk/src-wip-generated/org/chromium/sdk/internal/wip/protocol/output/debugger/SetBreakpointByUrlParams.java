@@ -1,31 +1,33 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/92284/trunk/Source/WebCore/inspector/Inspector.json@92284
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
 /**
-Sets JavaScript breakpoint at a given location specified by URL. This breakpoint will survive page reload.
+Sets JavaScript breakpoint at given location specified either by URL or URL regex. Once this command is issued, all existing parsed scripts will have breakpoints resolved and returned in <code>locations</code> property. Further matching script parsing will result in subsequent <code>Debugger.breakpointResolved</code> events issued. This logical breakpoint will survive page reloads.
  */
 public class SetBreakpointByUrlParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData> {
   /**
-   @param url URL of the resource to set breakpoint on.
+   @param urlOpt URL of the resources to set breakpoint on.
+   @param urlRegexOpt Regex pattern for the URLs of the resources to set breakpoints on. Either <code>url</code> or <code>urlRegex</code> must be specified.
    @param lineNumber Line number to set breakpoint at.
    @param columnNumberOpt Offset in the line to set breakpoint at.
    @param conditionOpt Expression to use as a breakpoint condition. When specified, debugger will only stop on the breakpoint if this expression evaluates to true.
-   @param isRegexOpt If true, given <code>url</code> is considered to be a regular expression.
    */
-  public SetBreakpointByUrlParams(String url, long lineNumber, Long columnNumberOpt, String conditionOpt, Boolean isRegexOpt) {
-    this.put("url", url);
+  public SetBreakpointByUrlParams(String urlOpt, String urlRegexOpt, long lineNumber, Long columnNumberOpt, String conditionOpt) {
+    if (urlOpt != null) {
+      this.put("url", urlOpt);
+    }
+    if (urlRegexOpt != null) {
+      this.put("urlRegex", urlRegexOpt);
+    }
     this.put("lineNumber", lineNumber);
     if (columnNumberOpt != null) {
       this.put("columnNumber", columnNumberOpt);
     }
     if (conditionOpt != null) {
       this.put("condition", conditionOpt);
-    }
-    if (isRegexOpt != null) {
-      this.put("isRegex", isRegexOpt);
     }
   }
 

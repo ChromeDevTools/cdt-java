@@ -393,20 +393,8 @@ public class WipBreakpointImpl implements Breakpoint {
 
     abstract Collection<LocationValue> getActualLocations(DATA data);
 
-    static class ForUrlOrRegExp
+    static abstract class ForUrlOrRegExp
         extends RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> {
-      private final boolean isRegExp;
-
-      ForUrlOrRegExp(boolean isRegExp) {
-        this.isRegExp = isRegExp;
-      }
-
-      @Override
-      SetBreakpointByUrlParams createRequestParams(String url,
-          long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition, isRegExp);
-      }
-
       @Override
       String getBreakpointId(SetBreakpointByUrlData data) {
         return data.breakpointId();
@@ -418,9 +406,21 @@ public class WipBreakpointImpl implements Breakpoint {
       }
     }
 
-    static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp(false);
+    static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp() {
+      @Override
+      SetBreakpointByUrlParams createRequestParams(String url,
+          long lineNumber, long columnNumber, String condition) {
+        return new SetBreakpointByUrlParams(url, null, lineNumber, columnNumber, condition);
+      }
+    };
 
-    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp(true);
+    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp() {
+      @Override
+      SetBreakpointByUrlParams createRequestParams(String url,
+          long lineNumber, long columnNumber, String condition) {
+        return new SetBreakpointByUrlParams(null, url, lineNumber, columnNumber, condition);
+      }
+    };
 
     static final RequestHandler<String, SetBreakpointData, SetBreakpointParams> FOR_ID =
         new RequestHandler<String, SetBreakpointData, SetBreakpointParams>() {
@@ -445,7 +445,7 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   private static ActualLocation locationFromProtocol(LocationValue locationValue) {
-    return new ActualLocation(locationValue.sourceId(), locationValue.lineNumber(),
+    return new ActualLocation(locationValue.scriptId(), locationValue.lineNumber(),
         locationValue.columnNumber());
   }
 
