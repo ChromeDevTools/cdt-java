@@ -33,7 +33,7 @@ import org.chromium.sdk.util.RelaySyncCallback;
  * TODO: add a cache for already loaded values if remote protocol ever has
  * permanent object ids (same object reported under the same id within a debug context).
  */
-public class WipValueLoader implements RemoteValueMapping {
+public abstract class WipValueLoader implements RemoteValueMapping {
   private final WipTabImpl tabImpl;
   private final AtomicInteger cacheStateRef = new AtomicInteger(1);
   private final WipValueBuilder valueBuilder = new WipValueBuilder(this);
@@ -73,6 +73,8 @@ public class WipValueLoader implements RemoteValueMapping {
   int getCacheState() {
     return cacheStateRef.get();
   }
+
+  abstract String getObjectGroupId();
 
   /**
    * A utility method that initializes {@link AsyncFuture} of an object without properties.

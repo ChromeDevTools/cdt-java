@@ -35,7 +35,7 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.v8native.JsEvaluateContextBase;
+import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
@@ -67,10 +67,12 @@ class WipContextBuilder {
   private static final Logger LOGGER = Logger.getLogger(WipContextBuilder.class.getName());
 
   private final WipTabImpl tabImpl;
+  private final EvaluateHack evaluateHack;
   private WipDebugContextImpl currentContext = null;
 
   WipContextBuilder(WipTabImpl tabImpl) {
     this.tabImpl = tabImpl;
+    this.evaluateHack = new EvaluateHack(tabImpl);
   }
 
   // Called from Dispatch Thread.
@@ -121,7 +123,6 @@ class WipContextBuilder {
   }
 
   class WipDebugContextImpl implements DebugContext {
-    private final WipValueLoader valueLoader = new WipValueLoader(tabImpl);
     private volatile List<CallFrameImpl> frames = null;
     private final ExceptionData exceptionData;
     private final AtomicReference<CloseRequest> closeRequest =
@@ -139,11 +140,10 @@ class WipContextBuilder {
         exceptionData = new ExceptionDataImpl(exceptionValue);
       }
       globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
-        @Override protected EvaluateParams createRequestParams(String expression) {
-          String groupId = null;
-
+        @Override protected EvaluateParams createRequestParams(String expression,
+            String destinationGroupId) {
           boolean doNotPauseOnExceptions = true;
-          return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions,
+          return new EvaluateParams(expression, destinationGroupId, false, doNotPauseOnExceptions,
               null, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
@@ -389,9 +389,9 @@ class WipContextBuilder {
 
       private final WipEvaluateContextImpl<?,?> evaluateContext =
           new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
-        @Override protected EvaluateOnCallFrameParams createRequestParams(String expression) {
-          String groupId = null;
-          return new EvaluateOnCallFrameParams(id, expression, groupId, false);
+        @Override protected EvaluateOnCallFrameParams createRequestParams(String expression,
+            String destinationGroupId) {
+          return new EvaluateOnCallFrameParams(id, expression, destinationGroupId, false);
         }
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
           return data.result();
@@ -584,10 +584,20 @@ class WipContextBuilder {
       public RelayOk evaluateAsync(final String expression,
           Map<String, String> additionalContext, final EvaluateCallback callback,
           SyncCallback syncCallback) {
+        return evaluateAsync(expression, additionalContext, getValueLoader(),
+            callback, syncCallback);
+      }
+
+      private RelayOk evaluateAsync(final String expression,
+          Map<String, String> additionalContext, final WipValueLoader destinationValueLoader,
+          final EvaluateCallback callback, SyncCallback syncCallback) {
         if (additionalContext != null) {
-          return WipBrowserImpl.throwUnsupported();
+          String destinationObjectGroupId = null;
+          return evaluateHack.evaluateAsync(expression, additionalContext,
+              destinationValueLoader, evaluateHackHelper, callback, syncCallback);
         }
-        PARAMS params = createRequestParams(expression);
+
+        PARAMS params = createRequestParams(expression, destinationValueLoader.getObjectGroupId());
 
         GenericCallback<DATA> commandCallback;
         if (callback == null) {
@@ -599,17 +609,9 @@ class WipContextBuilder {
 
               RemoteObjectValue valueData = getRemoteObjectValue(data);
 
-              WipValueBuilder valueBuilder = getValueLoader().getValueBuilder();
+              WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
 
-              JsVariable variable;
-              if (getWasThrown(data) == Boolean.TRUE) {
-                variable = wrapExceptionValue(valueData, valueBuilder);
-              } else {
-                ValueNameBuilder valueNameBuidler =
-                    WipExpressionBuilder.createRootName(expression, true);
-
-                variable = valueBuilder.createVariable(valueData, valueNameBuidler);
-              }
+              JsVariable variable = processResponse(data, destinationValueLoader, expression);
 
               callback.success(variable);
             }
@@ -622,12 +624,56 @@ class WipContextBuilder {
         return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
       }
 
-      protected abstract PARAMS createRequestParams(String expression);
+      private JsVariable processResponse(DATA data, WipValueLoader destinationValueLoader,
+          String userExpression) {
+        RemoteObjectValue valueData = getRemoteObjectValue(data);
+
+        WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
+
+        JsVariable variable;
+        if (getWasThrown(data) == Boolean.TRUE) {
+          return wrapExceptionValue(valueData, valueBuilder);
+        } else {
+          ValueNameBuilder valueNameBuidler =
+              WipExpressionBuilder.createRootName(userExpression, true);
+
+          return valueBuilder.createVariable(valueData, valueNameBuidler);
+        }
+      }
+
+      private final EvaluateHack.EvaluateCommandHandler<DATA> evaluateHackHelper =
+          new EvaluateHack.EvaluateCommandHandler<DATA>() {
+        @Override
+        public WipParamsWithResponse<DATA> createRequest(
+            String patchedUserExpression, String destinationGroupId) {
+          return createRequestParams(patchedUserExpression, destinationGroupId);
+        }
+
+        @Override
+        public JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
+            String originalExpression) {
+          return processResponse(response, destinationValueLoader, originalExpression);
+        }
+
+        @Override
+        public Exception processFailure(Exception cause) {
+          return cause;
+        }
+      };
+
+      protected abstract PARAMS createRequestParams(String expression, String destinationGroupId);
 
       protected abstract RemoteObjectValue getRemoteObjectValue(DATA data);
 
       protected abstract Boolean getWasThrown(DATA data);
     }
+
+    private final WipValueLoader valueLoader = new WipValueLoader(tabImpl) {
+      @Override
+      String getObjectGroupId() {
+        return null;
+      }
+    };
   }
 
   private JsVariable wrapExceptionValue(RemoteObjectValue valueData,

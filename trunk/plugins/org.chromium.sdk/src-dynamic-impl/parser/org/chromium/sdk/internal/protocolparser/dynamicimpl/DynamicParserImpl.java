@@ -725,8 +725,8 @@ public class DynamicParserImpl implements JsonProtocolParser {
         try {
           return quickParser.parseValueQuick(value);
         } catch (JsonProtocolParseException e) {
-          throw new JsonProtocolParseException("Failed to parse field " + fieldName + " in type " +
-              typeClass.getName(), e);
+          throw new JsonProtocolParseException("Failed to parse field '" + fieldName +
+              "' in type " + typeClass.getName(), e);
         }
       } else {
         if (!isOptional) {
