@@ -100,7 +100,7 @@ public class WipBrowserImpl implements WipBrowser {
 
 
     try {
-      WipTabList tabList = WipParserAccess.get().parseAnything(jsonValue, WipTabList.class);
+      WipTabList tabList = WipParserAccess.get().parseTabList(jsonValue);
       return tabList.asTabList();
     } catch (JsonProtocolParseException e) {
       throw JavascriptVmImpl.newIOException(

@@ -4,13 +4,11 @@
 
 package org.chromium.sdk.internal.shellprotocol.tools.protocol.input;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
-
 /**
  * An accessor to generated implementation of DevTools protocol parser.
  */
 public class ToolsProtocolParserAccess {
-  public static JsonProtocolParser get() {
+  public static ToolsProtocolParser get() {
     return INSTANCE;
   }
 

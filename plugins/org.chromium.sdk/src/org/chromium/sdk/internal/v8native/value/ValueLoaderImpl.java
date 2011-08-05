@@ -321,7 +321,7 @@ public class ValueLoaderImpl extends ValueLoader {
       }
       ValueHandle valueHandle;
       try {
-        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
+        valueHandle = V8ProtocolParserAccess.get().parseValueHandle(value);
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
@@ -353,7 +353,7 @@ public class ValueLoaderImpl extends ValueLoader {
       }
       ValueHandle valueHandle;
       try {
-        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
+        valueHandle = V8ProtocolParserAccess.get().parseValueHandle(value);
       } catch (JsonProtocolParseException e) {
         throw new ValueLoadException(e);
       }

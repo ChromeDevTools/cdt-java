@@ -4,16 +4,10 @@
 
 package org.chromium.sdk.internal.wip.protocol;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
-
 /**
  * Main utility class of Wip protocol implementation.
  */
 public class WipProtocol {
-
-  public static JsonProtocolParser getParser() {
-    return WipParserAccess.get();
-  }
 
   public static int parseInt(Object obj) {
     if (obj instanceof String) {

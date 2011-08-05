@@ -4,15 +4,15 @@
 
 package org.chromium.sdk.internal.liveeditprotocol;
 
-import org.chromium.sdk.internal.liveeditprotocol.LiveEditDynamicParser;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
-
 /**
  * An accessor to dynamic implementation of LiveEdit protocol parser. Should be replaceable with
  * a similar class that provides access to generated parser implementation.
  */
 public class LiveEditProtocolParserAccess {
-  public static JsonProtocolParser get() {
-    return LiveEditDynamicParser.get();
+  public static LiveEditProtocolParser get() {
+    return PARSER;
   }
+
+  private static final LiveEditProtocolParser PARSER =
+      LiveEditDynamicParser.create().getParserRoot();
 }

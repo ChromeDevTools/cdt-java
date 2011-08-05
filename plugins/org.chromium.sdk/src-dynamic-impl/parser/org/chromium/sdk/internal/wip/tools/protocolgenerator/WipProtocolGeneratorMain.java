@@ -15,7 +15,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -42,11 +41,11 @@ public class WipProtocolGeneratorMain {
       throw new RuntimeException("Failed to parse json", e);
     }
 
-    JsonProtocolParser metaModelParser = WipMetamodelParser.get();
+    WipMetamodelParser metaModelParser = WipMetamodelParser.Impl.get();
 
     WipMetamodel.Root metamodel;
     try {
-      metamodel = metaModelParser.parseAnything(jsonValue, WipMetamodel.Root.class);
+      metamodel = metaModelParser.parseRoot(jsonValue);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException("Failed to parse metamodel", e);
     }

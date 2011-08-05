@@ -14,19 +14,14 @@ import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 import org.chromium.sdk.internal.wip.protocol.input.GeneratedParserInterfaceList;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
+import org.chromium.sdk.internal.wip.protocol.input.WipProtocolParser;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
 
 /**
  * A dynamic implementation of a WebInspector protocol parser.
  */
 public class WipDynamicParser {
-  public static DynamicParserImpl get() {
-    return DYNAMIC_IMPLEMENTATION;
-  }
-
-  private static final DynamicParserImpl DYNAMIC_IMPLEMENTATION;
-
-  static {
+  public static DynamicParserImpl<WipProtocolParser> create() {
     Class<?>[] baseTypes = {
         WipEvent.class, WipEvent.Data.class,
         WipCommandResponse.class, WipCommandResponse.Data.class,
@@ -42,8 +37,8 @@ public class WipDynamicParser {
     classList.addAll(Arrays.asList(baseTypes));
     classList.addAll(Arrays.asList(generatedTypes));
     try {
-      DYNAMIC_IMPLEMENTATION = new DynamicParserImpl(classList,
-          Collections.<DynamicParserImpl>emptyList(), true);
+      return new DynamicParserImpl<WipProtocolParser>(WipProtocolParser.class, classList,
+          Collections.<DynamicParserImpl<?>>emptyList(), true);
     } catch (JsonProtocolModelParseException e) {
       throw new RuntimeException(e);
     }

@@ -102,8 +102,8 @@ class WipScriptImpl extends ScriptBase<String> {
     if (updateCallback != null) {
       LiveEditResult liveEditResult;
       try {
-        liveEditResult = LiveEditProtocolParserAccess.get().parse(result.getUnderlyingObject(),
-            LiveEditResult.class);
+        liveEditResult =
+            LiveEditProtocolParserAccess.get().parseLiveEditResult(result.getUnderlyingObject());
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException("Failed to parse LiveEdit response", e);
       }

@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.protocolparser.test;
 
+import java.util.Arrays;
+
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
 
@@ -12,24 +14,25 @@ import org.chromium.sdk.internal.protocolparser.dynamicimpl.DynamicParserImpl;
  * There is no reason to create new instance of parser for every test. On the other hand,
  * it there were a problem with it, every test should get a proper exception.
  */
-class ParserHolder {
-  private final InitializedValue<DynamicParserImpl> parser;
+class ParserHolder<R> {
+  private final InitializedValue<DynamicParserImpl<R>> parser;
 
-  ParserHolder(final Class<?>[] interfaces) {
-    InitializedValue.Initializer<DynamicParserImpl> initializer =
-        new InitializedValue.Initializer<DynamicParserImpl>() {
-      public DynamicParserImpl calculate() {
+  ParserHolder(final Class<R> parserInterface, final Class<?>[] interfaces) {
+    InitializedValue.Initializer<DynamicParserImpl<R>> initializer =
+        new InitializedValue.Initializer<DynamicParserImpl<R>>() {
+      @Override
+      public DynamicParserImpl<R> calculate() {
         try {
-          return new DynamicParserImpl(interfaces);
+          return new DynamicParserImpl<R>(parserInterface, Arrays.asList(interfaces));
         } catch (JsonProtocolModelParseException e) {
           throw new RuntimeException(e);
         }
       }
     };
-    parser = new InitializedValue<DynamicParserImpl>(initializer);
+    parser = new InitializedValue<DynamicParserImpl<R>>(initializer);
   }
 
-  DynamicParserImpl getParser() {
-    return parser.get();
+  R getParser() {
+    return parser.get().getParserRoot();
   }
 }

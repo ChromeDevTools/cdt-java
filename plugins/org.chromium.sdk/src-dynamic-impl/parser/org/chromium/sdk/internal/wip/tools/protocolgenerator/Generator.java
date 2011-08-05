@@ -34,8 +34,11 @@ class Generator {
   private static final String OUTPUT_PACKAGE = ROOT_PACKAGE + ".output";
   private static final String INPUT_PACKAGE = ROOT_PACKAGE + ".input";
   private static final String PARSER_INTERFACE_LIST_CLASS_NAME = "GeneratedParserInterfaceList";
+  private static final String PARSER_ROOT_INTERFACE_NAME = "WipGeneratedParserRoot";
 
   private final List<String> jsonProtocolParserClassNames = new ArrayList<String>();
+  private final List<ParserRootInterfaceItem> parserRootInterfaceItems =
+      new ArrayList<ParserRootInterfaceItem>();
   private final TypeMap typeMap = new TypeMap();
   private final String originReference;
 
@@ -88,6 +91,8 @@ class Generator {
 
     generateParserInterfaceList();
 
+    generateParserRoot(parserRootInterfaceItems);
+
     fileSet.deleteOtherFiles();
   }
 
@@ -112,8 +117,10 @@ class Generator {
         generateCommandParams(command, hasResponse);
         if (hasResponse) {
           generateCommandData(command);
-          jsonProtocolParserClassNames.add(
-              Naming.COMMAND_DATA.getFullName(domain.domain(), command.name()));
+          String dataFullName = Naming.COMMAND_DATA.getFullName(domain.domain(), command.name());
+          jsonProtocolParserClassNames.add(dataFullName);
+          parserRootInterfaceItems.add(
+              new ParserRootInterfaceItem(domain.domain(), command.name(), Naming.COMMAND_DATA));
         }
       }
 
@@ -122,6 +129,8 @@ class Generator {
           generateEvenData(event);
           jsonProtocolParserClassNames.add(
               Naming.EVENT_DATA.getFullName(domain.domain(), event.name()));
+          parserRootInterfaceItems.add(
+              new ParserRootInterfaceItem(domain.domain(), event.name(), Naming.EVENT_DATA));
         }
       }
     }
@@ -154,10 +163,12 @@ class Generator {
         additionalMemberBuilder.append(
             "  @Override public " + dataInterfaceFullname + " parseResponse(" +
             "org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, " +
-            "org.chromium.sdk.internal.protocolparser.JsonProtocolParser parser) " +
+            "org.chromium.sdk.internal.wip.protocol.input." +
+            PARSER_ROOT_INTERFACE_NAME + " parser) " +
             "throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n");
-        additionalMemberBuilder.append("    return parser.parse(data.getUnderlyingObject(), " +
-            dataInterfaceFullname + ".class);\n");
+        additionalMemberBuilder.append("    return parser." +
+            Naming.COMMAND_DATA.getParseMethodName(domain.domain(), command.name()) +
+            "(data.getUnderlyingObject());\n");
         additionalMemberBuilder.append("  }\n");
         additionalMemberBuilder.append("\n");
       }
@@ -428,7 +439,14 @@ class Generator {
           fullName +
           "> TYPE\n      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
           fullName +
-          ">(\"" + domainName + "." + event.name() + "\", " + fullName + ".class);\n";
+          ">(\"" + domainName + "." + event.name() + "\", " + fullName + ".class) {\n" +
+          "    @Override public " + fullName + " parse(" + INPUT_PACKAGE + "." +
+          PARSER_ROOT_INTERFACE_NAME + " parser, org.json.simple.JSONObject obj)" +
+          " throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n" +
+          "      return parser." + Naming.EVENT_DATA.getParseMethodName(domainName, event.name()) +
+          "(obj);\n" +
+          "    }\n" +
+          "  };\n";
 
       Writer writer = fileUpdater.getWriter();
 
@@ -838,6 +856,53 @@ class Generator {
     fileUpdater.update();
   }
 
+  private void generateParserRoot(List<ParserRootInterfaceItem> parserRootInterfaceItems)
+      throws IOException {
+    JavaFileUpdater fileUpdater =
+        startJavaFile(INPUT_PACKAGE, PARSER_ROOT_INTERFACE_NAME + ".java");
+
+    // Write classes in stable order.
+    Collections.sort(parserRootInterfaceItems);
+
+    Writer writer = fileUpdater.getWriter();
+
+    writer.write("@org.chromium.sdk.internal.protocolparser.JsonParserRoot\n");
+    writer.write("public interface " + PARSER_ROOT_INTERFACE_NAME + " {\n");
+    for (ParserRootInterfaceItem item : parserRootInterfaceItems) {
+      item.writeCode(writer);
+    }
+    writer.write("}\n");
+
+    fileUpdater.update();
+  }
+
+  private static class ParserRootInterfaceItem implements Comparable<ParserRootInterfaceItem> {
+    private final String domain;
+    private final String name;
+    private final ClassNameScheme.Input nameScheme;
+    private final String fullName;
+
+    public ParserRootInterfaceItem(String domain, String name, ClassNameScheme.Input nameScheme) {
+      this.domain = domain;
+      this.name = name;
+      this.nameScheme = nameScheme;
+      fullName = nameScheme.getFullName(domain, name);
+    }
+
+    void writeCode(Writer writer) throws IOException {
+      writer.write("  @org.chromium.sdk.internal.protocolparser.JsonParseMethod\n");
+      writer.write("  " + fullName + " " + nameScheme.getParseMethodName(domain, name) +
+          "(org.json.simple.JSONObject obj)" +
+          " throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;\n");
+      writer.write("\n");
+    }
+
+    @Override
+    public int compareTo(ParserRootInterfaceItem o) {
+      return this.fullName.compareTo(o.fullName);
+    }
+  }
+
   private abstract static class ClassNameScheme {
     private final String suffix;
 
@@ -862,6 +927,10 @@ class Generator {
 
       @Override protected String getPackageNameVirtual(String domainName) {
         return getPackageName(domainName);
+      }
+
+      String getParseMethodName(String domain, String name) {
+        return "parse" + capitalizeFirstChar(domain) + getShortName(name);
       }
 
       static String getPackageName(String domainName) {
@@ -889,8 +958,8 @@ class Generator {
     ClassNameScheme ADDITIONAL_PARAM = new ClassNameScheme.Output("Param");
     ClassNameScheme OUTPUT_TYPEDEF = new ClassNameScheme.Output("Typedef");
 
-    ClassNameScheme COMMAND_DATA = new ClassNameScheme.Input("Data");
-    ClassNameScheme EVENT_DATA = new ClassNameScheme.Input("EventData");
+    ClassNameScheme.Input COMMAND_DATA = new ClassNameScheme.Input("Data");
+    ClassNameScheme.Input EVENT_DATA = new ClassNameScheme.Input("EventData");
     ClassNameScheme INPUT_VALUE = new ClassNameScheme.Input("Value");
     ClassNameScheme INPUT_ENUM = new ClassNameScheme.Input("Enum");
     ClassNameScheme INPUT_TYPEDEF = new ClassNameScheme.Input("Typedef");

@@ -109,7 +109,7 @@ class WipCommandProcessor {
   private void processEvent(JSONObject jsonObject) {
     WipEvent event;
     try {
-      event = WipProtocol.getParser().parse(jsonObject, WipEvent.class);
+      event = WipParserAccess.get().parseWipEvent(jsonObject);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Failed to parse event", e);
       return;
@@ -151,7 +151,7 @@ class WipCommandProcessor {
         return null;
       }
       try {
-        return WipProtocol.getParser().parse(incoming, WipCommandResponse.class);
+        return WipParserAccess.get().parseWipCommandResponse(incoming);
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException("Failed to parse response", e);
       }
@@ -271,8 +271,7 @@ class WipCommandProcessor {
           data = null;
         } else {
           try {
-            data = WipParserAccess.get().parse(genericData.getUnderlyingObject(),
-                type.getEventType());
+            data = type.parse(WipParserAccess.get(), genericData.getUnderlyingObject());
           } catch (JsonProtocolParseException e) {
             throw new RuntimeException(e);
           }
