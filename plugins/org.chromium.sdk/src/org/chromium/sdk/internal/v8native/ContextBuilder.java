@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.v8native;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,20 +17,13 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
-import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.V8CommandProcessor.V8HandlerCallback;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
-import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
-import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
-import org.chromium.sdk.internal.v8native.value.HandleManager;
-import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
-import org.json.simple.JSONObject;
 
 public class ContextBuilder {
   private final DebugSession debugSession;
@@ -370,10 +362,6 @@ public class ContextBuilder {
         @Override
         public InternalContext getInternalContext() {
           return PreContext.this;
-        }
-        @Override
-        public DebugContext getDebugContext() {
-          return UserContext.this;
         }
       };
     }

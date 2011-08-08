@@ -334,7 +334,7 @@ public class Main {
         variableHolder.setValue(variable);
       }
     };
-    frame.getEvaluateContext().evaluateSync(FIBONACCI_EXPRESSION, callback);
+    frame.getEvaluateContext().evaluateSync(FIBONACCI_EXPRESSION, null, callback);
     JsVariable variable = variableHolder.get();
     String resString = variable.getValue().getValueString();
     if (!"24".equals(resString)) {
@@ -587,7 +587,7 @@ public class Main {
 
   private static JsVariable evaluateSync(JsEvaluateContext evaluateContext, String expression) {
     EvalCallbackImpl callbackImpl = new EvalCallbackImpl();
-    evaluateContext.evaluateSync(expression, callbackImpl);
+    evaluateContext.evaluateSync(expression, null, callbackImpl);
     return callbackImpl.get();
   }
 }

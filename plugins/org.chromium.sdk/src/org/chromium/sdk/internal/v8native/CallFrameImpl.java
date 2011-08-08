@@ -206,10 +206,6 @@ public class CallFrameImpl implements CallFrame {
     public InternalContext getInternalContext() {
       return context;
     }
-    @Override
-    public DebugContext getDebugContext() {
-      return context.getUserContext();
-    }
   };
 
   private final TextStreamPosition textStreamPosition = new TextStreamPosition() {
