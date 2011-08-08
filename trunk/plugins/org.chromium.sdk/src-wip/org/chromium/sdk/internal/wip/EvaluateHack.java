@@ -85,7 +85,7 @@ public class EvaluateHack {
    */
   public interface EvaluateCommandHandler<DATA> {
     WipParamsWithResponse<DATA> createRequest(String patchedUserExpression,
-        String destinationGroupId);
+        WipValueLoader destinationValueLoader);
 
     JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
         String originalExpression);
@@ -231,7 +231,7 @@ public class EvaluateHack {
               ") { " + userExpression + "}";
 
           WipParamsWithResponse<EVAL_DATA> paramsWithResponse = commandHandler.createRequest(
-              patchedUserExpression, destinationValueLoader.getObjectGroupId());
+              patchedUserExpression, destinationValueLoader);
 
           return paramsWithResponse;
         }

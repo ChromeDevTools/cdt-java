@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsEvaluateContext;
 
 /**
@@ -26,9 +25,5 @@ public class EvaluateContext {
 
   public JavascriptThread.SuspendedState getThreadSuspendedState() {
     return threadState;
-  }
-
-  public DebugContext getDebugContext() {
-    return jsEvaluateContext.getDebugContext();
   }
 }

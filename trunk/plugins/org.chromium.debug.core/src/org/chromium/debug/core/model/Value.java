@@ -11,8 +11,6 @@ import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
-import org.chromium.sdk.EvaluateWithContextExtension;
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
@@ -232,14 +230,6 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         return;
       }
 
-      JavascriptVm javascriptVm = getConnectedData().getJavascriptVm();
-      EvaluateWithContextExtension extension = javascriptVm.getEvaluateWithContextExtension();
-      if (extension == null) {
-        String result =
-            "Remote V8 VM (" + javascriptVm.getVersion() + ") does not support 'toString'";
-        stringDetailIsBuilt(result, listener);
-        return;
-      }
       if (getSuspendedState().isDismissed()) {
         stringDetailIsBuilt("", listener);
         return;
@@ -258,8 +248,11 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
         }
       };
 
-      extension.evaluateAsync(getSuspendedState().getDebugContext().getGlobalEvaluateContext(),
-          TO_STRING_EXPRESSION, additionalContext, evaluateCallback, null);
+      JsEvaluateContext evaluateContext =
+          getSuspendedState().getDebugContext().getGlobalEvaluateContext();
+
+      evaluateContext.evaluateAsync(TO_STRING_EXPRESSION, additionalContext,
+          evaluateCallback, null);
     }
 
     private void stringDetailIsBuilt(final String detailString, IValueDetailListener listener) {

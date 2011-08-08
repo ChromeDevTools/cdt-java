@@ -14,7 +14,6 @@ public class Messages extends NLS {
   public static String LogicImpl_DOT_EXPECTED;
   public static String LogicImpl_ENTER_AFTER_DOT;
   public static String LogicImpl_ENTER_EXPRESSION;
-  public static String LogicImpl_FEATURE_NOT_SUPPORTED;
   public static String LogicImpl_INVALID_COMPONENT_CHAR;
   public static String LogicImpl_INVALID_COMPONENT_START;
   public static String LogicImpl_NOT_FOR_PRIMITIVE;

@@ -35,7 +35,6 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
@@ -112,6 +111,10 @@ class WipContextBuilder {
     context.setFrames(data.details().callFrames(), callback, null);
   }
 
+  EvaluateHack getEvaluateHack() {
+    return evaluateHack;
+  }
+
   void onResumeReportedFromRemote(ResumedEventData event) {
     if (currentContext == null) {
       throw new IllegalStateException();
@@ -139,21 +142,7 @@ class WipContextBuilder {
             valueLoader.getValueBuilder().wrap(exceptionRemoteObject, EXCEPTION_NAME);
         exceptionData = new ExceptionDataImpl(exceptionValue);
       }
-      globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
-        @Override protected EvaluateParams createRequestParams(String expression,
-            String destinationGroupId) {
-          boolean doNotPauseOnExceptions = true;
-          return new EvaluateParams(expression, destinationGroupId, false, doNotPauseOnExceptions,
-              null, false);
-        }
-        @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
-          return data.result();
-        }
-
-        @Override protected Boolean getWasThrown(EvaluateData data) {
-          return data.wasThrown();
-        }
-      };
+      globalContext = new GlobalEvaluateContext(getValueLoader());
     }
 
     RelayOk setFrames(List<CallFrameValue> frameDataList,
@@ -387,12 +376,15 @@ class WipContextBuilder {
         return valueLoader.getValueBuilder().createVariable(thisObjectData, valueNameBuidler);
       }
 
-      private final WipEvaluateContextImpl<?,?> evaluateContext =
-          new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
-        @Override protected EvaluateOnCallFrameParams createRequestParams(String expression,
-            String destinationGroupId) {
-          return new EvaluateOnCallFrameParams(id, expression, destinationGroupId, false);
+      private final WipEvaluateContextBase<?> evaluateContext =
+          new WipEvaluateContextBase<EvaluateOnCallFrameData>(getValueLoader()) {
+        @Override
+        protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
+            String expression, WipValueLoader destinationValueLoader) {
+          return new EvaluateOnCallFrameParams(id, expression,
+              destinationValueLoader.getObjectGroupId(), false);
         }
+
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
           return data.result();
         }
@@ -573,101 +565,6 @@ class WipContextBuilder {
       }
     }
 
-    private abstract class WipEvaluateContextImpl<DATA, PARAMS extends WipParamsWithResponse<DATA>>
-        extends JsEvaluateContextBase {
-      @Override
-      public DebugContext getDebugContext() {
-        return WipDebugContextImpl.this;
-      }
-
-      @Override
-      public RelayOk evaluateAsync(final String expression,
-          Map<String, String> additionalContext, final EvaluateCallback callback,
-          SyncCallback syncCallback) {
-        return evaluateAsync(expression, additionalContext, getValueLoader(),
-            callback, syncCallback);
-      }
-
-      private RelayOk evaluateAsync(final String expression,
-          Map<String, String> additionalContext, final WipValueLoader destinationValueLoader,
-          final EvaluateCallback callback, SyncCallback syncCallback) {
-        if (additionalContext != null) {
-          String destinationObjectGroupId = null;
-          return evaluateHack.evaluateAsync(expression, additionalContext,
-              destinationValueLoader, evaluateHackHelper, callback, syncCallback);
-        }
-
-        PARAMS params = createRequestParams(expression, destinationValueLoader.getObjectGroupId());
-
-        GenericCallback<DATA> commandCallback;
-        if (callback == null) {
-          commandCallback = null;
-        } else {
-          commandCallback = new GenericCallback<DATA>() {
-            @Override
-            public void success(DATA data) {
-
-              RemoteObjectValue valueData = getRemoteObjectValue(data);
-
-              WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
-
-              JsVariable variable = processResponse(data, destinationValueLoader, expression);
-
-              callback.success(variable);
-            }
-            @Override
-            public void failure(Exception exception) {
-              callback.failure(exception.getMessage());
-            }
-          };
-        }
-        return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
-      }
-
-      private JsVariable processResponse(DATA data, WipValueLoader destinationValueLoader,
-          String userExpression) {
-        RemoteObjectValue valueData = getRemoteObjectValue(data);
-
-        WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
-
-        JsVariable variable;
-        if (getWasThrown(data) == Boolean.TRUE) {
-          return wrapExceptionValue(valueData, valueBuilder);
-        } else {
-          ValueNameBuilder valueNameBuidler =
-              WipExpressionBuilder.createRootName(userExpression, true);
-
-          return valueBuilder.createVariable(valueData, valueNameBuidler);
-        }
-      }
-
-      private final EvaluateHack.EvaluateCommandHandler<DATA> evaluateHackHelper =
-          new EvaluateHack.EvaluateCommandHandler<DATA>() {
-        @Override
-        public WipParamsWithResponse<DATA> createRequest(
-            String patchedUserExpression, String destinationGroupId) {
-          return createRequestParams(patchedUserExpression, destinationGroupId);
-        }
-
-        @Override
-        public JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
-            String originalExpression) {
-          return processResponse(response, destinationValueLoader, originalExpression);
-        }
-
-        @Override
-        public Exception processFailure(Exception cause) {
-          return cause;
-        }
-      };
-
-      protected abstract PARAMS createRequestParams(String expression, String destinationGroupId);
-
-      protected abstract RemoteObjectValue getRemoteObjectValue(DATA data);
-
-      protected abstract Boolean getWasThrown(DATA data);
-    }
-
     private final WipValueLoader valueLoader = new WipValueLoader(tabImpl) {
       @Override
       String getObjectGroupId() {
@@ -676,7 +573,7 @@ class WipContextBuilder {
     };
   }
 
-  private JsVariable wrapExceptionValue(RemoteObjectValue valueData,
+  static JsVariable wrapExceptionValue(RemoteObjectValue valueData,
       WipValueBuilder valueBuilder) {
     JsValue exceptionValue = valueBuilder.wrap(valueData, null);
 
@@ -757,6 +654,28 @@ class WipContextBuilder {
     };
 
     return WipValueBuilder.createVariable(wrapperValue, EVALUATE_EXCEPTION_NAME);
+  }
+
+  static final class GlobalEvaluateContext extends WipEvaluateContextBase<EvaluateData> {
+
+    GlobalEvaluateContext(WipValueLoader valueLoader) {
+      super(valueLoader);
+    }
+
+    @Override protected WipParamsWithResponse<EvaluateData> createRequestParams(String expression,
+        WipValueLoader destinationValueLoader) {
+      boolean doNotPauseOnExceptions = true;
+      return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(),
+          false, doNotPauseOnExceptions, null, false);
+    }
+
+    @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
+      return data.result();
+    }
+
+    @Override protected Boolean getWasThrown(EvaluateData data) {
+      return data.wasThrown();
+    }
   }
 
   private static final Map<ScopeValue.Type, JsScope.Type> WIP_TO_SDK_SCOPE_TYPE;

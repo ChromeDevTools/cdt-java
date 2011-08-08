@@ -140,12 +140,6 @@ public interface JavascriptVm {
   Version getVersion();
 
   /**
-   * @return extension to evaluate operations with additional context support or null if VM
-   *     does not support this feature
-   */
-  EvaluateWithContextExtension getEvaluateWithContextExtension();
-
-  /**
    * @return extension to standard breakpoint target types
    */
   BreakpointTypeExtension getBreakpointTypeExtension();

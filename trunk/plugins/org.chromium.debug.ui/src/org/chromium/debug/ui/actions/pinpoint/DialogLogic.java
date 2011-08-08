@@ -33,8 +33,6 @@ import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueProcessor;
 import org.chromium.debug.ui.DialogUtils.ValueSource;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.EvaluateWithContextExtension;
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsObject;
@@ -332,7 +330,7 @@ class DialogLogic {
      * Builds PreviewContext from what was passed from the action. Takes into account
      * various problems that are returned as error value of {@link Optional}.
      */
-    static Optional<DialogLogic.PreviewContext> build(Value uiValue) {
+    static Optional<PreviewContext> build(Value uiValue) {
       if (uiValue == null) {
         return createErrorOptional(new Message(Messages.LogicImpl_VALUE_IS_NOT_AVAILABLE,
                 MessagePriority.BLOCKING_PROBLEM));
@@ -344,13 +342,7 @@ class DialogLogic {
             new Message(Messages.LogicImpl_NOT_FOR_PRIMITIVE, MessagePriority.BLOCKING_PROBLEM));
       }
 
-      DebugContext debugContext = uiValue.getEvaluateContext().getDebugContext();
-      JavascriptVm javascriptVm = debugContext.getJavascriptVm();
-      EvaluateWithContextExtension extenstion = javascriptVm.getEvaluateWithContextExtension();
-      if (extenstion == null) {
-        return createErrorOptional(new Message(Messages.LogicImpl_FEATURE_NOT_SUPPORTED,
-            MessagePriority.BLOCKING_PROBLEM));
-      }
+      DebugContext debugContext = uiValue.getSuspendedState().getDebugContext();
       // Unsafe asynchronous check.
       if (uiValue.getSuspendedState().isDismissed()) {
         return createErrorOptional(
@@ -358,16 +350,13 @@ class DialogLogic {
       }
       JsEvaluateContext globalEvaluateContext = debugContext.getGlobalEvaluateContext();
 
-      return createOptional(new PreviewContext(extenstion, globalEvaluateContext, jsObject));
+      return createOptional(new PreviewContext(globalEvaluateContext, jsObject));
     }
 
-    final EvaluateWithContextExtension extension;
     final JsEvaluateContext globalEvaluateContext;
     final JsObject jsObject;
 
-    private PreviewContext(EvaluateWithContextExtension extension,
-        JsEvaluateContext globalEvaluateContext, JsObject jsObject) {
-      this.extension = extension;
+    private PreviewContext(JsEvaluateContext globalEvaluateContext, JsObject jsObject) {
       this.globalEvaluateContext = globalEvaluateContext;
       this.jsObject = jsObject;
     }
@@ -618,8 +607,7 @@ class DialogLogic {
           callback.done(Messages.LogicImpl_PROBLEM_ON_REMOTE + errorMessage, warningMessage);
         }
       };
-      previewContext.extension.evaluateAsync(previewContext.globalEvaluateContext, expression,
-          null, evaluateCallback, null);
+      previewContext.globalEvaluateContext.evaluateAsync(expression, null, evaluateCallback, null);
     }
 
     protected void execute(DialogLogic.PreviewContext previewContext, final SetCallback callback) {
@@ -657,7 +645,7 @@ class DialogLogic {
           callback.done(errorMessage);
         }
       };
-      previewContext.extension.evaluateAsync(previewContext.globalEvaluateContext, expression,
+      previewContext.globalEvaluateContext.evaluateAsync(expression,
           Collections.singletonMap(paramJsName, previewContext.jsObject.getRefId()),
           evaluateCallback, null);
     }

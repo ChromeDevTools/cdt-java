@@ -14,15 +14,12 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.Version;
-import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.websocket.WsConnection;
@@ -223,11 +220,6 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   public Version getVersion() {
     // TODO(peter.rybin): support it.
     return new Version(Arrays.asList(0, 0), " <Unknown V8 version>");
-  }
-
-  @Override
-  public EvaluateWithContextExtension getEvaluateWithContextExtension() {
-    return JsEvaluateContextBase.EVALUATE_WITH_CONTEXT_EXTENSION;
   }
 
   @Override

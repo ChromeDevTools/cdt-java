@@ -35,7 +35,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class JsInspectSnippetAction implements IEditorActionDelegate {
 
   private static final String ACTION_DEFINITION_ID = "org.chromium.debug.ui.commands.Inspect"; //$NON-NLS-1$
-  
+
   private IEditorPart activeEditorPart;
 
   public void setActiveEditor(IAction action, IEditorPart targetEditor) {
@@ -66,8 +66,10 @@ public class JsInspectSnippetAction implements IEditorActionDelegate {
     }
     IEditorPart editorPart = activeEditorPart;
     String currentSelectedText = retrieveSelection(editorPart);
-    EvaluateCallbackImpl callback = new EvaluateCallbackImpl(evaluateContext, editorPart, currentSelectedText);
-    evaluateContext.getJsEvaluateContext().evaluateAsync(currentSelectedText, callback, null);
+    EvaluateCallbackImpl callback =
+        new EvaluateCallbackImpl(evaluateContext, editorPart, currentSelectedText);
+    evaluateContext.getJsEvaluateContext().evaluateAsync(currentSelectedText, null,
+        callback, null);
   }
 
   private static String retrieveSelection(IWorkbenchPart targetPart) {
@@ -86,7 +88,7 @@ public class JsInspectSnippetAction implements IEditorActionDelegate {
     }
     return null;
   }
-  
+
   private static String extractSurroundingWord(ITextSelection targetSelection, ITextEditor editor) {
     return JavascriptUtil.extractSurroundingJsIdentifier(
         editor.getDocumentProvider().getDocument(editor.getEditorInput()),
