@@ -6,6 +6,7 @@ package org.chromium.sdk.tests.system.runner;
 
 import static org.chromium.sdk.tests.system.runner.DomUtils.getTextParameter;
 import static org.chromium.sdk.tests.system.runner.DomUtils.iterableNodes;
+import static org.chromium.sdk.tests.system.runner.DomUtils.readTextParameter;
 import static org.chromium.sdk.tests.system.runner.DomUtils.visitNode;
 
 import java.io.IOException;
@@ -75,28 +76,46 @@ class GoogleStorage {
     if (!path.endsWith("/")) {
       throw new IllegalArgumentException();
     }
-    String urlString = urlBase + "/?delimiter=/&prefix=" + path;
-    URL url = new URL(urlString);
-    Document document = documentBuilder.parse(url.openStream());
-
     final List<Resource> result = new ArrayList<Resource>();
 
-    DefaultVisitor<Void> nodeVisitor = new DefaultVisitor<Void>() {
+    class NodeVisitor extends DefaultVisitor<Void> {
+      String nextMarker = null;
+
       @Override public Void visitElement(Element element) {
-        if (element.getTagName().equals("Contents")) {
+        String tagName = element.getTagName();
+        if (tagName.equals("Contents")) {
           result.add(buildFile(element));
-        } else if (element.getTagName().equals("CommonPrefixes")) {
+        } else if (tagName.equals("CommonPrefixes")) {
           result.add(buildDir(element));
+        } else if (tagName.equals("NextMarker")) {
+          nextMarker = readTextParameter(element);
         }
         return null;
       }
       @Override protected Void visitDefault(Node node) {
         return null;
       }
-    };
-    for (Node childNode : iterableNodes(document.getDocumentElement().getChildNodes())) {
-      visitNode(childNode, nodeVisitor);
     }
+
+    String firstUrlString = urlBase + "/?delimiter=/&prefix=" + path;
+    String nextUrl;
+    for (String urlString = firstUrlString; urlString != null; urlString = nextUrl) {
+      NodeVisitor nodeVisitor = new NodeVisitor();
+
+      URL url = new URL(urlString);
+      Document document = documentBuilder.parse(url.openStream());
+      Element documentElement = document.getDocumentElement();
+      for (Node childNode : iterableNodes(documentElement.getChildNodes())) {
+        visitNode(childNode, nodeVisitor);
+      }
+
+      if (nodeVisitor.nextMarker == null) {
+        nextUrl = null;
+      } else {
+        nextUrl = urlBase + "/?delimiter=/&prefix=" + path + "&marker=" + nodeVisitor.nextMarker;
+      }
+    }
+
     return result;
   }
 
@@ -128,7 +147,7 @@ class GoogleStorage {
   }
 
   private Dir buildDir(Element element) {
-    final String key = getTextParameter(element, "Key");
+    final String key = getTextParameter(element, "Prefix");
     final String fullName = key.substring(0, key.length() - 1);
     int separatorPos = fullName.lastIndexOf('/');
     final String shortName = fullName.substring(separatorPos + 1);
