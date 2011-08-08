@@ -26,10 +26,13 @@ import org.w3c.dom.Text;
  */
 public class DomUtils {
 
-  static String getTextParameter(Element baseElement, String name) {
+  static String getTextParameter(Element baseElement, final String name) {
     for (Node node : iterableNodes(baseElement.getChildNodes())) {
       String value = visitNode(node, new DefaultVisitor<String>() {
         @Override public String visitElement(Element element) {
+          if (!element.getTagName().equals(name)) {
+            return null;
+          }
           return readTextParameter(element);
         }
         @Override protected String visitDefault(Node node1) {
@@ -43,27 +46,23 @@ public class DomUtils {
     return null;
   }
 
-  static String readTextParameter(Node node) {
-    return visitNode(node, new DefaultVisitor<String>() {
-      @Override public String visitElement(Element node) {
-        NodeList list = node.getChildNodes();
-        if (list.getLength() != 1) {
+  static String readTextParameter(Element element) {
+    NodeList list = element.getChildNodes();
+    if (list.getLength() != 1) {
+      throw new RuntimeException();
+    }
+    return visitNode(list.item(0), GET_TEXT_CONTENT_VISITOR);
+  }
+
+  private static final DefaultVisitor<String> GET_TEXT_CONTENT_VISITOR =
+        new DefaultVisitor<String>() {
+        @Override public String visitText(Text node) {
+          return node.getTextContent();
+        }
+        @Override protected String visitDefault(Node node) {
           throw new RuntimeException();
         }
-        return visitNode(list.item(0), new DefaultVisitor<String>() {
-          @Override public String visitText(Text node) {
-            return node.getTextContent();
-          }
-          @Override protected String visitDefault(Node node) {
-            throw new RuntimeException();
-          }
-        });
-      }
-      @Override protected String visitDefault(Node node) {
-        throw new RuntimeException();
-      }
-    });
-  }
+      };
 
   interface NodeVisitor<R> {
     R visitElement(Element node);
