@@ -5,6 +5,7 @@
 package org.chromium.sdk.wip;
 
 import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.RemoteValueMapping;
 
 /**
  * WIP-specific extension to {@link JavascriptVm}.
@@ -17,4 +18,9 @@ public interface WipJavascriptVm extends JavascriptVm {
    * might be undesired result. It is user's responsibility to choose unique group id.
    */
   PermanentRemoteValueMapping createPermanentValueMapping(String id);
+
+  /**
+   * @return extension to evaluate operations that supports {@link RemoteValueMapping}; not null
+   */
+  EvaluateToMappingExtension getEvaluateWithDestinationMappingExtension();
 }

@@ -6,15 +6,19 @@ package org.chromium.sdk.internal.wip;
 
 import java.util.Map;
 
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
+import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.wip.EvaluateToMappingExtension;
 
 /**
  * Basic implementation of the abstract {@link JsEvaluateContextBase}. Class leaves unimplemented
@@ -132,4 +136,31 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       throw new IllegalArgumentException("Incorrect evaluate context argument", e);
     }
   }
+
+  static final EvaluateToMappingExtension EVALUATE_TO_MAPPING_EXTENSION =
+      new EvaluateToMappingExtension() {
+    @Override
+    public void evaluateSync(JsEvaluateContext evaluateContext,
+        String expression, Map<String, String> additionalContext,
+        RemoteValueMapping targetMapping, EvaluateCallback evaluateCallback)
+        throws MethodIsBlockingException {
+      CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+      RelayOk relayOk = evaluateAsync(evaluateContext, expression, additionalContext,
+          targetMapping, evaluateCallback, callbackSemaphore);
+      callbackSemaphore.acquireDefault(relayOk);
+    }
+
+    @Override
+    public RelayOk evaluateAsync(JsEvaluateContext evaluateContext,
+        String expression, Map<String, String> additionalContext,
+        RemoteValueMapping targetMapping, EvaluateCallback evaluateCallback,
+        SyncCallback syncCallback) {
+      WipEvaluateContextBase<?> contextImpl =
+          WipEvaluateContextBase.castArgument(evaluateContext);
+      WipValueLoader valueLoader = WipValueLoader.castArgument(targetMapping);
+
+      return contextImpl.evaluateAsync(expression, additionalContext,
+          evaluateCallback, syncCallback);
+    }
+  };
 }
