@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
@@ -319,6 +320,14 @@ public abstract class WipValueLoader implements RemoteValueMapping {
     callbackSemaphore.acquireDefault(relayOk);
 
     return result[0];
+  }
+
+  static WipValueLoader castArgument(RemoteValueMapping mapping) {
+    try {
+      return (WipValueLoader) mapping;
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("Incorrect evaluate context argument", e);
+    }
   }
 
   // List is too short to use HashSet.

@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.wip;
 
+import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.ReleaseObjectGroupParams;
@@ -25,7 +27,7 @@ class PermanentRemoteValueMappingImpl extends WipValueLoader
   }
 
   @Override
-  public void delete(final GenericCallback<Void> callback, SyncCallback syncCallback) {
+  public RelayOk delete(final GenericCallback<Void> callback, SyncCallback syncCallback) {
     ReleaseObjectGroupParams params = new ReleaseObjectGroupParams(id);
     WipCommandCallback callbackWrapper;
     if (callback == null) {
@@ -43,11 +45,16 @@ class PermanentRemoteValueMappingImpl extends WipValueLoader
         }
       };
     }
-    getTabImpl().getCommandProcessor().send(params, callbackWrapper, syncCallback);
+    return getTabImpl().getCommandProcessor().send(params, callbackWrapper, syncCallback);
   }
 
   @Override
   String getObjectGroupId() {
     return id;
+  }
+
+  @Override
+  public JsEvaluateContext getEvaluateContext() {
+    return new WipContextBuilder.GlobalEvaluateContext(this);
   }
 }

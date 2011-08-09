@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.wip;
 
+import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.util.GenericCallback;
@@ -17,5 +19,16 @@ import org.chromium.sdk.util.GenericCallback;
 public interface PermanentRemoteValueMapping extends RemoteValueMapping {
   String getId();
 
-  void delete(GenericCallback<Void> callback, SyncCallback syncCallback);
+  /**
+   * Asynchronously deletes mapping on remote VM. No values from this {@link RemoteValueMapping}
+   * must be used after this call.
+   */
+  RelayOk delete(GenericCallback<Void> callback, SyncCallback syncCallback);
+
+  /**
+   * Returns {@link JsEvaluateContext} that is tied with this {@link RemoteValueMapping}.
+   * By default all evaluate result values will be using this {@link RemoteValueMapping}.
+   * (This can be overriden by {@link EvaluateToMappingExtension}).
+   */
+  JsEvaluateContext getEvaluateContext();
 }

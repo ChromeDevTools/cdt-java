@@ -15,6 +15,7 @@ import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -33,6 +34,7 @@ import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 import org.chromium.sdk.util.SignalRelay;
 import org.chromium.sdk.util.SignalRelay.AlreadySignalledException;
+import org.chromium.sdk.wip.EvaluateToMappingExtension;
 import org.chromium.sdk.wip.PermanentRemoteValueMapping;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserTab;
@@ -230,6 +232,11 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   @Override
   public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
     return WipBreakpointImpl.getIgnoreCountBreakpointExtensionImpl();
+  }
+
+  @Override
+  public EvaluateToMappingExtension getEvaluateWithDestinationMappingExtension() {
+    return WipEvaluateContextBase.EVALUATE_TO_MAPPING_EXTENSION;
   }
 
   @Override
