@@ -240,6 +240,7 @@ public class WsConnection {
       }
     };
     Thread readThread = new Thread(listenRunnable, "WebSocket listen thread");
+    readThread.setDaemon(true);
     readThread.start();
     if (connectionLogger != null) {
       connectionLogger.start();
@@ -268,6 +269,7 @@ public class WsConnection {
       }
     };
     Thread dispatchThread = new Thread(dispatchRunnable, "WebSocket dispatch thread");
+    dispatchThread.setDaemon(true);
     dispatchThread.start();
   }
 
