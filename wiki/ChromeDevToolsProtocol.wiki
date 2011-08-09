@@ -1,5 +1,7 @@
 #summary Google Chrome Developer Tools Protocol
 
+The protocol is deprecated. See [#Depreation below].
+
 = Introduction =
 
 The existing [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 Debugger Protocol] is not sufficient to provide Google Chrome, Chromium, or any other browser that supports the protocol, with the capability of remote debugging via TCP/IP sockets. The V8 Debugger protocol covers only !JavaScript debugging operations, and only within a single V8 virtual machine (VM). In reality, there can be one or more separate V8 VMs inside a Google Chrome instance, residing in different renderer processes. Also, retrieving URLs loaded in the browser tabs, inspecting or modifying the DOM tree are not covered by !JavaScript operations.
@@ -117,3 +119,10 @@ The following *result* codes are possible:
 || evaluate_javascript || <ul><li>Destination: tab_id</li><li>Content: {"command":"evaluate_javascript", "data":"some_javascript"}</li></ul> || none ||
 || navigated || none (event) || <ul><li>Destination: tab_id</li><li>Content: {"command":"navigated", "result":0, "data":"new_url"}</li></ul> ||
 || closed || none (event) || <ul><li>Destination: tab_id</li><li>Content: {"command":"closed", "result":0}</li></ul> ||
+
+<p></p>
+
+= Deprecation =
+The new debug protocol [WipBackendDevelopment "WebKit Remote Debug Protocol"] is being developed to succeed !ChromeDevTools protocol. !ChromeDevTools protocol should be considered _deprecated_. Google Chrome/Chromium browser is going to discontinue its support after the new protocol becomes stable.
+
+The [ChromeDevToolsSdk SDK] and EclipseDebugger are going to simultaneously support both protocols behind the single interface starting from 0.3.0 version.
