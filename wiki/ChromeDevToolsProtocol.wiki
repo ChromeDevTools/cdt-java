@@ -1,6 +1,6 @@
 #summary Google Chrome Developer Tools Protocol
 
-The protocol is deprecated. See [#Deprecation below].
+The protocol is *deprecated*. See [#Deprecation below].
 
 = Introduction =
 
