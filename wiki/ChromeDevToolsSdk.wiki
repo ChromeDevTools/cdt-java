@@ -6,7 +6,7 @@
 
 In addition SDK supports following protocols:
   * [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol] to attach to any V8-based applications,
-  * [WipBackendDevelopment WebKit Remote Debug Protocol] (starting from [Release_0_3_0 0.3.0] release). 
+  * [WipBackendDevelopment WebKit Remote Debug Protocol] (starting from [Release_0_3_0 0.3.0 release]). 
 
 =Binary=
 The library is available as a set of .jar files from Downloads section ("!ChromeDevTools SDK library as tar archive"). It also comprises org.chromium.sdk plugin.
