@@ -4,32 +4,33 @@
 
 package org.chromium.sdk;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-
 /**
  * Logger facility for the Chromium debugger connection. It can eavesdrop both
- * incoming and outgoing streams and log them somewhere. To make other code
- * less dependent on this interface, it works by wrapping reader/writer and is
- * only visible at start-up time. This approach has its disadvantages, because
- * it works with raw data streams, which are not perfectly formatted for human
- * reading. E.g. adjacent  requests or responses are not separated even
- * by EOL.
+ * incoming and outgoing streams and log them somewhere.
  */
 public interface ConnectionLogger {
-  /**
-   * @return new writer that should pass all data to {@code streamWriter} and
-   * silently copy it elsewhere (without additional exceptions).
-   */
-  LoggableWriter wrapWriter(LoggableWriter streamWriter, Charset charset);
 
   /**
-   * @return new reader that should give access to all data
-   * from {@code streamReader} and silently copy it elsewhere (without
-   * additional exceptions).
+   * Listens to stream data traffic. Traffic is a series of {@link CharSequence}s and
+   * separators. It is a connection's responsibility to convert actual bytes transmitted into
+   * characters and separators. Connection should try to make output human-readable.
+   * All calls to the interface must be serialized (for example, but not necessarily, made from
+   * a single thread).
    */
-  LoggableReader wrapReader(LoggableReader streamReader, Charset charset);
+  interface StreamListener {
+    void addContent(CharSequence text);
+    void addSeparator();
+  }
+
+  /**
+   * @return listener for incoming socket stream or null
+   */
+  StreamListener getIncomingStreamListener();
+
+  /**
+   * @return listener for outgoing socket stream or null
+   */
+  StreamListener getOutgoingStreamListener();
 
   /**
    * Connection may allow the logger to close it. It is nice for UI, where
@@ -65,33 +66,5 @@ public interface ConnectionLogger {
      * Creates new instance of {@link ConnectionLogger}.
      */
     ConnectionLogger newConnectionLogger();
-  }
-
-  /**
-   * Reader that allows client to add marks to stream. These marks may become visible in log
-   * console.
-   * TODO(peter.rybin): rename to LoggableInputStream to better reflect semantics.
-   */
-  interface LoggableReader {
-    InputStream getInputStream();
-
-    /**
-     * Add log mark at current reader's position.
-     */
-    void markSeparatorForLog();
-  }
-
-  /**
-   * Writer that allows client to add marks to stream. These marks may become visible in log
-   * console.
-   * TODO(peter.rybin): rename to LoggableOutputStream to better reflect semantics.
-   */
-  interface LoggableWriter {
-    OutputStream getOutputStream();
-
-    /**
-     * Add log mark at current writer's position.
-     */
-    void markSeparatorForLog();
   }
 }

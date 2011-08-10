@@ -22,8 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.ConnectionLogger.LoggableReader;
-import org.chromium.sdk.ConnectionLogger.LoggableWriter;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.transport.SocketWrapper;
@@ -143,9 +141,10 @@ public class WsConnection {
       }
     });
 
-    final LoggableReader loggableReader = socketWrapper.getLoggableReader();
+    final SocketWrapper.LoggableInputStream loggableReader = socketWrapper.getLoggableInput();
     final BufferedInputStream input = new BufferedInputStream(loggableReader.getInputStream());
     Runnable listenRunnable = new Runnable() {
+      @Override
       public void run() {
         Exception closeCause = null;
         CloseReason closeReason = null;
@@ -247,6 +246,7 @@ public class WsConnection {
     }
 
     Runnable dispatchRunnable = new Runnable() {
+      @Override
       public void run() {
         try {
           runImpl();
@@ -275,7 +275,7 @@ public class WsConnection {
 
   public void sendTextualMessage(String message) throws IOException {
     byte[] bytes = message.getBytes(UTF_8_CHARSET);
-    LoggableWriter loggableWriter = socketWrapper.getLoggableWriter();
+    SocketWrapper.LoggableOutputStream loggableWriter = socketWrapper.getLoggableOutput();
     OutputStream output = loggableWriter.getOutputStream();
     output.write((byte) 0);
     output.write(bytes);
@@ -294,7 +294,7 @@ public class WsConnection {
 
   private final SignalRelay<CloseReason> linkedCloser =
       SignalRelay.create(new SignalRelay.Callback<CloseReason>() {
-    public void onSignal(CloseReason param, Exception cause) {
+    @Override public void onSignal(CloseReason param, Exception cause) {
       gracefullyClosing = true;
     }
   });
@@ -378,7 +378,7 @@ public class WsConnection {
 
   private static final SignalConverter<SocketWrapper.ShutdownSignal, CloseReason>
       SOCKET_TO_CONNECTION = new SignalConverter<SocketWrapper.ShutdownSignal, CloseReason>() {
-    public CloseReason convert(SocketWrapper.ShutdownSignal source) {
+    @Override public CloseReason convert(SocketWrapper.ShutdownSignal source) {
       return CloseReason.CONNECTION_CLOSED;
     }
   };
