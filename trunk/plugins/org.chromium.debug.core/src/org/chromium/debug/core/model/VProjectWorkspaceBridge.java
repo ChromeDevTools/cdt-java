@@ -7,8 +7,6 @@ package org.chromium.debug.core.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -16,20 +14,20 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
-import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint.MutableProperty;
+import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchMode;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
-import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.util.GenericCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -196,9 +194,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
 
-    private final Map<JavascriptVm.ExceptionCatchType, Boolean> breakExceptionState =
-        Collections.synchronizedMap(new EnumMap<JavascriptVm.ExceptionCatchType, Boolean>(
-            JavascriptVm.ExceptionCatchType.class));
+    private volatile JavascriptVm.ExceptionCatchMode breakExceptionMode = null;
 
     private final EnablementMonitor enablementMonitor = new EnablementMonitor();
 
@@ -393,29 +389,33 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
+    @Override
     public void readBreakExceptionStateFromRemote() {
-      setBreakExceptionStateImpl(ExceptionCatchType.CAUGHT, null);
-      setBreakExceptionStateImpl(ExceptionCatchType.UNCAUGHT, null);
-    }
-    public Boolean getBreakExceptionState(ExceptionCatchType catchType) {
-      return breakExceptionState.get(catchType);
+      setBreakExceptionStateImpl(null);
     }
 
-    public void setBreakExceptionState(ExceptionCatchType catchType, boolean value) {
-      setBreakExceptionStateImpl(catchType, Boolean.valueOf(value));
+    @Override
+    public ExceptionCatchMode getBreakExceptionState() {
+      return breakExceptionMode;
     }
-    private void setBreakExceptionStateImpl(final ExceptionCatchType catchType, Boolean value) {
-      GenericCallback<Boolean> callback =
-          new GenericCallback<Boolean>() {
-            public void success(Boolean newValue) {
-              breakExceptionState.put(catchType, newValue);
+
+    @Override
+    public void setBreakExceptionState(ExceptionCatchMode catchMode) {
+      setBreakExceptionStateImpl(catchMode);
+    }
+
+    private void setBreakExceptionStateImpl(final ExceptionCatchMode catchMode) {
+      GenericCallback<ExceptionCatchMode> callback =
+          new GenericCallback<ExceptionCatchMode>() {
+            public void success(ExceptionCatchMode newValue) {
+              breakExceptionMode = newValue;
             }
             public void failure(Exception exception) {
               ChromiumDebugPlugin.log(new Exception(
                   "Failed to set 'break on exception' value", exception));
             }
           };
-      javascriptVm.setBreakOnException(catchType, value, callback, null);
+      javascriptVm.setBreakOnException(catchMode, callback, null);
     }
 
 

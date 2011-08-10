@@ -24,10 +24,12 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   protected JavascriptVmImpl() {
   }
 
+  @Override
   public void suspend(SuspendCallback callback) {
     getDebugSession().suspend(callback);
   }
 
+  @Override
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     RelayOk relayOk =
@@ -61,9 +63,9 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   @Override
-  public RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
-      GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    return getDebugSession().getBreakpointManager().setBreakOnException(catchType, enabled,
+  public RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback) {
+    return getDebugSession().getBreakpointManager().setBreakOnException(catchMode,
         callback, syncCallback);
   }
 

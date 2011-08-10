@@ -121,18 +121,19 @@ public interface JavascriptVm {
   RelayOk enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
       SyncCallback syncCallback);
 
-  enum ExceptionCatchType {
-    CAUGHT, UNCAUGHT
+  enum ExceptionCatchMode {
+    ALL, UNCAUGHT, NONE
   }
 
   /**
-   * Asynchronously enables or disables breaking on exception. All exception
-   * events are split into 2 categories: caught and uncaught. Parameter
-   * 'enabled' may be null, in this case the remote value is not modified and can be
-   * obtained inside the callback.
+   * Asynchronously sets exception catch mode.
+   * @param new mode or null to keep the current mode
+   * @param callback gets invoked when operation is finished and receives current mode
+   *     as a value (may receive null if actual mode doesn't fit into {@link ExceptionCatchMode}
+   *     type)
    */
-  RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
-      GenericCallback<Boolean> callback, SyncCallback syncCallback);
+  RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback);
 
   /**
    * @return version of JavaScript VM or null if not available
