@@ -46,7 +46,7 @@ class Handshake {
       }
     }
 
-    OutputStream output = socket.getLoggableWriter().getOutputStream();
+    OutputStream output = socket.getLoggableOutput().getOutputStream();
     Writer outputWriter = new OutputStreamWriter(output, UTF_8_CHARSET);
 
     outputWriter.write("GET " + resourceName + " HTTP/1.1\r\n");
@@ -93,7 +93,7 @@ class Handshake {
     }
 
 
-    InputStream input = socket.getLoggableReader().getInputStream();
+    InputStream input = socket.getLoggableInput().getInputStream();
 
     // First line.
     {

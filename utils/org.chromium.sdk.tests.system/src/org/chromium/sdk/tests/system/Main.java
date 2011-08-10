@@ -5,13 +5,7 @@
 package org.chromium.sdk.tests.system;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -34,9 +28,7 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.util.ByteToCharConverter;
 import org.chromium.sdk.wip.WipBrowser;
-import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
 import org.chromium.sdk.wip.WipBrowserFactory;
 
 /**
@@ -290,7 +282,7 @@ public class Main {
         };
         WipBrowser browser = WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
 
-        List<? extends WipTabConnector> tabs;
+        List<? extends WipBrowser.WipTabConnector> tabs;
         try {
           tabs = browser.getTabs();
         } catch (IOException e) {
@@ -396,79 +388,25 @@ public class Main {
     }
     public void start() {
     }
-    public LoggableReader wrapReader(final LoggableReader streamReader, final Charset charset) {
-      final InputStream originalInputStream = streamReader.getInputStream();
-      final InputStream wrappedInputStream = new InputStream() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-        @Override
-        public int read() throws IOException {
-          byte[] buffer = new byte[1];
-          int res = readImpl(buffer, 0, 1);
-          if (res <= 0) {
-            return -1;
-          } else {
-            return buffer[0];
-          }
-        }
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-          return readImpl(b, off, len);
-        }
-        private int readImpl(byte[] buf, int off, int len) throws IOException {
-          int res = originalInputStream.read(buf, off, len);
-          if (res > 0) {
-            convertAndPrintBytes(ByteBuffer.wrap(buf, off, res), byteToCharConverter, System.out);
-          }
-          return res;
-        }
-      };
 
-      return new LoggableReader() {
-        public InputStream getInputStream() {
-          return wrappedInputStream;
-        }
-        public void markSeparatorForLog() {
-          System.out.println("\n------------------");
-        }
-      };
+    @Override
+    public StreamListener getIncomingStreamListener() {
+      return new StreamListenerImpl();
     }
-    public LoggableWriter wrapWriter(final LoggableWriter streamWriter, final Charset charset) {
-      return new LoggableWriter() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-
-        public OutputStream getOutputStream() {
-          final OutputStream originalOutput = streamWriter.getOutputStream();
-          return new OutputStream() {
-            @Override
-            public void close() throws IOException {
-              originalOutput.close();
-            }
-            @Override
-            public void flush() throws IOException {
-              originalOutput.flush();
-            }
-            @Override
-            public void write(int b) throws IOException {
-              write(new byte[] { (byte) b });
-            }
-            @Override
-            public void write(byte[] buf, int off, int len) throws IOException {
-              originalOutput.write(buf, off, len);
-              convertAndPrintBytes(ByteBuffer.wrap(buf, off, len), byteToCharConverter, System.out);
-            }
-          };
-        }
-        public void markSeparatorForLog() {
-          System.out.println("\n------------------");
-        }
-      };
+    @Override
+    public StreamListener getOutgoingStreamListener() {
+      return new StreamListenerImpl();
     }
 
-    private static void convertAndPrintBytes(ByteBuffer in, ByteToCharConverter converter,
-        PrintStream out) {
-      CharBuffer res = converter.convert(in);
-      while (res.hasRemaining()) {
-        out.print(res.get());
+    private class StreamListenerImpl implements StreamListener {
+      @Override
+      public void addSeparator() {
+        System.out.print("\n------------------\n");
+      }
+
+      @Override
+      public void addContent(CharSequence sequence) {
+        System.out.print(sequence);
       }
     }
   }
