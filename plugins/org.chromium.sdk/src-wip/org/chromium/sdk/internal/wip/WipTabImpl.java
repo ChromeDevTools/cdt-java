@@ -7,6 +7,8 @@ package org.chromium.sdk.internal.wip;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,7 +17,6 @@ import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
-import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -168,21 +169,11 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   }
 
   @Override
-  public RelayOk setBreakOnException(ExceptionCatchType catchType,
-      Boolean enabled, GenericCallback<Boolean> callback, SyncCallback syncCallback) {
+  public RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback) {
 
-    VmState.Variable<Boolean> variable;
-    switch (catchType) {
-    case CAUGHT:
-      variable = VmState.BREAK_ON_CAUGHT;
-      break;
-    case UNCAUGHT:
-      variable = VmState.BREAK_ON_UNCAUGHT;
-      break;
-    default:
-      throw new RuntimeException();
-    }
-    return updateVmVariable(enabled, variable, callback, syncCallback);
+    VmState.Variable<ExceptionCatchMode> variable = VmState.BREAK_ON_EXCEPTION;
+    return updateVmVariable(catchMode, variable, callback, syncCallback);
   }
 
   /**
@@ -344,10 +335,16 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
    * of WebInspector protocol.
    */
   private static class VmState {
-    boolean breakpointsActive = false;
+    // TODO: get protocol declare this default value explicitly.
+    private static final boolean DEFAULT_BREAKPOINTS_ACTIVE = true;
 
-    boolean breakOnCaughtExceptions = false;
-    boolean breakOnUncaughtExceptions = false;
+    // TODO: get protocol declare this default value explicitly.
+    private static final ExceptionCatchMode DEFAULT_CATCH_MODE = ExceptionCatchMode.NONE;
+
+    boolean breakpointsActive = DEFAULT_BREAKPOINTS_ACTIVE;
+
+    // TODO: do we know default value?
+    ExceptionCatchMode breakOnExceptionMode = DEFAULT_CATCH_MODE;
 
     static abstract class Variable<T> {
       abstract T getValue(VmState vmState);
@@ -367,24 +364,13 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
       }
     };
 
-    static final Variable<Boolean> BREAK_ON_CAUGHT = new Variable<Boolean>() {
-      @Override Boolean getValue(VmState vmState) {
-        return vmState.breakOnCaughtExceptions;
+    static final Variable<ExceptionCatchMode> BREAK_ON_EXCEPTION =
+        new Variable<ExceptionCatchMode>() {
+      @Override ExceptionCatchMode getValue(VmState vmState) {
+        return vmState.breakOnExceptionMode;
       }
-      @Override void setValue(VmState vmState, Boolean value) {
-        vmState.breakOnCaughtExceptions = value;
-      }
-      @Override WipParams createRequestParams(VmState vmState) {
-        return vmState.createPauseOnExceptionRequest();
-      }
-    };
-
-    static final Variable<Boolean> BREAK_ON_UNCAUGHT = new Variable<Boolean>() {
-      @Override Boolean getValue(VmState vmState) {
-        return vmState.breakOnUncaughtExceptions;
-      }
-      @Override void setValue(VmState vmState, Boolean value) {
-        vmState.breakOnUncaughtExceptions = value;
+      @Override void setValue(VmState vmState, ExceptionCatchMode value) {
+        vmState.breakOnExceptionMode = value;
       }
       @Override WipParams createRequestParams(VmState vmState) {
         return vmState.createPauseOnExceptionRequest();
@@ -392,20 +378,21 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
     };
 
     private SetPauseOnExceptionsParams createPauseOnExceptionRequest() {
-      // We try to push 2 bits (inherited from V8 internal flags)
-      // into 3-state flag (WIP type).
-      // TODO: change SDK and reduce 2 flags to 1 3-state value.
-      SetPauseOnExceptionsParams.State protocolState;
-      if (breakOnCaughtExceptions) {
-        protocolState = SetPauseOnExceptionsParams.State.ALL;
-      } else {
-        if (breakOnUncaughtExceptions) {
-          protocolState = SetPauseOnExceptionsParams.State.UNCAUGHT;
-        } else {
-          protocolState = SetPauseOnExceptionsParams.State.NONE;
-        }
-      }
-      return new SetPauseOnExceptionsParams(protocolState);
+      SetPauseOnExceptionsParams.State state = SDK_TO_WIP_CATCH_MODE.get(breakOnExceptionMode);
+      return new SetPauseOnExceptionsParams(state);
+    }
+
+    private static Map<ExceptionCatchMode, SetPauseOnExceptionsParams.State> SDK_TO_WIP_CATCH_MODE;
+    static {
+      SDK_TO_WIP_CATCH_MODE = new EnumMap<ExceptionCatchMode, SetPauseOnExceptionsParams.State>(
+          ExceptionCatchMode.class);
+
+      SDK_TO_WIP_CATCH_MODE.put(ExceptionCatchMode.ALL, SetPauseOnExceptionsParams.State.ALL);
+      SDK_TO_WIP_CATCH_MODE.put(ExceptionCatchMode.UNCAUGHT,
+          SetPauseOnExceptionsParams.State.UNCAUGHT);
+      SDK_TO_WIP_CATCH_MODE.put(ExceptionCatchMode.NONE, SetPauseOnExceptionsParams.State.NONE);
+
+      assert SDK_TO_WIP_CATCH_MODE.size() == ExceptionCatchMode.values().length;
     }
   }
 }
