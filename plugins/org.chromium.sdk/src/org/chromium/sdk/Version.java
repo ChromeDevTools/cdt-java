@@ -53,6 +53,7 @@ public class Version implements Comparable<Version> {
     return components.hashCode();
   }
 
+  @Override
   public int compareTo(Version other) {
     for (int i = 0; i < this.components.size(); i++) {
       if (other.components.size() <= i) {

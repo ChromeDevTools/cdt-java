@@ -85,7 +85,7 @@ class WipScriptManager {
       @Override
       public void run() {
         RelayOk relayOk =
-            scriptsPreloaded.getAsync(futureCallback, guardOne.getRelay().getSyncCallback());
+            scriptsPreloaded.getAsync(futureCallback, guardOne.getRelay().getUserSyncCallback());
         guardOne.discharge(relayOk);
       }
     };
@@ -276,7 +276,7 @@ class WipScriptManager {
     };
 
     // The async operation will call a guard even if something failed within the AsyncFuture.
-    return data.sourceLoadedFuture.getAsync(futureCallback, relay.getSyncCallback());
+    return data.sourceLoadedFuture.getAsync(futureCallback, relay.getUserSyncCallback());
   }
 
   public void pageReloaded() {

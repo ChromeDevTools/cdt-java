@@ -114,7 +114,8 @@ public interface DebugContext {
   JavascriptVm getJavascriptVm();
 
   /**
-   * @return value mapping that all values have by default
+   * @return value mapping that all values have by default; typically unique for a particular
+   *     {@link DebugContext}
    */
   RemoteValueMapping getDefaultRemoteValueMapping();
 }

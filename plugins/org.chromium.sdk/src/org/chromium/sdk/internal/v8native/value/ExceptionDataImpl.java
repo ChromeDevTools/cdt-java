@@ -32,12 +32,6 @@ public class ExceptionDataImpl implements ExceptionData {
     this.exceptionText = exceptionText;
   }
 
-  @Deprecated
-  @Override
-  public JsObject getExceptionObject() {
-    return getExceptionValue().asObject();
-  }
-
   @Override
   public JsValue getExceptionValue() {
     if (cachedException == null) {

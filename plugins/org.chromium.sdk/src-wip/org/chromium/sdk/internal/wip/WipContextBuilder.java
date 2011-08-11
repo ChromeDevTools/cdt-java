@@ -403,14 +403,6 @@ class WipContextBuilder {
       }
 
       @Override
-      public JsObject getExceptionObject() {
-        if (exceptionValue instanceof JsObject == false) {
-          return null;
-        }
-        return (JsObject) exceptionValue;
-      }
-
-      @Override
       public JsValue getExceptionValue() {
         return exceptionValue;
       }

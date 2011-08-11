@@ -216,7 +216,7 @@ public class DebugSession {
               callback.success(debugSession.getScriptManager().allScripts());
             }
           },
-          relay.getSyncCallback());
+          relay.getUserSyncCallback());
     }
 
     private class ScriptsRequester implements AsyncFuture.Operation<Void> {

@@ -54,8 +54,10 @@ public interface JsObject extends JsValue {
 
   /**
    * Optionally returns unique id for this object. No two distinct objects can have the same id.
-   * Lifetime of id may be limited by lifetime of {@link DebugContext}.
+   * Lifetime of id is limited to lifetime of its {@link RemoteValueMapping} (typically corresponds
+   * to the lifetime of {@link DebugContext}.)
    * @return object id or null
+   * @see #getRemoteValueMapping()
    */
   String getRefId();
 
