@@ -151,7 +151,7 @@ public class WipBreakpointManager {
     int line = position.getLine();
     int column = position.getColumn();
 
-    String scriptId = topFrame.getScript().getId();
+    String scriptId = topFrame.getSourceId();
     final WipBreakpointImpl.ActualLocation location =
         new WipBreakpointImpl.ActualLocation(scriptId, line, Long.valueOf(column));
 
