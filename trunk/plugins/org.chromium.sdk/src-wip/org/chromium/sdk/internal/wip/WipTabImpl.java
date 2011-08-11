@@ -105,7 +105,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
 
       @Override
       public void eofMessage() {
-        // Unused.
+        commandProcessor.processEos();
       }
     };
 
@@ -114,7 +114,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
     init();
   }
 
-  private void init() throws IOException {
+  private void init() {
     SyncCallback syncCallback = new SyncCallback() {
       @Override
       public void callbackDone(RuntimeException e) {

@@ -64,7 +64,7 @@ public class WsConnection {
 
   private final SocketWrapper socketWrapper;
   private final ConnectionLogger connectionLogger;
-  private volatile boolean gracefullyClosing = false;
+  private volatile boolean isClosingGracefully = false;
 
   private WsConnection(SocketWrapper socketWrapper, ConnectionLogger connectionLogger) {
     this.socketWrapper = socketWrapper;
@@ -128,8 +128,12 @@ public class WsConnection {
         return false;
       }
     };
-    dispatchQueue.add(messageDispatcher);
-    // TODO: make sure that it also calls sync callbacks in shutdown mode.
+    synchronized (dispatchQueue) {
+      if (isDispatchQueueClosed) {
+        throw new IllegalStateException("Connection is closed");
+      }
+      dispatchQueue.add(messageDispatcher);
+    }
     return DISPATCH_THREAD_PROMISES_TO_RELAY_OK;
   }
 
@@ -157,7 +161,11 @@ public class WsConnection {
           closeCause = e;
           LOGGER.log(Level.SEVERE, "Thread interruption", e);
         } finally {
-          dispatchQueue.add(EOS_MESSAGE_DISPATCHER);
+          synchronized (dispatchQueue) {
+            dispatchQueue.add(EOS_MESSAGE_DISPATCHER);
+            isDispatchQueueClosed = true;
+          }
+
           if (connectionLogger != null) {
             connectionLogger.handleEos();
           }
@@ -171,9 +179,18 @@ public class WsConnection {
       private CloseReason runImpl() throws IOException, InterruptedException {
         while (true) {
           loggableReader.markSeparatorForLog();
-          int firstByte = input.read();
+          int firstByte;
+          try {
+            firstByte = input.read();
+          } catch (IOException e) {
+            if (isClosingGracefully) {
+              return CloseReason.USER_REQUEST;
+            } else {
+              throw e;
+            }
+          }
           if (firstByte == -1) {
-            if (gracefullyClosing) {
+            if (isClosingGracefully) {
               return CloseReason.USER_REQUEST;
             } else {
               throw new IOException("Unexpected end of stream");
@@ -295,12 +312,15 @@ public class WsConnection {
   private final SignalRelay<CloseReason> linkedCloser =
       SignalRelay.create(new SignalRelay.Callback<CloseReason>() {
     @Override public void onSignal(CloseReason param, Exception cause) {
-      gracefullyClosing = true;
+      isClosingGracefully = true;
     }
   });
 
   private final BlockingQueue<MessageDispatcher> dispatchQueue =
       new LinkedBlockingQueue<MessageDispatcher>();
+
+  // Access must be synchronized on dispatchQueue
+  private boolean isDispatchQueueClosed = false;
 
   /**
    * A debug charset that simply encodes all non-ascii symbols as %DDD.

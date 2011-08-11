@@ -179,7 +179,10 @@ public class SocketConnection implements Connection {
       } catch (IOException e) {
         breakException = e;
       } finally {
-        inboundQueue.add(EOS);
+        synchronized (inboundQueue) {
+          inboundQueue.add(EOS);
+          isInboundQueueClosed = true;
+        }
       }
       if (!isInterrupted()) {
         shutdownRelay.sendSignal(false, breakException);
@@ -254,6 +257,9 @@ public class SocketConnection implements Connection {
   /** The inbound message queue. */
   private final BlockingQueue<MessageItem> inboundQueue = new LinkedBlockingQueue<MessageItem>();
 
+  /** Field must be accessed synchronized on inboundQueue */
+  private boolean isInboundQueueClosed = false;
+
   /** The outbound message queue. */
   private final BlockingQueue<Message> outboundQueue = new LinkedBlockingQueue<Message>();
 
@@ -317,7 +323,12 @@ public class SocketConnection implements Connection {
       }
     };
     try {
-      inboundQueue.put(messageItem);
+      synchronized (inboundQueue) {
+        if (isInboundQueueClosed) {
+          throw new IllegalStateException("Connection is closed");
+        }
+        inboundQueue.put(messageItem);
+      }
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
