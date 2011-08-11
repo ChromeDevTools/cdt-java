@@ -240,16 +240,16 @@ class Generator {
         @Override public StandaloneTypeBinding visitRef(String refName) {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitBoolean(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitBoolean() {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitString(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitString() {
           return createTypedefTypeBinding(type, "String", Naming.OUTPUT_TYPEDEF);
         }
-        @Override public StandaloneTypeBinding visitInteger(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitInteger() {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitNumber(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitNumber() {
           throw new RuntimeException();
         }
         @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
@@ -277,16 +277,16 @@ class Generator {
         @Override public StandaloneTypeBinding visitRef(String refName) {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitBoolean(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitBoolean() {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitString(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitString() {
           return createTypedefTypeBinding(type, "String", Naming.INPUT_TYPEDEF);
         }
-        @Override public StandaloneTypeBinding visitInteger(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitInteger() {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitNumber(boolean isOptional) {
+        @Override public StandaloneTypeBinding visitNumber() {
           throw new RuntimeException();
         }
         @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
@@ -526,62 +526,66 @@ class Generator {
           this.memberName = memberName;
         }
 
-        private String getTypeName(ObjectProperty objectProperty) throws IOException {
-          return getTypeName(objectProperty, TypedObjectAccess.FOR_OBJECT_PROPERTY);
+        private ReturnTypeData resolveType(ObjectProperty objectProperty) {
+          return resolveType(objectProperty, TypedObjectAccess.FOR_OBJECT_PROPERTY);
         }
 
-        private String getTypeName(Parameter parameter) throws IOException {
-          return getTypeName(parameter, TypedObjectAccess.FOR_PARAMETER);
+        private ReturnTypeData resolveType(Parameter parameter) {
+          return resolveType(parameter, TypedObjectAccess.FOR_PARAMETER);
         }
 
-        private String getTypeName(ArrayItemType arrayItemType) throws IOException {
-          return getTypeName(arrayItemType, TypedObjectAccess.FOR_ARRAY_ITEM);
+        private ReturnTypeData resolveType(ArrayItemType arrayItemType) {
+          return resolveType(arrayItemType, TypedObjectAccess.FOR_ARRAY_ITEM);
         }
 
-        <T> String getTypeName(final T typedObject, final TypedObjectAccess<T> access) {
-
-          return switchByType(typedObject, access, new TypeVisitor<String>() {
-            @Override public String visitRef(String refName) {
-              return resolveRefType(domain.domain(), refName, getTypeDirection());
+        <T> ReturnTypeData resolveType(final T typedObject, final TypedObjectAccess<T> access) {
+          ResolvedTypeData resolvedTypeData =
+              switchByType(typedObject, access, new TypeVisitor<ResolvedTypeData>() {
+            @Override public ResolvedTypeData visitRef(String refName) {
+              String refTypeName = resolveRefType(domain.domain(), refName, getTypeDirection());
+              return new ResolvedTypeData.UserType(refTypeName);
             }
-            @Override public String visitBoolean(boolean isOptional) {
-              return isOptional ? "Boolean" : "boolean";
-            }
-
-            @Override public String visitEnum(List<String> enumConstants) {
-              return generateEnum(getDescription(), enumConstants);
+            @Override public ResolvedTypeData visitBoolean() {
+              return ResolvedTypeData.BOOLEAN;
             }
 
-            @Override public String visitString(boolean isOptional) {
-              return "String";
+            @Override public ResolvedTypeData visitEnum(List<String> enumConstants) {
+              String enumName = generateEnum(getDescription(), enumConstants);
+              return new ResolvedTypeData.UserType(enumName);
             }
-            @Override public String visitInteger(boolean isOptional) {
-              return isOptional ? "Long" : "long";
+
+            @Override public ResolvedTypeData visitString() {
+              return ResolvedTypeData.STRING;
             }
-            @Override public String visitNumber(boolean isOptional) {
-              return "Number";
+            @Override public ResolvedTypeData visitInteger() {
+              return ResolvedTypeData.LONG;
             }
-            @Override public String visitArray(ArrayItemType items) {
+            @Override public ResolvedTypeData visitNumber() {
+              return ResolvedTypeData.NUMBER;
+            }
+            @Override public ResolvedTypeData visitArray(ArrayItemType items) {
+              ReturnTypeData type = resolveType(items);
+              return new ResolvedTypeData.UserType("java.util.List<" + type.getBoxedName() + ">");
+            }
+            @Override public ResolvedTypeData visitObject(List<ObjectProperty> properties) {
+              String nestedObjectName;
               try {
-                return "java.util.List<" + getTypeName(items) + ">";
+                nestedObjectName = generateNestedObject(getDescription(), properties);
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
+              return new ResolvedTypeData.UserType(nestedObjectName);
             }
-            @Override public String visitObject(List<ObjectProperty> properties) {
-              try {
-                return generateNestedObject(getDescription(), properties);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            }
-            @Override public String visitUnknown() {
-              return "Object";
+            @Override public ResolvedTypeData visitUnknown() {
+              return ResolvedTypeData.ANY;
             }
             private <T> String getDescription() {
               return access.getDescription(typedObject);
             }
           });
+
+          return resolvedTypeData.getReturnTypeData(
+              access.getOptional(typedObject) == Boolean.TRUE);
         }
 
         protected String getMemberName() {
@@ -609,13 +613,13 @@ class Generator {
 
             String methodName = generateMethodNameSubstitute(param.name(), getWriter());
 
-            if (param.optional() == Boolean.TRUE) {
-              getWriter().write("  @org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
-            }
-
             ClassScope.MemberScope memberScope = newMemberScope(param.name());
 
-            getWriter().write("  " + memberScope.getTypeName(param) + " " + methodName + "();\n");
+            ReturnTypeData returnTypeData = memberScope.resolveType(param);
+
+            returnTypeData.writeAnnotations(getWriter(), "  ");
+
+            getWriter().write("  " + returnTypeData.getName() + " " + methodName + "();\n");
             getWriter().write("\n");
           }
         }
@@ -631,12 +635,13 @@ class Generator {
 
           String methodName = generateMethodNameSubstitute(propertyName, getWriter());
 
-          if (objectProperty.optional() == Boolean.TRUE) {
-            getWriter().write("  @org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
-          }
-
           ClassScope.MemberScope memberScope = newMemberScope(propertyName);
-          getWriter().write("  " + memberScope.getTypeName(objectProperty) + " " +
+
+          ReturnTypeData returnTypeData = memberScope.resolveType(objectProperty);
+
+          returnTypeData.writeAnnotations(getWriter(), "  ");
+
+          getWriter().write("  " + returnTypeData.getName() + " " +
               methodName + "();\n");
           getWriter().write("\n");
         }
@@ -702,13 +707,13 @@ class Generator {
 
               String methodName = generateMethodNameSubstitute(property.name(), builder);
 
-              if (property.optional() == Boolean.TRUE) {
-                builder.append(
-                    "    @org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
-              }
-
               MemberScope memberScope = newMemberScope(property.name());
-              builder.append("    " + memberScope.getTypeName(property) + " " + methodName +
+
+              ReturnTypeData returnTypeData = memberScope.resolveType(property);
+
+              returnTypeData.writeAnnotations(builder, "    ");
+
+              builder.append("    " + returnTypeData.getName() + " " + methodName +
                   "();\n");
               builder.append("\n");
             }
@@ -761,8 +766,8 @@ class Generator {
               }
               String paramName = getParamName(param, access);
               ClassScope.MemberScope memberScope = newMemberScope(paramName);
-              getWriter().write(memberScope.getTypeName(param, access.forTypedObject()) +
-                  " " + paramName);
+              ReturnTypeData typeData = memberScope.resolveType(param, access.forTypedObject());
+              getWriter().write(typeData.getName() + " " + paramName);
               needComa = true;
             }
           }
@@ -835,6 +840,106 @@ class Generator {
       }
     }
   }
+
+  private static abstract class ResolvedTypeData {
+    abstract ReturnTypeData getReturnTypeData(boolean optional);
+
+    private static class PredefinedTypeData extends ResolvedTypeData {
+      private final ReturnTypeData optionalReturnType;
+      private final ReturnTypeData nonOptionalReturnType;
+
+      PredefinedTypeData(String name, boolean nullable) {
+        this(name, name, nullable);
+      }
+
+      PredefinedTypeData(String nullableName, String nonNullableName, boolean nullable) {
+        this.optionalReturnType = new ReturnTypeImpl(nullableName, nullableName, true, nullable);
+        this.nonOptionalReturnType =
+            new ReturnTypeImpl(nonNullableName, nullableName, false, nullable);
+      }
+
+      @Override
+      ReturnTypeData getReturnTypeData(boolean optional) {
+        return optional ? optionalReturnType : nonOptionalReturnType;
+      }
+
+      private static class ReturnTypeImpl extends ReturnTypeData {
+        private final String name;
+        private final String boxedName;
+        private final boolean optional;
+        private final boolean nullable;
+
+        ReturnTypeImpl(String name, String boxedName, boolean optional, boolean nullable) {
+          this.name = name;
+          this.boxedName = boxedName;
+          this.optional = optional;
+          this.nullable = nullable;
+        }
+        @Override boolean isOptional() {
+          return optional;
+        }
+        @Override boolean isNullable() {
+          return nullable;
+        }
+        @Override String getName() {
+          return name;
+        }
+        @Override String getBoxedName() {
+          return boxedName;
+        }
+      }
+    }
+
+    static class UserType extends ResolvedTypeData {
+      private final String name;
+
+      UserType(String name) {
+        this.name = name;
+      }
+
+      @Override
+      ReturnTypeData getReturnTypeData(final boolean optional) {
+        return new ReturnTypeData() {
+          @Override boolean isOptional() {
+            return optional;
+          }
+          @Override boolean isNullable() {
+            return false;
+          }
+          @Override String getName() {
+            return name;
+          }
+          @Override
+          String getBoxedName() {
+            return name;
+          }
+        };
+      }
+    }
+
+    static final ResolvedTypeData BOOLEAN = new PredefinedTypeData("Boolean", "boolean", false);
+    static final ResolvedTypeData STRING = new PredefinedTypeData("String", false);
+    static final ResolvedTypeData LONG = new PredefinedTypeData("Long", "long", false);
+    static final ResolvedTypeData NUMBER = new PredefinedTypeData("Number", false);
+    static final ResolvedTypeData ANY = new PredefinedTypeData("Object", true);
+  }
+
+  private static abstract class ReturnTypeData {
+    abstract boolean isOptional();
+    abstract boolean isNullable();
+    abstract String getName();
+    abstract String getBoxedName();
+
+    void writeAnnotations(Appendable appendable, String indent) throws IOException {
+      if (isOptional()) {
+        appendable.append(indent + "@org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
+      }
+      if (isNullable()) {
+        appendable.append(indent + "@org.chromium.sdk.internal.protocolparser.JsonNullable\n");
+      }
+    }
+  }
+
 
   private void generateParserInterfaceList() throws IOException {
     JavaFileUpdater fileUpdater =
@@ -1171,15 +1276,15 @@ class Generator {
 
     R visitRef(String refName);
 
-    R visitBoolean(boolean isOptional);
+    R visitBoolean();
 
     R visitEnum(List<String> enumConstants);
 
-    R visitString(boolean isOptional);
+    R visitString();
 
-    R visitInteger(boolean isOptional);
+    R visitInteger();
 
-    R visitNumber(boolean isOptional);
+    R visitNumber();
 
     R visitArray(ArrayItemType items);
 
@@ -1191,23 +1296,22 @@ class Generator {
 
   private static <R, T> R switchByType(T typedObject, TypedObjectAccess<T> access,
       TypeVisitor<R> visitor) {
-    boolean isOptional = access.getOptional(typedObject) == Boolean.TRUE;
     String refName = access.getRef(typedObject);
     if (refName != null) {
       return visitor.visitRef(refName);
     }
     String typeName = access.getType(typedObject);
     if (WipMetamodel.BOOLEAN_TYPE.equals(typeName)) {
-      return visitor.visitBoolean(isOptional);
+      return visitor.visitBoolean();
     } else if (WipMetamodel.STRING_TYPE.equals(typeName)) {
       if (access.getEnum(typedObject) != null) {
         return visitor.visitEnum(access.getEnum(typedObject));
       }
-      return visitor.visitString(isOptional);
+      return visitor.visitString();
     } else if (WipMetamodel.INTEGER_TYPE.equals(typeName)) {
-      return visitor.visitInteger(isOptional);
+      return visitor.visitInteger();
     } else if (WipMetamodel.NUMBER_TYPE.equals(typeName)) {
-      return visitor.visitNumber(isOptional);
+      return visitor.visitNumber();
     } else if (WipMetamodel.ARRAY_TYPE.equals(typeName)) {
       return visitor.visitArray(access.getItems(typedObject));
     } else if (WipMetamodel.OBJECT_TYPE.equals(typeName)) {
@@ -1219,7 +1323,6 @@ class Generator {
     }
     throw new RuntimeException("Unrecognized type " + typeName);
   }
-
 
   private static class TypeData {
     private final String domain;
@@ -1296,10 +1399,6 @@ class Generator {
 
       abstract StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator);
 
-      String getDomainName() {
-        return domain;
-      }
-
       void generate() throws IOException {
         if (!generated) {
           generated = true;
@@ -1346,7 +1445,7 @@ class Generator {
             }
 
             @Override
-            public void generate() throws IOException {
+            public void generate() {
             }
           };
         }
