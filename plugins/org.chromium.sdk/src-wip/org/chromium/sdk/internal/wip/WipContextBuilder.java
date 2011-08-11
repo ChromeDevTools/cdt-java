@@ -192,7 +192,9 @@ class WipContextBuilder {
       for (CallFrameImpl frame : frames) {
         String sourceId = frame.getSourceId();
         if (sourceId != null) {
-          frame.setScript(getSafe(loadedScripts, sourceId));
+          WipScriptImpl script = getSafe(loadedScripts, sourceId);
+          // Script can be null.
+          frame.setScript(script);
         }
       }
     }

@@ -216,11 +216,12 @@ class WipScriptManager {
       for (String id : ids) {
         ScriptData data = getSafe(scriptIdToData, id);
         if (data == null) {
-          // We probably can't get a script source id without the script already
-          // having been reported to us directly.
-          throw new IllegalArgumentException("Unknown script id: " + id);
+          // We probably got id of internal script (usually happens when we suspend on breakpoint
+          // thrown from internals).
+          result.put(id, null);
+          continue;
         }
-        result.put(data.scriptImpl.getId(), data.scriptImpl);
+        result.put(id, data.scriptImpl);
         if (!data.sourceLoadedFuture.isDone()) {
           scripts.add(data);
         }
@@ -245,6 +246,7 @@ class WipScriptManager {
     return (String) sourceIdObj;
   }
 
+  // TODO: scripts are loaded in-series; make load parallel instead (to wait less).
   private RelayOk loadNextScript(final Queue<ScriptData> scripts,
       final Map<String, WipScriptImpl> result, final ScriptSourceLoadCallback callback,
       final RelaySyncCallback relay) {
@@ -252,14 +254,10 @@ class WipScriptManager {
     if (data == null) {
       // Terminate the chain of asynchronous loads and pass a result to the callback.
       RelayOk relayOk;
-      try {
-        if (callback != null) {
-          callback.done(result);
-        }
-      } finally {
-        relayOk = relay.finish();
+      if (callback != null) {
+        callback.done(result);
       }
-      return relayOk;
+      return relay.finish();
     }
 
     // Create a guard for the case that we fail before issuing next #loadNextScript() call.
@@ -276,7 +274,7 @@ class WipScriptManager {
     };
 
     // The async operation will call a guard even if something failed within the AsyncFuture.
-    return data.sourceLoadedFuture.getAsync(futureCallback, relay.getUserSyncCallback());
+    return data.sourceLoadedFuture.getAsync(futureCallback, guard.asSyncCallback());
   }
 
   public void pageReloaded() {
