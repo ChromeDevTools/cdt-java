@@ -11,6 +11,9 @@ package org.chromium.sdk;
  * It helps to separate callback logic (which may fail) from multi-thread
  * synchronization (which shouldn't fail). Typically client may release
  * his semaphore in this callback.
+ * <p>
+ * It could also be called 'finally callback', implying that is resembles
+ * try-finally control flow.
  */
 public interface SyncCallback {
   /**

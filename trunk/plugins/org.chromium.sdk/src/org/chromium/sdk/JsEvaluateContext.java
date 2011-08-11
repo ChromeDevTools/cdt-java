@@ -7,12 +7,13 @@ package org.chromium.sdk;
 import java.util.Map;
 
 import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.wip.EvaluateToMappingExtension;
 
 /**
  * A context in which watch expressions may be evaluated. Typically corresponds to stack frame
  * of suspended process, but may also be detached from any stack frame.
  *
- * @see {@link EvaluateWithContextExtension}
+ * @see {@link EvaluateToMappingExtension}
  */
 public interface JsEvaluateContext {
 

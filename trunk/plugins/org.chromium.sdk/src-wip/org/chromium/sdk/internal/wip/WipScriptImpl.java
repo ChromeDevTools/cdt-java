@@ -94,7 +94,7 @@ class WipScriptImpl extends ScriptBase<String> {
       };
       WipContextBuilder contextBuilder = scriptManager.getTabImpl().getContextBuilder();
       return contextBuilder.updateStackTrace(callFrames, setFramesCallback,
-          relay.getSyncCallback());
+          relay.getUserSyncCallback());
     }
   }
 

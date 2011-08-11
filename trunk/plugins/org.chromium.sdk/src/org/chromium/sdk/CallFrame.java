@@ -4,7 +4,6 @@
 
 package org.chromium.sdk;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -23,7 +22,7 @@ public interface CallFrame {
   JsVariable getReceiverVariable();
 
   /**
-   * @return the source script this call frame is associated with. {@code null}
+   * @return the source script this call frame is associated with; {@code null}
    *         if no script is associated with the call frame (e.g. an exception
    *         could have been thrown in a native script)
    */
