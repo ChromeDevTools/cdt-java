@@ -20,7 +20,6 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
@@ -104,6 +103,10 @@ class WipCommandProcessor {
 
   void acceptResponse(JSONObject message) {
     baseProcessor.processIncoming(message);
+  }
+
+  void processEos() {
+    baseProcessor.processEos();
   }
 
   private void processEvent(JSONObject jsonObject) {
