@@ -160,7 +160,12 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
     @Override
     public Collection<? extends VmResource> visitResourceId(VmResourceId resourceId) {
-      return Collections.singletonList(resourceManager.getVmResource(resourceId));
+      VmResource vmResource = resourceManager.getVmResource(resourceId);
+      if (vmResource == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(vmResource);
+      }
     }
   };
 
