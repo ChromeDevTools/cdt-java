@@ -21,7 +21,7 @@ public interface ExceptionData {
   boolean isUncaught();
 
   /**
-   * @return the text of the source line where the exception was thrown
+   * @return the text of the source line where the exception was thrown or null
    */
   String getSourceText();
 
