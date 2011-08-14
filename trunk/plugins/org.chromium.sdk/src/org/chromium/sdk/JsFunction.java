@@ -4,6 +4,8 @@
 
 package org.chromium.sdk;
 
+import org.chromium.sdk.util.MethodIsBlockingException;
+
 /**
  * This interface adds methods for handling function properties of JsObject.
  */
@@ -11,13 +13,15 @@ public interface JsFunction extends JsObject {
 
   /**
    * @return script the function resides in or null if script is not available
+   * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  Script getScript();
+  Script getScript() throws MethodIsBlockingException;
 
   /**
    * Returns position of opening parenthesis of function arguments. Position is absolute
    * within resource (not relative to script start position).
    * @return position or null if position is not available
+   * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  TextStreamPosition getOpenParenPosition();
+  TextStreamPosition getOpenParenPosition() throws MethodIsBlockingException;
 }

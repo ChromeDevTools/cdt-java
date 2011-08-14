@@ -16,7 +16,7 @@ import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.internal.browserfixture.AbstractAttachedTest;
 import org.chromium.sdk.internal.browserfixture.FixtureChromeStub;
 import org.chromium.sdk.internal.transport.FakeConnection;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.junit.Test;
 
 /**

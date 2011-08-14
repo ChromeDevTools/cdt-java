@@ -34,7 +34,7 @@ public class AsyncFutureRef<T> {
     return ref.get() != null;
   }
 
-  public T getSync() {
+  public T getSync() throws MethodIsBlockingException {
     return ref.get().getSync();
   }
 

@@ -10,9 +10,8 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.v8native.DebugSession;
-import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Generic implementation of {@link JsFunction}.
@@ -25,7 +24,7 @@ class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implem
   }
 
   @Override
-  public Script getScript() {
+  public Script getScript() throws MethodIsBlockingException {
     final FunctionValueHandle functionValueHandle = getAdditionalPropertyData();
     Long scriptId = functionValueHandle.scriptId();
     if (scriptId == null) {
@@ -36,7 +35,7 @@ class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implem
   }
 
   @Override
-  public TextStreamPosition getOpenParenPosition() {
+  public TextStreamPosition getOpenParenPosition() throws MethodIsBlockingException {
     if (openParenPosition == null) {
       final FunctionValueHandle functionValueHandle = getAdditionalPropertyData();
       openParenPosition = new TextStreamPosition() {
@@ -61,7 +60,7 @@ class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implem
     return openParenPosition;
   }
 
-  private FunctionValueHandle getAdditionalPropertyData() {
+  private FunctionValueHandle getAdditionalPropertyData() throws MethodIsBlockingException {
     SubpropertiesMirror subpropertiesMirror = getBasicPropertyData(false).getSubpropertiesMirror();
     return (FunctionValueHandle) subpropertiesMirror.getAdditionalPropertyData();
   }

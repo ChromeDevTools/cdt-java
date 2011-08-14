@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.util.List;
 
+import org.chromium.sdk.util.MethodIsBlockingException;
+
 /**
  * An object that represents a browser JavaScript VM call frame.
  */
@@ -18,8 +20,9 @@ public interface CallFrame {
 
   /**
    * @return the receiver variable known in this frame
+   * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  JsVariable getReceiverVariable();
+  JsVariable getReceiverVariable() throws MethodIsBlockingException;
 
   /**
    * @return the source script this call frame is associated with; {@code null}

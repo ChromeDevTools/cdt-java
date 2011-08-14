@@ -39,6 +39,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
 import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
 
 /**
@@ -153,7 +154,7 @@ public class ValueLoaderImpl extends ValueLoader {
    * if property data is unavailable (or expired).
    */
   @Override
-  public SubpropertiesMirror getOrLoadSubproperties(Long ref) {
+  public SubpropertiesMirror getOrLoadSubproperties(Long ref) throws MethodIsBlockingException {
     ValueMirror mirror = getSafe(refToMirror, ref);
 
     SubpropertiesMirror references;
@@ -178,7 +179,8 @@ public class ValueLoaderImpl extends ValueLoader {
   /**
    * Looks up data for scope on remote in form of scope object handle.
    */
-  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber) {
+  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber)
+      throws MethodIsBlockingException {
     DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, frameNumber);
 
     V8BlockingCallback<ObjectValueHandle> callback = new V8BlockingCallback<ObjectValueHandle>() {
@@ -219,7 +221,8 @@ public class ValueLoaderImpl extends ValueLoader {
    * (possibly cached value) or 2. lookup value by refId from remote
    */
   @Override
-  public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs) {
+  public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs)
+      throws MethodIsBlockingException {
     ValueMirror[] result = new ValueMirror[propertyRefs.size()];
     Map<Long, Integer> refToRequestIndex = new HashMap<Long, Integer>();
     List<PropertyReference> needsLoading = new ArrayList<PropertyReference>();
@@ -279,7 +282,8 @@ public class ValueLoaderImpl extends ValueLoader {
    * @param propertyRefIds list of ref ids we need to look up
    * @return loaded value mirrors in the same order as in propertyRefIds
    */
-  public List<ValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds) {
+  public List<ValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds)
+      throws MethodIsBlockingException {
     if (propertyRefIds.isEmpty()) {
       return Collections.emptyList();
     }

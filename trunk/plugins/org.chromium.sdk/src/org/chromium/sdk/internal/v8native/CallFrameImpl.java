@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
@@ -24,6 +23,7 @@ import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
 
 /**
@@ -118,7 +118,7 @@ public class CallFrameImpl implements CallFrame {
   }
 
   @Override
-  public JsVariable getReceiverVariable() {
+  public JsVariable getReceiverVariable() throws MethodIsBlockingException {
     ensureReceiver();
     return receiverVariableRef.get();
   }
@@ -136,7 +136,7 @@ public class CallFrameImpl implements CallFrame {
     scopesRef.compareAndSet(null, result);
   }
 
-  private void ensureReceiver() {
+  private void ensureReceiver() throws MethodIsBlockingException {
     if (receiverVariableRef.get() != null) {
       return;
     }

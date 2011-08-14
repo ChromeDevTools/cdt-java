@@ -35,7 +35,6 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
@@ -57,6 +56,7 @@ import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.LazyConstructable;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -462,7 +462,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public List<? extends JsVariable> getVariables() {
+      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
         int currentCacheState = valueLoader.getCacheState();
         if (propertiesRef.isInitialized()) {
           ScopeVariables result = propertiesRef.getSync().get();
@@ -484,7 +484,8 @@ class WipContextBuilder {
        * be the Dispatch thread.
        * The method may not be blocking, if another thread is already doing the same operation.
        */
-      private void startLoadOperation(boolean reload, int currentCacheState) {
+      private void startLoadOperation(boolean reload, int currentCacheState)
+          throws MethodIsBlockingException {
         WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
             new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
           @Override
@@ -522,7 +523,7 @@ class WipContextBuilder {
           }
         };
         // This is blocking.
-        valueLoader.loadPropertiesAsync(objectId, processor, reload, currentCacheState,
+        valueLoader.loadPropertiesInFuture(objectId, processor, reload, currentCacheState,
             propertiesRef);
       }
     }
@@ -545,7 +546,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public List<? extends JsVariable> getVariables() {
+      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
         JsObject asObject = jsValue.asObject();
         if (asObject == null) {
           return Collections.emptyList();

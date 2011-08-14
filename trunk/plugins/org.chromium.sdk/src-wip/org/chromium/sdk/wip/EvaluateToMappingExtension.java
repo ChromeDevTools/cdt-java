@@ -11,7 +11,7 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * An extension to evaluate methods, that provides an additional argument 'targetMapping'.

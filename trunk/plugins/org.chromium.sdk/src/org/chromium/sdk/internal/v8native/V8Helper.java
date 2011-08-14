@@ -18,7 +18,6 @@ import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
-import org.chromium.sdk.internal.v8native.protocol.input.data.PropertyObject;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
@@ -29,6 +28,7 @@ import org.chromium.sdk.internal.v8native.value.JsDataTypeUtil;
 import org.chromium.sdk.internal.v8native.value.LoadableString;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
 import org.chromium.sdk.internal.v8native.value.ValueLoadException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A helper class for performing complex V8-related operations.
@@ -142,14 +142,15 @@ public class V8Helper {
 
   public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
       V8CommandSender<MESSAGE, EX> commandSender, MESSAGE message,
-      V8BlockingCallback<RES> callback) throws EX {
+      V8BlockingCallback<RES> callback) throws EX, MethodIsBlockingException {
     return callV8Sync(commandSender, message, callback,
         CallbackSemaphore.OPERATION_TIMEOUT_MS);
   }
 
   public static <MESSAGE, RES, EX extends Exception> RES callV8Sync(
       V8CommandSender<MESSAGE, EX> commandSender,
-      MESSAGE message, final V8BlockingCallback<RES> callback, long timeoutMs) throws EX {
+      MESSAGE message, final V8BlockingCallback<RES> callback, long timeoutMs)
+      throws EX, MethodIsBlockingException {
     CallbackSemaphore syncCallback = new CallbackSemaphore();
     final Exception [] exBuff = { null };
     // A long way of creating buffer for generic type without warnings.

@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.io.IOException;
 
+import org.chromium.sdk.util.MethodIsBlockingException;
+
 /**
  * Abstraction of a remote JavaScript virtual machine which is embedded into
  * some application and accessed via TCP/IP connection to a port opened by
@@ -19,8 +21,11 @@ public interface StandaloneVm extends JavascriptVm {
    * @throws IOException if there was a transport layer error
    * @throws UnsupportedVersionException if the SDK protocol version is not
    *         compatible with that supported by the browser
+     * @throws MethodIsBlockingException because initialization implies couple of remote calls
+     *     (to request version etc)
    */
-  void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException;
+  void attach(DebugEventListener listener)
+      throws IOException, UnsupportedVersionException, MethodIsBlockingException;
 
   /**
    * @return name of embedding application as it wished to name itself; might be null
