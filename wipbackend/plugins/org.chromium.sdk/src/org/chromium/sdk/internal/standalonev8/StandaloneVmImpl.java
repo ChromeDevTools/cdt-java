@@ -28,6 +28,7 @@ import org.chromium.sdk.internal.v8native.V8CommandOutput;
 import org.chromium.sdk.internal.v8native.V8ContextFilter;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ContextHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -70,7 +71,8 @@ public class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     this.debugSession = new DebugSession(sessionManager, CONTEXT_FILTER, v8CommandOutput, this);
   }
 
-  public void attach(DebugEventListener listener) throws IOException, UnsupportedVersionException {
+  public void attach(DebugEventListener listener)
+      throws IOException, UnsupportedVersionException, MethodIsBlockingException {
     Exception errorCause = null;
     try {
       attachImpl(listener);
@@ -90,7 +92,7 @@ public class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
   }
 
   private void attachImpl(DebugEventListener listener) throws IOException,
-      UnsupportedVersionException {
+      UnsupportedVersionException, MethodIsBlockingException {
     connectionState = ConnectionState.CONNECTING;
 
     NetListener netListener = new NetListener() {

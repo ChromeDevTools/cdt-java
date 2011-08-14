@@ -15,13 +15,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.util.AsyncFuture;
-import org.chromium.sdk.util.AsyncFuture.Callback;
-import org.chromium.sdk.util.RelaySyncCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A generic implementation of the JsObject interface.
@@ -100,7 +96,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   @Override
-  public JsVariable getProperty(String name) {
+  public JsVariable getProperty(String name) throws MethodIsBlockingException {
     return getBasicPropertyData(true).getPropertyMap().get(name);
   }
 
@@ -137,7 +133,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
    * @return property data wrapped in convenience class as specified by
    *     {@link #wrapBasicData(BasicPropertyData)} method
    */
-  protected D getPropertyData(boolean checkFreshness) {
+  protected D getPropertyData(boolean checkFreshness) throws MethodIsBlockingException {
     if (propertyDataRef.get() == null) {
       int currentCacheState = getRemoteValueMapping().getCurrentCacheState();
       startPropertyLoadOperation(false, currentCacheState);
@@ -159,18 +155,21 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   /**
    * Convenience method that gets property data and returns wrapped {@link BasicPropertyData}.
    */
-  protected BasicPropertyData getBasicPropertyData(boolean checkFreshness) {
+  protected BasicPropertyData getBasicPropertyData(boolean checkFreshness)
+      throws MethodIsBlockingException {
     D propertyData = getPropertyData(checkFreshness);
     return unwrapBasicData(propertyData);
   }
 
-  private void startPropertyLoadOperation(boolean reload, final int currentCacheState) {
+  private void startPropertyLoadOperation(boolean reload, final int currentCacheState)
+      throws MethodIsBlockingException {
     // The operation is blocking, because we will wait for its result anyway.
     // On the other hand there is a post-load job that we need a thread to occupy with.
-    AsyncFuture.Operation<D> operation = new AsyncFuture.Operation<D>() {
-      @Override
-      public RelayOk start(Callback<D> callback, SyncCallback syncCallback) {
 
+    AsyncFuture.SyncOperation<D> blockingOperation =
+        new AsyncFuture.SyncOperation<D>() {
+      @Override
+      protected D runSync() throws MethodIsBlockingException {
         SubpropertiesMirror subpropertiesMirror =
             getRemoteValueMapping().getOrLoadSubproperties(ref);
 
@@ -180,12 +179,11 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
 
         BasicPropertyData data = new BasicPropertyData(currentCacheState, properties,
             internalProperties, subpropertiesMirror);
-        callback.done(wrapBasicData(data));
-
-        return RelaySyncCallback.finish(syncCallback);
+        return wrapBasicData(data);
       }
 
-      private List<JsVariableImpl> wrapProperties(List<? extends PropertyReference> propertyRefs) {
+      private List<JsVariableImpl> wrapProperties(List<? extends PropertyReference> propertyRefs)
+          throws MethodIsBlockingException {
         List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
         List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
@@ -194,10 +192,11 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       }
     };
     if (reload) {
-      AsyncFuture.reinitializeReference(propertyDataRef, operation);
+      AsyncFuture.reinitializeReference(propertyDataRef, blockingOperation.asAsyncOperation());
     } else {
-      AsyncFuture.initializeReference(propertyDataRef, operation);
+      AsyncFuture.initializeReference(propertyDataRef, blockingOperation.asAsyncOperation());
     }
+    blockingOperation.execute();
   }
 
   /**
@@ -270,7 +269,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
-      List<? extends PropertyReference> propertyRefs) throws MethodIsBlockingException {
+      List<? extends PropertyReference> propertyRefs) {
     // TODO(peter.rybin) Maybe assert that context is valid here
 
     List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());

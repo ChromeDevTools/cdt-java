@@ -14,8 +14,6 @@ public interface Breakpoint {
   /**
    * This value is used when the corresponding parameter is absent.
    *
-   * @see #getIgnoreCount()
-   * @see #setIgnoreCount(int)
    * @see JavascriptVm#setBreakpoint
    */
   int EMPTY_VALUE = -1;
@@ -54,22 +52,10 @@ public interface Breakpoint {
 
   /**
    * Sets whether this breakpoint is enabled.
-   *
+   * Requires subsequent flush call.
    * @param enabled whether the breakpoint should be enabled
    */
   void setEnabled(boolean enabled);
-
-  /**
-   * @return ignore count for this breakpoint or {@code EMPTY_VALUE} if none
-   */
-  int getIgnoreCount();
-
-  /**
-   * Sets the ignore count for this breakpoint ({@code EMPTY_VALUE} to clear).
-   *
-   * @param ignoreCount the new ignored hits count to set
-   */
-  void setIgnoreCount(int ignoreCount);
 
   /**
    * @return breakpoint condition as plain JavaScript or {@code null} if none
@@ -78,7 +64,7 @@ public interface Breakpoint {
 
   /**
    * Sets the breakpoint condition as plain JavaScript ({@code null} to clear).
-   *
+   * Requires subsequent flush call.
    * @param condition the new breakpoint condition
    */
   void setCondition(String condition);
@@ -101,6 +87,11 @@ public interface Breakpoint {
    */
   RelayOk flush(JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback);
 
+  /**
+   * @return extension that supports ignore count property of breakpoint, same instance
+   *     that {@link JavascriptVm#getBreakpointTypeExtension()} returns
+   */
+  IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension();
 
   /**
    * An abstraction over possible breakpoint targets: script name, script id etc.

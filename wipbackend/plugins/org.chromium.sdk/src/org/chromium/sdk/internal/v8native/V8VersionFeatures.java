@@ -16,12 +16,6 @@ public class V8VersionFeatures {
     return vmVersion != null && ACCURATE_RUNNING_FIELD.compareTo(vmVersion) <= 0;
   }
 
-  private final static Version EVALUATE_WITH_CONTEXT = new Version(3, 0, 0, 1);
-
-  public static boolean isEvaluateWithContextSupported(Version vmVersion) {
-    return vmVersion != null && EVALUATE_WITH_CONTEXT.compareTo(vmVersion) < 0;
-  }
-
   private final static Version REG_EXP_BREAKPOINT = new Version(3, 4, 7);
 
   public static boolean isRegExpBreakpointSupported(Version vmVersion) {

@@ -16,6 +16,6 @@ public class ToolsProtocolParserGenerator extends ParserGeneratorBase {
 
   public static GenerateConfiguration createConfiguration() {
     return new GenerateConfiguration("org.chromium.sdk.internal.shellprotocol.tools.protocol.input",
-        "GeneratedToolsProtocolParser", DynamicToolsProtocolParser.get());
+        "GeneratedToolsProtocolParser", DynamicToolsProtocolParser.createDynamic());
   }
 }

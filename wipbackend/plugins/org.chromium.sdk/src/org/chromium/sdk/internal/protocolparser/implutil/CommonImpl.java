@@ -4,7 +4,6 @@
 
 package org.chromium.sdk.internal.protocolparser.implutil;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
 
 /**
  * Methods and classes commonly used by dynamic and generated implementations of

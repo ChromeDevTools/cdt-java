@@ -35,11 +35,8 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.v8native.JsEvaluateContextBase;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
@@ -57,7 +54,9 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOutParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.StepOverParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.LazyConstructable;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -67,15 +66,17 @@ class WipContextBuilder {
   private static final Logger LOGGER = Logger.getLogger(WipContextBuilder.class.getName());
 
   private final WipTabImpl tabImpl;
+  private final EvaluateHack evaluateHack;
   private WipDebugContextImpl currentContext = null;
 
   WipContextBuilder(WipTabImpl tabImpl) {
     this.tabImpl = tabImpl;
+    this.evaluateHack = new EvaluateHack(tabImpl);
   }
 
   // Called from Dispatch Thread.
   RelayOk updateStackTrace(List<CallFrameValue> callFrames,
-      JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+      GenericCallback<Void> callback, final SyncCallback syncCallback) {
     if (currentContext == null) {
       if (callback != null) {
         callback.success(null);
@@ -95,7 +96,7 @@ class WipContextBuilder {
     final WipDebugContextImpl context = new WipDebugContextImpl(data);
     currentContext = context;
 
-    JavascriptVm.GenericCallback<Void> callback = new JavascriptVm.GenericCallback<Void>() {
+    GenericCallback<Void> callback = new GenericCallback<Void>() {
       @Override
       public void success(Void value) {
         tabImpl.getDebugListener().getDebugEventListener().suspended(context);
@@ -110,6 +111,10 @@ class WipContextBuilder {
     context.setFrames(data.details().callFrames(), callback, null);
   }
 
+  EvaluateHack getEvaluateHack() {
+    return evaluateHack;
+  }
+
   void onResumeReportedFromRemote(ResumedEventData event) {
     if (currentContext == null) {
       throw new IllegalStateException();
@@ -121,7 +126,6 @@ class WipContextBuilder {
   }
 
   class WipDebugContextImpl implements DebugContext {
-    private final WipValueLoader valueLoader = new WipValueLoader(this);
     private volatile List<CallFrameImpl> frames = null;
     private final ExceptionData exceptionData;
     private final AtomicReference<CloseRequest> closeRequest =
@@ -138,25 +142,11 @@ class WipContextBuilder {
             valueLoader.getValueBuilder().wrap(exceptionRemoteObject, EXCEPTION_NAME);
         exceptionData = new ExceptionDataImpl(exceptionValue);
       }
-      globalContext = new WipEvaluateContextImpl<EvaluateData, EvaluateParams>() {
-        @Override protected EvaluateParams createRequestParams(String expression) {
-          String groupId = valueLoader.getObjectGroupId();
-
-          boolean doNotPauseOnExceptions = true;
-          return new EvaluateParams(expression, groupId, false, doNotPauseOnExceptions);
-        }
-        @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
-          return data.result();
-        }
-
-        @Override protected Boolean getWasThrown(EvaluateData data) {
-          return data.wasThrown();
-        }
-      };
+      globalContext = new GlobalEvaluateContext(getValueLoader());
     }
 
     RelayOk setFrames(List<CallFrameValue> frameDataList,
-        final JavascriptVm.GenericCallback<Void> callback, final SyncCallback syncCallback) {
+        final GenericCallback<Void> callback, final SyncCallback syncCallback) {
       frames = new ArrayList<CallFrameImpl>(frameDataList.size());
       for (CallFrameValue frameData : frameDataList) {
         frames.add(new CallFrameImpl(frameData));
@@ -202,7 +192,9 @@ class WipContextBuilder {
       for (CallFrameImpl frame : frames) {
         String sourceId = frame.getSourceId();
         if (sourceId != null) {
-          frame.setScript(getSafe(loadedScripts, sourceId));
+          WipScriptImpl script = getSafe(loadedScripts, sourceId);
+          // Script can be null.
+          frame.setScript(script);
         }
       }
     }
@@ -288,7 +280,7 @@ class WipContextBuilder {
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        sourceId = frameData.location().sourceId();
+        sourceId = frameData.location().scriptId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
         scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {
@@ -386,12 +378,15 @@ class WipContextBuilder {
         return valueLoader.getValueBuilder().createVariable(thisObjectData, valueNameBuidler);
       }
 
-      private final WipEvaluateContextImpl<?,?> evaluateContext =
-          new WipEvaluateContextImpl<EvaluateOnCallFrameData, EvaluateOnCallFrameParams>() {
-        @Override protected EvaluateOnCallFrameParams createRequestParams(String expression) {
-          String groupId = valueLoader.getObjectGroupId();
-          return new EvaluateOnCallFrameParams(id, expression, groupId, false);
+      private final WipEvaluateContextBase<?> evaluateContext =
+          new WipEvaluateContextBase<EvaluateOnCallFrameData>(getValueLoader()) {
+        @Override
+        protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
+            String expression, WipValueLoader destinationValueLoader) {
+          return new EvaluateOnCallFrameParams(id, expression,
+              destinationValueLoader.getObjectGroupId(), false);
         }
+
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
           return data.result();
         }
@@ -410,14 +405,6 @@ class WipContextBuilder {
       }
 
       @Override
-      public JsObject getExceptionObject() {
-        if (exceptionValue instanceof JsObject == false) {
-          return null;
-        }
-        return (JsObject) exceptionValue;
-      }
-
-      @Override
       public JsValue getExceptionValue() {
         return exceptionValue;
       }
@@ -430,12 +417,13 @@ class WipContextBuilder {
 
       @Override
       public String getSourceText() {
-        // TODO: implement.
+        // Not supported.
         return null;
       }
 
       @Override
       public String getExceptionMessage() {
+        // TODO: implement.
         return exceptionValue.getValueString();
       }
     }
@@ -475,7 +463,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public List<? extends JsVariable> getVariables() {
+      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
         int currentCacheState = valueLoader.getCacheState();
         if (propertiesRef.isInitialized()) {
           ScopeVariables result = propertiesRef.getSync().get();
@@ -497,7 +485,8 @@ class WipContextBuilder {
        * be the Dispatch thread.
        * The method may not be blocking, if another thread is already doing the same operation.
        */
-      private void startLoadOperation(boolean reload, int currentCacheState) {
+      private void startLoadOperation(boolean reload, int currentCacheState)
+          throws MethodIsBlockingException {
         WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
             new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
           @Override
@@ -535,7 +524,7 @@ class WipContextBuilder {
           }
         };
         // This is blocking.
-        valueLoader.loadPropertiesAsync(objectId, processor, reload, currentCacheState,
+        valueLoader.loadPropertiesInFuture(objectId, processor, reload, currentCacheState,
             propertiesRef);
       }
     }
@@ -558,7 +547,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public List<? extends JsVariable> getVariables() {
+      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
         JsObject asObject = jsValue.asObject();
         if (asObject == null) {
           return Collections.emptyList();
@@ -572,64 +561,15 @@ class WipContextBuilder {
       }
     }
 
-    private abstract class WipEvaluateContextImpl<DATA, PARAMS extends WipParamsWithResponse<DATA>>
-        extends JsEvaluateContextBase {
+    private final WipValueLoader valueLoader = new WipValueLoader(tabImpl) {
       @Override
-      public DebugContext getDebugContext() {
-        return WipDebugContextImpl.this;
+      String getObjectGroupId() {
+        return null;
       }
-
-      @Override
-      public RelayOk evaluateAsync(final String expression,
-          Map<String, String> additionalContext, final EvaluateCallback callback,
-          SyncCallback syncCallback) {
-        if (additionalContext != null) {
-          return WipBrowserImpl.throwUnsupported();
-        }
-        PARAMS params = createRequestParams(expression);
-
-        JavascriptVm.GenericCallback<DATA> commandCallback;
-        if (callback == null) {
-          commandCallback = null;
-        } else {
-          commandCallback = new JavascriptVm.GenericCallback<DATA>() {
-            @Override
-            public void success(DATA data) {
-
-              RemoteObjectValue valueData = getRemoteObjectValue(data);
-
-              WipValueBuilder valueBuilder = getValueLoader().getValueBuilder();
-
-              JsVariable variable;
-              if (getWasThrown(data) == Boolean.TRUE) {
-                variable = wrapExceptionValue(valueData, valueBuilder);
-              } else {
-                ValueNameBuilder valueNameBuidler =
-                    WipExpressionBuilder.createRootName(expression, true);
-
-                variable = valueBuilder.createVariable(valueData, valueNameBuidler);
-              }
-
-              callback.success(variable);
-            }
-            @Override
-            public void failure(Exception exception) {
-              callback.failure(exception.getMessage());
-            }
-          };
-        }
-        return tabImpl.getCommandProcessor().send(params, commandCallback, syncCallback);
-      }
-
-      protected abstract PARAMS createRequestParams(String expression);
-
-      protected abstract RemoteObjectValue getRemoteObjectValue(DATA data);
-
-      protected abstract Boolean getWasThrown(DATA data);
-    }
+    };
   }
 
-  private JsVariable wrapExceptionValue(RemoteObjectValue valueData,
+  static JsVariable wrapExceptionValue(RemoteObjectValue valueData,
       WipValueBuilder valueBuilder) {
     JsValue exceptionValue = valueBuilder.wrap(valueData, null);
 
@@ -710,6 +650,28 @@ class WipContextBuilder {
     };
 
     return WipValueBuilder.createVariable(wrapperValue, EVALUATE_EXCEPTION_NAME);
+  }
+
+  static final class GlobalEvaluateContext extends WipEvaluateContextBase<EvaluateData> {
+
+    GlobalEvaluateContext(WipValueLoader valueLoader) {
+      super(valueLoader);
+    }
+
+    @Override protected WipParamsWithResponse<EvaluateData> createRequestParams(String expression,
+        WipValueLoader destinationValueLoader) {
+      boolean doNotPauseOnExceptions = true;
+      return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(),
+          false, doNotPauseOnExceptions, null, false);
+    }
+
+    @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {
+      return data.result();
+    }
+
+    @Override protected Boolean getWasThrown(EvaluateData data) {
+      return data.wasThrown();
+    }
   }
 
   private static final Map<ScopeValue.Type, JsScope.Type> WIP_TO_SDK_SCOPE_TYPE;

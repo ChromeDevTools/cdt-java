@@ -178,6 +178,7 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
   }
 
   public IStackFrame getTopStackFrame() throws DebugException {
+    // Do not return frames[0] if it's a fake 'exception throwing' frame.
     StackFrameBase[] frames = getStackFrames();
     if (frames.length == 0) {
       return null;
@@ -185,7 +186,7 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
     if (frames[0].isRegularFrame()) {
       return frames[0];
     }
-    if (frames.length < 1) {
+    if (frames.length == 1) {
       return null;
     }
     return frames[1];

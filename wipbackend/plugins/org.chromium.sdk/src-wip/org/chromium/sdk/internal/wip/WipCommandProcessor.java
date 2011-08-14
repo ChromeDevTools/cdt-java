@@ -12,7 +12,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.DebugEventListener.VmStatusListener;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
@@ -21,7 +20,6 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.BasicConstants;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
-import org.chromium.sdk.internal.wip.protocol.WipProtocol;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.WipEvent;
@@ -35,6 +33,7 @@ import org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.WipRequest;
+import org.chromium.sdk.util.GenericCallback;
 import org.json.simple.JSONObject;
 
 /**
@@ -106,10 +105,14 @@ class WipCommandProcessor {
     baseProcessor.processIncoming(message);
   }
 
+  void processEos() {
+    baseProcessor.processEos();
+  }
+
   private void processEvent(JSONObject jsonObject) {
     WipEvent event;
     try {
-      event = WipProtocol.getParser().parse(jsonObject, WipEvent.class);
+      event = WipParserAccess.get().parseWipEvent(jsonObject);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Failed to parse event", e);
       return;
@@ -151,7 +154,7 @@ class WipCommandProcessor {
         return null;
       }
       try {
-        return WipProtocol.getParser().parse(incoming, WipCommandResponse.class);
+        return WipParserAccess.get().parseWipCommandResponse(incoming);
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException("Failed to parse response", e);
       }
@@ -271,8 +274,7 @@ class WipCommandProcessor {
           data = null;
         } else {
           try {
-            data = WipParserAccess.get().parse(genericData.getUnderlyingObject(),
-                type.getEventType());
+            data = type.parse(WipParserAccess.get(), genericData.getUnderlyingObject());
           } catch (JsonProtocolParseException e) {
             throw new RuntimeException(e);
           }

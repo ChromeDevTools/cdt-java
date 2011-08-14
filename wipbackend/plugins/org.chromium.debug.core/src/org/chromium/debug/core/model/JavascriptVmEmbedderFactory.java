@@ -21,6 +21,7 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ScriptNameManipulator;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
 import org.chromium.sdk.Browser;
+import org.chromium.sdk.Browser.TabConnector;
 import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.BrowserTab;
@@ -30,7 +31,10 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
 import org.chromium.sdk.wip.WipBrowserFactory;
+import org.chromium.sdk.wip.WipBrowserTab;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 
@@ -48,7 +52,7 @@ public class JavascriptVmEmbedderFactory {
   public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host,
       int port, final NamedConnectionLoggerFactory browserLoggerFactory,
       final NamedConnectionLoggerFactory tabLoggerFactory,
-      TabSelector tabSelector) throws CoreException {
+      WipTabSelector tabSelector) throws CoreException {
 
     InetSocketAddress address = new InetSocketAddress(host, port);
     WipBrowserFactory.LoggerFactory factory = new WipBrowserFactory.LoggerFactory() {
@@ -63,10 +67,10 @@ public class JavascriptVmEmbedderFactory {
       }
     };
 
-    final Browser browser =
+    final WipBrowser browser =
         WipBrowserFactory.INSTANCE.createBrowser(address, factory);
 
-    return connect(browser, tabSelector);
+    return connectWip(browser, tabSelector);
   }
 
   private static JavascriptVmEmbedder.ConnectionToRemote connect(Browser browser,
@@ -93,7 +97,7 @@ public class JavascriptVmEmbedderFactory {
           return null;
         }
 
-        return new EmbeddingTabConnector(targetTabConnector);
+        return new EmbeddingTabConnectorImpl(targetTabConnector);
       }
 
       public void disposeConnection() {
@@ -102,11 +106,38 @@ public class JavascriptVmEmbedderFactory {
     };
   }
 
-  private static final class EmbeddingTabConnector implements JavascriptVmEmbedder.VmConnector {
-    private final Browser.TabConnector targetTabConnector;
+  private static JavascriptVmEmbedder.ConnectionToRemote connectWip(final WipBrowser browser,
+      final WipTabSelector tabSelector) throws CoreException {
+    return new JavascriptVmEmbedder.ConnectionToRemote() {
+      public JavascriptVmEmbedder.VmConnector selectVm() throws CoreException {
+        WipBrowser.WipTabConnector targetTabConnector;
+        try {
+          targetTabConnector = tabSelector.selectTab(browser);
+        } catch (IOException e) {
+          throw newCoreException("Failed to get tabs for debugging", e);
+        }
+        if (targetTabConnector == null) {
+          return null;
+        }
 
-    EmbeddingTabConnector(Browser.TabConnector targetTabConnector) {
+        return new WipEmbeddingTabConnector(targetTabConnector);
+      }
+
+      public void disposeConnection() {
+      }
+    };
+  }
+
+  private static abstract class EmbeddingTabConnectorBase<TC>
+      implements JavascriptVmEmbedder.VmConnector {
+    private final TC targetTabConnector;
+
+    EmbeddingTabConnectorBase(TC targetTabConnector) {
       this.targetTabConnector = targetTabConnector;
+    }
+
+    protected TC getTabConnector() {
+      return targetTabConnector;
     }
 
     public JavascriptVmEmbedder attach(final JavascriptVmEmbedder.Listener embedderListener,
@@ -122,30 +153,22 @@ public class JavascriptVmEmbedderFactory {
           embedderListener.reset();
         }
       };
-      final BrowserTab browserTab;
-      try {
-        browserTab = targetTabConnector.attach(tabDebugEventListener);
-      } catch (IOException e) {
-        throw newCoreException("Failed to connect to browser tab", e);
+
+      return attach(tabDebugEventListener);
+    }
+
+    protected abstract JavascriptVmEmbedder attach(TabDebugEventListener tabDebugEventListener)
+        throws CoreException;
+
+    protected static abstract class EmbedderBase implements JavascriptVmEmbedder {
+      public String getTargetName() {
+        return Messages.DebugTargetImpl_TargetName;
       }
-      return new JavascriptVmEmbedder() {
-        public JavascriptVm getJavascriptVm() {
-          return browserTab;
-        }
 
-        public String getTargetName() {
-          return Messages.DebugTargetImpl_TargetName;
-        }
-
-        public String getThreadName() {
-          return browserTab.getUrl();
-        }
-
-        @Override
-        public ScriptNameManipulator getScriptNameManipulator() {
-          return BROWSER_SCRIPT_NAME_MANIPULATOR;
-        }
-      };
+      @Override
+      public ScriptNameManipulator getScriptNameManipulator() {
+        return BROWSER_SCRIPT_NAME_MANIPULATOR;
+      }
     }
 
     private static final ScriptNameManipulator BROWSER_SCRIPT_NAME_MANIPULATOR =
@@ -169,6 +192,60 @@ public class JavascriptVmEmbedderFactory {
             JavaScriptRegExpSupport.encodeLiteral(pathString) + "/?($|\\?)");
       }
     };
+  }
+
+  private static class EmbeddingTabConnectorImpl
+      extends EmbeddingTabConnectorBase<Browser.TabConnector> {
+    EmbeddingTabConnectorImpl(TabConnector targetTabConnector) {
+      super(targetTabConnector);
+    }
+
+    @Override
+    protected JavascriptVmEmbedder attach(TabDebugEventListener tabDebugEventListener)
+        throws CoreException {
+      final BrowserTab browserTab;
+      try {
+        browserTab = getTabConnector().attach(tabDebugEventListener);
+      } catch (IOException e) {
+        throw newCoreException("Failed to connect to browser tab", e);
+      }
+      return new EmbedderBase() {
+        public JavascriptVm getJavascriptVm() {
+          return browserTab;
+        }
+
+        public String getThreadName() {
+          return browserTab.getUrl();
+        }
+      };
+    }
+  }
+
+  private static class WipEmbeddingTabConnector
+      extends EmbeddingTabConnectorBase<WipBrowser.WipTabConnector> {
+    WipEmbeddingTabConnector(WipTabConnector targetTabConnector) {
+      super(targetTabConnector);
+    }
+
+    @Override
+    protected JavascriptVmEmbedder attach(TabDebugEventListener tabDebugEventListener)
+        throws CoreException {
+      final WipBrowserTab browserTab;
+      try {
+        browserTab = getTabConnector().attach(tabDebugEventListener);
+      } catch (IOException e) {
+        throw newCoreException("Failed to connect to browser tab", e);
+      }
+      return new EmbedderBase() {
+        public JavascriptVm getJavascriptVm() {
+          return browserTab.getJavascriptVm();
+        }
+
+        public String getThreadName() {
+          return browserTab.getUrl();
+        }
+      };
+    }
   }
 
   public static JavascriptVmEmbedder.ConnectionToRemote connectToStandalone(String host, int port,

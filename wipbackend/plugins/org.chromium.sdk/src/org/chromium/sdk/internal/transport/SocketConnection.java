@@ -63,9 +63,9 @@ public class SocketConnection implements Connection {
    */
   private class WriterThread extends InterruptibleThread {
 
-    private final ConnectionLogger.LoggableWriter writer;
+    private final SocketWrapper.LoggableOutputStream writer;
 
-    public WriterThread(ConnectionLogger.LoggableWriter writer) {
+    public WriterThread(SocketWrapper.LoggableOutputStream writer) {
       super("WriterThread");
       // Wrap writer into a buffered writer.
       this.writer = writer;
@@ -130,11 +130,11 @@ public class SocketConnection implements Connection {
    */
   private class ReaderThread extends InterruptibleThread {
 
-    private final ConnectionLogger.LoggableReader reader;
-    private final ConnectionLogger.LoggableWriter handshakeWriter;
+    private final SocketWrapper.LoggableInputStream reader;
+    private final SocketWrapper.LoggableOutputStream handshakeWriter;
 
-    public ReaderThread(ConnectionLogger.LoggableReader reader,
-        ConnectionLogger.LoggableWriter handshakeWriter) {
+    public ReaderThread(SocketWrapper.LoggableInputStream reader,
+        SocketWrapper.LoggableOutputStream handshakeWriter) {
       super("ReaderThread");
       this.reader = reader;
       this.handshakeWriter = handshakeWriter;
@@ -179,7 +179,10 @@ public class SocketConnection implements Connection {
       } catch (IOException e) {
         breakException = e;
       } finally {
-        inboundQueue.add(EOS);
+        synchronized (inboundQueue) {
+          inboundQueue.add(EOS);
+          isInboundQueueClosed = true;
+        }
       }
       if (!isInterrupted()) {
         shutdownRelay.sendSignal(false, breakException);
@@ -226,17 +229,14 @@ public class SocketConnection implements Connection {
   /** Lameduck shutdown delay in ms. */
   private static final int LAMEDUCK_DELAY_MS = 1000;
 
-  /** The input stream buffer size. */
-  private static final int INPUT_BUFFER_SIZE_BYTES = 65536;
-
   private static final NetListener NULL_LISTENER = new NetListener() {
-    public void connectionClosed() {
+    @Override public void connectionClosed() {
     }
 
-    public void eosReceived() {
+    @Override public void eosReceived() {
     }
 
-    public void messageReceived(Message message) {
+    @Override public void messageReceived(Message message) {
     }
   };
 
@@ -256,6 +256,9 @@ public class SocketConnection implements Connection {
 
   /** The inbound message queue. */
   private final BlockingQueue<MessageItem> inboundQueue = new LinkedBlockingQueue<MessageItem>();
+
+  /** Field must be accessed synchronized on inboundQueue */
+  private boolean isInboundQueueClosed = false;
 
   /** The outbound message queue. */
   private final BlockingQueue<Message> outboundQueue = new LinkedBlockingQueue<Message>();
@@ -292,7 +295,7 @@ public class SocketConnection implements Connection {
 
     isAttached.set(true);
 
-    this.readerThread = new ReaderThread(socket.getLoggableReader(), socket.getLoggableWriter());
+    this.readerThread = new ReaderThread(socket.getLoggableInput(), socket.getLoggableOutput());
     // We do not start WriterThread until handshake is done (see ReaderThread)
     this.writerThread = null;
     readerThread.setDaemon(true);
@@ -307,6 +310,7 @@ public class SocketConnection implements Connection {
     }
   }
 
+  @Override
   public void runInDispatchThread(final Runnable callback) {
     MessageItem messageItem = new MessageItem() {
       @Override
@@ -319,7 +323,12 @@ public class SocketConnection implements Connection {
       }
     };
     try {
-      inboundQueue.put(messageItem);
+      synchronized (inboundQueue) {
+        if (isInboundQueueClosed) {
+          throw new IllegalStateException("Connection is closed");
+        }
+        inboundQueue.put(messageItem);
+      }
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -331,7 +340,7 @@ public class SocketConnection implements Connection {
 
   private final SignalRelay<Boolean> shutdownRelay =
       SignalRelay.create(new SignalRelay.Callback<Boolean>() {
-    public void onSignal(Boolean lameduckMode, Exception cause) {
+    @Override public void onSignal(Boolean lameduckMode, Exception cause) {
       shutdown(lameduckMode == Boolean.TRUE, cause);
     }
 
@@ -379,7 +388,7 @@ public class SocketConnection implements Connection {
     if (writerThread != null) {
       throw new IllegalStateException();
     }
-    writerThread = new WriterThread(socket.getLoggableWriter());
+    writerThread = new WriterThread(socket.getLoggableOutput());
     writerThread.setDaemon(true);
     writerThread.start();
   }
@@ -392,19 +401,21 @@ public class SocketConnection implements Connection {
     return dispatcherThread;
   }
 
-  public void close() {
+  @Override public void close() {
     shutdownRelay.sendSignal(true, null);
   }
 
-  public boolean isConnected() {
+  @Override public boolean isConnected() {
     return isAttached();
   }
 
+  @Override
   public void send(Message message) {
     checkAttached();
     sendMessage(message);
   }
 
+  @Override
   public void setNetListener(NetListener netListener) {
     if (this.listener != null && netListener != this.listener) {
       throw new IllegalStateException("Cannot change NetListener");
@@ -413,7 +424,7 @@ public class SocketConnection implements Connection {
         ? netListener
         : NULL_LISTENER;
     SignalRelay<?> listenerCloser = SignalRelay.create(new SignalRelay.Callback<Void>() {
-      public void onSignal(Void param, Exception cause) {
+      @Override public void onSignal(Void param, Exception cause) {
         listener.connectionClosed();
       }
     });
@@ -425,6 +436,7 @@ public class SocketConnection implements Connection {
     }
   }
 
+  @Override
   public void start() throws IOException {
     try {
       if (!isAttached()) {

@@ -4,11 +4,11 @@
 
 package org.chromium.sdk.internal.wip;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.page.FrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData;
 import org.chromium.sdk.internal.wip.protocol.output.page.GetResourceTreeParams;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * Collects information about frame tree. At first class only watches for the url of root frame.
@@ -23,8 +23,8 @@ class WipFrameManager {
 
   void readFrames() {
     GetResourceTreeParams requestParams = new GetResourceTreeParams();
-    JavascriptVm.GenericCallback<GetResourceTreeData> callback =
-        new JavascriptVm.GenericCallback<GetResourceTreeData>() {
+    GenericCallback<GetResourceTreeData> callback =
+        new GenericCallback<GetResourceTreeData>() {
           @Override
           public void success(GetResourceTreeData value) {
             FrameValue frame = value.frameTree().frame();

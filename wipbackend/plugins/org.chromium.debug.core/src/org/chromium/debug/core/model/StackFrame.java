@@ -209,8 +209,14 @@ public class StackFrame extends StackFrameBase {
       TextStreamPosition vmPosition = stackFrame.getStatementStartPosition();
       SourcePositionMap sourceTransformationMap = getConnectedData().getSourcePositionMap();
       SourcePositionMap.Token token = sourceTransformationMap.getCurrentToken();
-      SourcePosition originalPosition = sourceTransformationMap.translatePosition(id,
-          vmPosition.getLine(), vmPosition.getColumn(), TranslateDirection.VM_TO_USER);
+      SourcePosition originalPosition;
+      if (id == null) {
+        originalPosition = new SourcePosition(id, vmPosition.getLine(), vmPosition.getColumn());
+      } else {
+        originalPosition = sourceTransformationMap.translatePosition(id,
+            vmPosition.getLine(), vmPosition.getColumn(),
+            TranslateDirection.VM_TO_USER);
+      }
       currentCachedPosition = new CachedUserPosition(originalPosition, token);
       userCachedSourcePosition = currentCachedPosition;
     }

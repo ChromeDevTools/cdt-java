@@ -7,6 +7,8 @@ package org.chromium.sdk;
 import java.io.IOException;
 import java.util.List;
 
+import org.chromium.sdk.util.MethodIsBlockingException;
+
 /**
  * An "entry point" of the SDK. A Browser instance is usually constructed once
  * per a debugged browser instance.
@@ -73,7 +75,10 @@ public interface Browser {
      *
      * @param listener to report the debug events to
      * @return null if operation failed
+     * @throws MethodIsBlockingException because initialization implies couple of remote calls
+     *     (to request version etc)
      */
-    BrowserTab attach(TabDebugEventListener listener) throws IOException;
+    BrowserTab attach(TabDebugEventListener listener)
+        throws IOException, MethodIsBlockingException;
   }
 }

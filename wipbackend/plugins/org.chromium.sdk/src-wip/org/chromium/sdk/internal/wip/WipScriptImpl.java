@@ -6,7 +6,6 @@ package org.chromium.sdk.internal.wip;
 
 import java.util.List;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
@@ -17,6 +16,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetScriptSourceParams;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -51,8 +51,8 @@ class WipScriptImpl extends ScriptBase<String> {
 
     SetScriptSourceParams params = new SetScriptSourceParams(getId(), newSource, preview);
 
-    JavascriptVm.GenericCallback<SetScriptSourceData> commandCallback =
-        new JavascriptVm.GenericCallback<SetScriptSourceData>() {
+    GenericCallback<SetScriptSourceData> commandCallback =
+        new GenericCallback<SetScriptSourceData>() {
       @Override
       public void success(SetScriptSourceData value) {
         RelayOk relayOk =
@@ -83,8 +83,8 @@ class WipScriptImpl extends ScriptBase<String> {
       dispatchResult(data.result(), updateCallback);
       return relay.finish();
     } else {
-      JavascriptVm.GenericCallback<Void> setFramesCallback =
-          new JavascriptVm.GenericCallback<Void>() {
+      GenericCallback<Void> setFramesCallback =
+          new GenericCallback<Void>() {
         @Override public void success(Void value) {
           dispatchResult(data.result(), updateCallback);
         }
@@ -94,7 +94,7 @@ class WipScriptImpl extends ScriptBase<String> {
       };
       WipContextBuilder contextBuilder = scriptManager.getTabImpl().getContextBuilder();
       return contextBuilder.updateStackTrace(callFrames, setFramesCallback,
-          relay.getSyncCallback());
+          relay.getUserSyncCallback());
     }
   }
 
@@ -102,8 +102,8 @@ class WipScriptImpl extends ScriptBase<String> {
     if (updateCallback != null) {
       LiveEditResult liveEditResult;
       try {
-        liveEditResult = LiveEditProtocolParserAccess.get().parse(result.getUnderlyingObject(),
-            LiveEditResult.class);
+        liveEditResult =
+            LiveEditProtocolParserAccess.get().parseLiveEditResult(result.getUnderlyingObject());
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException("Failed to parse LiveEdit response", e);
       }

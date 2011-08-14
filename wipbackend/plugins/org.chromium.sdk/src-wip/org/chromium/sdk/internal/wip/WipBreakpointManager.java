@@ -35,7 +35,7 @@ public class WipBreakpointManager {
   }
 
   RelayOk setBreakpoint(Breakpoint.Target target, final int line, final int column,
-      final boolean enabled, String condition, int ignoreCount,
+      final boolean enabled, String condition,
       final BreakpointCallback callback, SyncCallback syncCallback) {
 
     int sdkId = breakpointUniqueId.getAndAdd(1);
@@ -151,7 +151,7 @@ public class WipBreakpointManager {
     int line = position.getLine();
     int column = position.getColumn();
 
-    String scriptId = topFrame.getScript().getId();
+    String scriptId = topFrame.getSourceId();
     final WipBreakpointImpl.ActualLocation location =
         new WipBreakpointImpl.ActualLocation(scriptId, line, Long.valueOf(column));
 

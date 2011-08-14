@@ -391,8 +391,8 @@
             </separator>
          </menu>
          <action
-               label="%ExceptionBreakpoints.Caught.label"
-               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught"
+               label="%ExceptionBreakpoints.All.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$All"
                menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
          </action>
@@ -401,6 +401,12 @@
                class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught"
                menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught.forLaunch">
+         </action>
+         <action
+               label="%ExceptionBreakpoints.None.label"
+               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$None"
+               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
+               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
          </action>
       </objectContribution>
   </extension>
@@ -427,9 +433,14 @@
         class="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage"
         id="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage">
       <enabledWhen>
-        <adapt
-            type="org.chromium.debug.core.model.WrappedBreakpoint">
-        </adapt>
+        <or>
+          <instanceof
+              value="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </instanceof>
+          <adapt
+              type="org.chromium.debug.core.model.ChromiumLineBreakpoint">
+          </adapt>
+        </or>
       </enabledWhen>
     </page>
     <page

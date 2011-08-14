@@ -7,7 +7,7 @@ package org.chromium.debug.ui.actions;
 import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.WorkspaceBridge.BreakpointHandler;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchMode;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -15,22 +15,27 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
 public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
-  public static class Caught extends ExceptionBreakpoints {
-    public Caught() {
-      super(JavascriptVm.ExceptionCatchType.CAUGHT);
+  public static class All extends ExceptionBreakpoints {
+    public All() {
+      super(JavascriptVm.ExceptionCatchMode.ALL);
     }
   }
   public static class Uncaught extends ExceptionBreakpoints {
     public Uncaught() {
-      super(JavascriptVm.ExceptionCatchType.UNCAUGHT);
+      super(JavascriptVm.ExceptionCatchMode.UNCAUGHT);
+    }
+  }
+  public static class None extends ExceptionBreakpoints {
+    public None() {
+      super(JavascriptVm.ExceptionCatchMode.NONE);
     }
   }
 
-  private ExceptionBreakpoints(ExceptionCatchType catchType) {
-    this.catchType = catchType;
+  private ExceptionBreakpoints(ExceptionCatchMode catchMode) {
+    this.catchMode = catchMode;
   }
 
-  private final JavascriptVm.ExceptionCatchType catchType;
+  private final ExceptionCatchMode catchMode;
   private Performer currentPerformer = null;
 
   public void run(IAction action) {
@@ -43,9 +48,15 @@ public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
 
   public void selectionChanged(IAction action, ISelection selection) {
     currentPerformer = createPerformer(selection);
-    action.setEnabled(currentPerformer != null);
-    if (currentPerformer != null) {
-      action.setChecked(currentPerformer.getCurrentCheckedState());
+    if (currentPerformer == null) {
+      action.setEnabled(false);
+    } else {
+      boolean checked = currentPerformer.getCurrentCheckedState();
+      action.setChecked(checked);
+
+      // Always enable, because disabled check looks unimpressive.
+      boolean uiEnabled = true;
+      action.setEnabled(uiEnabled);
     }
   }
 
@@ -56,14 +67,18 @@ public class ExceptionBreakpoints implements IWorkbenchWindowActionDelegate {
     }
     final BreakpointHandler breakpointHandler =
         targetData.getWorkspaceRelations().getBreakpointHandler();
-    final Boolean state = breakpointHandler.getBreakExceptionState(catchType);
+    final ExceptionCatchMode currentCatchMode = breakpointHandler.getBreakExceptionState();
     return new Performer() {
       @Override boolean getCurrentCheckedState() {
-        return state == Boolean.TRUE;
+        return catchMode == currentCatchMode;
       }
       @Override void run(IAction action) {
-        boolean newValue = !getCurrentCheckedState();
-        breakpointHandler.setBreakExceptionState(catchType, newValue);
+        if (catchMode == currentCatchMode) {
+          // We are enabled, but we are no-op.
+          return;
+        }
+        ExceptionCatchMode newValue = catchMode;
+        breakpointHandler.setBreakExceptionState(newValue);
       }
     };
   }

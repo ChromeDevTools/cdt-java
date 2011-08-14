@@ -7,14 +7,14 @@ package org.chromium.debug.core.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
+import org.chromium.debug.core.model.ChromiumLineBreakpoint.MutableProperty;
 import org.chromium.debug.core.model.VmResource.Metadata;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
@@ -22,11 +22,12 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchMode;
 import org.chromium.sdk.JavascriptVm.ScriptsCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.util.GenericCallback;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
@@ -159,7 +160,12 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
     @Override
     public Collection<? extends VmResource> visitResourceId(VmResourceId resourceId) {
-      return Collections.singletonList(resourceManager.getVmResource(resourceId));
+      VmResource vmResource = resourceManager.getVmResource(resourceId);
+      if (vmResource == null) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(vmResource);
+      }
     }
   };
 
@@ -193,9 +199,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   private class BreakpointHandlerImpl implements BreakpointHandler,
       BreakpointSynchronizer.BreakpointHelper {
 
-    private final Map<JavascriptVm.ExceptionCatchType, Boolean> breakExceptionState =
-        Collections.synchronizedMap(new EnumMap<JavascriptVm.ExceptionCatchType, Boolean>(
-            JavascriptVm.ExceptionCatchType.class));
+    private volatile JavascriptVm.ExceptionCatchMode breakExceptionMode = null;
 
     private final EnablementMonitor enablementMonitor = new EnablementMonitor();
 
@@ -220,35 +224,26 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     @Override
-    public Breakpoint getSdkBreakpoint(WrappedBreakpoint wrappedBreakpoint) {
+    public Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint wrappedBreakpoint) {
       return breakpointInTargetMap.getSdkBreakpoint(wrappedBreakpoint);
     }
 
-    public WrappedBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
+    public ChromiumLineBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
       if (connectedTargetData.getDebugTarget().isDisconnected()) {
         return null;
       }
-      return ChromiumDebugPlugin.getDefault().getBreakpointWrapManager().wrap(breakpoint);
+      return ChromiumBreakpointAdapter.tryCastBreakpoint(breakpoint);
     }
 
     public void breakpointAdded(IBreakpoint breakpoint) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
       if (ChromiumLineBreakpoint.getIgnoreList().contains(lineBreakpoint)) {
         return;
       }
-      boolean enabled;
-      try {
-        enabled = lineBreakpoint.getInner().isEnabled();
-      } catch (CoreException e) {
-        throw new RuntimeException(e);
-      }
-      if (!enabled) {
-        return;
-      }
-      IFile file = (IFile) lineBreakpoint.getInner().getMarker().getResource();
+      IFile file = (IFile) lineBreakpoint.getMarker().getResource();
       VmResourceRef vmResourceRef;
       try {
         vmResourceRef = findVmResourceRefFromWorkspaceFile(file);
@@ -271,7 +266,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
-    public RelayOk createBreakpointOnRemote(final WrappedBreakpoint lineBreakpoint,
+    public RelayOk createBreakpointOnRemote(final ChromiumLineBreakpoint lineBreakpoint,
         final VmResourceRef vmResourceRef,
         final CreateCallback createCallback, SyncCallback syncCallback) throws CoreException {
       ChromiumLineBreakpoint.Helper.CreateOnRemoveCallback callback =
@@ -295,7 +290,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -307,8 +302,14 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
         return;
       }
 
+      Set<MutableProperty> propertyDelta = lineBreakpoint.getChangedProperty(delta);
+
+      if (propertyDelta.isEmpty()) {
+        return;
+      }
+
       try {
-        ChromiumLineBreakpoint.Helper.updateOnRemote(sdkBreakpoint, lineBreakpoint);
+        ChromiumLineBreakpoint.Helper.updateOnRemote(sdkBreakpoint, lineBreakpoint, propertyDelta);
       } catch (RuntimeException e) {
         ChromiumDebugPlugin.log(new Exception("Failed to change breakpoint in " + //$NON-NLS-1$
             getTargetNameSafe(), e));
@@ -320,7 +321,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-      WrappedBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
+      ChromiumLineBreakpoint lineBreakpoint = tryCastBreakpoint(breakpoint);
       if (lineBreakpoint == null) {
         return;
       }
@@ -371,15 +372,15 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       Collection<IBreakpoint> uiBreakpoints = new ArrayList<IBreakpoint>(breakpointsHit.size());
 
       for (Breakpoint sdkBreakpoint : breakpointsHit) {
-        WrappedBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
+        ChromiumLineBreakpoint uiBreakpoint = breakpointInTargetMap.getUiBreakpoint(sdkBreakpoint);
         if (uiBreakpoint != null) {
           try {
-            uiBreakpoint.setIgnoreCount(-1); // reset ignore count as we've hit it
+            uiBreakpoint.silentlyResetIgnoreCount(); // reset ignore count as we've hit it
           } catch (CoreException e) {
-            throw new RuntimeException(e);
+            ChromiumDebugPlugin.log(new Exception("Failed to reset breakpoint ignore count", e));
           }
 
-          uiBreakpoints.add(uiBreakpoint.getInner());
+          uiBreakpoints.add(uiBreakpoint);
         }
       }
       return uiBreakpoints;
@@ -393,29 +394,33 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
+    @Override
     public void readBreakExceptionStateFromRemote() {
-      setBreakExceptionStateImpl(ExceptionCatchType.CAUGHT, null);
-      setBreakExceptionStateImpl(ExceptionCatchType.UNCAUGHT, null);
-    }
-    public Boolean getBreakExceptionState(ExceptionCatchType catchType) {
-      return breakExceptionState.get(catchType);
+      setBreakExceptionStateImpl(null);
     }
 
-    public void setBreakExceptionState(ExceptionCatchType catchType, boolean value) {
-      setBreakExceptionStateImpl(catchType, Boolean.valueOf(value));
+    @Override
+    public ExceptionCatchMode getBreakExceptionState() {
+      return breakExceptionMode;
     }
-    private void setBreakExceptionStateImpl(final ExceptionCatchType catchType, Boolean value) {
-      JavascriptVm.GenericCallback<Boolean> callback =
-          new JavascriptVm.GenericCallback<Boolean>() {
-            public void success(Boolean newValue) {
-              breakExceptionState.put(catchType, newValue);
+
+    @Override
+    public void setBreakExceptionState(ExceptionCatchMode catchMode) {
+      setBreakExceptionStateImpl(catchMode);
+    }
+
+    private void setBreakExceptionStateImpl(final ExceptionCatchMode catchMode) {
+      GenericCallback<ExceptionCatchMode> callback =
+          new GenericCallback<ExceptionCatchMode>() {
+            public void success(ExceptionCatchMode newValue) {
+              breakExceptionMode = newValue;
             }
             public void failure(Exception exception) {
               ChromiumDebugPlugin.log(new Exception(
                   "Failed to set 'break on exception' value", exception));
             }
           };
-      javascriptVm.setBreakOnException(catchType, value, callback, null);
+      javascriptVm.setBreakOnException(catchMode, callback, null);
     }
 
 

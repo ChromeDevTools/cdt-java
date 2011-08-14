@@ -26,7 +26,7 @@ public class RelaySyncCallback {
     return new Guard();
   }
 
-  public SyncCallback getSyncCallback() {
+  public SyncCallback getUserSyncCallback() {
     return syncCallback;
   }
 

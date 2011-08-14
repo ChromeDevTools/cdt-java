@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -12,12 +12,16 @@ public class CallFunctionOnParams extends org.chromium.sdk.internal.wip.protocol
    @param objectId Identifier of the object to call function on.
    @param functionDeclaration Declaration of the function to call.
    @param argumentsOpt Call arguments. All call arguments must belong to the same JavaScript world as the target object.
+   @param returnByValueOpt Whether the result is expected to be a JSON object which should be sent by value.
    */
-  public CallFunctionOnParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectId, String functionDeclaration, java.util.List<org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam> argumentsOpt) {
+  public CallFunctionOnParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectId, String functionDeclaration, java.util.List<org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam> argumentsOpt, Boolean returnByValueOpt) {
     this.put("objectId", objectId);
     this.put("functionDeclaration", functionDeclaration);
     if (argumentsOpt != null) {
       this.put("arguments", argumentsOpt);
+    }
+    if (returnByValueOpt != null) {
+      this.put("returnByValue", returnByValueOpt);
     }
   }
 
@@ -27,8 +31,8 @@ public class CallFunctionOnParams extends org.chromium.sdk.internal.wip.protocol
     return METHOD_NAME;
   }
 
-  @Override public org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData parseResponse(org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, org.chromium.sdk.internal.protocolparser.JsonProtocolParser parser) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {
-    return parser.parse(data.getUnderlyingObject(), org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData.class);
+  @Override public org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData parseResponse(org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, org.chromium.sdk.internal.wip.protocol.input.WipGeneratedParserRoot parser) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {
+    return parser.parseRuntimeCallFunctionOnData(data.getUnderlyingObject());
   }
 
 }

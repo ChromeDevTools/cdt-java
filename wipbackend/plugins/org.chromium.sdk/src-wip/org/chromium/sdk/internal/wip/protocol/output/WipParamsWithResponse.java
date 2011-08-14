@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.wip.protocol.output;
 
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
+import org.chromium.sdk.internal.wip.protocol.input.WipGeneratedParserRoot;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
 
 /**
@@ -13,6 +13,6 @@ import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
  * @param <R> a type of the corresponding response
  */
 public abstract class WipParamsWithResponse<R> extends WipParams {
-  public abstract R parseResponse(WipCommandResponse.Data success, JsonProtocolParser parser)
+  public abstract R parseResponse(WipCommandResponse.Data success, WipGeneratedParserRoot parser)
       throws JsonProtocolParseException;
 }

@@ -63,7 +63,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       final CountDownLatch latch = new CountDownLatch(1);
 
       // The "create" part
-      browserTab.setBreakpoint(new Breakpoint.Target.ScriptName("1"), 4, 1, true, "false", 3,
+      browserTab.setBreakpoint(new Breakpoint.Target.ScriptName("1"), 4, 1, true, "false",
           new BreakpointCallback() {
             public void failure(String errorMessage) {
               resultMessage[0] = errorMessage;
@@ -83,12 +83,10 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       breakpoint = resultBreakpoint[0];
       assertEquals("false", breakpoint.getCondition());
       assertTrue(breakpoint.isEnabled());
-      assertEquals(3, breakpoint.getIgnoreCount());
     }
 
     // The "change" part
     breakpoint.setCondition("true");
-    breakpoint.setIgnoreCount(10);
     breakpoint.setEnabled(false);
     resultBreakpoint[0] = null;
 
@@ -116,7 +114,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   @Test(timeout = 5000)
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"),
-        10, true, 0, null,
+        10, true, null,
         new TestBreakpointManager(browserTab.getDebugSession()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
@@ -147,8 +145,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     int ignoreCount = 3;
     boolean enabled = true;
     BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"), 10,
-        enabled,
-        ignoreCount, condition, new TestBreakpointManager(browserTab.getDebugSession()));
+        enabled, condition, new TestBreakpointManager(browserTab.getDebugSession()));
 
     bp.setCondition(condition);
     bp.flush(null, null);
@@ -158,7 +155,6 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     bp.flush(null, null);
     assertFalse(isBreakpointChanged);
 
-    bp.setIgnoreCount(ignoreCount);
     bp.flush(null, null);
     assertFalse(isBreakpointChanged);
   }

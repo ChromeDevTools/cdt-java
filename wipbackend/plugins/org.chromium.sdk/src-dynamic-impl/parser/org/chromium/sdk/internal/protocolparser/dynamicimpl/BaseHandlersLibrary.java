@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ class BaseHandlersLibrary {
         break writeGetUnderlyingObject;
       }
 
-      MethodHandler.writeMethodDeclarationJava(scope, method);
+      MethodHandler.writeMethodDeclarationJava(scope, method, Collections.<String>emptyList());
       scope.startLine("{\n");
       scope.startLine("  return underlying;\n");
       scope.startLine("}\n");
@@ -57,13 +58,8 @@ class BaseHandlersLibrary {
 
   private final Map<Method, MethodHandler> method2Handler;
 
-  private BaseHandlersLibrary() throws NoSuchMethodException {
+  private BaseHandlersLibrary(Method[] objectMethods) throws NoSuchMethodException {
     method2Handler = new HashMap<Method, MethodHandler>();
-    Method[] objectMethods = {
-        Object.class.getMethod("equals", Object.class),
-        Object.class.getMethod("hashCode"),
-        Object.class.getMethod("toString")
-    };
     for (Method m : objectMethods) {
       method2Handler.put(m, new SelfCallMethodHanlder(m));
     }
@@ -150,9 +146,22 @@ class BaseHandlersLibrary {
     }
   }
 
+  static final Method[] OBJECT_METHODS;
   static {
     try {
-      INSTANCE = new BaseHandlersLibrary();
+      OBJECT_METHODS = new Method[] {
+          Object.class.getMethod("equals", Object.class),
+          Object.class.getMethod("hashCode"),
+          Object.class.getMethod("toString")
+      };
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  static {
+    try {
+      INSTANCE = new BaseHandlersLibrary(OBJECT_METHODS);
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
     }

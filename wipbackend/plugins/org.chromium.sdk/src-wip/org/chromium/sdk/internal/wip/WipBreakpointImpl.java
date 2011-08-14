@@ -13,7 +13,7 @@ import java.util.Set;
 
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
-import org.chromium.sdk.JavascriptVm;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -27,6 +27,7 @@ import org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.RemoveBreakpointParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointByUrlParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointParams;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -113,17 +114,6 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   @Override
-  public int getIgnoreCount() {
-    // TODO: support.
-    return 0;
-  }
-
-  @Override
-  public void setIgnoreCount(int ignoreCount) {
-    // TODO: support.
-  }
-
-  @Override
   public String getCondition() {
     return condition;
   }
@@ -136,6 +126,17 @@ public class WipBreakpointImpl implements Breakpoint {
     this.condition = condition;
     isDirty = true;
   }
+
+  @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    return getIgnoreCountBreakpointExtensionImpl();
+  }
+
+  public static IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtensionImpl() {
+    // TODO(peter.rybin): implement when protocol supports.
+    return null;
+  }
+
 
   void setRemoteData(String protocolId, Collection<ActualLocation> actualLocations) {
     this.protocolId = protocolId;
@@ -353,11 +354,11 @@ public class WipBreakpointImpl implements Breakpoint {
         PARAMS requestParams =
             handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
 
-        JavascriptVm.GenericCallback<DATA> wrappedCallback;
+        GenericCallback<DATA> wrappedCallback;
         if (callback == null) {
           wrappedCallback = null;
         } else {
-          wrappedCallback = new JavascriptVm.GenericCallback<DATA>() {
+          wrappedCallback = new GenericCallback<DATA>() {
             @Override
             public void success(DATA data) {
               String breakpointId = handler.getBreakpointId(data);
@@ -392,20 +393,8 @@ public class WipBreakpointImpl implements Breakpoint {
 
     abstract Collection<LocationValue> getActualLocations(DATA data);
 
-    static class ForUrlOrRegExp
+    static abstract class ForUrlOrRegExp
         extends RequestHandler<String, SetBreakpointByUrlData, SetBreakpointByUrlParams> {
-      private final boolean isRegExp;
-
-      ForUrlOrRegExp(boolean isRegExp) {
-        this.isRegExp = isRegExp;
-      }
-
-      @Override
-      SetBreakpointByUrlParams createRequestParams(String url,
-          long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition, isRegExp);
-      }
-
       @Override
       String getBreakpointId(SetBreakpointByUrlData data) {
         return data.breakpointId();
@@ -417,9 +406,21 @@ public class WipBreakpointImpl implements Breakpoint {
       }
     }
 
-    static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp(false);
+    static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp() {
+      @Override
+      SetBreakpointByUrlParams createRequestParams(String url,
+          long lineNumber, long columnNumber, String condition) {
+        return new SetBreakpointByUrlParams(url, null, lineNumber, columnNumber, condition);
+      }
+    };
 
-    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp(true);
+    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp() {
+      @Override
+      SetBreakpointByUrlParams createRequestParams(String url,
+          long lineNumber, long columnNumber, String condition) {
+        return new SetBreakpointByUrlParams(null, url, lineNumber, columnNumber, condition);
+      }
+    };
 
     static final RequestHandler<String, SetBreakpointData, SetBreakpointParams> FOR_ID =
         new RequestHandler<String, SetBreakpointData, SetBreakpointParams>() {
@@ -444,7 +445,7 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   private static ActualLocation locationFromProtocol(LocationValue locationValue) {
-    return new ActualLocation(locationValue.sourceId(), locationValue.lineNumber(),
+    return new ActualLocation(locationValue.scriptId(), locationValue.lineNumber(),
         locationValue.columnNumber());
   }
 

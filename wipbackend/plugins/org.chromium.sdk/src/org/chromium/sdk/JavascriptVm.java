@@ -6,7 +6,8 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to
@@ -80,28 +81,18 @@ public interface JavascriptVm {
 
   /**
    * Sets a breakpoint with the specified parameters.
-   *
-   * @param type of the breakpoint
-   * @param target of the breakpoint, depends on the {@code type} value:
-   *        <table border=1>
-   *          <tr><td>type value</td><td>target value</td></tr>
-   *          <tr><td>FUNCTION</td><td>a function expression</td></tr>
-   *          <tr><td>SCRIPT_NAME</td><td>a script name (as reported by Script#getName())</td></tr>
-   *          <tr><td>SCRIPT_ID</td><td>a stringified script ID (as reported by Script#getId())</td></tr>
-   *        </table>
+   * @param target of the breakpoint
    * @param line in the script or function. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param column of the target start within the line. If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
-   * @param ignoreCount number specifying the amount of breakpoint hits to
-   *        ignore. If none, use {@link Breakpoint#EMPTY_VALUE}
    * @param callback to invoke when the evaluation result is ready,
    *        may be {@code null}
    */
   RelayOk setBreakpoint(Breakpoint.Target target, int line, int column, boolean enabled,
-      String condition, int ignoreCount, BreakpointCallback callback, SyncCallback syncCallback);
+      String condition, BreakpointCallback callback, SyncCallback syncCallback);
 
   /**
    * Tries to suspend VM. If successful, {@link DebugEventListener#suspended(DebugContext)}
@@ -123,18 +114,6 @@ public interface JavascriptVm {
   RelayOk listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
 
   /**
-   * A generic callback used in operations that a remote variable value.
-   */
-  interface GenericCallback<T> {
-    /**
-     * Method is called after variable has been successfully updated.
-     * @param value holds an actual new value of variable if provided or null
-     */
-    void success(T value);
-    void failure(Exception exception);
-  }
-
-  /**
    * Asynchronously enables or disables all breakpoints on remote. Parameter
    * 'enabled' may be null, in this case the remote value is not modified and can be
    * obtained inside the callback.
@@ -142,18 +121,35 @@ public interface JavascriptVm {
   RelayOk enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
       SyncCallback syncCallback);
 
-  enum ExceptionCatchType {
-    CAUGHT, UNCAUGHT
+  /**
+   * Defines when VM will break on exception throw (before stack unwind happened).
+   */
+  enum ExceptionCatchMode {
+    /**
+     * VM always breaks when exception is being thrown.
+     */
+    ALL,
+
+    /**
+     * VM breaks when exception is being thrown without try-catch that is going to catch it.
+     */
+    UNCAUGHT,
+
+    /**
+     * VM doesn't break when exception is being thrown.
+     */
+    NONE
   }
 
   /**
-   * Asynchronously enables or disables breaking on exception. All exception
-   * events are split into 2 categories: caught and uncaught. Parameter
-   * 'enabled' may be null, in this case the remote value is not modified and can be
-   * obtained inside the callback.
+   * Asynchronously sets exception catch mode.
+   * @param new mode or null to keep the current mode
+   * @param callback gets invoked when operation is finished and receives current mode
+   *     as a value (may receive null if actual mode doesn't fit into {@link ExceptionCatchMode}
+   *     type)
    */
-  RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
-      GenericCallback<Boolean> callback, SyncCallback syncCallback);
+  RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback);
 
   /**
    * @return version of JavaScript VM or null if not available
@@ -161,13 +157,13 @@ public interface JavascriptVm {
   Version getVersion();
 
   /**
-   * @return extension to evaluate operations with additional context support or null if VM
-   *     does not support this feature
-   */
-  EvaluateWithContextExtension getEvaluateWithContextExtension();
-
-  /**
    * @return extension to standard breakpoint target types
    */
   BreakpointTypeExtension getBreakpointTypeExtension();
+
+  /**
+   * @return extension that supports ignore count property of breakpoint
+   *     or null if unsupported by VM
+   */
+  IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension();
 }

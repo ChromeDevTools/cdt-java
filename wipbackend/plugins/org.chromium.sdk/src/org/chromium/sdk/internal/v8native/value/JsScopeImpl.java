@@ -18,6 +18,7 @@ import org.chromium.sdk.internal.v8native.CallFrameImpl;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A generic implementation of the JsScope interface.
@@ -50,26 +51,29 @@ public abstract class JsScopeImpl<D> implements JsScope {
   }
 
   @Override
-  public List<? extends JsVariable> getVariables() {
+  public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
     return getVariables(getDeferredData());
   }
 
-  protected D getDeferredData() {
+  protected D getDeferredData() throws MethodIsBlockingException {
     if (deferredData == null) {
       deferredData = loadDeferredData(callFrameImpl.getInternalContext().getValueLoader());
     }
     return deferredData;
   }
 
-  protected abstract D loadDeferredData(ValueLoaderImpl valueLoader);
+  protected abstract D loadDeferredData(ValueLoaderImpl valueLoader)
+      throws MethodIsBlockingException;
 
-  protected abstract List<? extends JsVariable> getVariables(D data);
+  protected abstract List<? extends JsVariable> getVariables(D data)
+      throws MethodIsBlockingException;
 
   protected CallFrameImpl getCallFrameImpl() {
     return callFrameImpl;
   }
 
-  protected ObjectValueHandle loadScopeObject(ValueLoaderImpl valueLoader) {
+  protected ObjectValueHandle loadScopeObject(ValueLoaderImpl valueLoader)
+      throws MethodIsBlockingException {
     return valueLoader.loadScopeFields(scopeIndex, callFrameImpl.getIdentifier());
   }
 
@@ -106,7 +110,8 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected List<? extends JsVariable> loadDeferredData(ValueLoaderImpl valueLoader) {
+    protected List<? extends JsVariable> loadDeferredData(ValueLoaderImpl valueLoader)
+        throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       if (scopeObject == null) {
         return Collections.emptyList();
@@ -137,12 +142,13 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    public JsValue getWithArgument() {
+    public JsValue getWithArgument() throws MethodIsBlockingException {
       return getDeferredData().jsValue;
     }
 
     @Override
-    protected DeferredData loadDeferredData(ValueLoaderImpl valueLoader) {
+    protected DeferredData loadDeferredData(ValueLoaderImpl valueLoader)
+        throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
       JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror, "<with object>");
@@ -150,7 +156,8 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected List<? extends JsVariable> getVariables(DeferredData data) {
+    protected List<? extends JsVariable> getVariables(DeferredData data)
+        throws MethodIsBlockingException {
       if (data.orderedProperties == null) {
         List<? extends JsVariable> list;
         JsObject jsObject = data.jsValue.asObject();

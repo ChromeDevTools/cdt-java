@@ -51,11 +51,6 @@ public class DebuggerMessageFactory {
     return new SetBreakpointMessage(target, line, column, enabled, condition, ignoreCount);
   }
 
-  public static ContextlessDebuggerMessage changeBreakpoint(Breakpoint breakpoint) {
-    return new ChangeBreakpointMessage(breakpoint.getId(), breakpoint.isEnabled(),
-        breakpoint.getCondition(), getV8IgnoreCount(breakpoint.getIgnoreCount()));
-  }
-
   public static ContextlessDebuggerMessage clearBreakpoint(long id) {
     return new ClearBreakpointMessage(id);
   }
@@ -74,9 +69,5 @@ public class DebuggerMessageFactory {
 
   public static ContextlessDebuggerMessage version() {
     return new VersionMessage();
-  }
-
-  private static Integer getV8IgnoreCount(int count) {
-    return count == Breakpoint.EMPTY_VALUE ? null : count;
   }
 }

@@ -8,21 +8,33 @@ import java.io.IOException;
 import java.util.List;
 
 import org.chromium.sdk.Browser;
-import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.TabDebugEventListener;
 
 /**
- * WIP-specific extension to {@link Browser} interface.
+ * WIP interface to browser similar to {@link Browser}.
  */
-public interface WipBrowser extends Browser {
-  @Override
-  WipTabFetcher createTabFetcher() throws IOException, UnsupportedVersionException;
+public interface WipBrowser {
+  List<? extends WipTabConnector> getTabs() throws IOException;
 
-  interface WipTabFetcher extends TabFetcher {
-    @Override
-    List<? extends WipTabConnector> getTabs() throws IOException, IllegalStateException;
-  }
-
-  interface WipTabConnector extends TabConnector {
+  interface WipTabConnector {
     String getTitle();
+
+    /**
+     * @return tab url that should be shown to user to let him select one tab from list
+     */
+    String getUrl();
+
+    /**
+     * @return true if the tab is already attached at this moment
+     */
+    boolean isAlreadyAttached();
+
+    /**
+     * Attaches to the related tab debugger.
+     *
+     * @param listener to report the debug events to
+     * @return null if operation failed
+     */
+    WipBrowserTab attach(TabDebugEventListener listener) throws IOException;
   }
 }

@@ -4,7 +4,7 @@
 
 package org.chromium.sdk.internal.wip.protocol;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
+import org.chromium.sdk.internal.wip.protocol.input.WipProtocolParser;
 
 /**
  * An accessor to dynamic implementation of a WebInspector protocol parser.
@@ -12,7 +12,9 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
  * parser implementation.
  */
 public class WipParserAccess {
-  public static JsonProtocolParser get() {
-    return WipDynamicParser.get();
+  public static WipProtocolParser get() {
+    return PARSER;
   }
+
+  private static final WipProtocolParser PARSER = WipDynamicParser.create().getParserRoot();
 }

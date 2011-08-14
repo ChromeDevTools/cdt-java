@@ -6,7 +6,6 @@ package org.chromium.sdk.internal.v8native.protocol.input;
 
 import java.util.List;
 
-import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.JsonType;
