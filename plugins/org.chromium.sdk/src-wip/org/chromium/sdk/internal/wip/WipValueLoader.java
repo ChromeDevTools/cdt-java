@@ -14,11 +14,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
@@ -27,7 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.GenericCallback;
-import org.chromium.sdk.util.RelaySyncCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Responsible for loading values of properties. It works in pair with {@link WipValueBuilder}.
@@ -57,18 +55,19 @@ public abstract class WipValueLoader implements RemoteValueMapping {
   }
 
   /**
-   * Asynchronously loads object properties. It starts a load operation of a corresponding
-   * {@link AsyncFuture}. The operation is fully synchronous, so this method actually
-   * blocks. Meanwhile any other thread trying to access the same object properties won't block
-   * here, but will wait on the {@link AsyncFuture} getters instead.
+   * Loads object properties. It starts and executes a load operation of a corresponding
+   * {@link AsyncFuture}. The operation is fully synchronous, so this method normally
+   * blocks. There is a chance that other thread is already executing load operation.
+   * In this case the method will return immediately, but {@link AsyncFuture} will hold
+   * thread until the operation finishes.
    * @param innerNameBuilder name builder for qualified names of all properties and subproperties
-   * @param output future object that will hold result of load operation
+   * @param futureRef future reference that will hold result of load operation
    */
-  void loadJsObjectPropertiesAsync(final String objectId,
+  void loadJsObjectPropertiesInFuture(final String objectId,
       PropertyNameBuilder innerNameBuilder, boolean reload, int currentCacheState,
-      AsyncFutureRef<Getter<ObjectProperties>> output) {
+      AsyncFutureRef<Getter<ObjectProperties>> futureRef) throws MethodIsBlockingException {
     ObjectPropertyProcessor propertyProcessor = new ObjectPropertyProcessor(innerNameBuilder);
-    loadPropertiesAsync(objectId, propertyProcessor, reload, currentCacheState, output);
+    loadPropertiesInFuture(objectId, propertyProcessor, reload, currentCacheState, futureRef);
   }
 
   int getCacheState() {
@@ -220,30 +219,25 @@ public abstract class WipValueLoader implements RemoteValueMapping {
         }
       }));
 
-  <RES> void loadPropertiesAsync(final String objectId,
+  <RES> void loadPropertiesInFuture(final String objectId,
       final LoadPostprocessor<RES> propertyPostprocessor, boolean reload,
-      final int currentCacheState, AsyncFutureRef<RES> output) {
+      final int currentCacheState, AsyncFutureRef<RES> futureRef) throws MethodIsBlockingException {
     if (objectId == null) {
-      output.initializeTrivial(propertyPostprocessor.getEmptyResult());
+      futureRef.initializeTrivial(propertyPostprocessor.getEmptyResult());
       return;
     }
 
     // The entire operation that first loads properties from remote and then postprocess them
     // (without occupying Dispatch thread).
     // The operation is sync because we don't want to do postprocessing in Dispatch thread.
-    AsyncFuture.Operation<RES> syncOperation = new AsyncFuture.Operation<RES>() {
+    AsyncFuture.SyncOperation<RES> syncOperation = new AsyncFuture.SyncOperation<RES>() {
       @Override
-      public RelayOk start(AsyncFuture.Callback<RES> callback, SyncCallback syncCallback) {
-        loadSync(callback);
-        return RelaySyncCallback.finish(syncCallback);
-      }
-
-      private void loadSync(AsyncFuture.Callback<RES> callback) {
+      protected RES runSync() throws MethodIsBlockingException {
         // Get response from remote.
         LoadPropertiesResponse response = loadRawPropertiesSync(objectId);
 
-        // Process result (in the calling thread).
-        RES result = response.accept(new LoadPropertiesResponse.Visitor<RES>() {
+        // Process result.
+        return response.accept(new LoadPropertiesResponse.Visitor<RES>() {
           @Override
           public RES visitData(GetPropertiesData data) {
             // TODO: check exception.
@@ -256,18 +250,15 @@ public abstract class WipValueLoader implements RemoteValueMapping {
                 "Failed to read properties from remote", exception));
           }
         });
-
-        callback.done(result);
       }
     };
 
-    // This is blocking (unless we concur with someone; in this case we're going to wait for result
-    // later, on AsyncFuture getter).
     if (reload) {
-      output.reinitializeRunning(syncOperation);
+      futureRef.reinitializeRunning(syncOperation.asAsyncOperation());
     } else {
-      output.initializeRunning(syncOperation);
+      futureRef.initializeRunning(syncOperation.asAsyncOperation());
     }
+    syncOperation.execute();
   }
 
   /**
@@ -283,7 +274,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
     abstract <R> R accept(Visitor<R> visitor);
   }
 
-  private LoadPropertiesResponse loadRawPropertiesSync(String objectId) {
+  private LoadPropertiesResponse loadRawPropertiesSync(String objectId)
+      throws MethodIsBlockingException {
     final LoadPropertiesResponse[] result = { null };
     GenericCallback<GetPropertiesData> callback =
         new GenericCallback<GetPropertiesData>() {

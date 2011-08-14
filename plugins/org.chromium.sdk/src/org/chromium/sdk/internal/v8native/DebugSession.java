@@ -27,6 +27,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -244,7 +245,7 @@ public class DebugSession {
   /**
    * Checks version of V8 and check if it in running state.
    */
-  public void startCommunication() {
+  public void startCommunication() throws MethodIsBlockingException {
     V8BlockingCallback<Void> callback = new V8BlockingCallback<Void>() {
       @Override
       public Void messageReceived(CommandResponse response) {

@@ -6,8 +6,8 @@ package org.chromium.sdk;
 
 import java.util.Collection;
 
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Abstraction of a remote Javascript virtual machine. Clients can use it to

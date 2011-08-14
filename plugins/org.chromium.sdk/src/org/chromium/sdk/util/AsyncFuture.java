@@ -108,7 +108,7 @@ public abstract class AsyncFuture<T> {
    * @see #isDone()
    * @return the operation result
    */
-  public abstract T getSync();
+  public abstract T getSync() throws MethodIsBlockingException;
 
   /**
    * Obtains the operation result. The result is passed to callback immediately (synchronously) or
@@ -146,17 +146,87 @@ public abstract class AsyncFuture<T> {
     RelayOk start(Callback<RES> callback, SyncCallback syncCallback);
   }
 
+  /**
+   * Helper class that wraps operation meant to be executed synchronously in the current thread
+   * as an asynchronous {@link Operation} suitable for {@link AsyncFuture}. User implements
+   * {@link #runSync()} method and passes the object returned form {@link #asAsyncOperation()}
+   * to {@link AsyncFuture}. Immediately after this he must call {@link #execute()} method
+   * (because some threads may have already get blocked on {@link AsyncFuture#getSync()} method).
+   * The user {@link #runSync()} method may not be actually called if {@link AsyncFuture} didn't
+   * started the operation for some reason.
+   */
+  public static abstract class SyncOperation<RES> {
+    private Callback<RES> callback = null;
+    private SyncCallback syncCallback;
+
+    public void execute() throws MethodIsBlockingException {
+      if (callback == null) {
+        // We haven't been started. Silently do not execute.
+      }
+      try {
+        RES res = runSync();
+        callback.done(res);
+      } finally {
+        syncCallback.callbackDone(null);
+      }
+    }
+
+    public Operation<RES> asAsyncOperation() {
+      return new Operation<RES>() {
+        @Override
+        public RelayOk start(Callback<RES> callback, SyncCallback syncCallback) {
+          SyncOperation.this.callback = callback;
+          SyncOperation.this.syncCallback = syncCallback;
+          return USER_PROMISES_TO_CALL_EXECUTE;
+        }
+      };
+    }
+
+    /**
+     * Does whatever tasks the operation requires. It may also fail with no special precautions.
+     * @throws MethodIsBlockingException method may deal with blocking operations
+     */
+    protected abstract RES runSync() throws MethodIsBlockingException;
+
+    private static final RelayOk USER_PROMISES_TO_CALL_EXECUTE = new RelayOk() {
+    };
+  }
+
   private static class Working<T> extends AsyncFuture<T> {
     private final AtomicReference<AsyncFuture<T>> ref;
     private final List<CallbackPair<T>> callbacks = new ArrayList<CallbackPair<T>>(1);
     private boolean resultReady = false;
     private T result;
+    private Exception startFailure;
 
     public Working(AtomicReference<AsyncFuture<T>> ref) {
       this.ref = ref;
     }
 
     public RelayOk start(Operation<T> operation) {
+      RuntimeException e = null;
+      boolean relayed = false;
+      try {
+        RelayOk relayOk;
+        relayOk = startOrFail(operation);
+        relayed = true;
+        return relayOk;
+      } catch (RuntimeException ex) {
+        e = ex;
+        throw ex;
+      } catch (Error er) {
+        // Dont't interfere with severe problems
+        e = null;
+        throw er;
+      } finally {
+        // Make sure we started worker.
+        if (!relayed) {
+          startFailureIsReady(e);
+        }
+      }
+    }
+
+    private RelayOk startOrFail(Operation<T> operation) {
       Callback<T> callback = new Callback<T>() {
         @Override
         public void done(T res) {
@@ -180,17 +250,17 @@ public abstract class AsyncFuture<T> {
           return OPERATION_SHOULD_BE_RUNNING_RELAY_OK;
         }
       }
-      return deliverResultImmediately(result, callback, syncCallback);
+      return deliverResultImmediately(getResultOrFail(), callback, syncCallback);
     }
 
     // We added callback to the chain. Will be called later.
     private static final RelayOk OPERATION_SHOULD_BE_RUNNING_RELAY_OK = new RelayOk() {};
 
     @Override
-    public T getSync() {
+    public T getSync() throws MethodIsBlockingException {
       synchronized (this) {
         if (resultReady) {
-          return result;
+          return getResultOrFail();
         }
       }
       class CallbackImpl implements Callback<T> {
@@ -246,6 +316,27 @@ public abstract class AsyncFuture<T> {
       }
     }
 
+    private T getResultOrFail() {
+      if (startFailure == null) {
+        return result;
+      } else {
+        throw new RuntimeException("Failed to start operation", startFailure);
+      }
+    }
+
+    void startFailureIsReady(RuntimeException cause) {
+      synchronized (this) {
+        this.resultReady = true;
+        this.result = null;
+        this.startFailure = cause;
+      }
+      for (CallbackPair<T> pair : callbacks) {
+        if (pair.syncCallback != null) {
+          pair.syncCallback.callbackDone(cause);
+        }
+      }
+    }
+
     private static class CallbackPair<RES> {
       final Callback<? super RES> callback;
       final SyncCallback syncCallback;
@@ -280,8 +371,8 @@ public abstract class AsyncFuture<T> {
     }
   }
 
-  private static <T> RelayOk deliverResultImmediately(T result, Callback<T> callback,
-      SyncCallback syncCallback) {
+  private static <T> RelayOk deliverResultImmediately(T result,
+      Callback<T> callback, SyncCallback syncCallback) {
     if (callback != null) {
       callback.done(result);
     }

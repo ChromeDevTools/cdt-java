@@ -6,6 +6,8 @@ package org.chromium.sdk;
 
 import java.util.List;
 
+import org.chromium.sdk.util.MethodIsBlockingException;
+
 /**
  * An object that represents a scope in JavaScript.
  */
@@ -32,14 +34,16 @@ public interface JsScope {
 
   /**
    * @return the variables known in this scope, in lexicographical order
+   * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  List<? extends JsVariable> getVariables();
+  List<? extends JsVariable> getVariables() throws MethodIsBlockingException;
 
   /**
    * Subtype that exposes the value of the 'with' statement expression (the value might be
    * already converted by ToObject).
+   * @throws MethodIsBlockingException because it may need to load value from remote
    */
   interface WithScope extends JsScope {
-    JsValue getWithArgument();
+    JsValue getWithArgument() throws MethodIsBlockingException;
   }
 }

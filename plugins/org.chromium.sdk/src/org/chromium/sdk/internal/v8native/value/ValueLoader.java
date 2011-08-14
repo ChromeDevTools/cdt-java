@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * The elaborate factory and storage for {@link ValueMirror}'s, that loads values from remote and
@@ -27,14 +28,16 @@ public abstract class ValueLoader implements RemoteValueMapping {
    * Looks up {@link ValueMirror} in map, loads them if needed or reloads them
    * if property data is unavailable (or expired).
    */
-  public abstract SubpropertiesMirror getOrLoadSubproperties(Long ref);
+  public abstract SubpropertiesMirror getOrLoadSubproperties(Long ref)
+      throws MethodIsBlockingException;
 
   /**
-   * For each PropertyReference from propertyRefs tries to either: 1. read it from PropertyReference
-   * (possibly cached value) or 2. lookup value by refId from remote
+   * For each PropertyReference from propertyRefs tries to either:
+   * 1. read it from PropertyReference (possibly cached value) or
+   * 2. lookup value by refId from remote
    */
   public abstract List<ValueMirror> getOrLoadValueFromRefs(
-      List<? extends PropertyReference> propertyRefs);
+      List<? extends PropertyReference> propertyRefs) throws MethodIsBlockingException;
 
   public abstract InternalContext getInternalContext();
 }

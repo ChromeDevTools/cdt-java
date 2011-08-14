@@ -6,7 +6,7 @@ package org.chromium.sdk;
 
 import java.util.Map;
 
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.wip.EvaluateToMappingExtension;
 
 /**

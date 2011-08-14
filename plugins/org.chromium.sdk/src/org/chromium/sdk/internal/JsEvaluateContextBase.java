@@ -10,7 +10,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Partial implementation of {@link JsEvaluateContext} that reduce all functionality

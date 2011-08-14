@@ -13,8 +13,7 @@ import java.util.TreeMap;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A generic implementation of the JsArray interface.
@@ -43,7 +42,7 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
   }
 
   @Override
-  public int length() {
+  public int length() throws MethodIsBlockingException {
     // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
     // rather than JsVariableImpl
     int lastIndex = -1;
@@ -121,8 +120,7 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
       return basicPropertyData;
     }
 
-    private synchronized SortedMap<Integer, JsVariableImpl> ensureElementsMap()
-        throws MethodIsBlockingException {
+    private synchronized SortedMap<Integer, JsVariableImpl> ensureElementsMap() {
       if (indexToElementMap == null) {
         SortedMap<Integer, JsVariableImpl> map = new TreeMap<Integer, JsVariableImpl>();
 

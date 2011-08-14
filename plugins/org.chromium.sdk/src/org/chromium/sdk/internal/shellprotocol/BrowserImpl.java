@@ -32,6 +32,7 @@ import org.chromium.sdk.internal.transport.Connection.NetListener;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A thread-safe implementation of the Browser interface.
@@ -292,7 +293,8 @@ public class BrowserImpl implements Browser {
       return ticket.getSession().tabId2ToolHandler.get(tabId) != null;
     }
 
-    public BrowserTab attach(TabDebugEventListener listener) throws IOException {
+    public BrowserTab attach(TabDebugEventListener listener)
+        throws IOException, MethodIsBlockingException {
       SessionManager.Ticket<Session> ticket;
       try {
         ticket = connectInternal();

@@ -22,7 +22,6 @@ import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ObjectPropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
@@ -31,6 +30,7 @@ import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A builder for implementations of {@link JsValue} and {@link JsVariable}.
@@ -210,7 +210,7 @@ class WipValueBuilder {
       }
 
       @Override
-      public JsVariable getProperty(String name) {
+      public JsVariable getProperty(String name) throws MethodIsBlockingException {
         return getLoadedProperties().getProperty(name);
       }
 
@@ -228,7 +228,7 @@ class WipValueBuilder {
         return valueLoader;
       }
 
-      protected ObjectProperties getLoadedProperties() {
+      protected ObjectProperties getLoadedProperties() throws MethodIsBlockingException {
         int currentCacheState = getRemoteValueMapping().getCacheState();
         if (loadedPropertiesRef.isInitialized()) {
           ObjectProperties result = loadedPropertiesRef.getSync().get();
@@ -242,7 +242,8 @@ class WipValueBuilder {
         return loadedPropertiesRef.getSync().get();
       }
 
-      private void doLoadProperties(boolean reload, int currentCacheState) {
+      private void doLoadProperties(boolean reload, int currentCacheState)
+          throws MethodIsBlockingException {
         PropertyNameBuilder innerNameBuilder;
         if (nameBuilder == null) {
           innerNameBuilder = null;
@@ -254,7 +255,7 @@ class WipValueBuilder {
             innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
           }
         }
-        valueLoader.loadJsObjectPropertiesAsync(valueData.objectId(), innerNameBuilder,
+        valueLoader.loadJsObjectPropertiesInFuture(valueData.objectId(), innerNameBuilder,
             reload, currentCacheState, loadedPropertiesRef);
       }
     }
@@ -311,7 +312,7 @@ class WipValueBuilder {
       }
 
       @Override
-      public int length() {
+      public int length() throws MethodIsBlockingException {
         return getArrayProperties().getLength();
       }
 
@@ -326,7 +327,7 @@ class WipValueBuilder {
         return getArrayProperties().getSparseArrayMap();
       }
 
-      private ArrayProperties getArrayProperties() {
+      private ArrayProperties getArrayProperties() throws MethodIsBlockingException {
         ArrayProperties result = arrayPropertiesRef.get();
         if (result == null) {
           ArrayProperties arrayProperties = buildArrayProperties();
@@ -338,7 +339,7 @@ class WipValueBuilder {
         }
       }
 
-      private ArrayProperties buildArrayProperties() {
+      private ArrayProperties buildArrayProperties() throws MethodIsBlockingException {
         ObjectProperties loadedProperties = getLoadedProperties();
         final TreeMap<Integer, JsVariable> map = new TreeMap<Integer, JsVariable>();
         JsValue lengthValue = null;
