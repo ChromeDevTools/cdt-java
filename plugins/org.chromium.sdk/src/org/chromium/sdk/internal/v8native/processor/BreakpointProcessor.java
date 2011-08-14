@@ -25,7 +25,6 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.value.ExceptionDataImpl;
-import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
 

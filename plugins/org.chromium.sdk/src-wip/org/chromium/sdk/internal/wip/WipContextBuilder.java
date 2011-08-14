@@ -417,12 +417,13 @@ class WipContextBuilder {
 
       @Override
       public String getSourceText() {
-        // TODO: implement.
+        // Not supported.
         return null;
       }
 
       @Override
       public String getExceptionMessage() {
+        // TODO: implement.
         return exceptionValue.getValueString();
       }
     }
