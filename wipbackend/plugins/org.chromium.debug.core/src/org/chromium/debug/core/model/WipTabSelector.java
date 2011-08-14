@@ -6,6 +6,7 @@ package org.chromium.debug.core.model;
 
 import java.io.IOException;
 
+import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.WipBrowser;
 
 /**
@@ -15,11 +16,17 @@ import org.chromium.sdk.wip.WipBrowser;
 public interface WipTabSelector {
 
   /**
-   * @param browser that is used to download list of tabs; list of tabs
+   * @param browserAndBackend is used to download list of tabs; list of tabs
    *        may be reloaded if needed
    * @return a tab to debug, or null if the launch configuration should not
    *         proceed attaching to a Chromium tab
    * @throws IOException if tabFetcher got network problems downloading tabs
    */
-  WipBrowser.WipTabConnector selectTab(WipBrowser browser) throws IOException;
+  WipBrowser.WipTabConnector selectTab(BrowserAndBackend browserAndBackend) throws IOException;
+
+  interface BrowserAndBackend {
+    WipBrowser getBrowser();
+    WipBackend getBackend();
+  }
+
 }

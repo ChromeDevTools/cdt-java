@@ -16,6 +16,7 @@ import org.chromium.debug.core.model.TabSelector;
 import org.chromium.debug.core.model.WipTabSelector;
 import org.chromium.sdk.Browser.TabConnector;
 import org.chromium.sdk.Browser.TabFetcher;
+import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
 import org.eclipse.swt.widgets.Display;
@@ -105,10 +106,12 @@ public class DialogBasedTabSelector {
     }
   }
 
-  private static class Wip extends Base<WipTabConnector, WipBrowser> implements WipTabSelector {
+  private static class Wip extends Base<WipTabConnector, WipTabSelector.BrowserAndBackend> implements WipTabSelector {
     @Override
-    protected List<? extends WipTabConnector> getTabs(WipBrowser tabFetcher) throws IOException {
-      return tabFetcher.getTabs();
+    protected List<? extends WipTabConnector> getTabs(WipTabSelector.BrowserAndBackend browserAndBackend) throws IOException {
+      WipBrowser browser = browserAndBackend.getBrowser();
+      WipBackend backend = browserAndBackend.getBackend();
+      return browser.getTabs(backend);
     }
 
     @Override
