@@ -115,7 +115,11 @@ public class BaseCommandProcessor<SEQ_KEY, OUTGOING, INCOMING, INCOMING_WITH_SEQ
     // We should call them in the order they have been submitted.
     Collection<CallbackEntry<INCOMING_WITH_SEQ>> entries = callbackMap.close().values();
     for (CallbackEntry<INCOMING_WITH_SEQ> entry : entries) {
-      callThemBack(entry, failureCaller, null);
+      try {
+        callThemBack(entry, failureCaller, null);
+      } catch (RuntimeException e) {
+        LOGGER.log(Level.SEVERE, "Failed to dispatch response to callback", e);
+      }
     }
   }
 
@@ -146,7 +150,7 @@ public class BaseCommandProcessor<SEQ_KEY, OUTGOING, INCOMING, INCOMING_WITH_SEQ
   private final CallbackCaller<Callback<?>> failureCaller = new CallbackCaller<Callback<?>>() {
     @Override
     void call(Callback<?> handlerCallback) {
-      handlerCallback.failure("Detach");
+      handlerCallback.failure("Connection closed");
     }
   };
 

@@ -21,6 +21,7 @@ import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Message;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * A default, thread-safe implementation of the BrowserTab interface.
@@ -86,7 +87,8 @@ public class BrowserTabImpl extends JavascriptVmImpl implements BrowserTab {
     return connectionTicket.getSession();
   }
 
-  synchronized void attach(TabDebugEventListener listener) throws IOException {
+  synchronized void attach(TabDebugEventListener listener)
+      throws IOException, MethodIsBlockingException {
     this.tabDebugEventListener = listener;
     this.debugEventListener = listener.getDebugEventListener();
 

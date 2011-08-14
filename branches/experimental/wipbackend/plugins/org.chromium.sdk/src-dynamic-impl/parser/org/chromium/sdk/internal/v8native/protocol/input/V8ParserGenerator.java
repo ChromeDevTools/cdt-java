@@ -22,7 +22,7 @@ public class V8ParserGenerator extends ParserGeneratorBase {
     GeneratedCodeMap liveEditParserMap =
         buildParserMap(LiveEditParserGenerator.createConfiguration());
     return new GenerateConfiguration("org.chromium.sdk.internal.v8native.protocol.input",
-        "GeneratedV8ProtocolParser", V8DynamicParser.get(),
+        "GeneratedV8ProtocolParser", V8DynamicParser.create(),
         Collections.singletonList(liveEditParserMap));
   }
 }

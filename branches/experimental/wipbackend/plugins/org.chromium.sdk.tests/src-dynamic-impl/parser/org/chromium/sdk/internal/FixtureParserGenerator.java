@@ -22,7 +22,7 @@ public class FixtureParserGenerator extends ParserGeneratorBase {
   public static GenerateConfiguration createConfiguration() {
     GeneratedCodeMap baseV8ParserMap = buildParserMap(V8ParserGenerator.createConfiguration());
     return new GenerateConfiguration("org.chromium.sdk.internal", "GeneratedV8FixtureParser",
-        FixtureDynamicParser.get(),
+        FixtureDynamicParser.create(),
         Collections.singletonList(baseV8ParserMap));
   }
 }

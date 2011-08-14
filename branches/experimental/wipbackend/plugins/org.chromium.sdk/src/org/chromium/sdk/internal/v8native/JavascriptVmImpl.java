@@ -9,11 +9,13 @@ import java.io.IOException;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.EvaluateWithContextExtension;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
+import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Base implementation of JavascriptVm.
@@ -23,10 +25,12 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   protected JavascriptVmImpl() {
   }
 
+  @Override
   public void suspend(SuspendCallback callback) {
     getDebugSession().suspend(callback);
   }
 
+  @Override
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     RelayOk relayOk =
@@ -40,11 +44,10 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
 
   @Override
   public RelayOk setBreakpoint(Breakpoint.Target target, int line,
-      int column, boolean enabled, String condition, int ignoreCount,
+      int column, boolean enabled, String condition,
       BreakpointCallback callback, SyncCallback syncCallback) {
     return getDebugSession().getBreakpointManager()
-        .setBreakpoint(target, line, column, enabled, condition, ignoreCount, callback,
-        syncCallback);
+        .setBreakpoint(target, line, column, enabled, condition, callback, syncCallback);
   }
 
   @Override
@@ -61,26 +64,25 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   }
 
   @Override
-  public RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
-      GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    return getDebugSession().getBreakpointManager().setBreakOnException(catchType, enabled,
+  public RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback) {
+    return getDebugSession().getBreakpointManager().setBreakOnException(catchMode,
         callback, syncCallback);
   }
 
+  @Override
   public Version getVersion() {
     return getDebugSession().getVmVersion();
-  }
-
-  public EvaluateWithContextExtension getEvaluateWithContextExtension() {
-    if (!V8VersionFeatures.isEvaluateWithContextSupported(getVersion())) {
-      return null;
-    }
-    return JsEvaluateContextImpl.EVALUATE_WITH_CONTEXT_EXTENSION;
   }
 
   @Override
   public BreakpointTypeExtension getBreakpointTypeExtension() {
     return getDebugSession().getBreakpointManager().getBreakpointTypeExtension();
+  }
+
+  @Override
+  public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
+    return BreakpointImpl.IGNORE_COUNT_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

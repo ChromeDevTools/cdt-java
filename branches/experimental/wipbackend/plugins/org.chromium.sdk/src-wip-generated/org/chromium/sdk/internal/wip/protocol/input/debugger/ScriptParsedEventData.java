@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@86959
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -12,7 +12,7 @@ public interface ScriptParsedEventData {
   /**
    Identifier of the script parsed.
    */
-  String sourceId();
+  String/*See org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptIdTypedef*/ scriptId();
 
   /**
    URL of the script parsed (if any).
@@ -46,5 +46,9 @@ public interface ScriptParsedEventData {
   Boolean isContentScript();
 
   public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData> TYPE
-      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData>("Debugger.scriptParsed", org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData.class);
+      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData>("Debugger.scriptParsed", org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData.class) {
+    @Override public org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData parse(org.chromium.sdk.internal.wip.protocol.input.WipGeneratedParserRoot parser, org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {
+      return parser.parseDebuggerScriptParsedEventData(obj);
+    }
+  };
 }

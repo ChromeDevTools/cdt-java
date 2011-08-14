@@ -33,6 +33,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ContextData;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ContextHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -97,7 +98,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
         JSONObject dataObject = (JSONObject) data;
         ContextData contextData;
         try {
-          contextData = V8ProtocolParserAccess.get().parse(dataObject, ContextData.class);
+          contextData = V8ProtocolParserAccess.get().parseContextData(dataObject);
         } catch (JsonProtocolParseException e) {
           throw new RuntimeException(e);
         }
@@ -154,7 +155,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
     }
     ToolsMessage devToolsMessage;
     try {
-      devToolsMessage = ToolsProtocolParserAccess.get().parse(json, ToolsMessage.class);
+      devToolsMessage = ToolsProtocolParserAccess.get().parseToolsMessage(json);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "Unexpected JSON data: " + json.toString(), e);
       return;
@@ -233,7 +234,7 @@ public class ChromeDevToolSessionManager implements DebugSessionManager {
    * @throws AttachmentFailureException whenever the handler could not connect
    *         to the browser
    */
-  public Result attachToTab() throws AttachmentFailureException {
+  public Result attachToTab() throws AttachmentFailureException, MethodIsBlockingException {
     boolean res = attachState.compareAndSet(null, AttachState.ATTACHING);
     if (!res) {
       throw new AttachmentFailureException("Illegal state", null);

@@ -7,12 +7,15 @@ package org.chromium.sdk;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.chromium.sdk.internal.v8native.MethodIsBlockingException;
+import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Convenient implementation of {@code SyncCallback}. Client may create one,
  * then call asynchronous command, and finally wait on blocking method
- * {@code #tryAcquire()}.
+ * {@code #tryAcquire()} or {@link #acquireDefault}.
+ * <p>
+ * Class uses symbolic parameter {@link RelayOk} in its methods that suggests that
+ * user should first call some asynchronous method, then passe it to the acquire method.
  */
 public class CallbackSemaphore implements SyncCallback {
   public static final long OPERATION_TIMEOUT_MS = 120000;
@@ -22,8 +25,7 @@ public class CallbackSemaphore implements SyncCallback {
 
   /**
    * Tries to acquire semaphore with some reasonable default timeout.
-   * @param relayOk symbolic argument that means we made sure that it makes sense to wait
-   *     for the command
+   * @param relayOk symbolic return value from the asynchronous operation that we are waiting for
    * @return false if {@code #OPERATION_TIMEOUT_MS} was exceeded and we gave up
    * @throws MethodIsBlockingException if called from a callback
    */
@@ -32,8 +34,7 @@ public class CallbackSemaphore implements SyncCallback {
   }
 
   /**
-   * @param relayOk symbolic argument that means we made sure that it makes sense to wait
-   *     for the command
+   * @param relayOk symbolic return value from the asynchronous operation that we are waiting for
    */
   public void acquireDefault(RelayOk relayOk) throws MethodIsBlockingException {
     boolean res = tryAcquireDefault(relayOk);
@@ -71,6 +72,7 @@ public class CallbackSemaphore implements SyncCallback {
   /**
    * Implementation of {@code SyncCallback#callbackDone(RuntimeException)}.
    */
+  @Override
   public void callbackDone(RuntimeException e) {
     if (e == null) {
       savedException = null;

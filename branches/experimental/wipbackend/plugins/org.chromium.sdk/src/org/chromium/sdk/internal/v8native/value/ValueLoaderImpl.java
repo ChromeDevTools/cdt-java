@@ -17,11 +17,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.DebugSession;
@@ -40,6 +38,8 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
+import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
 
 /**
@@ -154,7 +154,7 @@ public class ValueLoaderImpl extends ValueLoader {
    * if property data is unavailable (or expired).
    */
   @Override
-  public SubpropertiesMirror getOrLoadSubproperties(Long ref) {
+  public SubpropertiesMirror getOrLoadSubproperties(Long ref) throws MethodIsBlockingException {
     ValueMirror mirror = getSafe(refToMirror, ref);
 
     SubpropertiesMirror references;
@@ -179,7 +179,8 @@ public class ValueLoaderImpl extends ValueLoader {
   /**
    * Looks up data for scope on remote in form of scope object handle.
    */
-  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber) {
+  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber)
+      throws MethodIsBlockingException {
     DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, frameNumber);
 
     V8BlockingCallback<ObjectValueHandle> callback = new V8BlockingCallback<ObjectValueHandle>() {
@@ -220,7 +221,8 @@ public class ValueLoaderImpl extends ValueLoader {
    * (possibly cached value) or 2. lookup value by refId from remote
    */
   @Override
-  public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs) {
+  public List<ValueMirror> getOrLoadValueFromRefs(List<? extends PropertyReference> propertyRefs)
+      throws MethodIsBlockingException {
     ValueMirror[] result = new ValueMirror[propertyRefs.size()];
     Map<Long, Integer> refToRequestIndex = new HashMap<Long, Integer>();
     List<PropertyReference> needsLoading = new ArrayList<PropertyReference>();
@@ -280,7 +282,8 @@ public class ValueLoaderImpl extends ValueLoader {
    * @param propertyRefIds list of ref ids we need to look up
    * @return loaded value mirrors in the same order as in propertyRefIds
    */
-  public List<ValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds) {
+  public List<ValueMirror> loadValuesFromRemote(final List<Long> propertyRefIds)
+      throws MethodIsBlockingException {
     if (propertyRefIds.isEmpty()) {
       return Collections.emptyList();
     }
@@ -322,7 +325,7 @@ public class ValueLoaderImpl extends ValueLoader {
       }
       ValueHandle valueHandle;
       try {
-        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
+        valueHandle = V8ProtocolParserAccess.get().parseValueHandle(value);
       } catch (JsonProtocolParseException e) {
         throw new RuntimeException(e);
       }
@@ -354,7 +357,7 @@ public class ValueLoaderImpl extends ValueLoader {
       }
       ValueHandle valueHandle;
       try {
-        valueHandle = V8ProtocolParserAccess.get().parse(value, ValueHandle.class);
+        valueHandle = V8ProtocolParserAccess.get().parseValueHandle(value);
       } catch (JsonProtocolParseException e) {
         throw new ValueLoadException(e);
       }
@@ -367,7 +370,7 @@ public class ValueLoaderImpl extends ValueLoader {
   }
 
   private RelayOk relookupValue(long handleId, Long maxLength,
-      final JavascriptVm.GenericCallback<ValueHandle> callback,
+      final GenericCallback<ValueHandle> callback,
       SyncCallback syncCallback) throws ContextDismissedCheckedException {
     final List<Long> ids = Collections.singletonList(handleId);
     DebuggerMessage message = new LookupMessage(ids, false, maxLength);
@@ -415,8 +418,8 @@ public class ValueLoaderImpl extends ValueLoader {
           long currentlyLoadedSize = valueRef.get().loadedSize;
           long newRequstedSize = chooseNewMaxStringLength(currentlyLoadedSize);
 
-          JavascriptVm.GenericCallback<ValueHandle> innerCallback =
-              new JavascriptVm.GenericCallback<ValueHandle>() {
+          GenericCallback<ValueHandle> innerCallback =
+              new GenericCallback<ValueHandle>() {
             @Override
             public void success(ValueHandle handle) {
               LoadedValue newLoadedValue = new LoadedValue(handle);

@@ -16,6 +16,6 @@ public class LiveEditParserGenerator extends ParserGeneratorBase {
 
   public static GenerateConfiguration createConfiguration() {
     return new GenerateConfiguration("org.chromium.sdk.internal.liveeditprotocol",
-        "GeneratedLiveEditProtocolParser", LiveEditDynamicParser.get());
+        "GeneratedLiveEditProtocolParser", LiveEditDynamicParser.create());
   }
 }

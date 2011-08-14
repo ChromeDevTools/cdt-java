@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal.v8native.value;
 
 import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.internal.v8native.InternalContext;
 
@@ -30,12 +29,6 @@ public class ExceptionDataImpl implements ExceptionData {
     this.isUncaught = isUncaught;
     this.sourceText = sourceText;
     this.exceptionText = exceptionText;
-  }
-
-  @Deprecated
-  @Override
-  public JsObject getExceptionObject() {
-    return getExceptionValue().asObject();
   }
 
   @Override

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92122
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -12,7 +12,7 @@ public class RemoteObjectParam extends org.json.simple.JSONObject {
    @param type Object type.
    @param subtypeOpt Object subtype hint. Specified for <code>object</code> type values only.
    @param classNameOpt Object class (constructor) name. Specified for <code>object</code> type values only.
-   @param valueOpt Remote object value (in case of primitive values).
+   @param valueOpt Remote object value (in case of primitive values or JSON values if it was requested).
    @param descriptionOpt String representation of the object.
    @param objectIdOpt Unique object identifier (for non-primitive values).
    */

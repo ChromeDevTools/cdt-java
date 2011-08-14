@@ -22,8 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.ConnectionLogger.LoggableReader;
-import org.chromium.sdk.ConnectionLogger.LoggableWriter;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.transport.SocketWrapper;
@@ -66,7 +64,7 @@ public class WsConnection {
 
   private final SocketWrapper socketWrapper;
   private final ConnectionLogger connectionLogger;
-  private volatile boolean gracefullyClosing = false;
+  private volatile boolean isClosingGracefully = false;
 
   private WsConnection(SocketWrapper socketWrapper, ConnectionLogger connectionLogger) {
     this.socketWrapper = socketWrapper;
@@ -130,8 +128,12 @@ public class WsConnection {
         return false;
       }
     };
-    dispatchQueue.add(messageDispatcher);
-    // TODO: make sure that it also calls sync callbacks in shutdown mode.
+    synchronized (dispatchQueue) {
+      if (isDispatchQueueClosed) {
+        throw new IllegalStateException("Connection is closed");
+      }
+      dispatchQueue.add(messageDispatcher);
+    }
     return DISPATCH_THREAD_PROMISES_TO_RELAY_OK;
   }
 
@@ -143,9 +145,10 @@ public class WsConnection {
       }
     });
 
-    final LoggableReader loggableReader = socketWrapper.getLoggableReader();
+    final SocketWrapper.LoggableInputStream loggableReader = socketWrapper.getLoggableInput();
     final BufferedInputStream input = new BufferedInputStream(loggableReader.getInputStream());
     Runnable listenRunnable = new Runnable() {
+      @Override
       public void run() {
         Exception closeCause = null;
         CloseReason closeReason = null;
@@ -158,7 +161,11 @@ public class WsConnection {
           closeCause = e;
           LOGGER.log(Level.SEVERE, "Thread interruption", e);
         } finally {
-          dispatchQueue.add(EOS_MESSAGE_DISPATCHER);
+          synchronized (dispatchQueue) {
+            dispatchQueue.add(EOS_MESSAGE_DISPATCHER);
+            isDispatchQueueClosed = true;
+          }
+
           if (connectionLogger != null) {
             connectionLogger.handleEos();
           }
@@ -172,9 +179,18 @@ public class WsConnection {
       private CloseReason runImpl() throws IOException, InterruptedException {
         while (true) {
           loggableReader.markSeparatorForLog();
-          int firstByte = input.read();
+          int firstByte;
+          try {
+            firstByte = input.read();
+          } catch (IOException e) {
+            if (isClosingGracefully) {
+              return CloseReason.USER_REQUEST;
+            } else {
+              throw e;
+            }
+          }
           if (firstByte == -1) {
-            if (gracefullyClosing) {
+            if (isClosingGracefully) {
               return CloseReason.USER_REQUEST;
             } else {
               throw new IOException("Unexpected end of stream");
@@ -240,12 +256,14 @@ public class WsConnection {
       }
     };
     Thread readThread = new Thread(listenRunnable, "WebSocket listen thread");
+    readThread.setDaemon(true);
     readThread.start();
     if (connectionLogger != null) {
       connectionLogger.start();
     }
 
     Runnable dispatchRunnable = new Runnable() {
+      @Override
       public void run() {
         try {
           runImpl();
@@ -268,12 +286,13 @@ public class WsConnection {
       }
     };
     Thread dispatchThread = new Thread(dispatchRunnable, "WebSocket dispatch thread");
+    dispatchThread.setDaemon(true);
     dispatchThread.start();
   }
 
   public void sendTextualMessage(String message) throws IOException {
     byte[] bytes = message.getBytes(UTF_8_CHARSET);
-    LoggableWriter loggableWriter = socketWrapper.getLoggableWriter();
+    SocketWrapper.LoggableOutputStream loggableWriter = socketWrapper.getLoggableOutput();
     OutputStream output = loggableWriter.getOutputStream();
     output.write((byte) 0);
     output.write(bytes);
@@ -292,13 +311,16 @@ public class WsConnection {
 
   private final SignalRelay<CloseReason> linkedCloser =
       SignalRelay.create(new SignalRelay.Callback<CloseReason>() {
-    public void onSignal(CloseReason param, Exception cause) {
-      gracefullyClosing = true;
+    @Override public void onSignal(CloseReason param, Exception cause) {
+      isClosingGracefully = true;
     }
   });
 
   private final BlockingQueue<MessageDispatcher> dispatchQueue =
       new LinkedBlockingQueue<MessageDispatcher>();
+
+  // Access must be synchronized on dispatchQueue
+  private boolean isDispatchQueueClosed = false;
 
   /**
    * A debug charset that simply encodes all non-ascii symbols as %DDD.
@@ -376,7 +398,7 @@ public class WsConnection {
 
   private static final SignalConverter<SocketWrapper.ShutdownSignal, CloseReason>
       SOCKET_TO_CONNECTION = new SignalConverter<SocketWrapper.ShutdownSignal, CloseReason>() {
-    public CloseReason convert(SocketWrapper.ShutdownSignal source) {
+    @Override public CloseReason convert(SocketWrapper.ShutdownSignal source) {
       return CloseReason.CONNECTION_CLOSED;
     }
   };

@@ -29,6 +29,7 @@ import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureMerger;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -58,7 +59,7 @@ class WipScriptManager {
   }
 
   // Run command in dispatch thread so that no scripts event could happen in the meantime.
-  RelayOk getScripts(final JavascriptVm.GenericCallback<Collection<Script>> callback,
+  RelayOk getScripts(final GenericCallback<Collection<Script>> callback,
       SyncCallback syncCallback) {
 
     // Async command chain here, wrap syncCallback to guaranteed calling.
@@ -84,7 +85,7 @@ class WipScriptManager {
       @Override
       public void run() {
         RelayOk relayOk =
-            scriptsPreloaded.getAsync(futureCallback, guardOne.getRelay().getSyncCallback());
+            scriptsPreloaded.getAsync(futureCallback, guardOne.getRelay().getUserSyncCallback());
         guardOne.discharge(relayOk);
       }
     };
@@ -107,7 +108,7 @@ class WipScriptManager {
   }
 
   public void scriptIsReportedParsed(ScriptParsedEventData data) {
-    final String sourceID = data.sourceId();
+    final String sourceID = data.scriptId();
 
     String url = data.url();
     if (url.isEmpty()) {
@@ -175,8 +176,8 @@ class WipScriptManager {
 
     @Override
     public RelayOk start(final Callback<Boolean> operationCallback, SyncCallback syncCallback) {
-      JavascriptVm.GenericCallback<GetScriptSourceData> commandCallback =
-          new JavascriptVm.GenericCallback<GetScriptSourceData>() {
+      GenericCallback<GetScriptSourceData> commandCallback =
+          new GenericCallback<GetScriptSourceData>() {
         @Override
         public void success(GetScriptSourceData data) {
           String source = data.scriptSource();
@@ -215,11 +216,12 @@ class WipScriptManager {
       for (String id : ids) {
         ScriptData data = getSafe(scriptIdToData, id);
         if (data == null) {
-          // We probably can't get a script source id without the script already
-          // having been reported to us directly.
-          throw new IllegalArgumentException("Unknown script id: " + id);
+          // We probably got id of internal script (usually happens when we suspend on breakpoint
+          // thrown from internals).
+          result.put(id, null);
+          continue;
         }
-        result.put(data.scriptImpl.getId(), data.scriptImpl);
+        result.put(id, data.scriptImpl);
         if (!data.sourceLoadedFuture.isDone()) {
           scripts.add(data);
         }
@@ -244,6 +246,7 @@ class WipScriptManager {
     return (String) sourceIdObj;
   }
 
+  // TODO: scripts are loaded in-series; make load parallel instead (to wait less).
   private RelayOk loadNextScript(final Queue<ScriptData> scripts,
       final Map<String, WipScriptImpl> result, final ScriptSourceLoadCallback callback,
       final RelaySyncCallback relay) {
@@ -251,14 +254,10 @@ class WipScriptManager {
     if (data == null) {
       // Terminate the chain of asynchronous loads and pass a result to the callback.
       RelayOk relayOk;
-      try {
-        if (callback != null) {
-          callback.done(result);
-        }
-      } finally {
-        relayOk = relay.finish();
+      if (callback != null) {
+        callback.done(result);
       }
-      return relayOk;
+      return relay.finish();
     }
 
     // Create a guard for the case that we fail before issuing next #loadNextScript() call.
@@ -275,7 +274,7 @@ class WipScriptManager {
     };
 
     // The async operation will call a guard even if something failed within the AsyncFuture.
-    return data.sourceLoadedFuture.getAsync(futureCallback, relay.getSyncCallback());
+    return data.sourceLoadedFuture.getAsync(futureCallback, guard.asSyncCallback());
   }
 
   public void pageReloaded() {

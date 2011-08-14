@@ -5,15 +5,9 @@
 package org.chromium.debug.core.model;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Writer;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.util.ByteToCharConverter;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.ITerminate;
 
@@ -54,108 +48,48 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
   /**
    * We mix 2 streams into a single console. This type helps to annotate them textually.
    */
-  private interface StreamId {
-    String getStreamName();
+  private static abstract class StreamId {
+    abstract String getStreamName();
   }
 
-  public LoggableWriter wrapWriter(final LoggableWriter originalLoggableWriter,
-      final Charset charset) {
-    final StreamId streamId = new StreamId() {
-      public String getStreamName() {
-        return Messages.ConnectionLoggerImpl_SentToChrome;
-      }
-    };
-    final OutputStream originalOutputStream = originalLoggableWriter.getOutputStream();
-    final OutputStream wrappedOutputStream = new OutputStream() {
-      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-
-      @Override
-      public void close() throws IOException {
-        originalOutputStream.close();
-        flushLogWriter();
-      }
-
-      @Override
-      public void flush() throws IOException {
-        originalOutputStream.flush();
-        flushLogWriter();
-      }
-
-      @Override
-      public void write(int b) throws IOException {
-        originalOutputStream.write(b);
-      }
-
-      @Override
-      public void write(byte[] b) throws IOException {
-        write(b, 0, b.length);
-      }
-
-      @Override
-      public void write(byte[] buf, int off, int len) throws IOException {
-        originalOutputStream.write(buf, off, len);
-        CharBuffer charBuffer = byteToCharConverter.convert(ByteBuffer.wrap(buf, off, len));
-        writeToLog(charBuffer, streamId);
-      }
-    };
-    return new LoggableWriter() {
-      public OutputStream getOutputStream() {
-        return wrappedOutputStream;
-      }
-      public void markSeparatorForLog() {
-        writeToLog(MESSAGE_SEPARATOR, streamId);
-        flushLogWriter();
-      }
-    };
-  }
-
-  public LoggableReader wrapReader(final LoggableReader loggableReader, final Charset charset) {
-    final StreamId streamId = new StreamId() {
+  @Override
+  public StreamListener getIncomingStreamListener() {
+    StreamId streamId = new StreamId() {
       public String getStreamName() {
         return Messages.ConnectionLoggerImpl_ReceivedFromChrome;
       }
     };
+    return new StreamListenerImpl(streamId);
+  }
 
-    final InputStream originalInputStream = loggableReader.getInputStream();
-
-    final InputStream wrappedInputStream = new InputStream() {
-      private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-      @Override
-      public int read() throws IOException {
-        byte[] buffer = new byte[1];
-        int res = readImpl(buffer, 0, 1);
-        if (res <= 0) {
-          return -1;
-        } else {
-          return buffer[0];
-        }
-      }
-
-      @Override
-      public int read(byte[] b, int off, int len) throws IOException {
-        return readImpl(b, off, len);
-      }
-
-      private int readImpl(byte[] buf, int off, int len) throws IOException {
-        int res = originalInputStream.read(buf, off, len);
-        if (res > 0) {
-          CharBuffer charBuffer = byteToCharConverter.convert(ByteBuffer.wrap(buf, off, res));
-          writeToLog(charBuffer, streamId);
-          flushLogWriter();
-        }
-        return res;
+  @Override
+  public StreamListener getOutgoingStreamListener() {
+    StreamId streamId = new StreamId() {
+      public String getStreamName() {
+        return Messages.ConnectionLoggerImpl_SentToChrome;
       }
     };
-    return new LoggableReader() {
-      public InputStream getInputStream() {
-        return wrappedInputStream;
-      }
+    return new StreamListenerImpl(streamId);
+  }
 
-      public void markSeparatorForLog() {
-        writeToLog(MESSAGE_SEPARATOR, streamId);
-        flushLogWriter();
-      }
-    };
+  private class StreamListenerImpl implements StreamListener {
+    private final StreamId streamId;
+
+    private StreamListenerImpl(StreamId streamId) {
+      this.streamId = streamId;
+    }
+
+    @Override
+    public void addContent(CharSequence text) {
+      writeToLog(text, streamId);
+      flushLogWriter();
+    }
+
+    @Override
+    public void addSeparator() {
+      writeToLog(MESSAGE_SEPARATOR, streamId);
+      flushLogWriter();
+    }
   }
 
   public void start() {
@@ -175,18 +109,10 @@ public class ConnectionLoggerImpl implements ConnectionLogger {
     this.connectionCloser = connectionCloser;
   }
 
-  private synchronized void writeToLog(String str, StreamId streamId) {
+  private synchronized void writeToLog(CharSequence str, StreamId streamId) {
     try {
       printHead(streamId);
       logWriter.append(str);
-    } catch (IOException e) {
-      DebugPlugin.log(e);
-    }
-  }
-  private synchronized void writeToLog(CharBuffer buf, StreamId streamId) {
-    try {
-      printHead(streamId);
-      logWriter.write(buf.array(), buf.arrayOffset(), buf.remaining());
     } catch (IOException e) {
       DebugPlugin.log(e);
     }

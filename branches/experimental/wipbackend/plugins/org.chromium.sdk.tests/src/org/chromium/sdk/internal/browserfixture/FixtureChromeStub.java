@@ -22,6 +22,8 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.FixtureParserAccess;
 import org.chromium.sdk.internal.JsonUtil;
+import org.chromium.sdk.internal.protocolparser.JsonParseMethod;
+import org.chromium.sdk.internal.protocolparser.JsonParserRoot;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
@@ -187,7 +189,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject body = getJsonObjectByRef(getScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolParserAccess.get().parse(body, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parseScriptHandle(body);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -249,7 +251,7 @@ public class FixtureChromeStub implements ChromeStub {
 
       @Override
       public RelayOk setBreakpoint(Breakpoint.Target target, int line, int position,
-          boolean enabled, String condition, int ignoreCount, BreakpointCallback callback,
+          boolean enabled, String condition, BreakpointCallback callback,
           SyncCallback syncCallback) {
         throw new UnsupportedOperationException();
       }
@@ -322,7 +324,6 @@ public class FixtureChromeStub implements ChromeStub {
           Breakpoint.Target target = new Breakpoint.Target.ScriptName("abcde.js");
           breakpoints.put(id, new FakeBreakpoint(id, target,
               JsonUtil.getAsBoolean(args, "enabled"),
-              JsonUtil.getAsLong(args, "ignoreCount").intValue(),
               JsonUtil.getAsString(args, "condition")));
           JSONObject jsonBody = putJsonValue("body", new JSONObject(), nameToJsonValue);
           jsonBody.put("type", "script");
@@ -423,7 +424,7 @@ public class FixtureChromeStub implements ChromeStub {
   private List<SomeHandle> constructScriptRefsTyped() {
     JSONArray refs = constructScriptRefsJson();
     try {
-      return FixtureParserAccess.get().parseAnything(refs, Refs.class).asHandles();
+      return FixtureParserAccess.get().parseRefs(refs).asHandles();
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -625,7 +626,7 @@ public class FixtureChromeStub implements ChromeStub {
     JSONObject scriptsObject = getJsonObjectByRef(getCompiledScriptRef());
     ScriptHandle scriptsNormalBody;
     try {
-      scriptsNormalBody = V8ProtocolParserAccess.get().parse(scriptsObject, ScriptHandle.class);
+      scriptsNormalBody = V8ProtocolParserAccess.get().parseScriptHandle(scriptsObject);
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
@@ -651,10 +652,8 @@ public class FixtureChromeStub implements ChromeStub {
   }
 
   private static class FakeBreakpoint extends BreakpointImpl {
-    public FakeBreakpoint(long id, Target target, boolean enabled, int ignoreCount,
-        String condition) {
-      super(id, target, 15, enabled, ignoreCount, condition,
-          NULL_BREAKPOINT_MANAGER);
+    public FakeBreakpoint(long id, Target target, boolean enabled, String condition) {
+      super(id, target, 15, enabled, condition, NULL_BREAKPOINT_MANAGER);
     }
   }
 
@@ -677,5 +676,13 @@ public class FixtureChromeStub implements ChromeStub {
     List<SomeHandle> asHandles() throws JsonProtocolParseException;
     @JsonSubtypeCasting
     List<? extends SomeHandle> asHandles2() throws JsonProtocolParseException;
+  }
+
+  @JsonParserRoot
+  public interface FixtureParser {
+
+    @JsonParseMethod
+    Refs parseRefs(Object refs) throws JsonProtocolParseException;
+
   }
 }

@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.v8native;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,8 +19,7 @@ import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
-import org.chromium.sdk.JavascriptVm.ExceptionCatchType;
-import org.chromium.sdk.JavascriptVm.GenericCallback;
+import org.chromium.sdk.JavascriptVm.ExceptionCatchMode;
 import org.chromium.sdk.JavascriptVm.ListBreakpointsCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
@@ -33,9 +33,11 @@ import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.v8native.protocol.input.ListBreakpointsBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
+import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.FlagsMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.ListBreakpointsMessage;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 public class BreakpointManager {
@@ -55,14 +57,24 @@ public class BreakpointManager {
     this.debugSession = debugSession;
   }
 
+  DebugSession getDebugSession() {
+    return debugSession;
+  }
+
   public BreakpointTypeExtension getBreakpointTypeExtension() {
     return breakpointTypeExtension;
   }
 
-  public RelayOk setBreakpoint(final Breakpoint.Target target,
-      final int line, int column, final boolean enabled, final String condition,
-      final int ignoreCount, final JavascriptVm.BreakpointCallback callback,
-      SyncCallback syncCallback) {
+  public RelayOk setBreakpoint(final Breakpoint.Target target, final int line, int column,
+      final boolean enabled, final String condition,
+      final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
+    return setBreakpoint(target, line, column, enabled, condition, Breakpoint.EMPTY_VALUE,
+        callback, syncCallback);
+  }
+
+  RelayOk setBreakpoint(final Breakpoint.Target target, final int line, int column,
+      final boolean enabled, final String condition, final int ignoreCount,
+      final JavascriptVm.BreakpointCallback callback, SyncCallback syncCallback) {
     return debugSession.sendMessageAsync(
         DebuggerMessageFactory.setBreakpoint(target, toNullableInteger(line),
             toNullableInteger(column), enabled, condition,
@@ -80,7 +92,7 @@ public class BreakpointManager {
             long id = body.breakpoint();
 
             final BreakpointImpl breakpoint =
-                new BreakpointImpl(id, target, line, enabled, ignoreCount,
+                new BreakpointImpl(id, target, line, enabled,
                     condition, BreakpointManager.this);
 
             idToBreakpoint.put(breakpoint.getId(), breakpoint);
@@ -132,8 +144,10 @@ public class BreakpointManager {
 
   public RelayOk changeBreakpoint(final BreakpointImpl breakpointImpl,
       final BreakpointCallback callback, SyncCallback syncCallback) {
+    ChangeBreakpointMessage message = new ChangeBreakpointMessage(breakpointImpl.getId(),
+        breakpointImpl.isEnabled(), breakpointImpl.getCondition());
     return debugSession.sendMessageAsync(
-        DebuggerMessageFactory.changeBreakpoint(breakpointImpl),
+        message,
         true,
         new V8CommandCallbackBase() {
           @Override
@@ -193,25 +207,96 @@ public class BreakpointManager {
     return setRemoteFlag("breakPointsActive", enabled, callback, syncCallback);
   }
 
-  public RelayOk setBreakOnException(ExceptionCatchType catchType, Boolean enabled,
-      final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    String flagName;
-    switch (catchType) {
-      case CAUGHT:
-        flagName = "breakOnCaughtException";
-        break;
-      case UNCAUGHT:
-        flagName = "breakOnUncaughtException";
-        break;
-      default:
-        throw new RuntimeException();
+  public RelayOk setBreakOnException(ExceptionCatchMode catchMode,
+      final GenericCallback<ExceptionCatchMode> callback, SyncCallback syncCallback) {
+    Boolean caughtValue;
+    Boolean uncaughtValue;
+    if (catchMode == null) {
+      caughtValue = null;
+      uncaughtValue = null;
+    } else {
+      switch (catchMode) {
+        case ALL:
+          caughtValue = true;
+          uncaughtValue = true;
+          break;
+        case NONE:
+          caughtValue = false;
+          uncaughtValue = false;
+          break;
+        case UNCAUGHT:
+          caughtValue = false;
+          uncaughtValue = true;
+          break;
+        default:
+          throw new RuntimeException();
+      }
     }
-    return setRemoteFlag(flagName, enabled, callback, syncCallback);
+    List<Boolean> flagValues = Arrays.asList(caughtValue, uncaughtValue);
+
+    GenericCallback<List<Boolean>> wrappedCallback;
+    if (callback == null) {
+      wrappedCallback = null;
+    } else {
+      wrappedCallback = new GenericCallback<List<Boolean>>() {
+        @Override
+        public void success(List<Boolean> values) {
+          ExceptionCatchMode newCatchMode;
+          if (values.get(0)) {
+            if (values.get(1)) {
+              newCatchMode = ExceptionCatchMode.ALL;
+            } else {
+              // We cannot fit this combination into ExceptionCatchMode.
+              newCatchMode = null;
+            }
+          } else {
+            if (values.get(1)) {
+              newCatchMode = ExceptionCatchMode.UNCAUGHT;
+            } else {
+              newCatchMode = ExceptionCatchMode.NONE;
+            }
+          }
+          callback.success(newCatchMode);
+        }
+
+        @Override public void failure(Exception exception) {
+          callback.failure(exception);
+        }
+      };
+    }
+
+    return setRemoteFlags(BREAK_ON_EXCEPTION_FLAG_NAMES, flagValues, wrappedCallback, syncCallback);
   }
 
-  private RelayOk setRemoteFlag(final String flagName, Boolean enabled,
+  private static final List<String> BREAK_ON_EXCEPTION_FLAG_NAMES =
+      Arrays.asList("breakOnCaughtException", "breakOnUncaughtException");
+
+  private RelayOk setRemoteFlag(String flagName, Boolean value,
       final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-    Map<String, Object> flagMap = Collections.singletonMap(flagName, (Object) enabled);
+    GenericCallback<List<Boolean>> wrappedCallback;
+    if (callback == null) {
+      wrappedCallback = null;
+    } else {
+      wrappedCallback = new GenericCallback<List<Boolean>>() {
+        @Override public void success(List<Boolean> value) {
+          callback.success(value.get(0));
+        }
+        @Override public void failure(Exception exception) {
+          callback.failure(exception);
+        }
+      };
+    }
+    return setRemoteFlags(Collections.singletonList(flagName), Collections.singletonList(value),
+        wrappedCallback, syncCallback);
+  }
+
+  private RelayOk setRemoteFlags(final List<String> flagNames, List<Boolean> values,
+      final GenericCallback<List<Boolean>> callback, SyncCallback syncCallback) {
+    Map<String, Object> flagMap = new HashMap<String, Object>(values.size());
+    for (int i = 0; i < flagNames.size(); i++) {
+      Object jsonValue = values.get(i);
+      flagMap.put(flagNames.get(i), jsonValue);
+    }
     V8CommandProcessor.V8HandlerCallback v8Callback;
     if (callback == null) {
       v8Callback = null;
@@ -224,26 +309,33 @@ public class BreakpointManager {
           } catch (JsonProtocolParseException e) {
             throw new RuntimeException(e);
           }
-          FlagsBody.FlagInfo flag;
           List<FlagInfo> flagList = body.flags();
-          findCorrectFlag: {
-            for (int i = 0; i < flagList.size(); i++) {
-              if (flagName.equals(flagList.get(i).name())) {
-                flag = flagList.get(i);
-                break findCorrectFlag;
+          List<Boolean> result = new ArrayList<Boolean>(flagNames.size());
+          for (String name : flagNames) {
+
+            FlagsBody.FlagInfo flag;
+
+            findCorrectFlag: {
+              for (FlagsBody.FlagInfo f : flagList) {
+                if (name.equals(f.name())) {
+                  flag = f;
+                  break findCorrectFlag;
+                }
               }
+              throw new RuntimeException("Failed to find the correct flag in response");
             }
-            throw new RuntimeException("Failed to find the correct flag in response");
+
+            Object flagValue = flag.value();
+            Boolean boolValue;
+            if (flagValue instanceof Boolean == false) {
+              LOGGER.info("Flag value has a wrong type");
+              boolValue = null;
+            } else {
+              boolValue = (Boolean) flagValue;
+            }
+            result.add(boolValue);
           }
-          Object value = flag.value();
-          Boolean resValue;
-          if (value instanceof Boolean == false) {
-            LOGGER.info("Flag value has a wrong type");
-            resValue = null;
-          } else {
-            resValue = (Boolean) value;
-          }
-          callback.success(resValue);
+          callback.success(result);
         }
         @Override public void failure(String message) {
           callback.failure(new Exception(message));

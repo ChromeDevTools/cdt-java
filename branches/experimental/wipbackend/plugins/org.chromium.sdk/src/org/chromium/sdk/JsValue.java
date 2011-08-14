@@ -13,7 +13,7 @@ public interface JsValue {
   /**
    * Type of a JavaScript value. Two bogus type values (DATE and ARRAY) are
    * included even though they are not reported by V8. Instead, they are inferred
-   * from the object classname.
+   * from the object classname. {@code null} value has a bogus type NULL.
    */
   public enum Type {
 
@@ -72,13 +72,15 @@ public interface JsValue {
     TYPE_UNDEFINED,
 
     /**
-     * null type.
+     * null type. This is a bogus type that doesn't exist in JavaScript.
      */
     TYPE_NULL;
 
     /**
+     * Returns whether {@code type} corresponds to a JsObject. Note that while 'null' is an object
+     * in JavaScript world, here for API consistency it has bogus type {@link #TYPE_NULL} and is
+     * not a {@link JsObject}.
      * @param type to check
-     * @return whether {@code type} corresponds to a JsObject
      */
     public static boolean isObjectType(Type type) {
       return type == TYPE_OBJECT || type == TYPE_ARRAY || type == TYPE_ERROR ||
@@ -97,8 +99,11 @@ public interface JsValue {
   String getValueString();
 
   /**
-   * @return this value cast to {@link JsObject} or {@code null} if this value
-   *         is not an object
+   * Return this value cast to {@link JsObject} or {@code null} if this value
+   * is not an object.
+   * See {@link Type#isObjectType(Type)} method for details.
+   *
+   * @return this or null
    */
   JsObject asObject();
 

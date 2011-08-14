@@ -41,7 +41,7 @@ public class LoadValueTest extends AbstractAttachedTest<FakeConnection>{
       }
     };
 
-    suspendContext.getGlobalEvaluateContext().evaluateSync("#long_value", evaluateCallback);
+    suspendContext.getGlobalEvaluateContext().evaluateSync("#long_value", null, evaluateCallback);
     assertNotNull(expressionResult[0]);
 
     JsValue value = expressionResult[0].getValue();

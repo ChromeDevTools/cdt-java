@@ -4,11 +4,14 @@
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.json.simple.JSONObject;
+
 /**
  * This class describes event static information that helps to automate response parsing
  * and dispatching.
  */
-public class WipEventType<T> {
+public abstract class WipEventType<T> {
   private final String methodName;
   private final Class<T> eventType;
 
@@ -24,4 +27,7 @@ public class WipEventType<T> {
   public Class<T> getEventType() {
     return eventType;
   }
+
+  public abstract T parse(WipGeneratedParserRoot parser, JSONObject obj)
+      throws JsonProtocolParseException;
 }

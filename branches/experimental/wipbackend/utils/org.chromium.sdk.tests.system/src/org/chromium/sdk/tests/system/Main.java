@@ -5,16 +5,9 @@
 package org.chromium.sdk.tests.system;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +15,11 @@ import java.util.Map;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.ConnectionLogger.Factory;
 import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.EvaluateWithContextExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
@@ -36,9 +27,8 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.util.ByteToCharConverter;
+import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
 
 /**
@@ -62,16 +52,20 @@ public class Main {
 
     stateManager.setDefaultReceiver(EXPECT_NOTHING_VISITOR);
 
-    BrowserTab tab;
+    ConnectionLogger.Factory connectionLoggerFactory = new ConnectionLogger.Factory() {
+      public ConnectionLogger newConnectionLogger() {
+        return new SystemOutConnectionLogger();
+      }
+    };
+    JavascriptVm vm;
     try {
-      tab = connect(address, stateManager, commandLineArgs.getProtocolType());
+      vm = commandLineArgs.getProtocolType().connect(address, stateManager,
+          connectionLoggerFactory);
     } catch (IOException e) {
-      throw new SmokeException("Failed to connect", e);
-    } catch (UnsupportedVersionException e) {
       throw new SmokeException("Failed to connect", e);
     }
 
-    Collection<Script> scripts = loadScripts(tab);
+    Collection<Script> scripts = loadScripts(vm);
 
     // Finding script1.js script.
     Script scriptOne;
@@ -95,8 +89,8 @@ public class Main {
     // Setting a breakpoint.
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     Breakpoint.Target breakpointTarget = new Breakpoint.Target.ScriptName(scriptOne.getName());
-    RelayOk relayOk = tab.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
-        0, null, callbackSemaphore);
+    RelayOk relayOk = vm.setBreakpoint(breakpointTarget, breakLine, 0, true, null,
+        null, callbackSemaphore);
     callbackSemaphore.acquireDefault(relayOk);
 
     // First time just suspend on breakpoint and go on.
@@ -167,7 +161,7 @@ public class Main {
     }
 
     stateManager.setDefaultReceiver(IGNORE_ALL_VISITOR);
-    tab.detach();
+    vm.detach();
 
     System.out.println("Test passed OK");
   }
@@ -247,16 +241,36 @@ public class Main {
     // Old protocol enabled by --remote-shell-port parameter
     SHELL {
       @Override
-      public Browser connect(InetSocketAddress address,
-          Factory connectionLoggerFactory) {
-        return BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+      public JavascriptVm connect(InetSocketAddress address,
+          StateManager stateManager, Factory connectionLoggerFactory)
+          throws SmokeException, IOException {
+
+        Browser browser = BrowserFactory.getInstance().create(address, connectionLoggerFactory);
+
+        Browser.TabFetcher tabFetcher;
+        try {
+          tabFetcher = browser.createTabFetcher();
+        } catch (UnsupportedVersionException e) {
+          throw new SmokeException(e);
+        }
+        List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
+        if (tabs.isEmpty()) {
+          throw new SmokeException("No tabs");
+        }
+        Browser.TabConnector firstTab = tabs.get(0);
+        String url = firstTab.getUrl();
+        if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
+          throw new SmokeException("Unexpected URL: " + url);
+        }
+        return firstTab.attach(stateManager.getTabListener());
       }
     },
     // WIP (new) protocol enabled by --remote-debugging-port parameter
     DEBUGGING {
       @Override
-      public Browser connect(InetSocketAddress address,
-          final Factory connectionLoggerFactory) {
+      public JavascriptVm connect(InetSocketAddress address,
+          StateManager stateManager, final Factory connectionLoggerFactory)
+          throws SmokeException, IOException {
         WipBrowserFactory.LoggerFactory wipLoggerFactory = new WipBrowserFactory.LoggerFactory() {
           @Override public ConnectionLogger newBrowserConnectionLogger() {
             throw new UnsupportedOperationException();
@@ -266,11 +280,28 @@ public class Main {
             return connectionLoggerFactory.newConnectionLogger();
           }
         };
-        return WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
+        WipBrowser browser = WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
+
+        List<? extends WipBrowser.WipTabConnector> tabs;
+        try {
+          tabs = browser.getTabs();
+        } catch (IOException e) {
+          throw new SmokeException(e);
+        }
+        if (tabs.isEmpty()) {
+          throw new SmokeException("No tabs");
+        }
+        WipBrowser.WipTabConnector firstTab = tabs.get(0);
+        String url = firstTab.getUrl();
+        if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
+          throw new SmokeException("Unexpected URL: " + url);
+        }
+        return firstTab.attach(stateManager.getTabListener()).getJavascriptVm();
       }
     };
 
-    public abstract Browser connect(InetSocketAddress address, Factory connectionLoggerFactory);
+    public abstract JavascriptVm connect(InetSocketAddress address, StateManager stateManager,
+        Factory connectionLoggerFactory) throws SmokeException, IOException;
   }
 
   private static JsVariable getVariable(JsScope scope, String name) throws SmokeException {
@@ -295,7 +326,7 @@ public class Main {
         variableHolder.setValue(variable);
       }
     };
-    frame.getEvaluateContext().evaluateSync(FIBONACCI_EXPRESSION, callback);
+    frame.getEvaluateContext().evaluateSync(FIBONACCI_EXPRESSION, null, callback);
     JsVariable variable = variableHolder.get();
     String resString = variable.getValue().getValueString();
     if (!"24".equals(resString)) {
@@ -346,29 +377,6 @@ public class Main {
     return result.get();
   }
 
-  private static BrowserTab connect(InetSocketAddress address, StateManager stateManager,
-      ProtocolType protocolType) throws SmokeException, IOException, UnsupportedVersionException {
-    ConnectionLogger.Factory connectionLoggerFactory = new ConnectionLogger.Factory() {
-      public ConnectionLogger newConnectionLogger() {
-        return new SystemOutConnectionLogger();
-      }
-    };
-
-    Browser browser = protocolType.connect(address, connectionLoggerFactory);
-
-    Browser.TabFetcher tabFetcher = browser.createTabFetcher();
-    List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
-    if (tabs.isEmpty()) {
-      throw new SmokeException("No tabs");
-    }
-    Browser.TabConnector firstTab = tabs.get(0);
-    String url = firstTab.getUrl();
-    if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
-      throw new SmokeException("Unexpected URL: " + url);
-    }
-    return firstTab.attach(stateManager.getTabListener());
-  }
-
   /**
    * Connection logger that simply prints all traffic out to System.out.
    * */
@@ -380,79 +388,25 @@ public class Main {
     }
     public void start() {
     }
-    public LoggableReader wrapReader(final LoggableReader streamReader, final Charset charset) {
-      final InputStream originalInputStream = streamReader.getInputStream();
-      final InputStream wrappedInputStream = new InputStream() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-        @Override
-        public int read() throws IOException {
-          byte[] buffer = new byte[1];
-          int res = readImpl(buffer, 0, 1);
-          if (res <= 0) {
-            return -1;
-          } else {
-            return buffer[0];
-          }
-        }
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-          return readImpl(b, off, len);
-        }
-        private int readImpl(byte[] buf, int off, int len) throws IOException {
-          int res = originalInputStream.read(buf, off, len);
-          if (res > 0) {
-            convertAndPrintBytes(ByteBuffer.wrap(buf, off, res), byteToCharConverter, System.out);
-          }
-          return res;
-        }
-      };
 
-      return new LoggableReader() {
-        public InputStream getInputStream() {
-          return wrappedInputStream;
-        }
-        public void markSeparatorForLog() {
-          System.out.println("\n------------------");
-        }
-      };
+    @Override
+    public StreamListener getIncomingStreamListener() {
+      return new StreamListenerImpl();
     }
-    public LoggableWriter wrapWriter(final LoggableWriter streamWriter, final Charset charset) {
-      return new LoggableWriter() {
-        private final ByteToCharConverter byteToCharConverter = new ByteToCharConverter(charset);
-
-        public OutputStream getOutputStream() {
-          final OutputStream originalOutput = streamWriter.getOutputStream();
-          return new OutputStream() {
-            @Override
-            public void close() throws IOException {
-              originalOutput.close();
-            }
-            @Override
-            public void flush() throws IOException {
-              originalOutput.flush();
-            }
-            @Override
-            public void write(int b) throws IOException {
-              write(new byte[] { (byte) b });
-            }
-            @Override
-            public void write(byte[] buf, int off, int len) throws IOException {
-              originalOutput.write(buf, off, len);
-              convertAndPrintBytes(ByteBuffer.wrap(buf, off, len), byteToCharConverter, System.out);
-            }
-          };
-        }
-        public void markSeparatorForLog() {
-          System.out.println("\n------------------");
-        }
-      };
+    @Override
+    public StreamListener getOutgoingStreamListener() {
+      return new StreamListenerImpl();
     }
 
-    private static void convertAndPrintBytes(ByteBuffer in, ByteToCharConverter converter,
-        PrintStream out) {
-      CharBuffer res = converter.convert(in);
-      while (res.hasRemaining()) {
-        out.print(res.get());
+    private class StreamListenerImpl implements StreamListener {
+      @Override
+      public void addSeparator() {
+        System.out.print("\n------------------\n");
+      }
+
+      @Override
+      public void addContent(CharSequence sequence) {
+        System.out.print(sequence);
       }
     }
   }
@@ -571,7 +525,7 @@ public class Main {
 
   private static JsVariable evaluateSync(JsEvaluateContext evaluateContext, String expression) {
     EvalCallbackImpl callbackImpl = new EvalCallbackImpl();
-    evaluateContext.evaluateSync(expression, callbackImpl);
+    evaluateContext.evaluateSync(expression, null, callbackImpl);
     return callbackImpl.get();
   }
 }

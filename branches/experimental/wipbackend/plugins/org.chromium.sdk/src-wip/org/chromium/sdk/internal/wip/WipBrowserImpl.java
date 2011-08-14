@@ -15,10 +15,8 @@ import java.util.AbstractList;
 import java.util.List;
 
 import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
-import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
 import org.chromium.sdk.internal.websocket.WsConnection;
@@ -27,6 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList.TabDescription;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
+import org.chromium.sdk.wip.WipBrowserTab;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -47,40 +46,26 @@ public class WipBrowserImpl implements WipBrowser {
   }
 
   @Override
-  public WipTabFetcher createTabFetcher() throws IOException, UnsupportedVersionException {
-    // You can connect and check version here.
+  public List<? extends WipTabConnector> getTabs() throws IOException {
+    URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
+    String content = readURLContent(url);
 
-    return new WipTabFetcher() {
+    final List<WipTabList.TabDescription> list = parseJsonReponse(content);
+
+    return new AbstractList<WipTabConnector>() {
       @Override
-      public List<? extends WipTabConnector> getTabs() throws IOException,
-          IllegalStateException {
-
-        URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
-        String content = readURLContent(url);
-
-        final List<WipTabList.TabDescription> list = parseJsonReponse(content);
-
-        return new AbstractList<WipTabConnector>() {
-          @Override
-          public WipTabConnector get(int index) {
-            return new TabConnectorImpl(list.get(index));
-          }
-
-          @Override
-          public int size() {
-            return list.size();
-          }
-        };
+      public WipTabConnector get(int index) {
+        return new TabConnectorImpl(list.get(index));
       }
 
       @Override
-      public void dismiss() {
+      public int size() {
+        return list.size();
       }
     };
   }
 
   private static String readURLContent(URL url) throws IOException {
-
     Object obj = url.getContent();
 
     InputStream stream = url.openStream();
@@ -115,7 +100,7 @@ public class WipBrowserImpl implements WipBrowser {
 
 
     try {
-      WipTabList tabList = WipParserAccess.get().parseAnything(jsonValue, WipTabList.class);
+      WipTabList tabList = WipParserAccess.get().parseTabList(jsonValue);
       return tabList.asTabList();
     } catch (JsonProtocolParseException e) {
       throw JavascriptVmImpl.newIOException(
@@ -146,7 +131,7 @@ public class WipBrowserImpl implements WipBrowser {
     }
 
     @Override
-    public BrowserTab attach(TabDebugEventListener listener) throws IOException {
+    public WipBrowserTab attach(TabDebugEventListener listener) throws IOException {
       ConnectionLogger connectionLogger = connectionLoggerFactory.newTabConnectionLogger();
       String webSocketDebuggerUrl = description.webSocketDebuggerUrl();
 

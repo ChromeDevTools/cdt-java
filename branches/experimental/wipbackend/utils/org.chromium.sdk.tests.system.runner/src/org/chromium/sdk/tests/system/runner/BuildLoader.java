@@ -87,4 +87,11 @@ class BuildLoader {
       }
     };
   }
+
+  // Simply loads a new build.
+  public static void main(String[] args) {
+    LoadedBuild loadedBuild = load();
+    System.out.println("Build #" + loadedBuild.getBuildNumber() + " put into " +
+        loadedBuild.getChromeBinary().getPath());
+  }
 }

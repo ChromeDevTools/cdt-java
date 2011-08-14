@@ -11,12 +11,6 @@ package org.chromium.sdk;
 public interface ExceptionData {
 
   /**
-   * @return the thrown exception object or null
-   * @deprecated because exception is not necessary an object
-   */
-  JsObject getExceptionObject();
-
-  /**
    * @return the thrown exception value
    */
   JsValue getExceptionValue();
@@ -27,7 +21,7 @@ public interface ExceptionData {
   boolean isUncaught();
 
   /**
-   * @return the text of the source line where the exception was thrown
+   * @return the text of the source line where the exception was thrown or null
    */
   String getSourceText();
 

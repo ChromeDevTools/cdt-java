@@ -105,7 +105,7 @@ public class V8CommandProcessor implements V8CommandSender<DebuggerMessage, Runt
   public void processIncomingJson(final JSONObject v8Json) {
     IncomingMessage response;
     try {
-      response = V8ProtocolParserAccess.get().parse(v8Json, IncomingMessage.class);
+      response = V8ProtocolParserAccess.get().parseIncomingMessage(v8Json);
     } catch (JsonProtocolParseException e) {
       LOGGER.log(Level.SEVERE, "JSON message does not conform to the protocol", e);
       return;

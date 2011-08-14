@@ -7,11 +7,11 @@ package org.chromium.debug.ui.propertypages;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.core.model.WorkspaceBridge.BreakpointHandler;
-import org.chromium.debug.core.model.WrappedBreakpoint;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.eclipse.core.runtime.IAdaptable;
@@ -37,10 +37,10 @@ public class BreakpointTechnicalInfoPage extends PropertyPage {
   protected Control createContents(Composite parent) {
     noDefaultAndApplyButton();
 
-    WrappedBreakpoint wrappedBreakpoint = getBreakpoint();
+    ChromiumLineBreakpoint breakpoint = getBreakpoint();
 
     Composite mainComposite = JsLineBreakpointPage.createComposite(parent, 1, 1);
-    createTechnicalInfoControls(mainComposite, wrappedBreakpoint);
+    createTechnicalInfoControls(mainComposite, breakpoint);
     setValid(true);
     return mainComposite;
   }
@@ -56,12 +56,12 @@ public class BreakpointTechnicalInfoPage extends PropertyPage {
   }
 
   private void createTechnicalInfoControls(final Composite parent,
-      WrappedBreakpoint wrappedBreakpoint) {
+      ChromiumLineBreakpoint breakpoint) {
     final List<TargetInfo> list = new ArrayList<TargetInfo>();
     for (ConnectedTargetData connected : DebugTargetImpl.getAllConnectedTargetDatas()) {
       WorkspaceBridge workspaceRelations = connected.getWorkspaceRelations();
       BreakpointHandler breakpointHandler = workspaceRelations.getBreakpointHandler();
-      Breakpoint sdkBreakpoint = breakpointHandler.getSdkBreakpoint(wrappedBreakpoint);
+      Breakpoint sdkBreakpoint = breakpointHandler.getSdkBreakpoint(breakpoint);
       list.add(new TargetInfo(connected, sdkBreakpoint));
     }
 
@@ -119,11 +119,11 @@ public class BreakpointTechnicalInfoPage extends PropertyPage {
     });
   }
 
-  private WrappedBreakpoint getBreakpoint() {
+  private ChromiumLineBreakpoint getBreakpoint() {
     IAdapterManager manager= Platform.getAdapterManager();
     IAdaptable adaptable = getElement();
-    WrappedBreakpoint adapted =
-        (WrappedBreakpoint) manager.getAdapter(adaptable, WrappedBreakpoint.class);
+    ChromiumLineBreakpoint adapted =
+        (ChromiumLineBreakpoint) manager.getAdapter(adaptable, ChromiumLineBreakpoint.class);
     return adapted;
   }
 }

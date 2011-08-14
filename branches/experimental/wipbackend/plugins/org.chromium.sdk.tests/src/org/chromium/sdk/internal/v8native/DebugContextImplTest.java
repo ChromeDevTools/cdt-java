@@ -40,7 +40,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     {
       final CountDownLatch latch = new CountDownLatch(1);
       Breakpoint.Target target = new Breakpoint.Target.ScriptName("file:///C:/1.js");
-      browserTab.setBreakpoint(target, 18, 3, true, null, 0,
+      browserTab.setBreakpoint(target, 18, 3, true, null,
           new BreakpointCallback() {
 
             public void failure(String errorMessage) {
@@ -94,7 +94,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     {
       final CountDownLatch latch = new CountDownLatch(1);
       Breakpoint.Target target = new Breakpoint.Target.ScriptName("file:///C:/1.js");
-      browserTab.setBreakpoint(target, 18, 3, true, null, 0,
+      browserTab.setBreakpoint(target, 18, 3, true, null,
           new BreakpointCallback() {
 
             public void failure(String errorMessage) {

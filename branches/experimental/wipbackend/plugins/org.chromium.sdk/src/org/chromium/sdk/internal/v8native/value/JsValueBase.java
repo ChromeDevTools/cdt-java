@@ -4,11 +4,11 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
 /**
@@ -45,7 +45,7 @@ abstract class JsValueBase implements JsValue {
       SyncCallback syncCallback) {
 
     if (loadableString != null) {
-      JavascriptVm.GenericCallback<Void> innerCallback = new JavascriptVm.GenericCallback<Void>() {
+      GenericCallback<Void> innerCallback = new GenericCallback<Void>() {
         @Override
         public void success(Void value) {
           if (callback != null) {

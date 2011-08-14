@@ -65,7 +65,7 @@ public class JsObjectImplTest {
     JSONObject valueObject = (JSONObject) JSONValue.parse(
         "{\"ref\":" + FixtureChromeStub.getNumber3Ref() +
         ",\"type\":\"number\",\"value\":3,\"text\":\"3\"}");
-    SomeRef someRef = V8ProtocolParserAccess.get().parse(valueObject, SomeRef.class);
+    SomeRef someRef = V8ProtocolParserAccess.get().parseSomeRef(valueObject);
     DataWithRef dataWithRef = DataWithRef.fromSomeRef(someRef);
     SubpropertiesMirror.ListBased subpropertiesMirror = new SubpropertiesMirror.ListBased(
         new PropertyReference("x", dataWithRef),
@@ -93,7 +93,7 @@ public class JsObjectImplTest {
               )
           )
       );
-      frameObject = V8ProtocolParserAccess.get().parse(jsonObject, FrameObject.class);
+      frameObject = V8ProtocolParserAccess.get().parseFrameObject(jsonObject);
     }
 
     this.callFrame = new CallFrameImpl(frameObject, internalContext);

@@ -8,7 +8,9 @@ import static org.chromium.sdk.util.BasicUtil.containsSafe;
 import static org.chromium.sdk.util.BasicUtil.removeSafe;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
@@ -18,12 +20,15 @@ import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.Breakpoint.Target;
 import org.chromium.sdk.BreakpointTypeExtension.ScriptRegExpSupport;
+import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.util.BasicUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
@@ -86,10 +91,6 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     }
   }
 
-  public void setIgnoreCount(int ignoreCount) {
-    setMarkerAttribute(IGNORE_COUNT_ATTR, ignoreCount);
-  }
-
   private void setMarkerAttribute(String attributeName, Object value) {
     try {
       setAttribute(attributeName, value);
@@ -98,20 +99,88 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
     }
   }
 
-  public int getIgnoreCount() {
-    return getMarker().getAttribute(IGNORE_COUNT_ATTR, Breakpoint.EMPTY_VALUE);
-  }
 
   public void setCondition(String condition) throws CoreException {
     setMarkerAttribute(CONDITION_ATTR, condition);
   }
 
   public String getCondition() {
-    return getMarker().getAttribute(CONDITION_ATTR, null);
+    return getMarker().getAttribute(CONDITION_ATTR, (String) null);
   }
 
   public String getModelIdentifier() {
     return getMarker().getAttribute(IBreakpoint.ID, "");
+  }
+
+  public IgnoreCountData getIgnoreCountData() {
+    String dataStr = getMarker().getAttribute(IGNORE_COUNT_ATTR, "");
+    return IgnoreCountData.parseString(dataStr);
+  }
+
+  public void setIgnoreCountData(IgnoreCountData data) throws CoreException {
+    getMarker().setAttribute(IGNORE_COUNT_ATTR, data.getStringRepresentation());
+  }
+
+  /**
+   * @return ignore count number or {@link Breakpoint#EMPTY_VALUE} based on state
+   */
+  public int getEffectiveIgnoreCount() {
+    IgnoreCountData data = getIgnoreCountData();
+    return data.getEffectiveValue();
+  }
+
+  /**
+   * Resets ignore count so that it's effective value becomes {@link Breakpoint#EMPTY_VALUE},
+   * but the change does not cause update back to remote VM.
+   */
+  public void silentlyResetIgnoreCount() throws CoreException {
+    IgnoreCountData data = getIgnoreCountData();
+    if (data.getState() == IgnoreCountData.State.RESET || data.getValue() <= 0) {
+      return;
+    }
+    data.setState(IgnoreCountData.State.RESET);
+    setIgnoreCountData(data);
+  }
+
+  /**
+   * Returns set of properties that have changed comparing to the state saved in delta parameter.
+   * Doesn't enumerate properties that were changed 'silently'
+   * (see {@link #silentlyResetIgnoreCount()}).
+   */
+  public Set<MutableProperty> getChangedProperty(IMarkerDelta delta) {
+    Set<MutableProperty> result = EnumSet.noneOf(MutableProperty.class);
+
+    IMarker marker = getMarker();
+    if (marker.getAttribute(IBreakpoint.ENABLED, Boolean.TRUE) !=
+        delta.getAttribute(IBreakpoint.ENABLED, Boolean.TRUE)) {
+      result.add(MutableProperty.ENABLED);
+    }
+    if (!BasicUtil.eq(marker.getAttribute(CONDITION_ATTR, (String) null),
+        delta.getAttribute(CONDITION_ATTR, (String) null))) {
+      result.add(MutableProperty.CONDITION);
+    }
+    {
+      IgnoreCountData currentData =
+          IgnoreCountData.parseString(marker.getAttribute(IGNORE_COUNT_ATTR, ""));
+      IgnoreCountData oldData =
+          IgnoreCountData.parseString(delta.getAttribute(IGNORE_COUNT_ATTR, ""));
+      boolean differs;
+      if (currentData.getState() == IgnoreCountData.State.RESET) {
+        // Ignore all changes while we are in reset state.
+        differs = false;
+      } else {
+        differs = currentData.getEffectiveValue() != oldData.getEffectiveValue();
+      }
+      if (differs) {
+        result.add(MutableProperty.IGNORE_COUNT);
+      }
+    }
+
+    return result;
+  }
+
+  public enum MutableProperty {
+    ENABLED, CONDITION, IGNORE_COUNT
   }
 
   /**
@@ -127,14 +196,14 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
       void failure(String errorMessage);
     }
 
-    public static RelayOk createOnRemote(final WrappedBreakpoint uiBreakpoint,
+    public static RelayOk createOnRemote(final ChromiumLineBreakpoint uiBreakpoint,
         VmResourceRef vmResourceRef, final ConnectedTargetData connectedTargetData,
         final CreateOnRemoveCallback createOnRemoveCallback,
         SyncCallback syncCallback) throws CoreException {
       final JavascriptVm javascriptVm = connectedTargetData.getJavascriptVm();
 
       // ILineBreakpoint lines are 1-based while V8 lines are 0-based
-      final int line = (uiBreakpoint.getInner().getLineNumber() - 1);
+      final int line = (uiBreakpoint.getLineNumber() - 1);
       final int column = 0;
 
       BreakpointCallback callback = new BreakpointCallback() {
@@ -194,22 +263,56 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
         }
       });
 
-      return javascriptVm.setBreakpoint(
-          sdkParams.target,
-          sdkParams.line,
-          sdkParams.column,
-          uiBreakpoint.getInner().isEnabled(),
-          uiBreakpoint.getCondition(),
-          uiBreakpoint.getIgnoreCount(),
-          callback, syncCallback);
+      IgnoreCountBreakpointExtension extension = javascriptVm.getIgnoreCountBreakpointExtension();
+      if (extension == null) {
+        if (uiBreakpoint.getEffectiveIgnoreCount() != Breakpoint.EMPTY_VALUE) {
+          ChromiumDebugPlugin.log(
+              new Exception("Failed to set breakpoint ignore count as it is not supported by VM"));
+        }
+        return javascriptVm.setBreakpoint(
+            sdkParams.target,
+            sdkParams.line,
+            sdkParams.column,
+            uiBreakpoint.isEnabled(),
+            uiBreakpoint.getCondition(),
+            callback, syncCallback);
+      } else {
+        return extension.setBreakpoint(
+            javascriptVm,
+            sdkParams.target,
+            sdkParams.line,
+            sdkParams.column,
+            uiBreakpoint.isEnabled(),
+            uiBreakpoint.getCondition(),
+            uiBreakpoint.getEffectiveIgnoreCount(),
+            callback, syncCallback);
+      }
     }
 
-    public static void updateOnRemote(Breakpoint sdkBreakpoint,
-        WrappedBreakpoint uiBreakpoint) throws CoreException {
-      sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
-      sdkBreakpoint.setEnabled(uiBreakpoint.getInner().isEnabled());
-      sdkBreakpoint.setIgnoreCount(uiBreakpoint.getIgnoreCount());
+    public static void updateOnRemote(final Breakpoint sdkBreakpoint,
+        final ChromiumLineBreakpoint uiBreakpoint,
+        Set<MutableProperty> propertyDelta) throws CoreException {
+
+      if (propertyDelta.contains(MutableProperty.ENABLED)) {
+        sdkBreakpoint.setEnabled(uiBreakpoint.isEnabled());
+      }
+      if (propertyDelta.contains(MutableProperty.CONDITION)) {
+        sdkBreakpoint.setCondition(uiBreakpoint.getCondition());
+      }
       sdkBreakpoint.flush(null, null);
+
+      if (propertyDelta.contains(MutableProperty.IGNORE_COUNT)) {
+        // Ignore count is a transient property and doesn't need flush.
+        IgnoreCountBreakpointExtension extension =
+            sdkBreakpoint.getIgnoreCountBreakpointExtension();
+        if (extension == null) {
+          ChromiumDebugPlugin.log(
+              new Exception("Failed to set breakpoint ignore count as it is not supported by VM"));
+        } else {
+          extension.setIgnoreCount(sdkBreakpoint, uiBreakpoint.getEffectiveIgnoreCount(),
+              null, null);
+        }
+      }
     }
 
     public static ChromiumLineBreakpoint createLocal(Breakpoint sdkBreakpoint,
@@ -220,13 +323,11 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
           debugModelId);
       uiBreakpoint.setCondition(sdkBreakpoint.getCondition());
       uiBreakpoint.setEnabled(sdkBreakpoint.isEnabled());
-      uiBreakpoint.setIgnoreCount(sdkBreakpoint.getIgnoreCount());
-      WrappedBreakpoint uiBreakpointWrapper = ChromiumBreakpointAdapter.wrap(uiBreakpoint);
-      ignoreList.add(uiBreakpointWrapper);
+      ignoreList.add(uiBreakpoint);
       try {
         breakpointManager.addBreakpoint(uiBreakpoint);
       } finally {
-        ignoreList.remove(uiBreakpointWrapper);
+        ignoreList.remove(uiBreakpoint);
       }
       return uiBreakpoint;
     }
@@ -239,20 +340,20 @@ public class ChromiumLineBreakpoint extends LineBreakpoint {
   }
 
   public static class BreakpointIgnoreList {
-    private final List<WrappedBreakpoint> list = new ArrayList<WrappedBreakpoint>(1);
+    private final List<ChromiumLineBreakpoint> list = new ArrayList<ChromiumLineBreakpoint>(1);
 
-    public boolean contains(WrappedBreakpoint breakpoint) {
+    public boolean contains(ChromiumLineBreakpoint breakpoint) {
       return containsSafe(list, breakpoint);
     }
 
-    public void remove(WrappedBreakpoint lineBreakpoint) {
+    public void remove(ChromiumLineBreakpoint lineBreakpoint) {
       boolean res = removeSafe(list, lineBreakpoint);
       if (!res) {
         throw new IllegalStateException();
       }
     }
 
-    public void add(WrappedBreakpoint lineBreakpoint) {
+    public void add(ChromiumLineBreakpoint lineBreakpoint) {
       if (containsSafe(list, lineBreakpoint)) {
         throw new IllegalStateException();
       }

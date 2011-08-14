@@ -4,8 +4,6 @@
 
 package org.chromium.sdk.internal.v8native.protocol.input;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParser;
-
 /**
  * An accessor to generated implementation of a v8 protocol parser.
  */
@@ -13,7 +11,7 @@ public class V8ProtocolParserAccess {
 
   private static final GeneratedV8ProtocolParser PARSER = new GeneratedV8ProtocolParser();
 
-  public static JsonProtocolParser get() {
+  public static V8NativeProtocolParser get() {
     return PARSER;
   }
 
