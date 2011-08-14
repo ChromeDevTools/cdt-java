@@ -6,16 +6,40 @@ package org.chromium.debug.ui.launcher;
 
 import org.chromium.debug.core.model.JavascriptVmEmbedder.ConnectionToRemote;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
+import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
 import org.chromium.debug.ui.DialogBasedTabSelector;
 import org.chromium.sdk.ConnectionLogger;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
+
+import org.chromium.sdk.wip.WipBackend;
+import org.chromium.sdk.wip.eclipse.BackendRegistry;
 
 public class WipLaunchType extends LaunchTypeBase {
   @Override
   protected ConnectionToRemote createConnectionToRemote(String host, int port,
       final ILaunch launch, boolean addConsoleLogger) throws CoreException {
+
+    ILaunchConfiguration config = launch.getLaunchConfiguration();
+    String wipBackendId = config.getAttribute(LaunchParams.WIP_BACKEND_ID, (String) null);
+
+    if (wipBackendId == null) {
+      throw new RuntimeException("Missing 'wip backend' parameter in launch config");
+    }
+
+    WipBackend backend;
+    findingWipBackend: {
+      for (WipBackend nextBackend : BackendRegistry.INSTANCE.getBackends()) {
+        if (nextBackend.getId().equals(wipBackendId)) {
+          backend = nextBackend;
+          break findingWipBackend;
+        }
+      }
+      // Nothing found.
+      throw new RuntimeException("Cannot find required wip backend in Eclise: " + wipBackendId);
+    }
 
     NamedConnectionLoggerFactory consoleFactory;
     if (addConsoleLogger) {
@@ -28,7 +52,7 @@ public class WipLaunchType extends LaunchTypeBase {
       consoleFactory = NO_CONNECTION_LOGGER_FACTORY;
     }
 
-    return JavascriptVmEmbedderFactory.connectToWipBrowser(host, port, consoleFactory,
+    return JavascriptVmEmbedderFactory.connectToWipBrowser(host, port, backend, consoleFactory,
         consoleFactory, DialogBasedTabSelector.WIP_INSTANCE);
   }
 }
