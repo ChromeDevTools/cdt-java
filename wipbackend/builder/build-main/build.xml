@@ -9,7 +9,7 @@
 <project name="chromedevtools" default="main" basedir=".">
 
   <!-- The source repository location (where the plugins and features folders are) -->
-  <property name="sourceBaseLocation" value="${basedir}/.." />
+  <property name="sourceBaseLocation" value="${basedir}/../.." />
 
   <!-- The location of the PDE build configuration -->
   <property name="builder" value="${basedir}/releng.builder" />
