@@ -37,5 +37,5 @@ public abstract class WipBackendBase implements WipBackend {
     }
   }
 
-  abstract List<? extends WipBrowser.WipTabConnector> getTabs(WipBrowserImpl browserImpl) throws IOException;
+  public abstract List<? extends WipBrowser.WipTabConnector> getTabs(WipBrowserImpl browserImpl) throws IOException;
 }

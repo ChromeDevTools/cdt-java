@@ -4,7 +4,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="src-dynamic-impl/bridge"/>
 	<classpathentry kind="src" path="src-dynamic-impl/parser"/>
-	<classpathentry kind="src" path="src-wip-generated"/>
 	<classpathentry kind="src" path="src-static-impl/generated"/>
 	<classpathentry kind="src" path="src-wip"/>
 	<classpathentry exported="true" kind="lib" path="lib/json_simple/json_simple-1.1.jar" sourcepath="org.chromium.sdksrc.zip"/>

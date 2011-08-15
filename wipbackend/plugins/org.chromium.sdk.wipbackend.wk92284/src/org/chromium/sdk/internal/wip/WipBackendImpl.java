@@ -17,7 +17,6 @@ import java.util.List;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
@@ -28,12 +27,12 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class WipBackendImpl extends WipBackendBase {
-  private static final String ID = "Inspector.json@84351";
+  private static final String ID = "Inspector.json@92284";
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
   private static final String DESCRIPTION =
       "Google Chrome/Chromium: 15.0.852.0\n" +
-      "WebKit revision: 84351\n";
+      "WebKit revision: 92284\n";
 
   public WipBackendImpl() {
     super(ID, DESCRIPTION);
@@ -41,7 +40,7 @@ public class WipBackendImpl extends WipBackendBase {
 
 
   @Override
-  List<? extends WipTabConnector> getTabs(final WipBrowserImpl browserImpl) throws IOException {
+  public List<? extends WipTabConnector> getTabs(final WipBrowserImpl browserImpl) throws IOException {
     InetSocketAddress socketAddress = browserImpl.getSocketAddress();
 
     URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
@@ -133,7 +132,7 @@ public class WipBackendImpl extends WipBackendBase {
     try {
       jsonValue = new JSONParser().parse(content);
     } catch (ParseException e) {
-      throw JavascriptVmImpl.newIOException("Failed to parse a JSON tab list response", e);
+      throw new IOException("Failed to parse a JSON tab list response", e);
     }
 
 
@@ -141,7 +140,7 @@ public class WipBackendImpl extends WipBackendBase {
       WipTabList tabList = WipParserAccess.get().parseTabList(jsonValue);
       return tabList.asTabList();
     } catch (JsonProtocolParseException e) {
-      throw JavascriptVmImpl.newIOException(
+      throw new IOException(
           "Failed to parse tab list response (on protocol level)", e);
     }
   }

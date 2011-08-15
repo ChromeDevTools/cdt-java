@@ -7,7 +7,6 @@ package org.chromium.sdk.internal;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditParserGenerator;
 import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParserGenerator;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ParserGenerator;
-import org.chromium.sdk.internal.wip.protocol.WipParserGenerator;
 
 /**
  * A main class that generates all protocol static parsers (except tests).
@@ -17,6 +16,6 @@ public class AllProtocolParsersGenerator {
     LiveEditParserGenerator.main(args);
     ToolsProtocolParserGenerator.main(args);
     V8ParserGenerator.main(args);
-    WipParserGenerator.main(args);
+    //WipParserGenerator.main(args);
   }
 }
