@@ -1,0 +1,2 @@
+org.chromium.sdk plugin should be here (plus any additional dependencies if any),
+org.chromium.sdk plugin must be unjared (possibly manully), or json-simple library won't be resolved
