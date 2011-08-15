@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
+// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/87771/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -10,6 +10,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.DebuggerWasDisabledEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.DebuggerWasEnabledEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.EditScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.GetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue.class,
@@ -21,8 +22,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointByUrlData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.Result.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData.class,
@@ -35,8 +34,8 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.LoadEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourcesData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchResultValue.class,
-    org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateOnData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue.class,

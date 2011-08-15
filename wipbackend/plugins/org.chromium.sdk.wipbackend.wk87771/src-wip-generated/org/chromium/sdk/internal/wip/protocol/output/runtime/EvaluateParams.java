@@ -1,37 +1,25 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
+// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/87771/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
 /**
-Evaluates expression on global object.
+Evaluate expression on global object.
  */
 public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData> {
   /**
    @param expression Expression to evaluate.
    @param objectGroupOpt Symbolic group name that can be used to release multiple objects.
    @param includeCommandLineAPIOpt Determines whether Command Line API should be available during the evaluation.
-   @param doNotPauseOnExceptionsOpt Specifies whether evaluation should stop on exceptions. Overrides setPauseOnException state.
-   @param frameIdOpt Specifies in which frame to perform evaluation.
-   @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
    */
-  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsOpt, String frameIdOpt, Boolean returnByValueOpt) {
+  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt) {
     this.put("expression", expression);
     if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
     }
     if (includeCommandLineAPIOpt != null) {
       this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
-    }
-    if (doNotPauseOnExceptionsOpt != null) {
-      this.put("doNotPauseOnExceptions", doNotPauseOnExceptionsOpt);
-    }
-    if (frameIdOpt != null) {
-      this.put("frameId", frameIdOpt);
-    }
-    if (returnByValueOpt != null) {
-      this.put("returnByValue", returnByValueOpt);
     }
   }
 

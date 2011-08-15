@@ -1,16 +1,16 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@91754
+// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/87771/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
 /**
- Calls function with given declaration on the given object.
+ Evaluate expression on given object using it as <code>this</code>.
  */
 @org.chromium.sdk.internal.protocolparser.JsonType
-public interface CallFunctionOnData {
+public interface EvaluateOnData {
   /**
-   Call result.
+   Evaluation result.
    */
   org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue result();
 

@@ -1,21 +1,21 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
+// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/87771/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
 /**
- JavaScript call frame. Array of call frames form the call stack.
+ Debugger call frame. Array of call frames form call stack.
  */
 @org.chromium.sdk.internal.protocolparser.JsonType
 public interface CallFrameValue {
   /**
-   Call frame identifier. This identifier is only valid while the virtual machine is paused.
+   Call frame identifier.
    */
   String id();
 
   /**
-   Name of the JavaScript function called on this call frame.
+   Name of the function called on this frame.
    */
   String functionName();
 
@@ -25,7 +25,7 @@ public interface CallFrameValue {
   org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue location();
 
   /**
-   Scope chain for this call frame.
+   Scope chain for given call frame.
    */
   java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue> scopeChain();
 

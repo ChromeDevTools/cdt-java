@@ -71,7 +71,7 @@ class WipContextBuilder {
 
   WipContextBuilder(WipTabImpl tabImpl) {
     this.tabImpl = tabImpl;
-    this.evaluateHack = new EvaluateHack(tabImpl);
+    this.evaluateHack = new EvaluateHack();
   }
 
   // Called from Dispatch Thread.
@@ -280,7 +280,7 @@ class WipContextBuilder {
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        sourceId = frameData.location().scriptId();
+        sourceId = frameData.location().sourceId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
         scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {
@@ -660,9 +660,7 @@ class WipContextBuilder {
 
     @Override protected WipParamsWithResponse<EvaluateData> createRequestParams(String expression,
         WipValueLoader destinationValueLoader) {
-      boolean doNotPauseOnExceptions = true;
-      return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(),
-          false, doNotPauseOnExceptions, null, false);
+      return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(), null);
     }
 
     @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {

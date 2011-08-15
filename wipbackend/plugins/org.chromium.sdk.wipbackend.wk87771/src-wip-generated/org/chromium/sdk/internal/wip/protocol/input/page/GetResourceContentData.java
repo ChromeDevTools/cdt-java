@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@89368
+// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/87771/trunk/Source/WebCore/inspector/Inspector.json@86959
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -13,10 +13,5 @@ public interface GetResourceContentData {
    Resource content.
    */
   String content();
-
-  /**
-   True, if content was served as base64.
-   */
-  boolean base64Encoded();
 
 }

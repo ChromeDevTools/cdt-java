@@ -5,24 +5,14 @@
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
 /**
- Location in the source code.
+ Edits JavaScript script live.
  */
 @org.chromium.sdk.internal.protocolparser.JsonType
-public interface LocationValue {
+public interface EditScriptSourceData {
   /**
-   Script identifier as reported by the <code>scriptParsed</code>
-   */
-  String sourceId();
-
-  /**
-   Line number in the script.
-   */
-  long lineNumber();
-
-  /**
-   Column number in the script.
+   New stack trace in case editing has happened while VM was stopped.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  Long columnNumber();
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue> callFrames();
 
 }

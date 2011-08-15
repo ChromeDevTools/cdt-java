@@ -4,18 +4,16 @@
 
 package org.chromium.sdk.internal.wip;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptBase;
-import org.chromium.sdk.internal.liveeditprotocol.LiveEditProtocolParserAccess;
-import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
-import org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData;
-import org.chromium.sdk.internal.wip.protocol.output.debugger.SetScriptSourceParams;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.EditScriptSourceData;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.EditScriptSourceParams;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -46,15 +44,20 @@ class WipScriptImpl extends ScriptBase<String> {
       final UpdateCallback updateCallback,
       final SyncCallback syncCallback) {
 
+    if (preview) {
+      dispatchResult(null, updateCallback);
+      return RelaySyncCallback.finish(syncCallback);
+    }
+
     RelaySyncCallback relay = new RelaySyncCallback(syncCallback);
     final RelaySyncCallback.Guard guard = relay.newGuard();
 
-    SetScriptSourceParams params = new SetScriptSourceParams(getId(), newSource, preview);
+    EditScriptSourceParams params = new EditScriptSourceParams(getId(), newSource);
 
-    GenericCallback<SetScriptSourceData> commandCallback =
-        new GenericCallback<SetScriptSourceData>() {
+    GenericCallback<EditScriptSourceData> commandCallback =
+        new GenericCallback<EditScriptSourceData>() {
       @Override
-      public void success(SetScriptSourceData value) {
+      public void success(EditScriptSourceData value) {
         RelayOk relayOk =
             possiblyUpdateCallFrames(preview, value, updateCallback, guard.getRelay());
         guard.discharge(relayOk);
@@ -70,7 +73,7 @@ class WipScriptImpl extends ScriptBase<String> {
     return commandProcessor.send(params, commandCallback, guard.asSyncCallback());
   }
 
-  private RelayOk possiblyUpdateCallFrames(boolean preview, final SetScriptSourceData data,
+  private RelayOk possiblyUpdateCallFrames(boolean preview, final EditScriptSourceData data,
       final UpdateCallback updateCallback, RelaySyncCallback relay) {
 
     // TODO: support 'step-in recommended'.
@@ -80,13 +83,13 @@ class WipScriptImpl extends ScriptBase<String> {
       callFrames = data.callFrames();
     }
     if (callFrames == null) {
-      dispatchResult(data.result(), updateCallback);
+      dispatchResult(null, updateCallback);
       return relay.finish();
     } else {
       GenericCallback<Void> setFramesCallback =
           new GenericCallback<Void>() {
         @Override public void success(Void value) {
-          dispatchResult(data.result(), updateCallback);
+          dispatchResult(null, updateCallback);
         }
         @Override public void failure(Exception exception) {
           throw new RuntimeException(exception);
@@ -98,18 +101,69 @@ class WipScriptImpl extends ScriptBase<String> {
     }
   }
 
-  private void dispatchResult(SetScriptSourceData.Result result, UpdateCallback updateCallback) {
+  private void dispatchResult(Void result, UpdateCallback updateCallback) {
     if (updateCallback != null) {
-      LiveEditResult liveEditResult;
-      try {
-        liveEditResult =
-            LiveEditProtocolParserAccess.get().parseLiveEditResult(result.getUnderlyingObject());
-      } catch (JsonProtocolParseException e) {
-        throw new RuntimeException("Failed to parse LiveEdit response", e);
-      }
-      ChangeDescription wrappedChangeDescription =
-          UpdateResultParser.wrapChangeDescription(liveEditResult);
-      updateCallback.success(null, wrappedChangeDescription);
+      // This is a fake because protocol doesn't support it.
+      ChangeDescription fakeChangeDescription = new ChangeDescription() {
+        private final FunctionPositions nullPositions = new FunctionPositions() {
+          @Override public long getStart() {
+            return 0;
+          }
+          @Override public long getEnd() {
+            return 0;
+          }
+        };
+
+        @Override
+        public boolean isStackModified() {
+          return false;
+        }
+
+        @Override
+        public TextualDiff getTextualDiff() {
+          return new TextualDiff() {
+            @Override public List<Long> getChunks() {
+              return Collections.emptyList();
+            }
+          };
+        }
+
+        @Override public String getCreatedScriptName() {
+          return null;
+        }
+
+        @Override
+        public OldFunctionNode getChangeTree() {
+          return new OldFunctionNode() {
+            @Override public String getName() {
+              return "Change descrption is not supported yet";
+            }
+            @Override
+            public FunctionPositions getPositions() {
+              return nullPositions;
+            }
+            @Override public List<? extends OldFunctionNode> children() {
+             return Collections.emptyList();
+            }
+            @Override public OldFunctionNode asOldFunction() {
+              return this;
+            }
+            @Override public ChangeStatus getStatus() {
+              return ChangeStatus.UNCHANGED;
+            }
+            @Override public String getStatusExplanation() {
+              return "Change descrption is not supported yet";
+            }
+            @Override public FunctionPositions getNewPositions() {
+              return nullPositions;
+            }
+            @Override public List<? extends NewFunctionNode> newChildren() {
+              return Collections.emptyList();
+            }
+          };
+        }
+      };
+      updateCallback.success(null, null);
     }
   }
 }
