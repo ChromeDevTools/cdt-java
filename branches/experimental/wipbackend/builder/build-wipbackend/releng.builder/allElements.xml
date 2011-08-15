@@ -20,7 +20,7 @@
 
                 <ant antfile="${genericTargets}" target="${target}">
 			<property name="type" value="feature" />
-			<property name="id" value="org.chromium.sdk.wipbackends.source" />
+			<property name="id" value="org.chromium.sdk.wip.source" />
 		</ant>
  	</target>
  
