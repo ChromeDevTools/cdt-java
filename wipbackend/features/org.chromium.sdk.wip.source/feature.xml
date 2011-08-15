@@ -5,7 +5,7 @@
   found in the LICENSE file.
 -->
 <feature
-      id="org.chromium.sdk.wipbackends.source"
+      id="org.chromium.sdk.wip.source"
       label="%featureName"
       version="0.1.0.qualifier"
       provider-name="%providerName">
@@ -15,7 +15,7 @@
    </description>
 
    <copyright>
-      Copyright (c) 2009 The Chromium Authors. All rights reserved.
+      Copyright (c) 2011 The Chromium Authors. All rights reserved.
    </copyright>
 
    <license url="%licenseUrl">
