@@ -27,13 +27,12 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class WipBackendImpl extends WipBackendBase {
-  private static final String ID = "Inspector.json@84351 AKA Chrome13stable";
+  private static final String ID = "Inspector.json@87771 AKA Chrome13stable";
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
   private static final String DESCRIPTION =
-      //"Google Chrome/Chromium: 15.0.852.0\n" +
       "Google Chrome/Chromium version: 13.0.782.112 (stable)\n" +
-      "WebKit revision: 84351\n";
+      "WebKit revision: 87771\n";
 
   public WipBackendImpl() {
     super(ID, DESCRIPTION);
