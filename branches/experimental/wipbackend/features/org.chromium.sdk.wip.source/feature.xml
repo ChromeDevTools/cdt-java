@@ -27,7 +27,7 @@
    </url>
 
    <includes
-         id="org.chromium.sdk.wipbackends"
+         id="org.chromium.sdk.wipbackends.source"
          version="0.0.0"/>
 
 </feature>
