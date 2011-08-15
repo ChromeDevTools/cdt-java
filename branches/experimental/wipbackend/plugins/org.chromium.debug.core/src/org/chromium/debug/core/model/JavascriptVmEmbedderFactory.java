@@ -130,7 +130,7 @@ public class JavascriptVmEmbedderFactory {
           return null;
         }
 
-        return new WipEmbeddingTabConnector(targetTabConnector);
+        return new WipEmbeddingTabConnector(targetTabConnector, backend.getId());
       }
 
       public void disposeConnection() {
@@ -171,10 +171,6 @@ public class JavascriptVmEmbedderFactory {
         throws CoreException;
 
     protected static abstract class EmbedderBase implements JavascriptVmEmbedder {
-      public String getTargetName() {
-        return Messages.DebugTargetImpl_TargetName;
-      }
-
       @Override
       public ScriptNameManipulator getScriptNameManipulator() {
         return BROWSER_SCRIPT_NAME_MANIPULATOR;
@@ -224,6 +220,11 @@ public class JavascriptVmEmbedderFactory {
           return browserTab;
         }
 
+        public String getTargetName() {
+          return Messages.DebugTargetImpl_TargetName;
+        }
+
+
         public String getThreadName() {
           return browserTab.getUrl();
         }
@@ -233,8 +234,11 @@ public class JavascriptVmEmbedderFactory {
 
   private static class WipEmbeddingTabConnector
       extends EmbeddingTabConnectorBase<WipBrowser.WipTabConnector> {
-    WipEmbeddingTabConnector(WipTabConnector targetTabConnector) {
+    private final String backendId;
+
+    WipEmbeddingTabConnector(WipTabConnector targetTabConnector, String backendId) {
       super(targetTabConnector);
+      this.backendId = backendId;
     }
 
     @Override
@@ -249,6 +253,10 @@ public class JavascriptVmEmbedderFactory {
       return new EmbedderBase() {
         public JavascriptVm getJavascriptVm() {
           return browserTab.getJavascriptVm();
+        }
+
+        public String getTargetName() {
+          return Messages.DebugTargetImpl_TargetName + " # " + backendId;
         }
 
         public String getThreadName() {

@@ -32,6 +32,7 @@ public class WipBackendImpl extends WipBackendBase {
 
   private static final String DESCRIPTION =
       "Google Chrome/Chromium: 15.0.852.0\n" +
+      "Chromium build: 96697\n" +
       "WebKit revision: 92284\n";
 
   public WipBackendImpl() {

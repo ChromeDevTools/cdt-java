@@ -83,15 +83,8 @@ public class WipBreakpointImpl implements Breakpoint {
     }
     @Override
     public ScriptRegExpSupport getScriptRegExpSupport() {
-      return scriptRegExpSupport;
+      return null;
     }
-
-    private final ScriptRegExpSupport scriptRegExpSupport = new ScriptRegExpSupport() {
-      @Override
-      public Target createTarget(String regExp) {
-        return new ScriptRegExpBreakpointTarget(regExp);
-      }
-    };
   };
 
   @Override
@@ -327,15 +320,10 @@ public class WipBreakpointImpl implements Breakpoint {
       final int columnNumber, final String condition,
       final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
-    return target.accept(new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<RelayOk>() {
+    return target.accept(new Breakpoint.Target.Visitor<RelayOk>() {
       @Override
       public RelayOk visitScriptName(String scriptName) {
         return sendRequest(scriptName, RequestHandler.FOR_URL);
-      }
-
-      @Override
-      public RelayOk visitRegExp(String regExp) {
-        return sendRequest(regExp, RequestHandler.FOR_REGEXP);
       }
 
       @Override
@@ -410,15 +398,7 @@ public class WipBreakpointImpl implements Breakpoint {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
           long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(url, null, lineNumber, columnNumber, condition);
-      }
-    };
-
-    static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp() {
-      @Override
-      SetBreakpointByUrlParams createRequestParams(String url,
-          long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(null, url, lineNumber, columnNumber, condition);
+        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition);
       }
     };
 
@@ -445,7 +425,7 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   private static ActualLocation locationFromProtocol(LocationValue locationValue) {
-    return new ActualLocation(locationValue.scriptId(), locationValue.lineNumber(),
+    return new ActualLocation(locationValue.sourceId(), locationValue.lineNumber(),
         locationValue.columnNumber());
   }
 
