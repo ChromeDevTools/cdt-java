@@ -27,7 +27,7 @@
    </url>
 
    <requires>
-      <import feature="org.chromium.sdk" version="0.2.3.qualifier" match="perfect"/>
+      <import feature="org.chromium.sdk" version="0.2.3"/>
    </requires>
 
    <plugin
