@@ -1,0 +1,16 @@
+#summary WIP term explained
+
+= Introduction =
+WIP is a codename for adopting a new debug protocol -- [#WebKit_Debug_Protocol WebKit Debug Protocol]. Google Chrome/Chromium have used ChromeDevToolsProtocol for remote debugging (which is a slightly extended [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol].) However currently browser is switching to a new one.
+
+WIP name stands for "!WebInspector Protocol" and is used withing "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
+
+'WIP' term should be gone when the support reaches stable state and becomes a regular part of the project.
+
+The development process earned a dedicated [WipBackendDevelopment article].
+
+== !WebKit Debug Protocol ==
+See [http://code.google.com/chrome/devtools/docs/remote-debugging.html].
+Blog posts:
+  * [http://blog.chromium.org/2011/05/remote-debugging-with-chrome-developer.html Remote debugging with Chrome Developer Tools], The Chromium Blog, May 9th, 2011,
+  * [http://www.webkit.org/blog/1620/webkit-remote-debugging/ WebKit Remote Debugging], Surfin' Safari, May 9th, 2011.
