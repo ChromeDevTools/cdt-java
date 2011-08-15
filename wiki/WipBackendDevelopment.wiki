@@ -1,15 +1,8 @@
 #summary Aim and process of WebKit Remote Debug Protocol protocol SDK back-end development.
 
-= Introduction =
-Google Chrome/Chromium uses ChromeDevToolsProtocol for remote debugging, which is a slightly extended [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol]. SDK supports both of them. However Chrome is in process of switching to a new protocol called "!WebKit Remote Debug Protocol" (WIP) that is likely to be supported by the whole [http://webkit.org WebKit]-based browser family.
+This is an article about [WIP] support development.
 
-== !WebKit Debug Protocol ==
-See [http://code.google.com/chrome/devtools/docs/remote-debugging.html].
-Blog posts:
-  * [http://blog.chromium.org/2011/05/remote-debugging-with-chrome-developer.html Remote debugging with Chrome Developer Tools], The Chromium Blog, May 9th, 2011,
-  * [http://www.webkit.org/blog/1620/webkit-remote-debugging/ WebKit Remote Debugging], Surfin' Safari, May 9th, 2011.
-
-== Support development process ==
+== Development process ==
 SDK is going to support new protocol together with the old two (targeted to [Release_0_3_0 version 0.3.0]).
 
 See also DesignOverview (parts marked {future}).
