@@ -45,12 +45,15 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -891,30 +894,21 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigur
         combo.setItems(nameArray);
         combo.select(0);
 
-        final Text text = new Text(backendGroup, SWT.READ_ONLY | SWT.MULTI);
-        text.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        text.setFont(composite.getFont());
-        text.setText("\n\n\n");
+        final Text text;
+        {
+          text = new Text(backendGroup, SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL);
+          Font font = composite.getFont();
+          text.setFont(font);
+          GridData textLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+          GC gc = new GC(text);
+          int fontHeight = gc.getFontMetrics().getHeight();
+          gc.dispose();
 
-        combo.addSelectionListener(new SelectionListener() {
-          @Override
-          public void widgetSelected(SelectionEvent event) {
-            modifyListener.propertyChange(null);
-            WipBackend backend = elements.get(combo.getSelectionIndex());
-            String textContent;
-            if (backend == null) {
-              textContent = "";
-            } else {
-              textContent = backend.getDescription();
-            }
-            text.setText(textContent);
-          }
+          textLayoutData.minimumHeight = fontHeight * 3;
+          text.setLayoutData(textLayoutData);
+        }
 
-          @Override public void widgetDefaultSelected(SelectionEvent event) {
-          }
-        });
-
-        backendSelector = new  BackendSelector() {
+        class Controller implements BackendSelector {
           @Override
           public String getId() {
             WipBackend backend = elements.get(combo.getSelectionIndex());
@@ -932,8 +926,35 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigur
               index = 0;
             }
             combo.select(index);
+            updateTextField();
           }
-        };
+
+          void updateTextField() {
+            WipBackend backend = elements.get(combo.getSelectionIndex());
+            String textContent;
+            if (backend == null) {
+              textContent = "";
+            } else {
+              textContent = backend.getDescription();
+            }
+            text.setText(textContent);
+          }
+        }
+
+        final Controller controller = new Controller();
+
+        combo.addSelectionListener(new SelectionListener() {
+          @Override
+          public void widgetSelected(SelectionEvent event) {
+            modifyListener.propertyChange(null);
+            controller.updateTextField();
+          }
+
+          @Override public void widgetDefaultSelected(SelectionEvent event) {
+          }
+        });
+        backendSelector = controller;
+
       }
 
       return new WipTabElements() {

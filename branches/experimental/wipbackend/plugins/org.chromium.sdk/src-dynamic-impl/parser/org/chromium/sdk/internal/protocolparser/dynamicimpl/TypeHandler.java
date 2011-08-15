@@ -437,7 +437,7 @@ class TypeHandler<T> {
   private T createProxy(InvocationHandler invocationHandler) {
     if (proxyClassConstructor == null) {
       Class<?>[] interfaces = new Class<?>[] { typeClass };
-      Class<?> proxyClass = Proxy.getProxyClass(getClass().getClassLoader(), interfaces);
+      Class<?> proxyClass = Proxy.getProxyClass(typeClass.getClassLoader(), interfaces);
       Constructor<?> c;
       try {
         c = proxyClass.getConstructor(InvocationHandler.class);
