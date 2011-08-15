@@ -108,7 +108,7 @@
 				<include name="org.chromium.debug.jsdtbridge/**" />
 				<include name="org.chromium.debug.ui/**" />
 				<include name="org.chromium.sdk/**" />
-				<include name="org.chromium.sdk.eclipse/**" />
+				<include name="org.chromium.sdk.wip.eclipse/**" />
 			</fileset>
 		</copy>
 		<copy todir="${buildDirectory}/features">
