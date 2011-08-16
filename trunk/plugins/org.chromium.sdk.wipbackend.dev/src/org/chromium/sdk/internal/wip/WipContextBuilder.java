@@ -43,8 +43,8 @@ import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
-import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.EvaluateOnCallFrameParams;
@@ -384,7 +384,7 @@ class WipContextBuilder {
         protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
             String expression, WipValueLoader destinationValueLoader) {
           return new EvaluateOnCallFrameParams(id, expression,
-              destinationValueLoader.getObjectGroupId(), false);
+              destinationValueLoader.getObjectGroupId(), false, false);
         }
 
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
@@ -491,11 +491,11 @@ class WipContextBuilder {
             new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
           @Override
           public Getter<ScopeVariables> process(
-              List<? extends RemotePropertyValue> propertyList, int currentCacheState) {
+              List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
             final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
 
             WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
-            for (RemotePropertyValue property : propertyList) {
+            for (PropertyDescriptorValue property : propertyList) {
               final String name = property.name();
 
               ValueNameBuilder valueNameBuilder =
