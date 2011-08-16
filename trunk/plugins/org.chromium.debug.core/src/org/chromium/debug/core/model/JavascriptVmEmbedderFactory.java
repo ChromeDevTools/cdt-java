@@ -31,6 +31,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
 import org.chromium.sdk.wip.WipBrowserFactory;
@@ -49,8 +50,9 @@ public class JavascriptVmEmbedderFactory {
     return connect(browser, tabSelector);
   }
 
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host,
-      int port, final NamedConnectionLoggerFactory browserLoggerFactory,
+  public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host, int port,
+      WipBackend backend,
+      final NamedConnectionLoggerFactory browserLoggerFactory,
       final NamedConnectionLoggerFactory tabLoggerFactory,
       WipTabSelector tabSelector) throws CoreException {
 
@@ -70,7 +72,7 @@ public class JavascriptVmEmbedderFactory {
     final WipBrowser browser =
         WipBrowserFactory.INSTANCE.createBrowser(address, factory);
 
-    return connectWip(browser, tabSelector);
+    return connectWip(browser, backend, tabSelector);
   }
 
   private static JavascriptVmEmbedder.ConnectionToRemote connect(Browser browser,
@@ -107,12 +109,21 @@ public class JavascriptVmEmbedderFactory {
   }
 
   private static JavascriptVmEmbedder.ConnectionToRemote connectWip(final WipBrowser browser,
-      final WipTabSelector tabSelector) throws CoreException {
+      final WipBackend backend, final WipTabSelector tabSelector) throws CoreException {
     return new JavascriptVmEmbedder.ConnectionToRemote() {
       public JavascriptVmEmbedder.VmConnector selectVm() throws CoreException {
+        WipTabSelector.BrowserAndBackend browserAndBackend =
+            new WipTabSelector.BrowserAndBackend() {
+          @Override public WipBrowser getBrowser() {
+            return browser;
+          }
+          @Override public WipBackend getBackend() {
+            return backend;
+          }
+        };
         WipBrowser.WipTabConnector targetTabConnector;
         try {
-          targetTabConnector = tabSelector.selectTab(browser);
+          targetTabConnector = tabSelector.selectTab(browserAndBackend);
         } catch (IOException e) {
           throw newCoreException("Failed to get tabs for debugging", e);
         }
@@ -120,7 +131,7 @@ public class JavascriptVmEmbedderFactory {
           return null;
         }
 
-        return new WipEmbeddingTabConnector(targetTabConnector);
+        return new WipEmbeddingTabConnector(targetTabConnector, backend.getId());
       }
 
       public void disposeConnection() {
@@ -161,10 +172,6 @@ public class JavascriptVmEmbedderFactory {
         throws CoreException;
 
     protected static abstract class EmbedderBase implements JavascriptVmEmbedder {
-      public String getTargetName() {
-        return Messages.DebugTargetImpl_TargetName;
-      }
-
       @Override
       public ScriptNameManipulator getScriptNameManipulator() {
         return BROWSER_SCRIPT_NAME_MANIPULATOR;
@@ -214,6 +221,11 @@ public class JavascriptVmEmbedderFactory {
           return browserTab;
         }
 
+        public String getTargetName() {
+          return Messages.DebugTargetImpl_TargetName;
+        }
+
+
         public String getThreadName() {
           return browserTab.getUrl();
         }
@@ -223,8 +235,11 @@ public class JavascriptVmEmbedderFactory {
 
   private static class WipEmbeddingTabConnector
       extends EmbeddingTabConnectorBase<WipBrowser.WipTabConnector> {
-    WipEmbeddingTabConnector(WipTabConnector targetTabConnector) {
+    private final String backendId;
+
+    WipEmbeddingTabConnector(WipTabConnector targetTabConnector, String backendId) {
       super(targetTabConnector);
+      this.backendId = backendId;
     }
 
     @Override
@@ -239,6 +254,10 @@ public class JavascriptVmEmbedderFactory {
       return new EmbedderBase() {
         public JavascriptVm getJavascriptVm() {
           return browserTab.getJavascriptVm();
+        }
+
+        public String getTargetName() {
+          return Messages.DebugTargetImpl_TargetName + " # " + backendId;
         }
 
         public String getThreadName() {

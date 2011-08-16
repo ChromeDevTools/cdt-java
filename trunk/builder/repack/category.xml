@@ -6,10 +6,16 @@
    <feature id="org.chromium.sdk">
       <category name="chromedevtools.advanced"/>
    </feature>
+   <feature id="org.chromium.sdk.wipbackends">
+      <category name="chromedevtools.main"/>
+   </feature>
    <feature id="org.chromium.debug.jsdtbridge">
       <category name="chromedevtools.main"/>
    </feature>
    <feature id="org.chromium.source">
+      <category name="chromedevtools.advanced"/>
+   </feature>
+   <feature id="org.chromium.sdk.wip.source">
       <category name="chromedevtools.advanced"/>
    </feature>
    <category-def name="chromedevtools.main" label="Google Chrome Developer Tools"/>

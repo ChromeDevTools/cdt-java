@@ -53,8 +53,10 @@ import org.eclipse.swt.widgets.Label;
 
 /**
  * The "Remote" tab for the Chromium JavaScript launch tab group.
+ * @param <ELEMENTS> type used for access to created dialog elements; it is used internally
+ *     and allows to subclass {@link ChromiumRemoteTab} with additional dialog controls
  */
-public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
+public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigurationTab {
   private static final String HOST_FIELD_NAME = "host_field"; //$NON-NLS-1$
   private static final String PORT_FIELD_NAME = "port_field"; //$NON-NLS-1$
   private static final String ADD_NETWORK_CONSOLE_FIELD_NAME =
@@ -66,7 +68,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
   private final SourceContainerChecker sourceContainerChecker = new SourceContainerChecker();
   private final Params params;
-  private TabElements tabElements = null;
+  private ELEMENTS tabElements = null;
 
   public static class Params {
     private final HostChecker hostChecker;
@@ -91,15 +93,6 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     String getScriptNameDescription() {
       return scriptNameDescription;
     }
-
-    public static final Params CHROME = new Params(HostChecker.LOCAL_ONLY,
-        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_URL);
-
-    public static final Params STANDALONE = new Params(null,
-        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_FILE_PATH);
-
-    public static final Params WIP = new Params(HostChecker.LOCAL_ONLY,
-        LaunchParams.LookupMode.EXACT_MATCH, Messages.ChromiumRemoteTab_URL);
   }
 
   /**
@@ -132,16 +125,27 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     tabElements = createControlImpl(parent);
   }
 
-  private TabElements createControlImpl(Composite parent) {
+  private ELEMENTS createControlImpl(Composite parent) {
     Composite composite = createDefaultComposite(parent);
 
-    IPropertyChangeListener modifyListener = new IPropertyChangeListener() {
-      public void propertyChange(PropertyChangeEvent event) {
+    Runnable modifyListener = new Runnable() {
+      @Override public void run() {
         updateLaunchConfigurationDialog();
       }
     };
 
     PreferenceStore store = new PreferenceStore();
+
+    composite.setFont(parent.getFont());
+
+    return createDialogElements(composite, modifyListener, store, params);
+  }
+
+  protected abstract ELEMENTS createDialogElements(Composite composite,
+      Runnable modifyListener, PreferenceStore store, Params params);
+
+  protected static TabElements createBasicTabElements(Composite composite,
+      final Runnable modifyListener, PreferenceStore store, Params params) {
     final StringFieldEditor debugHost;
     final IntegerFieldEditor debugPort;
     final BooleanFieldEditor addNetworkConsole;
@@ -151,31 +155,39 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       connectionGroup.setText(Messages.ChromiumRemoteTab_CONNECTION_GROUP);
       connectionGroup.setLayout(new GridLayout(1, false));
 
+
+      IPropertyChangeListener propertyModifyListener = new IPropertyChangeListener() {
+        public void propertyChange(PropertyChangeEvent event) {
+          modifyListener.run();
+        }
+      };
+
+
       Composite propertiesComp = createInnerComposite(connectionGroup, 2);
 
       // Host text field
       debugHost = new StringFieldEditor(HOST_FIELD_NAME,
           Messages.ChromiumRemoteTab_HostLabel, propertiesComp);
-      debugHost.setPropertyChangeListener(modifyListener);
+      debugHost.setPropertyChangeListener(propertyModifyListener);
       debugHost.setPreferenceStore(store);
 
       // Port text field
       debugPort = new IntegerFieldEditor(PORT_FIELD_NAME,
           Messages.ChromiumRemoteTab_PortLabel, propertiesComp);
-      debugPort.setPropertyChangeListener(modifyListener);
+      debugPort.setPropertyChangeListener(propertyModifyListener);
       debugPort.setPreferenceStore(store);
 
       addNetworkConsole =
           new BooleanFieldEditor(ADD_NETWORK_CONSOLE_FIELD_NAME,
               Messages.ChromiumRemoteTab_ShowDebuggerNetworkCommunication, propertiesComp);
       addNetworkConsole.setPreferenceStore(store);
-      addNetworkConsole.setPropertyChangeListener(modifyListener);
+      addNetworkConsole.setPropertyChangeListener(propertyModifyListener);
     }
 
     RadioButtonsLogic.Listener radioButtonsListener =
         new RadioButtonsLogic.Listener() {
           public void selectionChanged() {
-            updateLaunchConfigurationDialog();
+            modifyListener.run();
           }
         };
 
@@ -189,7 +201,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       Map<Integer, Button> buttonMap = new LinkedHashMap<Integer, Button>(3);
       for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
         Button button = new Button(breakpointGroup, SWT.RADIO);
-        button.setFont(parent.getFont());
+        button.setFont(composite.getFont());
         button.setText(option.getLabel());
         GridData gd = new GridData();
         button.setLayoutData(gd);
@@ -232,13 +244,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   }
 
   public void initializeFrom(ILaunchConfiguration config) {
-    for (TabField<?, ?> field : TAB_FIELDS) {
+    for (TabField<?, ?, ? super ELEMENTS> field : getTabFields()) {
       field.initializeFrom(tabElements, config);
     }
   }
 
   public void performApply(ILaunchConfigurationWorkingCopy config) {
-    for (TabField<?, ?> field : TAB_FIELDS) {
+    for (TabField<?, ?, ? super ELEMENTS> field : getTabFields()) {
       field.saveToConfig(tabElements, config);
     }
   }
@@ -279,7 +291,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
   /**
    * Checks config for warnings and returns first found or null.
    */
-  private String getWarning(ILaunchConfiguration config) throws CoreException {
+  protected String getWarning(ILaunchConfiguration config) throws CoreException {
     HostChecker hostChecker = params.getHostChecker();
     if (hostChecker != null) {
       String hostWarning = hostChecker.getWarning(config);
@@ -301,7 +313,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
 
 
   public void setDefaults(ILaunchConfigurationWorkingCopy config) {
-    for (TabField<?, ?> field : TAB_FIELDS) {
+    for (TabField<?, ?, ?> field : getTabFields()) {
       field.setDefault(config, this);
     }
   }
@@ -327,7 +339,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     return composite;
   }
 
-  private Composite createInnerComposite(Composite parent, int numColumns) {
+  private static Composite createInnerComposite(Composite parent, int numColumns) {
     Composite composite = new Composite(parent, SWT.NONE);
     composite.setLayout(new GridLayout(numColumns, false));
     GridData gd = new GridData(GridData.FILL_HORIZONTAL);
@@ -343,7 +355,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
   }
 
-  private static class RadioButtonsLogic<K> {
+  static class RadioButtonsLogic<K> {
     private final Map<K, Button> buttons;
     RadioButtonsLogic(Map<K, Button> buttons, final Listener listener) {
       this.buttons = buttons;
@@ -410,7 +422,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
   }
 
-  private interface TabElements {
+  interface TabElements {
     StringFieldEditor getHost();
     IntegerFieldEditor getPort();
     BooleanFieldEditor getAddNetworkConsole();
@@ -423,16 +435,17 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
    * a particular element instance.
    * @param <P> physical type of field as stored in config; used internally
    * @param <L> logical type of field used in runtime operations
+   * @param <E> interface to dialog elements
    */
-  private static class TabField<P, L> {
+  static class TabField<P, L, E> {
     private final String configAttributeName;
     private final TypedMethods<P> typedMethods;
-    private final FieldAccess<L> fieldAccess;
+    private final FieldAccess<L, E> fieldAccess;
     private final DefaultsProvider<L> defaultsProvider;
     private final ValueConverter<P, L> valueConverter;
 
     TabField(String configAttributeName, TypedMethods<P> typedMethods,
-        FieldAccess<L> fieldAccess, DefaultsProvider<L> defaultsProvider,
+        FieldAccess<L, E> fieldAccess, DefaultsProvider<L> defaultsProvider,
         ValueConverter<P, L> valueConverter) {
       this.typedMethods = typedMethods;
       this.defaultsProvider = defaultsProvider;
@@ -441,13 +454,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       this.valueConverter = valueConverter;
     }
 
-    void saveToConfig(TabElements tabElements, ILaunchConfigurationWorkingCopy config) {
+    void saveToConfig(E tabElements, ILaunchConfigurationWorkingCopy config) {
       L logicalValue = fieldAccess.getValue(tabElements);
       P persistentValue = valueConverter.encode(logicalValue);
       typedMethods.setConfigAttribute(config, configAttributeName, persistentValue);
     }
 
-    void initializeFrom(TabElements tabElements, ILaunchConfiguration config) {
+    void initializeFrom(E tabElements, ILaunchConfiguration config) {
       L fallbackLogicalValue = defaultsProvider.getFallbackValue();
       P fallbackPersistenValue = valueConverter.encode(fallbackLogicalValue);
       L value;
@@ -462,7 +475,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       fieldAccess.setValue(value, tabElements);
     }
 
-    public void setDefault(ILaunchConfigurationWorkingCopy config, ChromiumRemoteTab tab) {
+    public void setDefault(ILaunchConfigurationWorkingCopy config, ChromiumRemoteTab<?> tab) {
       L value = defaultsProvider.getInitialConfigValue(tab);
       if (value != null) {
         P persistentValue = valueConverter.encode(value);
@@ -471,12 +484,12 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
   }
 
-  private static abstract class FieldAccess<T> {
-    abstract void setValue(T value, TabElements tabElements);
-    abstract T getValue(TabElements tabElements);
+  static abstract class FieldAccess<T, E> {
+    abstract void setValue(T value, E tabElements);
+    abstract T getValue(E tabElements);
   }
 
-  private static abstract class FieldEditorAccess<T> extends FieldAccess<T> {
+  private static abstract class FieldEditorAccess<T, E> extends FieldAccess<T, E> {
     private final TypedMethods<T> fieldType;
 
     FieldEditorAccess(TypedMethods<T> fieldType) {
@@ -484,7 +497,7 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
 
     @Override
-    void setValue(T value, TabElements tabElements) {
+    void setValue(T value, E tabElements) {
       FieldEditor fieldEditor = getFieldEditor(tabElements);
       fieldType.setStoreDefaultValue(fieldEditor.getPreferenceStore(),
           fieldEditor.getPreferenceName(), value);
@@ -492,26 +505,26 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     }
 
     @Override
-    T getValue(TabElements tabElements) {
+    T getValue(E tabElements) {
       FieldEditor fieldEditor = getFieldEditor(tabElements);
       storeEditor(fieldEditor, getEditorErrorValue());
       return fieldType.getStoreValue(fieldEditor.getPreferenceStore(),
           fieldEditor.getPreferenceName());
     }
 
-    abstract FieldEditor getFieldEditor(TabElements tabElements);
+    abstract FieldEditor getFieldEditor(E tabElements);
     abstract String getEditorErrorValue();
   }
 
-  private static abstract class DefaultsProvider<T> {
+  static abstract class DefaultsProvider<T> {
     abstract T getFallbackValue();
-    abstract T getInitialConfigValue(ChromiumRemoteTab tab);
+    abstract T getInitialConfigValue(ChromiumRemoteTab<?> tab);
   }
 
   /**
    * Provides uniform access to various signatures of config and store methods.
    */
-  private static abstract class TypedMethods<T> {
+  static abstract class TypedMethods<T> {
     abstract T getConfigAttribute(ILaunchConfiguration config, String attributeName,
         T defaultValue) throws CoreException;
     abstract void setConfigAttribute(ILaunchConfigurationWorkingCopy config, String attributeName,
@@ -572,13 +585,16 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
     };
   }
 
-  private static final List<TabField<?, ?>> TAB_FIELDS;
-  static {
-    List<TabField<?, ?>> list = new ArrayList<ChromiumRemoteTab.TabField<?, ?>>(4);
+  protected abstract List<? extends TabField<?, ?, ? super ELEMENTS>> getTabFields();
 
-    list.add(new TabField<String, String>(
+  static final List<? extends TabField<?, ?, ? super TabElements>> BASIC_TAB_FIELDS;
+  static {
+    List<TabField<?, ?, ? super TabElements>> list =
+        new ArrayList<ChromiumRemoteTab.TabField<?, ?, ? super TabElements>>(4);
+
+    list.add(new TabField<String, String, TabElements>(
         LaunchParams.CHROMIUM_DEBUG_HOST, TypedMethods.STRING,
-        new FieldEditorAccess<String>(TypedMethods.STRING) {
+        new FieldEditorAccess<String, TabElements>(TypedMethods.STRING) {
           @Override
           FieldEditor getFieldEditor(TabElements tabElements) {
             return tabElements.getHost();
@@ -591,15 +607,15 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override String getFallbackValue() {
             return PluginVariablesUtil.getValue(PluginVariablesUtil.DEFAULT_HOST);
           }
-          @Override String getInitialConfigValue(ChromiumRemoteTab dialog) {
+          @Override String getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             return getFallbackValue();
           }
         },
         ValueConverter.<String>getTrivial()));
 
-    list.add(new TabField<Integer, Integer>(
+    list.add(new TabField<Integer, Integer, TabElements>(
         LaunchParams.CHROMIUM_DEBUG_PORT, TypedMethods.INT,
-        new FieldEditorAccess<Integer>(TypedMethods.INT) {
+        new FieldEditorAccess<Integer, TabElements>(TypedMethods.INT) {
           @Override
           FieldEditor getFieldEditor(TabElements tabElements) {
             return tabElements.getPort();
@@ -612,15 +628,15 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override Integer getFallbackValue() {
             return PluginVariablesUtil.getValueAsInt(PluginVariablesUtil.DEFAULT_PORT);
           }
-          @Override Integer getInitialConfigValue(ChromiumRemoteTab dialog) {
+          @Override Integer getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             return getFallbackValue();
           }
         },
         ValueConverter.<Integer>getTrivial()));
 
-    list.add(new TabField<Boolean, Boolean>(
+    list.add(new TabField<Boolean, Boolean, TabElements>(
         LaunchParams.ADD_NETWORK_CONSOLE, TypedMethods.BOOL,
-        new FieldEditorAccess<Boolean>(TypedMethods.BOOL) {
+        new FieldEditorAccess<Boolean, TabElements>(TypedMethods.BOOL) {
           FieldEditor getFieldEditor(TabElements tabElements) {
             return tabElements.getAddNetworkConsole();
           }
@@ -632,14 +648,15 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override Boolean getFallbackValue() {
             return false;
           }
-          @Override Boolean getInitialConfigValue(ChromiumRemoteTab dialog) {
+          @Override Boolean getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             return null;
           }
         },
         ValueConverter.<Boolean>getTrivial()));
 
-    list.add(new TabField<String, String>(
-        LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING, new FieldAccess<String>() {
+    list.add(new TabField<String, String, TabElements>(
+        LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING,
+            new FieldAccess<String, TabElements>() {
           @Override
           void setValue(String value, TabElements tabElements) {
             int breakpointOptionIndex = LaunchParams.findBreakpointOption(value);
@@ -655,15 +672,15 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
           @Override String getFallbackValue() {
             return Direction.MERGE.toString();
           }
-          @Override String getInitialConfigValue(ChromiumRemoteTab dialog) {
+          @Override String getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             return null;
           }
         },
         ValueConverter.<String>getTrivial()));
 
-    list.add(new TabField<String, LookupMode>(
+    list.add(new TabField<String, LookupMode, TabElements>(
         LaunchParams.SOURCE_LOOKUP_MODE, TypedMethods.STRING,
-        new FieldAccess<LookupMode>() {
+        new FieldAccess<LookupMode, TabElements>() {
           @Override
           void setValue(LookupMode value, TabElements tabElements) {
             tabElements.getLookupMode().select(value);
@@ -678,13 +695,13 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
             // TODO: support default value from eclipse variables.
             return LookupMode.DEFAULT_VALUE;
           }
-          @Override LookupMode getInitialConfigValue(ChromiumRemoteTab dialog) {
+          @Override LookupMode getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             return dialog.params.getNewConfigLookupMode();
           }
         },
         LookupMode.STRING_CONVERTER));
 
-    TAB_FIELDS = Collections.unmodifiableList(list);
+    BASIC_TAB_FIELDS = Collections.unmodifiableList(list);
   }
 
   private static class SourceContainerChecker {
@@ -792,5 +809,46 @@ public class ChromiumRemoteTab extends AbstractLaunchConfigurationTab {
       descriptionLine2Label.setText(descriptionLine2);
       return button;
     }
+  }
+
+  static class DevToolsProtocol extends ChromiumRemoteTab<TabElements> {
+    public DevToolsProtocol() {
+      super(PARAMS);
+    }
+
+    @Override
+    protected TabElements createDialogElements(Composite composite,
+        Runnable modifyListener, PreferenceStore store, Params params) {
+      return createBasicTabElements(composite, modifyListener, store, params);
+    }
+
+    @Override
+    protected List<? extends TabField<?, ?, ? super TabElements>> getTabFields() {
+      return BASIC_TAB_FIELDS;
+    }
+
+    private static final Params PARAMS = new ChromiumRemoteTab.Params(
+        ChromiumRemoteTab.HostChecker.LOCAL_ONLY,
+        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_URL);
+  }
+
+  static class Standalone extends ChromiumRemoteTab<TabElements> {
+    public Standalone() {
+      super(PARAMS);
+    }
+
+    @Override
+    protected TabElements createDialogElements(Composite composite,
+        Runnable modifyListener, PreferenceStore store, Params params) {
+      return createBasicTabElements(composite, modifyListener, store, params);
+    }
+
+    @Override
+    protected List<? extends TabField<?, ?, ? super TabElements>> getTabFields() {
+      return BASIC_TAB_FIELDS;
+    }
+
+    private static final Params PARAMS = new ChromiumRemoteTab.Params(null,
+        LaunchParams.LookupMode.AUTO_DETECT, Messages.ChromiumRemoteTab_FILE_PATH);
   }
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2011 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+<feature
+      id="org.chromium.sdk.wipbackends"
+      label="%featureName"
+      version="0.1.0.qualifier"
+      provider-name="%providerName">
+
+   <description url="http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk">
+      %description
+   </description>
+
+   <copyright>
+      Copyright (c) 2011 The Chromium Authors. All rights reserved.
+   </copyright>
+
+   <license url="%licenseUrl">
+      %licenseAgreement
+   </license>
+
+   <url>
+      <update label="ChromeDevTools Update Site" url="http://chromedevtools.googlecode.com/svn/update/dev/"/>
+   </url>
+
+   <requires>
+      <import feature="org.chromium.sdk" version="0.2.3"/>
+   </requires>
+
+   <plugin
+         id="org.chromium.sdk.wipbackend.wk87771"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
