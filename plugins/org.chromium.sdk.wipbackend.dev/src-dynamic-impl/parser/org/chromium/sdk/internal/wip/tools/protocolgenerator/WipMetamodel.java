@@ -48,6 +48,8 @@ public interface WipMetamodel {
     @JsonOptionalField List<Parameter> returns();
 
     @JsonOptionalField String description();
+
+    @JsonOptionalField Boolean hidden();
   }
 
   @JsonType
@@ -76,6 +78,8 @@ public interface WipMetamodel {
     Boolean optional();
 
     @JsonOptionalField String description();
+
+    @JsonOptionalField Boolean hidden();
   }
 
   @JsonType interface Event {
@@ -83,12 +87,16 @@ public interface WipMetamodel {
     @JsonOptionalField List<Parameter> parameters();
 
     @JsonOptionalField String description();
+
+    @JsonOptionalField Boolean hidden();
   }
 
   @JsonType interface StandaloneType {
     String id();
     String description();
     String type();
+
+    @JsonOptionalField Boolean hidden();
 
     @JsonOptionalField List<ObjectProperty> properties();
 

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@93101
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -12,6 +12,6 @@ public interface GetPropertiesData {
   /**
    Object properties.
    */
-  java.util.List<org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue> result();
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue> result();
 
 }

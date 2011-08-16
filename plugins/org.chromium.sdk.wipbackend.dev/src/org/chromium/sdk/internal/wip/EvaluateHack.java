@@ -223,9 +223,6 @@ public class EvaluateHack {
       return new WipRelayRunner.SendStepWithResponse<EVAL_DATA, JsVariable>() {
         @Override
         public WipParamsWithResponse<EVAL_DATA> getParams() {
-          String script = GLOBAL_VARIABLE_NAME + ".data." + dataId + " = {};";
-          String createDataExpression = "(function() {" + script +"})()";
-
           // TODO: this seems incorrect expression.
           String patchedUserExpression = "with (" +GLOBAL_VARIABLE_NAME + ".data." + dataId +
               ") { " + userExpression + "}";

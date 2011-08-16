@@ -20,7 +20,7 @@ import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
-import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
@@ -123,7 +123,7 @@ public abstract class WipValueLoader implements RemoteValueMapping {
    * scopes.
    */
   interface LoadPostprocessor<RES> {
-    RES process(List<? extends RemotePropertyValue> propertyList, int currentCacheState);
+    RES process(List<? extends PropertyDescriptorValue> propertyList, int currentCacheState);
     RES getEmptyResult();
     RES forException(Exception exception);
   }
@@ -137,11 +137,12 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
     @Override
     public Getter<ObjectProperties> process(
-        List<? extends RemotePropertyValue> propertyList, final int currentCacheState) {
+        List<? extends PropertyDescriptorValue> propertyList, final int currentCacheState) {
       final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
       final List<JsVariable> internalProperties = new ArrayList<JsVariable>(2);
 
-      for (RemotePropertyValue property : propertyList) {
+      for (PropertyDescriptorValue property : propertyList) {
+        // TODO: support getters and setters in PropertyDescriptorValue.
         String name = property.name();
         boolean isInternal = INTERNAL_PROPERTY_NAME.contains(name);
 
@@ -302,8 +303,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
     final GetPropertiesParams request;
     {
-      boolean ignoreHasOwnProperty = false;
-      request = new GetPropertiesParams(objectId, ignoreHasOwnProperty);
+      boolean ownProperties = true;
+      request = new GetPropertiesParams(objectId, ownProperties);
     }
 
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
