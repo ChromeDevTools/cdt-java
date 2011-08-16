@@ -15,23 +15,20 @@ import org.eclipse.debug.ui.sourcelookup.SourceLookupTab;
  */
 public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
   public static class Chromium extends LaunchTabGroup {
-    @Override
-    protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.CHROME);
+    @Override protected ChromiumRemoteTab<?> createRemoteTab() {
+      return new ChromiumRemoteTab.DevToolsProtocol();
     }
   }
 
   public static class StandaloneV8 extends LaunchTabGroup {
-    @Override
-    protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.STANDALONE);
+    @Override protected ChromiumRemoteTab<?> createRemoteTab() {
+      return new ChromiumRemoteTab.Standalone();
     }
   }
 
   public static class Wip extends LaunchTabGroup {
-    @Override
-    protected ChromiumRemoteTab createRemoteTab() {
-      return new ChromiumRemoteTab(ChromiumRemoteTab.Params.WIP);
+    @Override protected ChromiumRemoteTab<?> createRemoteTab() {
+      return new WipRemoteTab();
     }
   }
 
@@ -40,5 +37,5 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
         new SourceLookupTab(), new CommonTab() });
   }
 
-  protected abstract ChromiumRemoteTab createRemoteTab();
+  protected abstract ChromiumRemoteTab<?> createRemoteTab();
 }

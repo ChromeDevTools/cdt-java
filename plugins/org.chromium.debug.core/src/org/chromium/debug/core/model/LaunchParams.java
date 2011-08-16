@@ -29,6 +29,8 @@ public class LaunchParams {
 
   public static final String SOURCE_LOOKUP_MODE = "source_lookup_mode"; //$NON-NLS-1$
 
+  public static final String WIP_BACKEND_ID = "wip_backend_id"; //$NON-NLS-1$
+
   public enum LookupMode {
     EXACT_MATCH() {
       @Override public <R> R accept(Visitor<R> visitor) {

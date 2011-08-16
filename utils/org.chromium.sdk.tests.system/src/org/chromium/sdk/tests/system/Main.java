@@ -28,6 +28,9 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.UnsupportedVersionException;
+import org.chromium.sdk.internal.wip.WipBackendImpl;
+import org.chromium.sdk.wip.WipBackend;
+import org.chromium.sdk.wip.WipBackendFactory;
 import org.chromium.sdk.wip.WipBrowser;
 import org.chromium.sdk.wip.WipBrowserFactory;
 
@@ -282,9 +285,10 @@ public class Main {
         };
         WipBrowser browser = WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
 
+        WipBackend wipBackend = WipBackendFactory.INSTANCE.create();
         List<? extends WipBrowser.WipTabConnector> tabs;
         try {
-          tabs = browser.getTabs();
+          tabs = browser.getTabs(wipBackend);
         } catch (IOException e) {
           throw new SmokeException(e);
         }
