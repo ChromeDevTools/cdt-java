@@ -6,10 +6,8 @@ package org.chromium.sdk.wip;
 
 import org.chromium.sdk.internal.wip.WipBackendImpl;
 
-public class WipBackendFactory {
-  public static final WipBackendFactory INSTANCE = new WipBackendFactory();
-
-  public WipBackend create() {
+public class WipBackendFactory implements WipBackend.Factory {
+  @Override public WipBackend create() {
     return new WipBackendImpl();
   }
 }

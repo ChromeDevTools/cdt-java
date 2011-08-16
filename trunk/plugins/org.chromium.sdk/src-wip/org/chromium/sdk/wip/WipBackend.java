@@ -10,7 +10,8 @@ package org.chromium.sdk.wip;
  * which may be needed because WIP is not stable yet and is evolving quite rapidly.
  * <p>
  * A particular set-up should choose it's own way to get backed instances. For example
- * Eclipse may use its extension point mechanism.
+ * Eclipse may use its extension point mechanism. Other frameworks can dynamically instantiate
+ * {@link Factory}.
  */
 public interface WipBackend {
 
@@ -24,4 +25,12 @@ public interface WipBackend {
    *     version it supports
    */
   String getDescription();
+
+  /**
+   * Used to dynamically instantiate {@link WipBackend}. Instance of {@link Factory} should be
+   * available via {@link ClassLoader}.
+   */
+  interface Factory {
+    WipBackend create();
+  }
 }

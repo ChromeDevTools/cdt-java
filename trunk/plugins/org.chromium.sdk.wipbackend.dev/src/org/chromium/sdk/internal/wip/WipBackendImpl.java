@@ -103,8 +103,6 @@ public class WipBackendImpl extends WipBackendBase {
   }
 
   private static String readURLContent(URL url) throws IOException {
-    Object obj = url.getContent();
-
     InputStream stream = url.openStream();
     String content;
     try {
