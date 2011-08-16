@@ -13,6 +13,8 @@ plugins/org.chromium.sdk.wip.eclipse/.settings
 plugins/org.chromium.sdk.wip.eclipse/bin
 plugins/org.chromium.sdk.wipbackend.wk87771/.settings
 plugins/org.chromium.sdk.wipbackend.wk87771/bin
+plugins/org.chromium.sdk.wipbackend.dev/.settings
+plugins/org.chromium.sdk.wipbackend.dev/bin
 plugins/org.chromium.debug.jsdtbridge/.settings
 plugins/org.chromium.debug.jsdtbridge/bin
 utils/org.chromium.sdk.tests.system/.settings
