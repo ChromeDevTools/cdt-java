@@ -71,7 +71,7 @@ class WipContextBuilder {
 
   WipContextBuilder(WipTabImpl tabImpl) {
     this.tabImpl = tabImpl;
-    this.evaluateHack = new EvaluateHack();
+    this.evaluateHack = new EvaluateHack(tabImpl);
   }
 
   // Called from Dispatch Thread.
