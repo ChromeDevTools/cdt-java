@@ -27,9 +27,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class WipBackendImpl extends WipBackendBase {
-  private static final String ID = "current development";
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
+  private static final String ID = "current development";
   private static final String DESCRIPTION =
       "Google Chrome/Chromium: \n" +
       "Chromium build: \n" +
