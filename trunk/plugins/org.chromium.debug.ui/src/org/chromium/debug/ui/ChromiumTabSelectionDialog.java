@@ -13,8 +13,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
@@ -37,6 +39,10 @@ class ChromiumTabSelectionDialog extends Dialog {
   ChromiumTabSelectionDialog(Shell shell, List<String> urls) {
     super(shell);
     this.urls = urls;
+  }
+
+  @Override protected boolean isResizable() {
+    return true;
   }
 
   @Override
@@ -65,6 +71,7 @@ class ChromiumTabSelectionDialog extends Dialog {
     label.setText(Messages.ChromiumTabSelectionDialog_TableTitle);
 
     table = new Table(composite, SWT.VIRTUAL | SWT.BORDER | SWT.SINGLE);
+    table.setLayoutData(new GridData(GridData.FILL_BOTH));
     table.setHeaderVisible(true);
     table.setLinesVisible(true);
     table.setItemCount(10);
