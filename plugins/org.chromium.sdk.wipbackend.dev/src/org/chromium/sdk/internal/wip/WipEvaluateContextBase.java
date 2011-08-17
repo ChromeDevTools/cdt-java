@@ -49,8 +49,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       destinationValueLoaderParam = valueLoader;
     }
     final WipValueLoader destinationValueLoader = destinationValueLoaderParam;
-    if (additionalContext != null) {
-      String destinationObjectGroupId = null;
+    if (additionalContext != null && !additionalContext.isEmpty()) {
       WipContextBuilder contextBuilder = valueLoader.getTabImpl().getContextBuilder();
       EvaluateHack evaluateHack = contextBuilder.getEvaluateHack();
       return evaluateHack.evaluateAsync(expression, additionalContext,
@@ -66,13 +65,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       commandCallback = new GenericCallback<DATA>() {
         @Override
         public void success(DATA data) {
-
-          RemoteObjectValue valueData = getRemoteObjectValue(data);
-
-          WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
-
           JsVariable variable = processResponse(data, destinationValueLoader, expression);
-
           callback.success(variable);
         }
         @Override
@@ -91,7 +84,6 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
 
     WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
 
-    JsVariable variable;
     if (getWasThrown(data) == Boolean.TRUE) {
       return WipContextBuilder.wrapExceptionValue(valueData, valueBuilder);
     } else {
@@ -157,8 +149,6 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
         SyncCallback syncCallback) {
       WipEvaluateContextBase<?> contextImpl =
           WipEvaluateContextBase.castArgument(evaluateContext);
-      WipValueLoader valueLoader = WipValueLoader.castArgument(targetMapping);
-
       return contextImpl.evaluateAsync(expression, additionalContext,
           evaluateCallback, syncCallback);
     }

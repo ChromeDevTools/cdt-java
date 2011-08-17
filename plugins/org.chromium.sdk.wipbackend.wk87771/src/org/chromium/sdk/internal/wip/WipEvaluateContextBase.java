@@ -51,10 +51,11 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     }
     final WipValueLoader destinationValueLoader = destinationValueLoaderParam;
     if (additionalContext != null) {
-      if (callback != null) {
-        callback.failure("Additional context feature not supported yet");
-      }
-      return RelaySyncCallback.finish(syncCallback);
+      String destinationObjectGroupId = null;
+      WipContextBuilder contextBuilder = valueLoader.getTabImpl().getContextBuilder();
+      EvaluateHack evaluateHack = contextBuilder.getEvaluateHack();
+      return evaluateHack.evaluateAsync(expression, additionalContext,
+          destinationValueLoader, evaluateHackHelper, callback, syncCallback);
     }
 
     WipParamsWithResponse<DATA> params = createRequestParams(expression, destinationValueLoader);
@@ -101,6 +102,26 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       return valueBuilder.createVariable(valueData, valueNameBuidler);
     }
   }
+
+  private final EvaluateHack.EvaluateCommandHandler<DATA> evaluateHackHelper =
+      new EvaluateHack.EvaluateCommandHandler<DATA>() {
+    @Override
+    public WipParamsWithResponse<DATA> createRequest(
+        String patchedUserExpression, WipValueLoader destinationValueLoader) {
+      return createRequestParams(patchedUserExpression, destinationValueLoader);
+    }
+
+    @Override
+    public JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
+        String originalExpression) {
+      return processResponse(response, destinationValueLoader, originalExpression);
+    }
+
+    @Override
+    public Exception processFailure(Exception cause) {
+      return cause;
+    }
+  };
 
   protected abstract WipParamsWithResponse<DATA> createRequestParams(String expression,
       WipValueLoader destinationValueLoader);

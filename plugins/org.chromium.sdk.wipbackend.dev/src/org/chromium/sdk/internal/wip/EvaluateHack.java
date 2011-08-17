@@ -152,8 +152,7 @@ public class EvaluateHack {
      */
     private WipRelayRunner.Step<JsVariable> createFillDataObjectStep() {
       if (additionalContext.isEmpty()) {
-        // Shouldn't happen, but let's double-check.
-        return createEvaluateStep(evaluateCommandHandler);
+        throw new IllegalArgumentException("Empty context");
       }
 
       StringBuilder assigmentBuilder = new StringBuilder();
@@ -223,12 +222,12 @@ public class EvaluateHack {
       return new WipRelayRunner.SendStepWithResponse<EVAL_DATA, JsVariable>() {
         @Override
         public WipParamsWithResponse<EVAL_DATA> getParams() {
-          // TODO: this seems incorrect expression.
-          String patchedUserExpression = "with (" +GLOBAL_VARIABLE_NAME + ".data." + dataId +
-              ") { " + userExpression + "}";
+          String script = "with (" + GLOBAL_VARIABLE_NAME + ".data." + dataId +
+              ") { return (" + userExpression + "); }";
+          String wrappedExpression = "(function() {" + script +"})()";
 
           WipParamsWithResponse<EVAL_DATA> paramsWithResponse = commandHandler.createRequest(
-              patchedUserExpression, destinationValueLoader);
+              wrappedExpression, destinationValueLoader);
 
           return paramsWithResponse;
         }
