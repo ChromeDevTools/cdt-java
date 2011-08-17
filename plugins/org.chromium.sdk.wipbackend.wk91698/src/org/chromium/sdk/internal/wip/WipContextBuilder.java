@@ -43,8 +43,8 @@ import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
-import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.RemotePropertyValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.EvaluateOnCallFrameParams;
@@ -280,7 +280,7 @@ class WipContextBuilder {
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
         id = frameData.id();
-        sourceId = frameData.location().scriptId();
+        sourceId = frameData.location().sourceId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 
         scopeData = LazyConstructable.create(new LazyConstructable.Factory<List<JsScope>>() {
@@ -384,7 +384,7 @@ class WipContextBuilder {
         protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
             String expression, WipValueLoader destinationValueLoader) {
           return new EvaluateOnCallFrameParams(id, expression,
-              destinationValueLoader.getObjectGroupId(), false, false);
+              destinationValueLoader.getObjectGroupId(), false);
         }
 
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
@@ -491,11 +491,11 @@ class WipContextBuilder {
             new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
           @Override
           public Getter<ScopeVariables> process(
-              List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
+              List<? extends RemotePropertyValue> propertyList, int currentCacheState) {
             final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
 
             WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
-            for (PropertyDescriptorValue property : propertyList) {
+            for (RemotePropertyValue property : propertyList) {
               final String name = property.name();
 
               ValueNameBuilder valueNameBuilder =
@@ -662,7 +662,7 @@ class WipContextBuilder {
         WipValueLoader destinationValueLoader) {
       boolean doNotPauseOnExceptions = true;
       return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(),
-          false, doNotPauseOnExceptions, null, false);
+          false, doNotPauseOnExceptions);
     }
 
     @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {

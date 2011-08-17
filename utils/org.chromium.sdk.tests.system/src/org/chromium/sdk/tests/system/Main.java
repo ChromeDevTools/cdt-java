@@ -285,7 +285,7 @@ public class Main {
         };
         WipBrowser browser = WipBrowserFactory.INSTANCE.createBrowser(address, wipLoggerFactory);
 
-        WipBackend wipBackend = WipBackendFactory.INSTANCE.create();
+        WipBackend wipBackend = new WipBackendFactory().create();
         List<? extends WipBrowser.WipTabConnector> tabs;
         try {
           tabs = browser.getTabs(wipBackend);

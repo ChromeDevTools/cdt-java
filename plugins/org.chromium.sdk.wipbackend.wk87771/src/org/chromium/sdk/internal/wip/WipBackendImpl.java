@@ -27,7 +27,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class WipBackendImpl extends WipBackendBase {
-  private static final String ID = "Inspector.json@87771 AKA Chrome 13 (stable)";
+  private static final String ID = "WK@87771 AKA Chrome 13 (stable)";
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
   private static final String DESCRIPTION =

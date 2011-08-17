@@ -19,10 +19,8 @@ import org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
-import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.CallFunctionOnParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
-import org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectParam;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -189,18 +187,16 @@ public class EvaluateHack {
       return new WipRelayRunner.SendStepWithResponse<CallFunctionOnData, JsVariable>() {
         @Override
         public WipParamsWithResponse<CallFunctionOnData> getParams() {
-          List<CallArgumentParam> arguments;
+          List<String> arguments;
           if (additionalObjectIds.isEmpty()) {
             arguments = null;
           } else {
-            arguments = new ArrayList<CallArgumentParam>(additionalObjectIds.size());
+            arguments = new ArrayList<String>(additionalObjectIds.size());
             for (String objectId : additionalObjectIds) {
-              RemoteObjectParam remoteObjectParam =
-                  new RemoteObjectParam(null, null, null, null, null, objectId);
-              arguments.add(new CallArgumentParam(null, remoteObjectParam));
+              arguments.add(objectId);
             }
           }
-          return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, true);
+          return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments);
         }
 
         @Override
@@ -258,7 +254,7 @@ public class EvaluateHack {
       String script = "delete " + GLOBAL_VARIABLE_NAME + ".data." + dataId + ";";
       String deleteDataExpression = "(function() {" + script +"})()";
       EvaluateParams evaluateParams =
-          new EvaluateParams(deleteDataExpression, null, null, null, null, true);
+          new EvaluateParams(deleteDataExpression, null, null, null);
       tabImpl.getCommandProcessor().send(evaluateParams, (WipCommandCallback) null, null);
     }
 
@@ -272,14 +268,14 @@ public class EvaluateHack {
         @Override
         public WipParamsWithResponse<CallFunctionOnData> getParams() {
           String functionText = "function() { return String(this.message); }";
-          return new CallFunctionOnParams(remoteObjectValue.objectId(), functionText, null, true);
+          return new CallFunctionOnParams(remoteObjectValue.objectId(), functionText, null);
         }
 
         @Override
         public Step<JsVariable> processResponse(CallFunctionOnData response)
             throws ProcessException {
           throw new ProcessException("Helper script failed on remote: " +
-              response.result().value());
+              response.result().description());
         }
 
         @Override
@@ -313,7 +309,7 @@ public class EvaluateHack {
     String expression = "(function() { " + GLOBAL_VARIABLE_NAME + " = " + injectedObjectText +
         " ; })()";
 
-    EvaluateParams evaluateParams = new EvaluateParams(expression, null, false, null, null, true);
+    EvaluateParams evaluateParams = new EvaluateParams(expression, null, false, null);
 
     GenericCallback<EvaluateData> wrappedCallback = new GenericCallback<EvaluateData>() {
       @Override

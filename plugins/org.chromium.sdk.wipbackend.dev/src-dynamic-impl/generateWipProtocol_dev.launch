@@ -7,7 +7,7 @@
 <listEntry value="1"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.chromium.sdk.internal.wip.tools.protocolgenerator.WipProtocolGeneratorMain"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="${workspace_loc:/org.chromium.sdk.wipbackend.dev/src-wip-generated}"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="./src-wip-generated"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="org.chromium.sdk.wipbackend.dev"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-ea"/>
 </launchConfiguration>
