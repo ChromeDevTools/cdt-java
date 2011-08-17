@@ -104,7 +104,7 @@
 		<copy todir="${buildDirectory}/plugins">
 			<fileset dir="${sourceBaseLocation}/plugins">
 				<include name="org.chromium.sdk.wipbackend.wk87771/**" />
-				<include name="org.chromium.sdk.wipbackend.wk92284/**" />
+				<include name="org.chromium.sdk.wipbackend.wk91698/**" />
 			</fileset>
 		</copy>
 		<copy todir="${buildDirectory}/features">

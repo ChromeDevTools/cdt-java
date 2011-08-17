@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/org.chromium.sdk.wipbackend.wk87771/src-dynamic-impl/parser/org/chromium/sdk/internal/wip/protocol/WipParserGenerator.java"/>
+<listEntry value="/org.chromium.sdk.wipbackend.wk91698/src-dynamic-impl/parser/org/chromium/sdk/internal/wip/protocol/WipParserGenerator.java"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="1"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.chromium.sdk.internal.wip.protocol.WipParserGenerator"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--output-dir=src-static-impl/generated/"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="org.chromium.sdk.wipbackend.wk87771"/>
-<stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:org.chromium.sdk.wipbackend.wk87771}"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="org.chromium.sdk.wipbackend.wk91698"/>
 </launchConfiguration>

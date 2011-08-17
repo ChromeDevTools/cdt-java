@@ -410,7 +410,7 @@ public class WipBreakpointImpl implements Breakpoint {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
           long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(url, null, lineNumber, columnNumber, condition);
+        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition, false);
       }
     };
 
@@ -418,7 +418,7 @@ public class WipBreakpointImpl implements Breakpoint {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
           long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(null, url, lineNumber, columnNumber, condition);
+        return new SetBreakpointByUrlParams(url, lineNumber, columnNumber, condition, true);
       }
     };
 
@@ -445,7 +445,7 @@ public class WipBreakpointImpl implements Breakpoint {
   }
 
   private static ActualLocation locationFromProtocol(LocationValue locationValue) {
-    return new ActualLocation(locationValue.scriptId(), locationValue.lineNumber(),
+    return new ActualLocation(locationValue.sourceId(), locationValue.lineNumber(),
         locationValue.columnNumber());
   }
 
