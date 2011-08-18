@@ -5,7 +5,7 @@
 This release succeeds the [Release_0_2_2 release 0.2.2].
 
 ==Overview==
-This release main themes are support of emerging [WIP WebKit Remote Debugging Protocol] in Chrome and simplified 'auto-detect' source look-up implementation. SDK interfaces have been changed moderately but incompatibly, so the minor version number was bumped up. 
+This release main themes are support of emerging [WIP WebKit Remote Debugging Protocol] in Chrome and simplified 'auto-detect' source look-up implementation. SDK interfaces have been changed moderately but incompatibly, so the minor version number was bumped up. A new feature called "ChromeDevTools SDK WIP Backends" is added and is recommended for install.
 
 ==Debugger==
 ===Auto-Detect Source Look-Up Mode===
@@ -26,8 +26,17 @@ Should you have 2 files with the same name in the different directories, there i
 <pic>
 2. Use 'less' and 'more' buttons to add or remove remove file path components. All selected file path components will be used for matching this file. 
 
-===Experiments WebKit Remote Debugging Protocol (WIP)=== 
-This release adds an [WIP experimental support] for a new debug protocol used in Google Chrome/Chromium. The subproject got a local codename [WIP].
+===Experiments !WebKit Remote Debugging Protocol (WIP)=== 
+This release adds an [WIP experimental support] for a new debug protocol used in Google Chrome/Chromium. This protocol should eventually supersede currently used [ChromeDevToolsProtocol 'DevTools' protocol]. The subproject got a local codename [WIP].
+
+From the user point of view switching to the new protocol shouldn't be visible. The most obvious change is that ref-id in Variables/Expressions views: the have a different format and are completely random, so that the same object may appear with the different ids in the same view. 
+
+To try the new protocol you should make sure that you installed feature "ChromeDevTools SDK WIP Backends". That should reveal how WIP support is currently deployed. There are several (incompatible) versions of protocol supported and you can choose between them: the older protocol version corresponds to the current stable release of Chrome (13), but it misses some features; the newer protocol version comes with a development yet-not-stable builds. The separate feature "ChromeDevTools SDK WIP Backends" installs the current collection of backends and updating this feature should install newer WIP backends in the future as the protocol evolves.
+
+As of 0.3.0 you need to set the correct backend manually. See the [#WIP_Backends table] below.
+
+1. Create a debug configuration of "WebKit Protocol" type.
+2. In 'Remote' tab select the proper backend version.
 
 ==SDK==
-===WIP Backends===
+==WIP Backends==
