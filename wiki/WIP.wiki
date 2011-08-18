@@ -14,7 +14,7 @@ Protocol is called '!WebKit Debug Protocol'. The name is widely used though. You
 {{{
 --remote-debugging-protocol=<port>
 }}}
-Compare with [ChromeDevToolsProtocol#Protocol_Name !ChromeDevTools Protocol].
+Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
 
 == !WebKit Debug Protocol ==
 See [http://code.google.com/chrome/devtools/docs/remote-debugging.html].
