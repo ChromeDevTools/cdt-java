@@ -9,6 +9,8 @@ package org.chromium.sdk;
  * An objects that holds data for a "script" which is a part of a resource
  * loaded into the browser, identified by its original document URL, line offset
  * in the original document, and the line count this script spans.
+ * Its {@link UpdatableScript} aspect is refactored out as a separate interface not to
+ * overload {@link Script}.
  */
 public interface Script extends UpdatableScript {
 

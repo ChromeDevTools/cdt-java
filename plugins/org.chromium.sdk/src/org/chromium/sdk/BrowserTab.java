@@ -17,7 +17,7 @@ public interface BrowserTab extends JavascriptVm {
   Browser getBrowser();
 
   /**
-   * @return a URL of the corresponding browser tab
+   * @return a current URL of the corresponding browser tab
    */
   String getUrl();
 

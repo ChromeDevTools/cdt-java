@@ -8,23 +8,27 @@ import org.chromium.sdk.JavascriptVm.BreakpointCallback;
 import org.chromium.sdk.util.GenericCallback;
 
 /**
- * An extension to breakpoint API that supports 'ignore count' property.
+ * An extension to breakpoint API that supports 'ignore count' property. Some backends
+ * or VM versions may not support it.
+ * @see JavascriptVm#getIgnoreCountBreakpointExtension()
+ * @see Breakpoint#getIgnoreCountBreakpointExtension()
  */
 public interface IgnoreCountBreakpointExtension {
 
   /**
    * This value is used when the corresponding parameter is absent.
    *
-   * @see #getIgnoreCount()
-   * @see #setIgnoreCount(int)
+   * @see #setIgnoreCount
    */
   int EMPTY_VALUE = Breakpoint.EMPTY_VALUE;
 
   /**
    * Sets a breakpoint with the specified parameters.
    * @param target of the breakpoint
-   * @param line in the script or function. If none, use {@link #EMPTY_VALUE}
-   * @param column of the target start within the line. If none, use {@link #EMPTY_VALUE}
+   * @param line in the script or function (1-based). If none, use
+   *        {@link Breakpoint#EMPTY_VALUE}
+   * @param column of the target start within the line (1-based). If none, use
+   *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param ignoreCount number specifying the amount of breakpoint hits to
    *        ignore. If none, use {@link #EMPTY_VALUE}
@@ -38,7 +42,7 @@ public interface IgnoreCountBreakpointExtension {
 
   /**
    * Sets the ignore count for this breakpoint ({@code EMPTY_VALUE} to clear).
-   * Does not require subsequent flush call.
+   * Does <strong>not</strong> require subsequent flush call.
    * @param ignoreCount the new ignored hits count to set
    */
   RelayOk setIgnoreCount(Breakpoint breakpoint, int ignoreCount,

@@ -15,7 +15,7 @@ import org.chromium.sdk.util.MethodIsBlockingException;
  * {@code #tryAcquire()} or {@link #acquireDefault}.
  * <p>
  * Class uses symbolic parameter {@link RelayOk} in its methods that suggests that
- * user should first call some asynchronous method, then passe it to the acquire method.
+ * user should first call some asynchronous method, then pass it to the acquire method.
  */
 public class CallbackSemaphore implements SyncCallback {
   public static final long OPERATION_TIMEOUT_MS = 120000;

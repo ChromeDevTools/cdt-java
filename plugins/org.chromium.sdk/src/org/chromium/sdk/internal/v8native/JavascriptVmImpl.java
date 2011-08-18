@@ -30,6 +30,7 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
     getDebugSession().suspend(callback);
   }
 
+  // TODO: make sure we do not return those scripts that are reported compiled but not loaded yet.
   @Override
   public void getScripts(ScriptsCallback callback) throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();

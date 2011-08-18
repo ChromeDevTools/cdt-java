@@ -5,13 +5,10 @@
 package org.chromium.sdk.util;
 
 /**
- * A generic callback used in operations that a remote variable value.
+ * A generic callback used in asynchronous operations that either fail with exception
+ * or return a result.
  */
 public interface GenericCallback<T> {
-  /**
-   * Method is called after variable has been successfully updated.
-   * @param value holds an actual new value of variable if provided or null
-   */
   void success(T value);
   void failure(Exception exception);
 }

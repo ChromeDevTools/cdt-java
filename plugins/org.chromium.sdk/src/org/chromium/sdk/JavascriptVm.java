@@ -10,9 +10,11 @@ import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * Abstraction of a remote Javascript virtual machine. Clients can use it to
- * conduct debugging process. This interface does not specify attach method,
- * because it cannot be polymorphic (its signature should be type-specific).
+ * Abstraction of a remote JavaScript virtual machine. Clients can use it to
+ * conduct debugging process.
+ * @see Browser.TabConnector#attach
+ * @see BrowserFactory#createStandalone
+ * @see org.chromium.sdk.wip.WipBrowser.WipTabConnector#attach(TabDebugEventListener)
  */
 public interface JavascriptVm {
 
@@ -68,23 +70,19 @@ public interface JavascriptVm {
   boolean isAttached();
 
   /**
-   * Retrieves user scripts loaded into the tab.
-   * Blocks until the result is ready.
-   *
-   * @param callback to invoke once the operation result is available,
-   *        may be {@code null}
-   * @throws MethodIsBlockingException if called from a callback because it
-   *         blocks until scripts are received
-   * TODO(peter.rybin): support notification about collected scripts
+   * Returns user scripts loaded into the tab. May block until scripts are actually loaded.
+   * @param callback that synchronously receives result, may be {@code null}
+   * @throws MethodIsBlockingException because it may need to actually load scripts
    */
+  // TODO: support notification about collected scripts in all backends.
   void getScripts(ScriptsCallback callback) throws MethodIsBlockingException;
 
   /**
    * Sets a breakpoint with the specified parameters.
    * @param target of the breakpoint
-   * @param line in the script or function. If none, use
+   * @param line in the script or function (1-based). If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
-   * @param column of the target start within the line. If none, use
+   * @param column of the target start within the line (1-based). If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
@@ -114,9 +112,12 @@ public interface JavascriptVm {
   RelayOk listBreakpoints(ListBreakpointsCallback callback, SyncCallback syncCallback);
 
   /**
-   * Asynchronously enables or disables all breakpoints on remote. Parameter
-   * 'enabled' may be null, in this case the remote value is not modified and can be
-   * obtained inside the callback.
+   * Asynchronously enables or disables all breakpoints on remote. 'Enabled' means that
+   * breakpoints behave as normal, 'disabled' means that VM doesn't stop on breakpoints.
+   * It doesn't update individual properties of {@link Breakpoint}s. Method call
+   * with a null value and not null callback simply returns current value.
+   * @param enabled new value to set or null
+   * @param callback receives current value if succeed or error message
    */
   RelayOk enableBreakpoints(Boolean enabled, GenericCallback<Boolean> callback,
       SyncCallback syncCallback);
@@ -142,8 +143,8 @@ public interface JavascriptVm {
   }
 
   /**
-   * Asynchronously sets exception catch mode.
-   * @param new mode or null to keep the current mode
+   * Controls whether VM stops on exceptions. 3 catch modes are supported.
+   * @param catchMode new mode or null to keep the current mode
    * @param callback gets invoked when operation is finished and receives current mode
    *     as a value (may receive null if actual mode doesn't fit into {@link ExceptionCatchMode}
    *     type)

@@ -41,9 +41,11 @@ public interface JsScope {
   /**
    * Subtype that exposes the value of the 'with' statement expression (the value might be
    * already converted by ToObject).
-   * @throws MethodIsBlockingException because it may need to load value from remote
    */
   interface WithScope extends JsScope {
+    /**
+     * @throws MethodIsBlockingException because it may need to load value from remote
+     */
     JsValue getWithArgument() throws MethodIsBlockingException;
   }
 }

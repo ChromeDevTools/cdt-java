@@ -35,8 +35,8 @@ public interface StandaloneVm extends JavascriptVm {
   /**
    * @return version of V8 implementation, format is unspecified; must not be null if
    *         {@link StandaloneVm} has been attached
-   * TODO: align this with {@link JavascriptVm#getVersion()} method.
    */
+  // TODO: align this with {@link JavascriptVm#getVersion()} method.
   String getVmVersion();
 
   /**

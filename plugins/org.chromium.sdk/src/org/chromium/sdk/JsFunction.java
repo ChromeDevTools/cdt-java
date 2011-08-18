@@ -7,7 +7,7 @@ package org.chromium.sdk;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * This interface adds methods for handling function properties of JsObject.
+ * Extends {@link JsObject} interface with the methods for function-specific properties.
  */
 public interface JsFunction extends JsObject {
 

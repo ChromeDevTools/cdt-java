@@ -14,6 +14,10 @@ import org.chromium.sdk.TabDebugEventListener;
  * WIP interface to browser similar to {@link Browser}.
  */
 public interface WipBrowser {
+
+  /**
+   * @param backend wip implementation
+   */
   List<? extends WipTabConnector> getTabs(WipBackend backend) throws IOException;
 
   interface WipTabConnector {
@@ -33,7 +37,6 @@ public interface WipBrowser {
      * Attaches to the related tab debugger.
      *
      * @param listener to report the debug events to
-     * @param backend wip implementation
      * @return null if operation failed
      */
     WipBrowserTab attach(TabDebugEventListener listener) throws IOException;

@@ -20,7 +20,7 @@ import org.chromium.sdk.SyncCallback;
  * {@link AsyncFutureRef} offers a slightly more convenient interface for the price of extra object
  * (you may find it significant when there are tons of operations).
  * <p>The owner of the future operation must have a permanent field of type
- * {@link AtomicReference&lt;AsyncFuture&gt;}. It will consequently have the following values:
+ * {@code AtomicReference<AsyncFuture>}. It will consequently have the following values:
  * <ol>
  * <li>null -- operation is idle (hasn't been started yet); user will start it some time later;
  * <li>{@link AsyncFuture} instance that is performing the operation;
@@ -55,7 +55,7 @@ public abstract class AsyncFuture<T> {
   /**
    * Initializes the reference with the a new instance of {@link AsyncFuture}. This
    * always works even if the reference has already been initialized. This has a semantics of
-   * re-starting the operation and waiting for the new result.
+   * re-starting the operation and obtaining the new result after this call.
    * <p>This method is thread-safe.
    */
   public static <T> void reinitializeReference(AtomicReference<AsyncFuture<T>> ref,
@@ -76,10 +76,6 @@ public abstract class AsyncFuture<T> {
 
   /**
    * Operation may work synchronously. This method will block in this case.
-   * @param <T>
-   * @param ref
-   * @param operation
-   * @param forceRefresh
    */
   private static <T> void initializeReference(AtomicReference<AsyncFuture<T>> ref,
       Operation<T> operation, boolean forceRefresh) {
@@ -128,14 +124,13 @@ public abstract class AsyncFuture<T> {
 
   /**
    * A callback used in operation and in {@link AsyncFuture#getAsync} method.
-   * @param <RES>
    */
   public interface Callback<RES> {
     void done(RES res);
   }
 
   /**
-   * An operation that results in a value of type RES.
+   * An operation that asynchronously results in a value of type RES.
    */
   public interface Operation<RES> {
     /**
@@ -147,18 +142,23 @@ public abstract class AsyncFuture<T> {
   }
 
   /**
-   * Helper class that wraps operation meant to be executed synchronously in the current thread
+   * Helper class that presents operation meant to be executed synchronously in the current thread
    * as an asynchronous {@link Operation} suitable for {@link AsyncFuture}. User implements
    * {@link #runSync()} method and passes the object returned form {@link #asAsyncOperation()}
    * to {@link AsyncFuture}. Immediately after this he must call {@link #execute()} method
-   * (because some threads may have already get blocked on {@link AsyncFuture#getSync()} method).
-   * The user {@link #runSync()} method may not be actually called if {@link AsyncFuture} didn't
-   * started the operation for some reason.
+   * (because some threads may have already got blocked on {@link AsyncFuture#getSync()} method).
+   * However the user {@link #runSync()} method may not be actually called if {@link AsyncFuture}
+   * didn't started the operation for some reason.
    */
   public static abstract class SyncOperation<RES> {
     private Callback<RES> callback = null;
     private SyncCallback syncCallback;
 
+    /**
+     * User must call this method immediately after he passed the object to {@link AsyncFuture}.
+     * Failure to do this may cause that some threads remain blocked waiting for result.
+     * @throws MethodIsBlockingException as the {@link #runSync()} is blocking
+     */
     public void execute() throws MethodIsBlockingException {
       if (callback == null) {
         // We haven't been started. Silently do not execute.
@@ -171,6 +171,10 @@ public abstract class AsyncFuture<T> {
       }
     }
 
+    /**
+     * @return Operation<RES> type suitable for {@link AsyncFuture#initializeReference} and
+     *     {@link AsyncFuture#reinitializeReference} methods.
+     */
     public Operation<RES> asAsyncOperation() {
       return new Operation<RES>() {
         @Override
