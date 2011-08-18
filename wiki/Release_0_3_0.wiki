@@ -26,7 +26,7 @@ Should you have 2 files with the same name in the different directories, there i
 <pic>
 2. Use 'less' and 'more' buttons to add or remove remove file path components. All selected file path components will be used for matching this file. 
 
-===Experiments !WebKit Remote Debugging Protocol (WIP)=== 
+===Experimental !WebKit Remote Debugging Protocol (WIP)=== 
 This release adds an [WIP experimental support] for a new debug protocol used in Google Chrome/Chromium. This protocol should eventually supersede currently used [ChromeDevToolsProtocol 'DevTools' protocol]. The subproject got a local codename [WIP].
 
 From the user point of view switching to the new protocol shouldn't be visible. The most obvious change is that ref-id in Variables/Expressions views: the have a different format and are completely random, so that the same object may appear with the different ids in the same view. 
@@ -37,6 +37,18 @@ As of 0.3.0 you need to set the correct backend manually. See the [#WIP_Backends
 
 1. Create a debug configuration of "WebKit Protocol" type.
 2. In 'Remote' tab select the proper backend version.
+
+===Exceptions===
+Debugger started to better support exceptions. If you stopped on exception (see {{{Break on JavaScript Exceptions}}} in LaunchElement) or got an exception as a result of expression evaluate, now you have the access to the exception value: you can expand its properties or pin-point an object or do whatever is available from Variables view.
+
+===Object In with Statement===
+ Similarly to exceptions if you paused inside {{{with}}} statement, you can see its argument in Variables view and get a full access to it. Note that JavaScript VM may be not fully accurate and give you wrapper-object instead of original primitive value used in {{{with}}} statement.
+
+===Separate Folders For Unnamed Scripts===
+All scripts that are currently loaded in VM are shown under a VirtualProject. To keep things more clear, scripts without a name (e.g. eval'd) are put in a separate folder.
+
+===JSDT Integration Feature Notes===
+"Chromium JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind JSDT native breakpoints. However Eclipse allows to create any type of breakpoints in any editor (see {{{Run | Breakpoint Types}}}), so this code was dropped. However the feature is still useful if you want to use JSDT formatted in {{{V8 Debugging | Temporarily Format Source}}} action.
 
 ==SDK==
 ==WIP Backends==
