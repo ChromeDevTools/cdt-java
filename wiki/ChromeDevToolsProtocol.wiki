@@ -16,6 +16,7 @@ Protocol is called '!ChromeDevTools Protocol'. The name is pretty overloaded tho
 {{{
 --remote-shell-protocol=<port>
 }}}
+Compare with [WIP#Protocol_Name WebKit Debug Protocol].
 
 == Protocol Message Structure ==
 
