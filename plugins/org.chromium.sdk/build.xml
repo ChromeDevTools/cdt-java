@@ -6,13 +6,14 @@
   found in the LICENSE file.
 -->
 
-<project name="lib.org.chromium.sdk.jar" default="main" basedir=".">
+<project name="lib.org.chromium.sdk.jar" basedir=".">
   
   <property name="bin-dir" value="${basedir}/bin" />
   <property name="dest-dir" value="${basedir}/build-output" />
+  <property name="backend-project-name" value="default_backend_name"/>
 
 	
-  <target name="main">
+  <target name="build_sdk">
     <mkdir dir="${dest-dir}"/>
     <jar destfile="${dest-dir}/lib.org.chromium.sdk.jar" basedir="${bin-dir}">
       <manifest>
@@ -20,6 +21,15 @@
       </manifest>
     </jar>
     <copy file="${basedir}/lib/json_simple/json_simple-1.1.jar" todir="${dest-dir}"/>
+  </target>
+
+  <target name="build_wipbackend">
+    <mkdir dir="${dest-dir}"/>
+    <jar destfile="${dest-dir}/lib.${backend-project-name}.jar" basedir="${bin-dir}">
+      <manifest>
+        <attribute name="Class-Path" value="./lib.org.chromium.sdk.jar"/>
+      </manifest>
+    </jar>
   </target>
 
   
