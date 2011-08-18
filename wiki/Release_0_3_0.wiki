@@ -55,7 +55,7 @@ All scripts that are currently loaded in VM are shown under a VirtualProject. To
 "Chromium !JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind JSDT native breakpoints. However Eclipse allows to create any type of breakpoints in any editor (see {{{Run | Breakpoint Types}}}), so this code was dropped. However the feature is still useful if you want to use JSDT formatted in {{{V8 Debugging | Temporarily Format Source}}} action.
 
 ==SDK==
-The main change in SDK is the support of new protocol that is locally called [WIP].
+The main change in SDK is the support of !WebKit Remote Debugging Protocol that is locally called [WIP].
 
 Other changes are moderate interfaces redesign, support for clearing internal property caches (see [http://code.google.com/p/chromedevtools/issues/detail?id=44 issue#44]) and a faster JSON parser that is implemented without Java reflection.
 
