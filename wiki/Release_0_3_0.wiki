@@ -68,3 +68,11 @@ The list of available WIP backend versions. They get installed within a feature 
 || WK@87771 || 13.0.782.112 (stable) || Auto-detect mode is missing,<br>live edit preview is missing. || '!RegExp' breakpoint targets unsupported,<br>live edit preview is missing. ||
 || WK@91698 || 14.0.835.`*` (beta) || || ||
 || WK@93101 || 15.0.855.`*`<br>dev build#97053 || || ||
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 is also tested. ||
+|| *Java:* || J2SE-1.6 or newer. ||
+
+Optional:
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
