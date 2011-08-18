@@ -15,7 +15,9 @@ This release introduces a new, much more user-friendly look-up mode called 'Auto
 You can enable it in the Debug Configurations dialog:
 
 1. in 'Remote' tab choose 'Auto-detect' mode:
-<pic>
+
+https://chromedevtools.googlecode.com/svn/wiki/rel030-debug-configurations-remote.png
+
 2. in Source tab add one or more folders that holds your working files.
 
 If all of your files in the project are called 'foo.js', this probably won't work correctly. However for the most of projects there shouldn't be any problems.
@@ -23,7 +25,9 @@ If all of your files in the project are called 'foo.js', this probably won't wor
 Should you have 2 files with the same name in the different directories, there is a fall-back: you can configure Debugger to take a directory name into consideration for this file.
 
 1. Open file properties (Ctrl+Enter).
-<pic>
+
+https://chromedevtools.googlecode.com/svn/wiki/rel030-script-properties.png
+
 2. Use 'less' and 'more' buttons to add or remove remove file path components. All selected file path components will be used for matching this file. 
 
 ===Experimental !WebKit Remote Debugging Protocol (WIP)=== 
