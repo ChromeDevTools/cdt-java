@@ -7,6 +7,7 @@ package org.chromium.sdk;
 /**
  * Logger facility for the Chromium debugger connection. It can eavesdrop both
  * incoming and outgoing streams and log them somewhere.
+ * {@link ConnectionLogger} instance is <strong>not</strong> reconnectable.
  */
 public interface ConnectionLogger {
 
@@ -35,8 +36,8 @@ public interface ConnectionLogger {
   /**
    * Connection may allow the logger to close it. It is nice for UI, where
    * user sees logger and the corresponding stop button.
-   * TODO(peter.rybin): consider removing it out of logging.
    */
+  // TODO: consider removing it out of logging.
   void setConnectionCloser(ConnectionCloser connectionCloser);
 
   /**
@@ -59,7 +60,7 @@ public interface ConnectionLogger {
   void handleEos();
 
   /**
-   * Factory for connection logger. ConnectionLogger is NOT reconnectable.
+   * Factory for connection logger.
    */
   interface Factory {
     /**

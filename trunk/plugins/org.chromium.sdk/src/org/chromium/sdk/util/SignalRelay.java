@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A node in a network that broadcasts some signal among all its peers. The signal may get
+ * A node in a network that broadcasts some signal among all its peers one time. The signal may get
  * converted when goes from node to node. The first time a node receives a signal, it calls
  * a user callback. It ignores all further signals. A signal is accompanied by exception
  * called 'cause' that can be null.
@@ -18,6 +18,7 @@ import java.util.logging.Logger;
  * <p>This class is useful for a shutdown strategy, when several resources should be taken down
  * together, but there are no single authority to manage it. E.g. in a client-medium-server
  * threesome each part can initiate shutdown.
+ * <p>Nodes of different signal system can be bound using {@link SignalConverter}.
  *
  * @param <SIGNAL> type of signal that this node works with
  */
@@ -78,11 +79,12 @@ public class SignalRelay<SIGNAL> {
    */
   public interface Callback<S> {
     /**
-     * Called from the thread that initiated a broadcast from (i.e. called
+     * Called from the thread that initiated a broadcast (i.e. called
      * {@link #onSignal(Object, Exception)}).
-     * Thrown exceptions get caught and logged. Errors are not caught.
+     * @throws RuntimeException thrown exception gets caught and logged
+     * @throws Error not caught
      */
-    void onSignal(S signal, Exception cause);
+    void onSignal(S signal, Exception cause) throws RuntimeException, Error;
   }
 
   /**

@@ -7,6 +7,9 @@ package org.chromium.sdk;
 /**
  * An object that represents a browser JavaScript VM variable value (compound or
  * atomic.)
+ * <p>In some backends values (currently only strings) are loaded with a size limit.
+ * The value part that exceeds the limit is truncated. The full value
+ * can be loaded by {@link #reloadHeavyValue} method.
  */
 public interface JsValue {
 
@@ -101,7 +104,7 @@ public interface JsValue {
   /**
    * Return this value cast to {@link JsObject} or {@code null} if this value
    * is not an object.
-   * See {@link Type#isObjectType(Type)} method for details.
+   * See {@link Type#isObjectType} method for details.
    *
    * @return this or null
    */

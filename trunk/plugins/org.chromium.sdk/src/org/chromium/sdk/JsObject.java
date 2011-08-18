@@ -9,7 +9,8 @@ import java.util.Collection;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * A compound JsValue that has zero or more properties.
+ * A compound JsValue that has zero or more properties. Note that JavaScript {@code null}
+ * value while officially being 'object' in the SDK is represented as a plain {@link JsValue}.
  */
 public interface JsObject extends JsValue {
 
@@ -19,7 +20,8 @@ public interface JsObject extends JsValue {
   String getClassName();
 
   /**
-   * @return the properties of this compound value
+   * @return the own properties of this compound value (does <strong>not</strong> include
+   *     properties from proto object)
    * @throws MethodIsBlockingException because it may need to load value from remote
    */
   Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException;
@@ -33,8 +35,9 @@ public interface JsObject extends JsValue {
 
   /**
    * @param name of the property to get
-   * @return the property object or {@code null} if {@code name} does not
-   *         designate an existing object property
+   * @return the own property object or {@code null} if {@code name} does not
+   *         designate an existing object property (does <strong>not</strong> return
+   *         properties from proto object)
    * @throws MethodIsBlockingException because it may need to load value from remote
    */
   JsVariable getProperty(String name) throws MethodIsBlockingException;

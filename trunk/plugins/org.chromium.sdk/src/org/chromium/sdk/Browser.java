@@ -31,8 +31,7 @@ public interface Browser {
   /**
    * Helps to fetch currently opened browser tabs. It also holds open connection to
    * browser. After instance was used {@code #dismiss} should be called to release
-   * connection. {@link TabConnector#isAlreadyAttached()} helps to tell which
-   * tabs are available for connection.
+   * connection.
    */
   interface TabFetcher {
     /**
@@ -56,8 +55,8 @@ public interface Browser {
   }
 
   /**
-   * Tab list item that is fetched from browser. Connector may correspond to a tab,
-   * which is already attached. Connector is used to attach to tab.
+   * Tab list item that is fetched from browser. Connector is either can used to attach to tab or
+   * can be already attached.
    */
   interface TabConnector {
     /**

@@ -7,6 +7,7 @@ package org.chromium.sdk.wip;
 import java.util.Map;
 
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
@@ -14,20 +15,23 @@ import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * An extension to evaluate methods, that provides an additional argument 'targetMapping'.
+ * An extension to evaluate methods, that allows to specify {@link RemoteValueMapping}
+ * as an additional argument 'targetMapping'.
  * The extension is available from
  * {@link WipJavascriptVm#getEvaluateWithDestinationMappingExtension()}.
  */
 public interface EvaluateToMappingExtension {
   /**
    * Synchronously evaluates an arbitrary JavaScript {@code expression} in
-   * the particular context. The evaluation result is reported to
-   * the specified {@code evaluateCallback}. The method will block until the evaluation
-   * result is available.
+   * the particular context.
+   * Previously loaded {@link JsObject}s can be addressed from the expression if listed in
+   * additionalContext parameter.
+   * The evaluation result is reported to the specified {@code evaluateCallback}.
+   * The method will block until the evaluation result is available.
    *
-   * @param evaluateContext a context in which evaluate operation works
    * @param expression to evaluate
-   * @param additionalContext a map of names that will be added to an expression scope or null
+   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   *     scope; may be null
    * @param targetMapping mapping the result must belong to
    * @param evaluateCallback to report the evaluation result to
    * @throws MethodIsBlockingException if called from a callback because it blocks
@@ -39,13 +43,15 @@ public interface EvaluateToMappingExtension {
 
   /**
    * Asynchronously evaluates an arbitrary JavaScript {@code expression} in
-   * the particular context. The evaluation result is reported to
-   * the specified {@code evaluateCallback} and right after this to syncCallback.
+   * the particular context.
+   * Previously loaded {@link JsObject}s can be addressed from the expression if listed in
+   * additionalContext parameter.
+   * The evaluation result is reported to the specified {@code evaluateCallback}.
    * The method doesn't block.
    *
-   * @param evaluateContext a context in which evaluate operation works
    * @param expression to evaluate
-   * @param additionalContext a map of names that will be added to an expression scope or null
+   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   *     scope; may be null
    * @param targetMapping mapping the result must belong to
    * @param evaluateCallback to report the evaluation result to
    * @param syncCallback to report the end of any processing

@@ -9,7 +9,7 @@ import java.util.SortedMap;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * This interface adds methods for handling array elements to the JsObject.
+ * Extends {@link JsObject} interface by adding methods for handling array elements.
  */
 public interface JsArray extends JsObject {
 

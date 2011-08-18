@@ -19,15 +19,20 @@ public interface UpdatableScript {
   /**
    * Same as {@link #setSourceOnRemote}, but does not actually update a script, only provides
    * a description of the planned changes.
+   * @param callback receives change plan description
    */
   RelayOk previewSetSource(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
   interface UpdateCallback {
     /**
-     * Script text has been successfully changed.
-     * {@link LiveEditDebugEventListener#scriptContentChanged(UpdatableScript)} will
+     * Script text change has succeeded or was successfully pre-calculated (in preview mode).
+     * {@link DebugEventListener#scriptContentChanged} will
      * be called additionally. Besides, a current context may be dismissed and recreated after this
      * event. The order of all listed event notifications is not currently specified.
+     * @param report unspecified implementation-dependent report for debugging purposes;
+     *        may be null
+     * @param changeDescription describes live editing change that has been applied or is planned
+     *        to be applied; may be null if backend or VM does not support
      */
     void success(Object report, ChangeDescription changeDescription);
     void failure(String message);
@@ -38,7 +43,7 @@ public interface UpdatableScript {
    */
   interface ChangeDescription {
     /**
-     * @return the root of the function chagne tree
+     * @return the root of the function change tree
      */
     OldFunctionNode getChangeTree();
 
@@ -65,7 +70,8 @@ public interface UpdatableScript {
   }
 
   /**
-   * A basic element of function change tree. Subtyped as OldFunctionNode and NewFunctionNode.
+   * A basic element of function change tree.
+   * Subtyped as {@link OldFunctionNode} and {@link NewFunctionNode}.
    */
   interface FunctionNode<T extends FunctionNode<T>> {
     String getName();
@@ -102,7 +108,7 @@ public interface UpdatableScript {
   }
 
   /**
-   * Represents a new function in the changed script, that has no corresponding old function.
+   * Represents a brand new function in the changed script, that has no corresponding old function.
    */
   interface NewFunctionNode extends FunctionNode<NewFunctionNode> {
   }

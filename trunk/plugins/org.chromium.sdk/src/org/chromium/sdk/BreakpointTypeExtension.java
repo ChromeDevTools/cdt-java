@@ -10,7 +10,7 @@ package org.chromium.sdk;
  * Each additional breakpoint target type has a dedicated XXXSupport interface and the
  * corresponding getter. Getter returns null if the type is unsupported by the current
  * {@link JavascriptVm}. The support interface provides target constructor method and
- * additional visitor subinterface that {@link Breakpoint.Target#accept()} will recognize.
+ * additional visitor subinterface that {@link Breakpoint.Target#accept} will recognize.
  * <p>
  * The instance may be obtained by {@link JavascriptVm#getBreakpointTypeExtension()}.
  * <p>
@@ -20,12 +20,22 @@ package org.chromium.sdk;
 public interface BreakpointTypeExtension {
 
   /**
-   * Support for 'function' breakpoint target: breakpoint is being set to a function
-   * that is returned by JavaScript expression.
+   * Supports targets that refer to function text in form of function-returning
+   * JavaScript expression.
+   * E.g. you can set a breakpoint on the 5th line of user method addressed as
+   * 'PropertiesDialog.prototype.loadData'.
+   * Expression is calculated immediately and never recalculated again.
    */
   interface FunctionSupport {
+    /**
+     * @return not null
+     */
     Breakpoint.Target createTarget(String expression);
 
+    /**
+     * Additional interface that user visitor may implement for {@link Breakpoint.Target#accept}
+     * method.
+     */
     interface Visitor<R> extends Breakpoint.Target.Visitor<R> {
       R visitFunction(String expression);
     }
@@ -37,12 +47,22 @@ public interface BreakpointTypeExtension {
   FunctionSupport getFunctionSupport();
 
   /**
-   * Support for 'regexp' breakpoint target: breakpoint is set on a script
-   * whose name matches the regexp.
+   * Supports targets that refer to a script by a 'regexp' of its name.
+   * After {@link JavascriptVm#setBreakpoint} is
+   * called, breakpoint will be set on every script currently loaded in VM whose name matches.
+   * E.g. you can safely set a breakpoint before the script is actually loaded.
    */
   interface ScriptRegExpSupport {
+    /**
+     * @param regExp JavaScript RegExp
+     * @return not null
+     */
     Breakpoint.Target createTarget(String regExp);
 
+    /**
+     * Additional interface that user visitor may implement for {@link Breakpoint.Target#accept}
+     * method.
+     */
     interface Visitor<R> extends Breakpoint.Target.Visitor<R> {
       /**
        * @param regExp regular expression pattern (as specified in JavaScript) that will be

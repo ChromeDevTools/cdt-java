@@ -7,7 +7,7 @@ package org.chromium.sdk;
 /**
  * A breakpoint in the browser JavaScript virtual machine. The {@code set*}
  * method invocations will not take effect until
- * {@link #flush(org.chromium.sdk.JavascriptVm.BreakpointCallback)} is called.
+ * {@link #flush} is called.
  */
 public interface Breakpoint {
 
@@ -31,7 +31,7 @@ public interface Breakpoint {
   Target getTarget();
 
   /**
-   * @return the breakpoint ID as reported by the JavaScript VM debugger
+   * @return the breakpoint unique ID or {@link #INVALID_ID} if breakpoint was deleted
    */
   long getId();
 
@@ -52,7 +52,7 @@ public interface Breakpoint {
 
   /**
    * Sets whether this breakpoint is enabled.
-   * Requires subsequent flush call.
+   * Requires subsequent {@link #flush} call.
    * @param enabled whether the breakpoint should be enabled
    */
   void setEnabled(boolean enabled);
@@ -64,15 +64,15 @@ public interface Breakpoint {
 
   /**
    * Sets the breakpoint condition as plain JavaScript ({@code null} to clear).
-   * Requires subsequent flush call.
+   * Requires subsequent {@link #flush} call.
    * @param condition the new breakpoint condition
    */
   void setCondition(String condition);
 
   /**
    * Removes the breakpoint from the JS debugger and invokes the
-   * callback once the operation has finished. This operation does not require
-   * a flush() invocation.
+   * callback once the operation has finished. This operation does <strong>not</strong> require
+   * a {@code flush} invocation.
    *
    * @param callback to invoke once the operation result is available
    */
@@ -94,16 +94,20 @@ public interface Breakpoint {
   IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension();
 
   /**
-   * An abstraction over possible breakpoint targets: script name, script id etc.
-   * This is essentially an Algebraic Type with several cases (see {@link Target.ScriptName},
-   * {@link Target.ScriptId}). Some cases may be provided as extension
-   * (see {@link BreakpointTypeExtension}).
+   * A reference to some JavaScript text that you can set breakpoints on. The reference may
+   * be in form of script name, script id etc.
+   * This type is essentially an Algebraic Type with several cases. Additional cases are provided
+   * in form of optional extensions.
+   * @see Target.ScriptName
+   * @see Target.ScriptId
+   * @see BreakpointTypeExtension
    */
   abstract class Target {
     /**
      * Dispatches call on the actual Target type.
      * @param visitor user-provided {@link Visitor} that may also implement some additional
      *     interfaces (for extended types) that is checked on runtime
+     * @see BreakpointTypeExtension
      */
     public abstract <R> R accept(Visitor<R> visitor);
 
@@ -113,16 +117,9 @@ public interface Breakpoint {
       R visitUnknown(Target target);
     }
 
-    public static class ScriptName extends Target {
-      private final String name;
-      public ScriptName(String name) {
-        this.name = name;
-      }
-      @Override public <R> R accept(Visitor<R> visitor) {
-        return visitor.visitScriptName(name);
-      }
-    }
-
+    /**
+     * A target that refers to a script by its id.
+     */
     public static class ScriptId extends Target {
       private final Object id;
       public ScriptId(Object id) {
@@ -130,6 +127,21 @@ public interface Breakpoint {
       }
       @Override public <R> R accept(Visitor<R> visitor) {
         return visitor.visitScriptId(id);
+      }
+    }
+
+    /**
+     * A target that refers to a script by its name. After {@link JavascriptVm#setBreakpoint}
+     * is called, breakpoint will be set on every matching script currently loaded in VM.
+     * E.g. you can safely set a breakpoint before the script is actually loaded.
+     */
+    public static class ScriptName extends Target {
+      private final String name;
+      public ScriptName(String name) {
+        this.name = name;
+      }
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitScriptName(name);
       }
     }
   }

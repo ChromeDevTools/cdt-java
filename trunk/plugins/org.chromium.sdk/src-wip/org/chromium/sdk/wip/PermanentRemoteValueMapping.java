@@ -27,7 +27,7 @@ public interface PermanentRemoteValueMapping extends RemoteValueMapping {
 
   /**
    * Returns {@link JsEvaluateContext} that is tied with this {@link RemoteValueMapping}.
-   * By default all evaluate result values will be using this {@link RemoteValueMapping}.
+   * By default all evaluate result values will use this {@link RemoteValueMapping}.
    * (This can be overriden by {@link EvaluateToMappingExtension}).
    */
   JsEvaluateContext getEvaluateContext();

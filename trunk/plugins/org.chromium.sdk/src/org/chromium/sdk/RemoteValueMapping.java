@@ -5,10 +5,12 @@
 package org.chromium.sdk;
 
 /**
- * Represents a technical scope that defines remote value representation in debugger.
- * This scope controls life-cycle of internal value tables and caching strategies.
- * TODO: add methods that describe mapping life-cycle and its other properties.
+ * Represents a technical scope that manages remote value representation in debugger.
+ * It controls life-cycle of {@link JsObject}s and their caching strategies.
+ * @see JsObject#getRemoteValueMapping()
+ * @see DebugContext#getDefaultRemoteValueMapping()
  */
+// TODO: add methods that describe mapping life-cycle and its other properties.
 public interface RemoteValueMapping {
 
   /**

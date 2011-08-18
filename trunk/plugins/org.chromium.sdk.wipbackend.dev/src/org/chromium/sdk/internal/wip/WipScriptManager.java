@@ -59,6 +59,7 @@ class WipScriptManager {
   }
 
   // Run command in dispatch thread so that no scripts event could happen in the meantime.
+  // TODO: make sure we do not return those scripts that are reported compiled but not loaded yet.
   RelayOk getScripts(final GenericCallback<Collection<Script>> callback,
       SyncCallback syncCallback) {
 

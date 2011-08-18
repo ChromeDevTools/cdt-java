@@ -10,7 +10,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * An object that describes the numeric part of version.
+ * An object that describes a number-based version. A version consists of dot-separated
+ * integers and an optional string addendum.
  */
 public class Version implements Comparable<Version> {
   private final List<Integer> components;
