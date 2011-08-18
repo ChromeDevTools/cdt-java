@@ -1,9 +1,14 @@
 #summary First steps in SDK.
 
-=ChromeDevTools SDK Tutorial=
+*text is not finished yet*
+
+=!ChromeDevTools [ChromeDevToolsSdk SDK] Tutorial=
+
+<wiki:toc max_depth="3" />
+
 
 ==Overview==
-SDK is a standalone Java library. It comes as a set of .jar files or as an Eclipse plugins. As of 0.3.0 version it supports 'DevTools' protocol[], native V8 protocol and WebKit Debug Protocol[]. All of them implement the same API and differs only in attach interfaces. WebKit Debug Protocol support is a new subproject called here “WIP” (stands historically for WebInspector Protocol). Several concurrent WIP implementations are deployed simultaneously in modules called Wip Backends. Each of them corresponds to a particular version of WebKit Debug Protocol (see details in release notes[]). As of 0.3.0 it is user's responsibility to choose the correct backend. 
+SDK is a standalone Java library. It comes as a set of .jar files or as an Eclipse plugins. As of [Release_0_3_0 0.3.0 version] it supports [ChromeDevToolsProtocol 'DevTools' protocol], native V8 protocol and [WIP WebKit Remote Debugging Protocol]. All of them implement the same API and differs only in attach interfaces. !WebKit Remote Debugging Protocol support is a new subproject called here “WIP” (stands historically for !WebInspector Protocol). Several versions of WIP implementation are deployed simultaneously in modules called Wip Backends. Each of them corresponds to a particular version of !WebKit Remote Debugging Protocol (see details in release notes[]). As of 0.3.0 it is user's responsibility to choose the correct backend. 
 
 ==Getting started==
 1. Eclipse framework. Install FEATURE or manually install all org.chromium.sdk* packages.
@@ -52,7 +57,7 @@ javascriptVm.setBreakpoint(new Breakpoint.Target.ScriptName(“index.html”),
 }}}
 Hopefully some time later the VM will pause on this breakpoint. Your program should learn about it from the DebugEventListener.
 
-==DebugEventListener==
+==!DebugEventListener==
 What is called simply 'listener' in the previous section is a central part of SDK API. That's how your program learns about new events in Javascript VM. Once you attached, SDK will call your listener in asynchronous manner.
 
 This makes it difficult to simply play around with SDK, because your program is essentially multi-threaded. However, for the scripting purposes you can safely ignore most of the events except for 'suspended':
