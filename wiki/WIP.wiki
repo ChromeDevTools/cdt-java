@@ -12,7 +12,7 @@ The development process earned a dedicated [WipBackendDevelopment article].
 === Protocol Name ===
 Protocol is called '!WebKit Debug Protocol'. The name is widely used though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
 {{{
---remote-debugging-protocol=<port>
+--remote-debugging-port=<port>
 }}}
 Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
 
