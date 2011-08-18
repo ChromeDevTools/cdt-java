@@ -8,17 +8,23 @@ In addition SDK supports following protocols:
   * [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol] to attach to any V8-based applications,
   * [WIP WebKit Remote Debugging Protocol] (starting from [Release_0_3_0 0.3.0 release]), subproject called 'WIP'.
 
-=== WIP Backends ===
+== WIP Backends==
 !WebKit Remote Debugging Protocol support (WIP) is deployed in form of separate modules called backends. Each backend corresponds to a particular version of the protocol (see a table in [Release_0_3_0 release notes]). Note that all backends share the same class names, so you can put only one backend in the classpath at the same time. This is not a problem when using Eclipse plugin dynamic loading and you can do the same manipulations with the Java classloaders if needed.   
 
 =Binary=
-The library is available as a set of .jar files from Downloads section ("!ChromeDevTools SDK library as tar archive"). It also comprises org.chromium.sdk plugin.
-
-
+==Standalone library==
+The library is available as a set of .jar files from Downloads section ("!ChromeDevTools SDK library as tar archive"). WIP backend jars are put in a separate directory. Note that backend jars cannot put simultaneously in one classpath.
+==In Eclipse== 
+From UI you can install "ChromeDevTools SDK" feature plus "ChromeDevTools SDK WIP Backends" feature. You also can manually get the following plugins:
+  * org.chromium.sdk
+  * org.chromium.sdk.wip.eclipse
+  * org.chromium.sdk.wipbackend.`*` -- backend plugins
 
 =Sources=
 Sources could be found in project SVN under the path:
 {{{
-trunk  /  plugins/org.chromium.sdk/src*
+  trunk  /  plugins/org.chromium.sdk/src*
+  trunk  /  plugins/org.chromium.sdk.wip.eclipse/src
+  trunk  /  plugins/org.chromium.sdk.wipbackend.*/src*
 }}}
 ({{{trunk}}} can be replaced with {{{tags/...}}} for more stable code state.
