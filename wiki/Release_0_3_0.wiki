@@ -24,9 +24,10 @@ Should you have 2 files with the same name in the different directories, there i
 
 1. Open file properties (Ctrl+Enter).
 <pic>
-2. 
+2. Use 'less' and 'more' buttons to add or remove remove file path components. All selected file path components will be used for matching this file. 
 
-
+===Experiments WebKit Remote Debugging Protocol (WIP)=== 
+This release adds an [WIP experimental support] for a new debug protocol used in Google Chrome/Chromium. The subproject got a local codename [WIP].
 
 ==SDK==
 ===WIP Backends===
