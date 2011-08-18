@@ -6,7 +6,7 @@
 
 In addition SDK supports following protocols:
   * [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol] to attach to any V8-based applications,
-  * [Wip WebKit Remote Debugging Protocol] (starting from [Release_0_3_0 0.3.0 release]), subproject called 'WIP'.
+  * [WIP WebKit Remote Debugging Protocol] (starting from [Release_0_3_0 0.3.0 release]), subproject called 'WIP'.
 
 === WIP Backends ===
 !WebKit Remote Debugging Protocol support (WIP) is deployed in form of separate modules called backends. Each backend corresponds to a particular version of the protocol (see a table in [Release_0_3_0 release notes]). Note that all backends share the same class names, so you can put only one backend in the classpath at the same time. This is not a problem when using Eclipse plugin dynamic loading and you can do the same manipulations with the Java classloaders if needed.   
