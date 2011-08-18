@@ -1,8 +1,32 @@
-#summary release 0.3.0 notes
+#summary upcoming release 0.3.0 notes
 
 =Google Chrome Developer Tools for Java. Upcoming Release 0.3.0.=
 
 This release succeeds the [Release_0_2_2 release 0.2.2].
+
+==Overview==
+This release main themes are support of emerging [WIP WebKit Remote Debugging Protocol] in Chrome and simplified 'auto-detect' source look-up implementation. SDK interfaces have been changed moderately but incompatibly, so the minor version number was bumped up. 
+
+==Debugger==
+===Auto-Detect Source Look-Up Mode===
+Several releases ago Debugger began to support source look-up -- working with user files from workspace rather than temporary auto-create files under a VirtualProject. However set-up procedure was pretty much involved. It was a price for the accurateness of 2-way source matching.
+
+This release introduces a new, much more user-friendly look-up mode called 'Auto-detect' (the old one is now called 'Exact match'). It employes more fuzzy algorithms and deals only with short file names.
+You can enable it in the Debug Configurations dialog:
+
+1. in 'Remote' tab choose 'Auto-detect' mode:
+<pic>
+2. in Source tab add one or more folders that holds your working files.
+
+If all of your files in the project are called 'foo.js', this probably won't work correctly. However for the most of projects there shouldn't be any problems.
+
+Should you have 2 files with the same name in the different directories, there is a fall-back: you can configure Debugger to take a directory name into consideration for this file.
+
+1. Open file properties (Ctrl+Enter).
+<pic>
+2. 
+
+
 
 ==SDK==
 ===WIP Backends===
