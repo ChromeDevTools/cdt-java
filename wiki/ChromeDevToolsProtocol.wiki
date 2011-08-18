@@ -11,6 +11,12 @@ The proposed protocol can be used as a transport for other debugging-related pro
 
 A single subsystem that uses !ChromeDevTools protocol as a transport for its own debugging-related protocol is called a "Tool". A V8 VM Debugger, a DOM debugger, or a Developer Tools Service are examples of a Tool.
 
+=== Protocol Name ===
+Protocol is called '!ChromeDevTools Protocol'. The name is pretty overloaded though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
+{{{
+--remote-shell-protocol=<port>
+}}}
+
 == Protocol Message Structure ==
 
 For simplicity of parsing, and higher human readability, the generic protocol message structure follows that of an HTTP request/response message (barring the Starting line):
