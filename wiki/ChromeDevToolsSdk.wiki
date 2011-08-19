@@ -13,7 +13,7 @@ In addition SDK supports following protocols:
 
 =Javadocs=
 Generated documentation for the last release is available at
-[http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html]
+[http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html here].
 
 =Binary=
 ==Standalone library==
