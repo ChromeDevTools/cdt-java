@@ -12,7 +12,9 @@ If you want to use [WIP WebKit Remote Debugging protocol] support (WIP), install
 
 = SDK library alone =
 
-SDK is available from "Downloads" section as "!ChromeDevTools SDK bundle". This is a tar archive of several jar-files. They have no dependencies on Eclipse.
+SDK is available from "Downloads" section as "!ChromeDevTools SDK library". This is a tar archive of several jar-files. They have no dependencies on Eclipse.
+
+WIP backends are separately downloadable as "!ChromeDevTools SDK WIP backends".
 
 = For Contributors =
 You can check out sources and build the project yourself. See HowToBuild instructions.
