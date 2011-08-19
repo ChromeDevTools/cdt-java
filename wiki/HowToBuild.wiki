@@ -33,3 +33,6 @@ libraries:
 In the project JSON messages get parsed by a dedicated parser. The parser has a domain-specific interfaces, that are normally implemented on the fly (using Java reflection). Alternatively a static (faster) implementation can be generated.
 
 TBD.
+
+=Build with [WIP] backends=
+TBD.
