@@ -106,10 +106,10 @@ SDK is multi-threaded library. It means that you can call its methods from diffe
 
 Also it means that SDK itself will call you asynchronously from its own thread. Each !JavascriptVm allocates a dedicated thread called Dispatch Thread. That's where you listener will be called from. The good news is that you can rely on the fact that all events are coming consequently from one thread. The bad news is that you should be careful and return from the callbacks promptly. In particular you cannot call certain blocking methods of API, because it's a certain deadlock (you cannot block the road and waiting for another car to come at the same time).
 
-All callbacks are called from either the Dispatch Thread or from your own thread (typically in extreme cases).
+All callbacks are called from either the Dispatch Thread or from your own thread (typically in some corner cases).
 
 ==Blocking and non-blocking method.==
-There are methods in API that work completely locally. For example JavascriptVm.getVersion() will simply return a field. Other methods create requests, send them over wire to JavaScript VM and wait for the response that should (hopefully) come.
+There are methods in API that work completely locally. For example {{{JavascriptVm.getVersion()}}} will simply return a field. Other methods create requests, send them over wire to !JavaScript VM and wait for the response that should (hopefully) come.
 This latter kind of methods could be implemented in 2 styles. In SDK you will find example of both styles:
 
 1. *Blocking (Synchronous).* The method conveniently returns result to caller. For example {{{JsObject.getProperties()}}} works like this. What may be inconvenient is that you have  to wait for a result, which means that your thread is blocked for the time of entire operation. So several simultaneous operations you will need several threads. Plus you cannot call this methods from SDK callbacks and listeners, because you would stop the Dispatch Thread forever.
@@ -125,14 +125,16 @@ Some methods are blocking, but they still prefer to pass a result to callback. T
 ==Recurring helper types: !SyncCallback, !RelayOk etc==
 There are certain patterns how methods are written in SDK API. All blocking methods throw !MethodIsBlockingeException. All asynchronous methods return !RelayOk and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
 
-They are here to help writing more safe program. Java is a pretty safe language, however dealocks (and infinite loops) still remain an actual problem.
+They are here to help writing more safe program. Java is a pretty safe language, however dealocks (and infinite loops) still remain an actual problem. There are 2 typical cases where you can get a deadlock with SDK: calling a blocking method from a callback and waiting for a callback that nobody's going to call. 
   
-===SyncCallback===
-All asynchronous methods accept 2 callbacks. One is 'logical': it receives and processes data, it can fail and in case of failure it may not be called at all. The second is SyncCallback; if async method hasn't thrown an exception, it is guaranteed to be called in any case one time after the operation finished. The callback itself shouldn't throw exceptions. In a way it's like a finally block in Java, but asynchronous. It should be used for thread synchronization and when needed for resource deallocation.
-You can implement SyncCallback yourself or you can use default implementation for simple synchronization.
+===!SyncCallback===
+All asynchronous methods accept 2 callbacks. One is "logical", second one is "secure". It resembles try/finally structure, but for callbacks. The simple but vital actions should go into !SyncCallback. It is guaranteed to be called one time when asynchronous operation finished either normally or with a failure. !SyncCallback suits well for semaphore releasing and for resource deallocations.
+"Logical" callback is called first. It processes data, passes it into other callbacks and does other complex things. It's ok if it fails and strictly speaking SDK may also fail to call it (if something went wrong).
+
+There is a default implementation of !SyncCallback that allows other thread to wait until callback is invoked: !SemaphoreCallback. 
+See how you can call asynchronous method {{{setBreakpoint}}} and wait until it finishes.
 {{{
-// Enable breakpoints
-class LogicCallback new BreakpointCallback() {
+class LogicCallback implements BreakpointCallback {
   Breakpoint result = null;
   @Override public void success(Breakpoint breakpoint) {
     result = breakpoint;
@@ -146,23 +148,43 @@ SyncCallback syncCallback = new CallbackSemaphore();
 RelayOk relayOk = javascriptVm.setBreakpoint(new Breakpoint.Target.ScriptName(“index.html”),
     5, 1, true, “a > 5”, callback, syncCallback);
 // Wait when for operation to finish.
-// Wait for syncCallback, not a callback.
 syncCallback.acquireDefault(relayOk);
+Breakpoint createdBreakpoint = callback.result;
 }}}
 
-===RelayOk===
-This a 'symbolic' type. It means that asynchronous methods guarantees to call a SyncCallback. Note in the snippet above how method acquireDefault doesn't let you forget to call asynchronous method first.
-It also helps to write new asynchronous methods correctly (doesn't let mistakenly return before actually sending request).
+===!RelayOk===
+This a 'symbolic' type. It helps to track how asynchronous methods 'promises' to call !SyncCallback.
+Initially all asynchronous methods returned {{{void}}}. However the following incorrect code could easily be written with {{{void}}} return type:
+{{{
+if (paramList.isEmpty()) {
+  return;  // Hey, someone is waiting on SyncCallback, you promised to call it sooner or later.
+} 
+sendRequest(new Request(paramList), syncCallback);
+}}}
 
-===MethodIsBlockingException===
-This exception annotates all blocking methods. It helps to check that you never call blocking methods from callbacks (which is a certain deadlock). To do it simply make 'MethodIsBlockingException' extend 'Exception' (by default it extends 'RuntimeException'): edit sources or create your own class that overrides class from jar file. In this temporary set-up you would have to annotate all your methods that call blocking methods. This way you can track all incorrect calls and annotate correct calls with symbolic try/catch blocks.
+Also note in the snippet about !SyncCallback how method acquireDefault doesn't let you forget to call asynchronous method first because of !RelayOk symbolic value.
+
+===!MethodIsBlockingException===
+This symbolic exception annotates all blocking methods in SDK. Tracking blocking methods is important, because you mustn't call them from callbacks. By default Java doesn't pay an attention to this exception, because it is unchecked (i.e. {{{extends RuntimeException}}}). But if you manage to make it checked (edit sources or create a new class in IDE that override one from the jar file), the IDE and compiler would make you track this symbolic exception in your code. This way you would see where you actually call a blocking method even indirectly.
+
+Hint. You don't have to annotate all your program. At any point where you want to stop tracking a call chain, simply put a symbolic try/catch (this is cheap):
+{{{
+try {
+  prepareAllProperties();
+} catch (MethodIsBlockingException e) {
+  // It's ok to call blocking code from here, because ...
+}  
+}}}
 
 ==Extensions==
-Some features of SDK are optional. Depending on backend version or JavaScript VM version they may or may not be available. As of 0.3.0 there are following extensions:
-'regexp' breakpoint target type (works everywhere except old V8 versions)
-'function' breakpoint target type (doesn't work in WIP)
-breakpoint 'ignore count' property (doesn't work in WIP)
-evaluate with 'target mapping' parameter (WIP only)
+Some features of SDK are optional. Depending on backend version or !JavaScript VM version they may or may not be available.
+
+As of 0.3.0 there are following API extensions:
+  * 'regexp' breakpoint target type (works everywhere except old V8 versions)
+  * 'function' breakpoint target type (doesn't work in WIP)
+  * breakpoint 'ignore count' property (doesn't work in WIP)
+  * evaluate with 'target mapping' parameter (WIP only)
+
 All extensions are designed:
   * to be fully separate from the standard API;
-  * as objects that are available as early as possible; for example IgnoreCountBreakpointExtension is available from JavascriptVM interface; this way you can prepare to 'ignore count' not being available (e.g. disable UI) before any breakpoint actually created.
+  * as objects that are available as early as possible; for example !IgnoreCountBreakpointExtension is available from JavascriptVM interface; this way you can prepare to 'ignore count' not being available (e.g. disable UI) before any breakpoint is actually created.
