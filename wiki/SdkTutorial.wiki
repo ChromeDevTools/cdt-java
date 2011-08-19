@@ -13,7 +13,7 @@ SDK is a standalone Java library. It comes as a set of .jar files or as an Eclip
 !WebKit Remote Debugging Protocol support is a new subproject called here “WIP” (stands historically for !WebInspector Protocol). Several versions of WIP implementation are deployed simultaneously in modules called Wip Backends. Each of them corresponds to a particular version of !WebKit Remote Debugging Protocol (see details in [Release_0_3_0 release notes]). As of 0.3.0 it is user's responsibility to choose the correct backend. 
 
 ==Getting started==
-  # *Eclipse framework.* Install "ChromeDevTools SDK" and "ChromeDevTools SDK WIP Backends" features or manually install all org.chromium.sdk`*` packages.
+  # *Eclipse framework.* Install "!ChromeDevTools SDK" and "!ChromeDevTools SDK WIP Backends" features or manually install all org.chromium.sdk`*` packages.
   # *Non-Eclipse framework.* Get all .jar files of SDK. Put them in your classpath. Get WIP backend jars and put *one* of them in your classpath. (You cannot put all backend jars in classpath, because they have conflicting class names. You can workaround it with several classloaders though.)
 
 ==Attaching to !JavaScript VM==
