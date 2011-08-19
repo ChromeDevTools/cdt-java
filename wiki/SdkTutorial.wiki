@@ -57,7 +57,7 @@ JavascriptVm javascriptVm =  standaloneVm;
 
 
 ==First steps==
-The API is pretty much straightforward. Once you got {{{JavascriptVM}}} object, you can make various requests. For example you can try to set a breakpoint:
+The API is pretty much straightforward. Once you got [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JavascriptVm.html JavascriptVM] object, you can make various requests. For example you can try to set a breakpoint:
 {{{
 javascriptVm.setBreakpoint(new Breakpoint.Target.ScriptName(“index.html”),
     5, // line
@@ -67,7 +67,7 @@ javascriptVm.setBreakpoint(new Breakpoint.Target.ScriptName(“index.html”),
 Hopefully some time later the VM will pause on this breakpoint. Your program should learn about it from the !DebugEventListener.
 
 ==!DebugEventListener==
-What is called simply 'listener' in the previous code snippet is a central part of SDK API. That's how your program learns about new events in !JavaScript VM. Once you attached, SDK will call your listener on each event in asynchronous manner.
+What is called simply 'listener' in the previous code snippet is a central part of SDK API: [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/DebugEventListener.html DebugEventListener]. That's how your program learns about new events in !JavaScript VM. Once you attached, SDK will call your listener on each event in asynchronous manner.
 
 This asynchronism makes it difficult to simply play around with SDK, because your program becomes essentially multi-threaded. However, for the scripting purposes you can safely ignore most of the events except for 'suspended':
 {{{
@@ -112,9 +112,9 @@ All callbacks are called from either the Dispatch Thread or from your own thread
 There are methods in API that work completely locally. For example {{{JavascriptVm.getVersion()}}} will simply return a field. Other methods create requests, send them over wire to !JavaScript VM and wait for the response that should (hopefully) come.
 This latter kind of methods could be implemented in 2 styles. In SDK you will find example of both styles:
 
-1. *Blocking (Synchronous).* The method conveniently returns result to caller. For example {{{JsObject.getProperties()}}} works like this. What may be inconvenient is that you have  to wait for a result, which means that your thread is blocked for the time of entire operation. So several simultaneous operations you will need several threads. Plus you cannot call this methods from SDK callbacks and listeners, because you would stop the Dispatch Thread forever.
+1. *Blocking (Synchronous).* The method conveniently returns result to caller. For example http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JsObject.html#getProperties() JsObject.getProperties()] works like this. What may be inconvenient is that you have  to wait for a result, which means that your thread is blocked for the time of entire operation. So several simultaneous operations you will need several threads. Plus you cannot call this methods from SDK callbacks and listeners, because you would stop the Dispatch Thread forever.
 
-2. *Asynchronous (Non-blocking).* The method doesn't return result. Instead it starts work in some way (for example sends the corresponding request) and returns control to you. You have to provide a callback that will be notified some time in the future when result is there. This is more flexible comparing to Blocking approach, but is obviously less useful.
+2. *Asynchronous (Non-blocking).* The method doesn't return result. Instead it starts work in some way (for example sends the corresponding request) and returns control to you. You have to provide a callback that will be notified some time in the future when result is there. This is more flexible comparing to Blocking approach, but is obviously less useful. E.g. see [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JavascriptVm.html#listBreakpoints(org.chromium.sdk.JavascriptVm.ListBreakpointsCallback, org.chromium.sdk.SyncCallback) JavascriptVm.listBreakpoints].
 
 SDK combines both approaches optimized for the typical use cases: some methods are blocking, some asynchronous. Some methods come in 2 styles, like in [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JsEvaluateContext.html JsEvaluateContext].
 
@@ -123,7 +123,7 @@ Some methods are blocking, but they still prefer to pass a result to callback. T
   # SDK lets callback examine the result, holding all possible changes for the time of method work. 
 
 ==Recurring helper types: !SyncCallback, !RelayOk etc==
-There are certain patterns how methods are written in SDK API. All blocking methods throw !MethodIsBlockingeException. All asynchronous methods return !RelayOk and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
+There are certain patterns how methods are written in SDK API. All blocking methods throw [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/util/MethodIsBlockingException.html MethodIsBlockingException]. All asynchronous methods return [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/RelayOk.html RelayOk] and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
 
 They are here to help writing more safe program. Java is a pretty safe language, however dealocks (and infinite loops) still remain an actual problem. There are 2 typical cases where you can get a deadlock with SDK: calling a blocking method from a callback and waiting for a callback that nobody's going to call. 
   
@@ -131,7 +131,7 @@ They are here to help writing more safe program. Java is a pretty safe language,
 All asynchronous methods accept 2 callbacks. One is "logical", second one is "secure". It resembles try/finally structure, but for callbacks. The simple but vital actions should go into !SyncCallback. It is guaranteed to be called one time when asynchronous operation finished either normally or with a failure. !SyncCallback suits well for semaphore releasing and for resource deallocations.
 "Logical" callback is called first. It processes data, passes it into other callbacks and does other complex things. It's ok if it fails and strictly speaking SDK may also fail to call it (if something went wrong).
 
-There is a default implementation of !SyncCallback that allows other thread to wait until callback is invoked: !SemaphoreCallback. 
+There is a default implementation of !SyncCallback that allows other thread to wait until callback is invoked: [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/CallbackSemaphore.html CallbackSemaphore]. 
 See how you can call asynchronous method {{{setBreakpoint}}} and wait until it finishes.
 {{{
 class LogicCallback implements BreakpointCallback {
@@ -180,10 +180,10 @@ try {
 Some features of SDK are optional. Depending on backend version or !JavaScript VM version they may or may not be available.
 
 As of 0.3.0 there are following API extensions:
-  * 'regexp' breakpoint target type (works everywhere except old V8 versions)
-  * 'function' breakpoint target type (doesn't work in WIP)
-  * breakpoint 'ignore count' property (doesn't work in WIP)
-  * evaluate with 'target mapping' parameter (WIP only)
+  * [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/BreakpointTypeExtension.ScriptRegExpSupport.html 'regexp' breakpoint target type] (works everywhere except old V8 versions)
+  * [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/BreakpointTypeExtension.FunctionSupport.html 'function' breakpoint target type] (doesn't work in WIP)
+  * [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/IgnoreCountBreakpointExtension.html breakpoint 'ignore count' property] (doesn't work in WIP)
+  * [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/wip/EvaluateToMappingExtension.html evaluate with 'target mapping' parameter] (WIP only)
 
 All extensions are designed:
   * to be fully separate from the standard API;
