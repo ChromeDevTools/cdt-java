@@ -1,4 +1,5 @@
 #summary How to install Debugger.
+#labels Featured
 
 = Eclipse Debugger =
 
