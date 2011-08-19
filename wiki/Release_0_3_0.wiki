@@ -5,11 +5,11 @@
 This release succeeds the [Release_0_2_2 release 0.2.2].
 
 ==Overview==
-This release main themes are support of emerging [WIP WebKit Remote Debugging Protocol] in Chrome and simplified 'auto-detect' source look-up implementation. SDK interfaces have been changed moderately but incompatibly, so the minor version number was bumped up. A new feature called "!ChromeDevTools SDK WIP Backends" is added and is recommended for install.
+This release main themes are support of emerging [WIP WebKit Remote Debugging Protocol] in Chrome and simplified 'auto-detect' source look-up implementation. SDK interfaces have been changed moderately but incompatibly, so the minor version number was bumped up. On update site a new feature called "!ChromeDevTools SDK WIP Backends" is added and is recommended for install.
 
 ==Debugger==
 ===Auto-Detect Source Look-Up Mode===
-Several releases ago Debugger began to support source look-up -- working with user files from workspace rather than temporary auto-create files under a VirtualProject. However set-up procedure was pretty much involved. It was a price for the accurateness of 2-way source matching.
+Several releases ago Debugger began to support source look-up -- using user source files from workspace rather than temporary auto-created files under a VirtualProject. However set-up procedure was pretty much involved. It was a price for the accurateness of 2-way source matching.
 
 This release introduces a new, much more user-friendly look-up mode called 'Auto-detect' (the old one is now called 'Exact match'). It employes more fuzzy algorithms and deals only with short file names.
 You can enable it in the Debug Configurations dialog:
