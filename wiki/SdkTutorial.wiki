@@ -104,7 +104,7 @@ Some methods are blocking, but they still requires a callback. That's needed in 
   # SDK pass a value to callback and hold all changes for the time of method work – a thing you can't do with a return type. 
 
 ==Recurring helper types: SyncCallback, RelayOk etc==
-There are certain patterns how methods are written in SDK API. All blocking methods throw MethodIsBlocking exception. All asynchronous methods return RelayOk and accept SyncCallback parameter. In the first approach these types could be safely ignored.
+There are certain patterns how methods are written in SDK API. All blocking methods throw MethodIsBlocking exception. All asynchronous methods return RelayOk and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
 
 They are here to help writing more safe program. Java is a pretty safe language, however dealocks (and infinite loops) still remain an actual problem.
   
