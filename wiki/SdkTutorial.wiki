@@ -1,4 +1,5 @@
 #summary First steps in SDK.
+#labels Featured
 
 *text is not finished yet*
 
