@@ -12,50 +12,52 @@ This release main themes are support of emerging [WIP WebKit Remote Debugging Pr
 Several releases ago Debugger began to support source look-up -- using user source files from workspace rather than temporary auto-created files under a VirtualProject. However set-up procedure was pretty much involved. It was a price for the accurateness of 2-way source matching.
 
 This release introduces a new, much more user-friendly look-up mode called 'Auto-detect' (the old one is now called 'Exact match'). It employes more fuzzy algorithms and deals only with short file names.
-You can enable it in the Debug Configurations dialog:
+You can enable it from the Debug Configurations dialog.
 
-1. in 'Remote' tab choose 'Auto-detect' mode:
+1. In 'Remote' tab choose 'Auto-detect' mode.
 
 https://chromedevtools.googlecode.com/svn/wiki/rel030-debug-configurations-remote.png
 
-2. in Source tab add one or more folders that holds your working files.
+2. In Source tab add one or more folders that holds your working files.
 
 If all of your files in the project are called 'foo.js', this probably won't work correctly. However for the most of projects there shouldn't be any problems.
 
-Should you have 2 files with the same name in the different directories, there is a fall-back: you can configure Debugger to take a directory name into consideration for this file.
+Anyway, should you occasionally have 2 files with the same name in the different directories, there is a fall-back: you can configure Debugger to take a directory name into consideration for this particular file.
 
-1. Open file properties (Ctrl+Enter).
+1. Open file properties (Alt+Enter).
 
 https://chromedevtools.googlecode.com/svn/wiki/rel030-script-properties.png
 
-2. Use 'less' and 'more' buttons to add or remove remove file path components. All selected file path components will be used for matching this file. 
+2. Use 'Less' and 'More' buttons to add or remove remove file path components. By default only the file name is used, but you may add its parent directory or more long path. All selected file path components will be used for matching this file. 
 
 ===Experimental !WebKit Remote Debugging Protocol (WIP)=== 
 This release adds an [WIP experimental support] for a new debug protocol used in Google Chrome/Chromium. This protocol should eventually supersede currently used [ChromeDevToolsProtocol 'DevTools' protocol]. The subproject got a local codename [WIP].
 
-From the user point of view switching to the new protocol shouldn't be visible. The most obvious change is that ref-id in Variables/Expressions views: the have a different format and are completely random, so that the same object may appear with the different ids in the same view. 
+From the user point of view switching to the new protocol should be virtually transparent. The most obvious change is ref-id's in Variables/Expressions views: now they have a different format and are completely random, so that the same object may appear with the different ids in the same view. 
 
-To try the new protocol you should make sure that you installed feature "!ChromeDevTools SDK WIP Backends". That should reveal how WIP support is currently deployed. There are several (incompatible) versions of protocol supported and you can choose between them: the older protocol version corresponds to the current stable release of Chrome (13), but it misses some features; the newer protocol version comes with a development yet-not-stable builds. The separate feature "!ChromeDevTools SDK WIP Backends" installs the current collection of backends and updating this feature should install newer WIP backends in the future as the protocol evolves.
+To try the new protocol you should make sure that you installed feature "!ChromeDevTools SDK WIP Backends". This reveals how WIP implementation is currently deployed. There are several (incompatible) versions of protocol that we currently support and you can choose between them: the older protocol version corresponds to the current stable release of Chrome (13), but it misses some features; the newer protocol version comes with all features, but browser is in yet-not-stable development state. There is a separate feature "!ChromeDevTools SDK WIP Backends" that installs the current collection of backends;  updating this feature should install newer WIP backends in the future as the protocol evolves.
 
-As of 0.3.0 you need to set the correct backend manually. See the [#WIP_Backends table] below.
+As of 0.3.0 you need to choose the correct backend manually. See the [#WIP_Backends table] below.
 
-1. Create a debug configuration of "!WebKit Protocol" type.
-2. In 'Remote' tab select the proper backend version.
+  # Create a debug configuration of "!WebKit Protocol" type.
+  # In 'Remote' tab select the proper backend version in the drop-down list.
 
 ===Exceptions===
 Debugger started to better support exceptions. If you stopped on exception (see {{{Break on JavaScript Exceptions}}} in LaunchElement) or got an exception as a result of expression evaluate, now you have the access to the exception value: you can expand its properties or pin-point an object or do whatever is available from Variables view.
 
-===Object In with Statement===
-Similarly to exceptions if you paused inside {{{with}}} statement, you can see its argument in Variables view and get a full access to it. Note that !JavaScript VM may be not fully accurate and give you wrapper-object instead of original primitive value used in {{{with}}} statement.
+===Object From 'with' Statement===
+Similarly to exceptions if you paused inside {{{with}}} statement, you can see its argument in Variables view and get a full access to it. Note that if your {{{with}}}-argument is a primitive value, !JavaScript VM may be not fully accurate and return a wrapper-object instead of original value.
 
 ===Separate Folders For Unnamed Scripts===
 All scripts that are currently loaded in VM are shown under a VirtualProject. To keep things more clear, scripts without a name (e.g. eval'd) are put in a separate folder.
 
 ===JSDT Integration Feature Notes===
-"Chromium !JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind JSDT native breakpoints. However Eclipse allows to create any type of breakpoints in any editor (see {{{Run | Breakpoint Types}}}), so this code was dropped. However the feature is still useful if you want to use JSDT formatted in {{{V8 Debugging | Temporarily Format Source}}} action.
+"Chromium !JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind Debugger with JSDT native breakpoints. However Eclipse allows to create ChromeDevTools breakpoints right in JSDT editor (in any editor in fact); see {{{Run | Breakpoint Types}}}. Therefore this binding code was dropped. However the feature is still useful if you want to use JSDT formatter in {{{V8 Debugging | Temporarily Format Source}}} action.
 
 ==SDK==
 The main change in SDK is the support of !WebKit Remote Debugging Protocol that is locally called [WIP].
+
+See also a new SdkTutorial and generated [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html javadocs].
 
 Other changes are moderate interfaces redesign, support for clearing internal property caches (see [http://code.google.com/p/chromedevtools/issues/detail?id=44 issue#44]) and a faster JSON parser that is implemented without Java reflection.
 
