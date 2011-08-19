@@ -114,16 +114,16 @@ This latter kind of methods could be implemented in 2 styles. In SDK you will fi
 
 1. *Blocking (Synchronous).* The method conveniently returns result to caller. For example {{{JsObject.getProperties()}}} works like this. What may be inconvenient is that you have  to wait for a result, which means that your thread is blocked for the time of entire operation. So several simultaneous operations you will need several threads. Plus you cannot call this methods from SDK callbacks and listeners, because you would stop the Dispatch Thread forever.
 
-2. Asynchronous (Non-blocking). The method doesn't return result. Instead it starts work in some way (for example sends the corresponding request) and returns control to you. You have to provide a callback that will be notified some time in the future when result is there. This is more flexible comparing to Blocking approach, but is obviously less useful.
+2. *Asynchronous (Non-blocking).* The method doesn't return result. Instead it starts work in some way (for example sends the corresponding request) and returns control to you. You have to provide a callback that will be notified some time in the future when result is there. This is more flexible comparing to Blocking approach, but is obviously less useful.
 
 SDK combines both approaches optimized for the typical use cases: some methods are blocking, some asynchronous. Some methods come in 2 styles, like in [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JsEvaluateContext.html JsEvaluateContext].
 
-Some methods are blocking, but they still requires a callback. That's needed in some cases because:
-  # callback can accept both error and result, while in Java method can only return 1 type,
-  # SDK pass a value to callback and hold all changes for the time of method work – a thing you can't do with a return type. 
+Some methods are blocking, but they still prefer to pass a result to callback. The possible reasons for this are:
+  # callback can accept both error and result, while (in Java) method can return only 1 type;
+  # SDK lets callback examine the result, holding all possible changes for the time of method work. 
 
-==Recurring helper types: SyncCallback, RelayOk etc==
-There are certain patterns how methods are written in SDK API. All blocking methods throw MethodIsBlocking exception. All asynchronous methods return RelayOk and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
+==Recurring helper types: !SyncCallback, !RelayOk etc==
+There are certain patterns how methods are written in SDK API. All blocking methods throw !MethodIsBlockingeException. All asynchronous methods return !RelayOk and accept [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/SyncCallback.html SyncCallback] parameter. In the first approach these types could be safely ignored.
 
 They are here to help writing more safe program. Java is a pretty safe language, however dealocks (and infinite loops) still remain an actual problem.
   
