@@ -8,7 +8,7 @@
 
 Install "Chromium !JavaScript Remote Debugger" feature. If you have JSDT installed in your Eclipse, additional feature "Chromium !JavaScript Debugger Bridge to JSDT" is also recommended.
 
-If you want to use [WIP WebKit Remote Debugging protocol] support (WIP), install "!ChromeDevTools SDK WIP Backends". This is feature is separately updating -- new backends may appear more often than the new project releases.
+If you want to use [WIP WebKit Remote Debugging protocol] support (WIP), install "!ChromeDevTools SDK WIP Backends". This feature contains new protocol experimental implementation and is separately updating -- new backends may appear more often than the new project releases.
 
 = SDK library alone =
 
