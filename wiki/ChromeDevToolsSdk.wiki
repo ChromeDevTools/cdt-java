@@ -11,6 +11,9 @@ In addition SDK supports following protocols:
 == WIP Backends==
 !WebKit Remote Debugging Protocol support (WIP) is deployed in form of separate modules called backends. Each backend corresponds to a particular version of the protocol (see a table in [Release_0_3_0 release notes]). Note that all backends share the same class names, so you can put only one backend in the classpath at the same time. This is not a problem when using Eclipse plugin dynamic loading and you can do the same manipulations with the Java classloaders if needed.   
 
+=Javadocs=
+[http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html]
+
 =Binary=
 ==Standalone library==
 The library is available as a set of .jar files from Downloads section ("!ChromeDevTools SDK library as tar archive"). WIP backend jars are put in a separate directory. Note that backend jars cannot put simultaneously in one classpath.
