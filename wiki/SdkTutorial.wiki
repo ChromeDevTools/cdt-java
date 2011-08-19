@@ -47,7 +47,7 @@ JavascriptVm javascriptVm = tab.getJavascriptVm()
 }}}
 
 ====3. Standalone !JavaScript VM====
-Standalone connection uses native [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 protocol] that is implemented by DebuggerAgent from V8 library.
+Standalone connection uses native [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 protocol] that is implemented by !DebuggerAgent from V8 library.
 {{{
 StandaloneVm standaloneVm =
     BrowserFactory.getInstance().createStandalone(new InetSocketAddress(“localhost”, 9222), null);
