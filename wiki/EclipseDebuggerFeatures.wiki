@@ -1,4 +1,5 @@
 #summary Features of Eclipse Debugger.
+#labels Featured
 
 Features of EclipseDebugger. See also DebuggerTutorial.
 
