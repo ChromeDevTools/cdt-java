@@ -5,7 +5,7 @@ WIP is a codename for adopting a new debug protocol -- [#WebKit_Remote_Debugging
 
 The new protocol is an internal protocol of in-browser Developer Tools.
 
-WIP name stands for "!WebInspector Protocol" and is used withing "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
+WIP name stands for "!WebInspector Protocol" and is used within "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
 
 'WIP' term should be gone when the support reaches stable state and becomes a regular part of the project.
 
