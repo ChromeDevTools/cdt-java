@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
@@ -18,6 +19,8 @@ import org.chromium.sdk.internal.v8native.CallFrameImpl;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
+import org.chromium.sdk.util.AsyncFuture;
+import org.chromium.sdk.util.AsyncFuture.SyncOperation;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
@@ -28,7 +31,8 @@ public abstract class JsScopeImpl<D> implements JsScope {
   private final CallFrameImpl callFrameImpl;
   private final int scopeIndex;
   private final Type type;
-  private volatile D deferredData = null;
+  private final AtomicReference<AsyncFuture<D>> deferredDataRef =
+      new AtomicReference<AsyncFuture<D>>(null);
 
   public static JsScopeImpl<?> create(CallFrameImpl callFrameImpl, ScopeRef scopeRef) {
     Type type = convertType((int) scopeRef.type());
@@ -56,17 +60,36 @@ public abstract class JsScopeImpl<D> implements JsScope {
   }
 
   protected D getDeferredData() throws MethodIsBlockingException {
-    if (deferredData == null) {
-      deferredData = loadDeferredData(callFrameImpl.getInternalContext().getValueLoader());
+    AsyncFuture<D> future = deferredDataRef.get();
+    ValueLoaderImpl valueLoader = callFrameImpl.getInternalContext().getValueLoader();
+    int cacheState = valueLoader.getCurrentCacheState();
+    boolean restartOperation;
+    if (future == null) {
+      // Do not restart operation if other thread has already started it.
+      restartOperation = false;
+    } else {
+      D result = future.getSync();
+      int dataCacheState = getDataCacheState(result);
+      if (dataCacheState == cacheState) {
+        return result;
+      }
+      restartOperation = true;
     }
-    return deferredData;
+    SyncOperation<D> loadOperation = createLoadDataOperation(valueLoader, cacheState);
+    // Create future, so that other threads didn't start operations of their own.
+    AsyncFuture.initializeReference(deferredDataRef, loadOperation.asAsyncOperation(),
+        restartOperation);
+    loadOperation.execute();
+    return deferredDataRef.get().getSync();
   }
 
-  protected abstract D loadDeferredData(ValueLoaderImpl valueLoader)
-      throws MethodIsBlockingException;
+  protected abstract SyncOperation<D> createLoadDataOperation(ValueLoaderImpl valueLoader,
+      int cacheState);
 
   protected abstract List<? extends JsVariable> getVariables(D data)
       throws MethodIsBlockingException;
+
+  protected abstract int getDataCacheState(D data);
 
   protected CallFrameImpl getCallFrameImpl() {
     return callFrameImpl;
@@ -85,16 +108,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
     return type;
   }
 
-  static class DeferredData {
-    final List<JsVariable> properties;
-
-    DeferredData(List<JsVariable> properties) {
-      this.properties = properties;
-    }
-  }
-
-
-  private static class NoWith extends JsScopeImpl<List<? extends JsVariable>> {
+  private static class NoWith extends JsScopeImpl<NoWith.DeferredData> {
     NoWith(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
       super(callFrameImpl, type, scopeIndex);
     }
@@ -105,12 +119,28 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected List<? extends JsVariable> getVariables(List<? extends JsVariable> list) {
-      return list;
+    protected List<? extends JsVariable> getVariables(DeferredData data) {
+      return data.variables;
     }
 
     @Override
-    protected List<? extends JsVariable> loadDeferredData(ValueLoaderImpl valueLoader)
+    protected int getDataCacheState(DeferredData data) {
+      return data.cacheState;
+    }
+
+    @Override
+    protected SyncOperation<DeferredData> createLoadDataOperation(
+        final ValueLoaderImpl valueLoader, final int cacheState) {
+      return new SyncOperation<DeferredData>() {
+        @Override
+        protected DeferredData runSync() throws MethodIsBlockingException {
+          List<JsVariable> list = load(valueLoader);
+          return new DeferredData(list, cacheState);
+        }
+      };
+    }
+
+    private List<JsVariable> load(ValueLoaderImpl valueLoader)
         throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       if (scopeObject == null) {
@@ -128,6 +158,16 @@ public abstract class JsScopeImpl<D> implements JsScope {
         properties.add(new JsVariableImpl(valueLoader, propertyMirrors.get(i), varNameStr));
       }
       return properties;
+    }
+
+    static class DeferredData {
+      final List<? extends JsVariable> variables;
+      final int cacheState;
+
+      DeferredData(List<? extends JsVariable> variables, int cacheState) {
+        this.variables = variables;
+        this.cacheState = cacheState;
+      }
     }
   }
 
@@ -147,12 +187,22 @@ public abstract class JsScopeImpl<D> implements JsScope {
     }
 
     @Override
-    protected DeferredData loadDeferredData(ValueLoaderImpl valueLoader)
+    protected SyncOperation<DeferredData> createLoadDataOperation(
+        final ValueLoaderImpl valueLoader, final int cacheState) {
+      return new SyncOperation<DeferredData>() {
+        @Override
+        protected DeferredData runSync() throws MethodIsBlockingException {
+          return load(valueLoader, cacheState);
+        }
+      };
+    }
+
+    private DeferredData load(ValueLoaderImpl valueLoader, int cacheState)
         throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
       JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror, "<with object>");
-      return new DeferredData(jsValue);
+      return new DeferredData(jsValue, cacheState);
     }
 
     @Override
@@ -171,16 +221,23 @@ public abstract class JsScopeImpl<D> implements JsScope {
       return data.orderedProperties;
     }
 
+    @Override
+    protected int getDataCacheState(DeferredData data) {
+      return data.cacheState;
+    }
+
     static class DeferredData {
       final JsValue jsValue;
+      final int cacheState;
+
       // Stores properties in the list -- the order is unspecified, but fixed.
       volatile List<? extends JsVariable> orderedProperties = null;
 
-      DeferredData(JsValue jsValue) {
+      DeferredData(JsValue jsValue, int cacheState) {
         this.jsValue = jsValue;
+        this.cacheState = cacheState;
       }
     }
-
   }
 
   private static final Map<Integer, Type> CODE_TO_TYPE;
