@@ -77,7 +77,7 @@ public abstract class AsyncFuture<T> {
   /**
    * Operation may work synchronously. This method will block in this case.
    */
-  private static <T> void initializeReference(AtomicReference<AsyncFuture<T>> ref,
+  public static <T> void initializeReference(AtomicReference<AsyncFuture<T>> ref,
       Operation<T> operation, boolean forceRefresh) {
     // Creating worker not yet started (with fake relayOk).
     Working<T> working = new Working<T>(ref);
