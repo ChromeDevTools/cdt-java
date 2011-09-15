@@ -1,8 +1,6 @@
 #summary First steps in SDK.
 #labels Featured
 
-*text is not finished yet*
-
 =!ChromeDevTools [ChromeDevToolsSdk SDK] Tutorial=
 
 <wiki:toc max_depth="3" />
