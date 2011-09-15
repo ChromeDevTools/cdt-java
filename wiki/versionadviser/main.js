@@ -4,7 +4,7 @@
 
 var adviserImpl = (function() {
 	function Data() {
-	    var currentVersionNumber = 12;
+	    var currentVersionNumber = 13;
 		this.chromiumVersions = [
 				new VersionRange(new Version([ 1 ]), new Version(
 						[ currentVersionNumber - 1, Infinity ]), "old versions"),
@@ -19,10 +19,10 @@ var adviserImpl = (function() {
 		this.toolsRealVersions = [ new Version([ 0, 1, 0 ]),
 				new Version([ 0, 1, 2 ]), new Version([ 0, 1, 4 ]),
 				new Version([ 0, 1, 6 ]), new Version([ 0, 2, 0 ]),
-				new Version([ 0, 2, 2 ]) ];
+				new Version([ 0, 2, 2 ]), new Version([ 0, 3, 0 ]) ];
 
 		var toolsVersions = [
-				new VersionRange(new Version([ 0, 2, 3 ]),
+				new VersionRange(new Version([ 0, 3, 1 ]),
 						new Version([ Infinity ]), "future versions"), ];
 		this.toolsRealVersions.forEach(function(version) {
 			toolsVersions.push(VersionRange.createPoint(version));
