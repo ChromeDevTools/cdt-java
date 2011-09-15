@@ -11,7 +11,7 @@
 
 SDK is a standalone Java library. It comes as a set of .jar files or as an Eclipse plugins. As of [Release_0_3_0 0.3.0 version] it supports [ChromeDevToolsProtocol 'DevTools' protocol], native V8 protocol and [WIP WebKit Remote Debugging Protocol]. They all are implemented with the common API and differs only in attach interfaces.
 
-=Javadocs=
+==Javadocs==
 Generated documentation for the last release is available
 [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html here].
 
