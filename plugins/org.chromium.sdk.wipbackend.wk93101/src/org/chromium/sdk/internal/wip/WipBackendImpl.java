@@ -22,6 +22,7 @@ import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList.TabDescription;
 import org.chromium.sdk.wip.WipBrowser.WipTabConnector;
+import org.chromium.sdk.wip.WipBrowserFactory.LoggerFactory;
 import org.chromium.sdk.wip.WipBrowserTab;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -87,7 +88,13 @@ public class WipBackendImpl extends WipBackendBase {
 
     @Override
     public WipBrowserTab attach(TabDebugEventListener listener) throws IOException {
-      ConnectionLogger connectionLogger = browserImpl.getConnectionLoggerFactory().newTabConnectionLogger();
+      LoggerFactory connectionLoggerFactory = browserImpl.getConnectionLoggerFactory();
+      ConnectionLogger connectionLogger;
+      if (connectionLoggerFactory == null) {
+        connectionLogger = null;
+      } else {
+        connectionLogger = connectionLoggerFactory.newTabConnectionLogger();
+      }
       String webSocketDebuggerUrl = description.webSocketDebuggerUrl();
 
       if (webSocketDebuggerUrl == null) {

@@ -71,6 +71,8 @@ public interface JavascriptVm {
 
   /**
    * Returns user scripts loaded into the tab. May block until scripts are actually loaded.
+   * <p>Some scripts could be already collected when the method is called. They can be missed
+   * in the result list.
    * @param callback that synchronously receives result, may be {@code null}
    * @throws MethodIsBlockingException because it may need to actually load scripts
    */
