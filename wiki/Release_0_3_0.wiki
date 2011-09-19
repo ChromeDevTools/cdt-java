@@ -53,7 +53,7 @@ Similar to the exceptions, if you paused inside the {{{with}}} statement, you ca
 All scripts currently loaded in the VM are shown under a VirtualProject. To keep things more clear, scripts without a name (e.g. those eval'd) are put in a separate folder.
 
 ===JSDT Integration Feature Notes===
-"Chromium !JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind Debugger with JSDT native breakpoints. However Eclipse allows to create ChromeDevTools breakpoints right in the JSDT editor (in any editor, in fact); see {{{Run | Breakpoint Types}}}. Therefore, this binding code was dropped. The feature, however, is still useful if you want to use the JSDT formatter in {{{V8 Debugging | Temporarily Format Source}}} action.
+"Chromium !JavaScript Debugger Bridge to JSDT" feature became less important. It used to bind Debugger with JSDT native breakpoints. However Eclipse allows to create !ChromeDevTools breakpoints right in the JSDT editor (in any editor, in fact); see {{{Run | Breakpoint Types}}}. Therefore, this binding code was dropped. The feature, however, is still useful if you want to use the JSDT formatter in {{{V8 Debugging | Temporarily Format Source}}} action.
 
 ==SDK==
 The main change in SDK is the support of !WebKit Remote Debugging Protocol that is locally called [WIP].
