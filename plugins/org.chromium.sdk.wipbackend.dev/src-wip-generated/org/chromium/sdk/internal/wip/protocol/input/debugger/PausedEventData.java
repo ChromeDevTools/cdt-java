@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/92284/trunk/Source/WebCore/inspector/Inspector.json@92284
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -10,9 +10,20 @@ package org.chromium.sdk.internal.wip.protocol.input.debugger;
 @org.chromium.sdk.internal.protocolparser.JsonType
 public interface PausedEventData {
   /**
-   Call stack information.
+   Call stack the virtual machine stopped on.
    */
-  Details details();
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue> callFrames();
+
+  /**
+   Pause reason.
+   */
+  Reason reason();
+
+  /**
+   Object containing break-specific auxiliary properties.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Data data();
 
   public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData> TYPE
       = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData>("Debugger.paused", org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData.class) {
@@ -21,20 +32,19 @@ public interface PausedEventData {
     }
   };
   /**
-   Call stack information.
+   Pause reason.
    */
-  @org.chromium.sdk.internal.protocolparser.JsonType
-  public interface Details {
-    /**
-     Call stack the virtual machine stopped on.
-     */
-    java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue> callFrames();
-
-    /**
-     Current exception object if script execution is paused when an exception is being thrown.
-     */
-    @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-    org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue exception();
-
+  public enum Reason {
+    XHR,
+    DOM,
+    EVENTLISTENER,
+    EXCEPTION,
+    OTHER,
+  }
+  /**
+   Object containing break-specific auxiliary properties.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonType(allowsOtherProperties=true)
+  public interface Data extends org.chromium.sdk.internal.protocolparser.JsonObjectBased {
   }
 }

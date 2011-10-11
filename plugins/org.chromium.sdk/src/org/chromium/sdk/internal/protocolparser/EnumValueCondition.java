@@ -20,4 +20,8 @@ public abstract class EnumValueCondition<T extends Enum<T>> implements JsonValue
   public boolean conforms(T value) {
     return allowedValues.contains(value);
   }
+
+  public static String decorateEnumConstantName(String enumValue) {
+    return enumValue.toUpperCase().replace("-", "_");
+  }
 }

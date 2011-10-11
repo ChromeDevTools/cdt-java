@@ -9,18 +9,24 @@ import java.util.List;
 import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
+import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.ArrayItemType;
 
 /**
  * Defines schema of WIP metamodel defined in
  * "http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json".
  */
 public interface WipMetamodel {
-  @JsonType(subtypesChosenManually=true)
+  @JsonType
   interface Root {
-    @JsonSubtypeCasting List<Domain> asDomainList() throws JsonProtocolParseException;
+    Version version();
+    List<Domain> domains();
+  }
+
+  @JsonType
+  interface Version {
+    String major();
+    String minor();
   }
 
   @JsonType
@@ -39,6 +45,8 @@ public interface WipMetamodel {
     List<Event> events();
 
     @JsonOptionalField String description();
+
+    @JsonOptionalField Boolean hidden();
   }
 
   @JsonType
@@ -103,6 +111,9 @@ public interface WipMetamodel {
     @JsonField(jsonLiteralName="enum")
     @JsonOptionalField
     List<String> getEnum();
+
+    @JsonOptionalField
+    ArrayItemType items();
   }
 
   @JsonType interface ObjectProperty {

@@ -35,8 +35,11 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
+import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
+import org.chromium.sdk.internal.wip.protocol.input.WipProtocolParser;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
@@ -58,6 +61,7 @@ import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.LazyConstructable;
 import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.util.RelaySyncCallback;
+import org.json.simple.JSONObject;
 
 /**
  * Builder for {@link DebugContext} that works with Wip protocol.
@@ -108,7 +112,7 @@ class WipContextBuilder {
       }
     };
 
-    context.setFrames(data.details().callFrames(), callback, null);
+    context.setFrames(data.callFrames(), callback, null);
   }
 
   EvaluateHack getEvaluateHack() {
@@ -133,14 +137,20 @@ class WipContextBuilder {
     private final JsEvaluateContext globalContext;
 
     public WipDebugContextImpl(PausedEventData data) {
-      PausedEventData.Details details = data.details();
-      RemoteObjectValue exceptionRemoteObject = details.exception();
-      if (exceptionRemoteObject == null) {
-        exceptionData = null;
-      } else {
+      JSONObject additionalDataObject = data.data().getUnderlyingObject();
+      if (data.reason() == PausedEventData.Reason.EXCEPTION && additionalDataObject != null) {
+        RemoteObjectValue exceptionRemoteObject = null;
+        try {
+          exceptionRemoteObject =
+              WipParserAccess.get().parseRemoteObjectValue(additionalDataObject);
+        } catch (JsonProtocolParseException e) {
+          throw new RuntimeException("Failed to parse exception data", e);
+        }
         JsValue exceptionValue =
             valueLoader.getValueBuilder().wrap(exceptionRemoteObject, EXCEPTION_NAME);
         exceptionData = new ExceptionDataImpl(exceptionValue);
+      } else {
+        exceptionData = null;
       }
       globalContext = new GlobalEvaluateContext(getValueLoader());
     }
@@ -279,7 +289,7 @@ class WipContextBuilder {
 
       public CallFrameImpl(CallFrameValue frameData) {
         functionName = frameData.functionName();
-        id = frameData.id();
+        id = frameData.callFrameId();
         sourceId = frameData.location().scriptId();
         final List<ScopeValue> scopeDataList = frameData.scopeChain();
 

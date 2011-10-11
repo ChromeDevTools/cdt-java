@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84080
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -10,9 +10,9 @@ package org.chromium.sdk.internal.wip.protocol.input.debugger;
 @org.chromium.sdk.internal.protocolparser.JsonType
 public interface SetBreakpointData {
   /**
-   Id of the created breakpoint for further manipulations.
+   Id of the created breakpoint for further reference.
    */
-  String breakpointId();
+  String/*See org.chromium.sdk.internal.wip.protocol.input.debugger.BreakpointIdTypedef*/ breakpointId();
 
   /**
    Location this breakpoint resolved into.

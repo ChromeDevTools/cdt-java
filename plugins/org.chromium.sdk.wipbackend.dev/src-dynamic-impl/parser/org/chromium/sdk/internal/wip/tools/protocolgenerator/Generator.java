@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.protocolparser.EnumValueCondition;
 import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.ArrayItemType;
 import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.Command;
 import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.Domain;
@@ -50,12 +50,7 @@ class Generator {
   }
 
   void go(WipMetamodel.Root metamodel) throws IOException {
-    List<Domain> domainList;
-    try {
-      domainList = metamodel.asDomainList();
-    } catch (JsonProtocolParseException e) {
-      throw new RuntimeException(e);
-    }
+    List<Domain> domainList = metamodel.domains();
 
     initializeKnownTypes(typeMap);
 
@@ -214,21 +209,59 @@ class Generator {
       fileUpdater.update();
     }
 
-    StandaloneTypeBinding createStandaloneOutputTypeBinding(final StandaloneType type,
+    abstract class CreateStandalonTypeBindingVisitorBase implements
+        TypeVisitor<StandaloneTypeBinding> {
+      private final StandaloneType type;
+
+      CreateStandalonTypeBindingVisitorBase(StandaloneType type) {
+        this.type = type;
+      }
+
+      protected StandaloneType getType() {
+        return type;
+      }
+
+      @Override public StandaloneTypeBinding visitString() {
+        return createTypedefTypeBinding(type, BoxableType.STRING, getClassNameScheme());
+      }
+      @Override public StandaloneTypeBinding visitInteger() {
+        return createTypedefTypeBinding(type, BoxableType.LONG, getClassNameScheme());
+      }
+      @Override public StandaloneTypeBinding visitRef(String refName) {
+        throw new RuntimeException();
+      }
+      @Override public StandaloneTypeBinding visitBoolean() {
+        throw new RuntimeException();
+      }
+      @Override public StandaloneTypeBinding visitNumber() {
+        return createTypedefTypeBinding(type, BoxableType.NUMBER, getClassNameScheme());
+      }
+      @Override public StandaloneTypeBinding visitUnknown() {
+        throw new RuntimeException();
+      }
+
+      protected abstract ClassNameScheme getClassNameScheme();
+    }
+
+    StandaloneTypeBinding createStandaloneOutputTypeBinding(StandaloneType type,
         final String name) {
       return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
-          new TypeVisitor<StandaloneTypeBinding>() {
+          new CreateStandalonTypeBindingVisitorBase(type) {
+        @Override protected ClassNameScheme getClassNameScheme() {
+          return Naming.OUTPUT_TYPEDEF;
+        }
         @Override
         public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
           return new StandaloneTypeBinding() {
             @Override
-            public String getJavaFullName() {
-              return Naming.ADDITIONAL_PARAM.getFullName(domain.domain(), name);
+            public BoxableType getJavaType() {
+              return BoxableType.createReference(
+                  Naming.ADDITIONAL_PARAM.getFullName(domain.domain(), name));
             }
 
             @Override
             public void generate() throws IOException {
-              generateCommandAdditionalParam(type);
+              generateCommandAdditionalParam(getType());
             }
           };
         }
@@ -237,63 +270,59 @@ class Generator {
         public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
           throw new RuntimeException();
         }
-        @Override public StandaloneTypeBinding visitRef(String refName) {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitBoolean() {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitString() {
-          return createTypedefTypeBinding(type, "String", Naming.OUTPUT_TYPEDEF);
-        }
-        @Override public StandaloneTypeBinding visitInteger() {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitNumber() {
-          throw new RuntimeException();
-        }
         @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitUnknown() {
           throw new RuntimeException();
         }
       });
     }
 
-    StandaloneTypeBinding createStandaloneInputTypeBinding(final StandaloneType type) {
+    StandaloneTypeBinding createStandaloneInputTypeBinding(StandaloneType type) {
       return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
-          new TypeVisitor<StandaloneTypeBinding>() {
+          new CreateStandalonTypeBindingVisitorBase(type) {
+        @Override protected ClassNameScheme getClassNameScheme() {
+          return Naming.INPUT_TYPEDEF;
+        }
         @Override
         public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
-          return createStandaloneObjectInputTypeBinding(type, properties);
+          return createStandaloneObjectInputTypeBinding(getType(), properties);
         }
 
         @Override
         public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
-          return createStandaloneEnumInputTypeBinding(type, enumConstants);
+          return createStandaloneEnumInputTypeBinding(getType(), enumConstants);
         }
 
-        @Override public StandaloneTypeBinding visitRef(String refName) {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitBoolean() {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitString() {
-          return createTypedefTypeBinding(type, "String", Naming.INPUT_TYPEDEF);
-        }
-        @Override public StandaloneTypeBinding visitInteger() {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitNumber() {
-          throw new RuntimeException();
-        }
         @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
-          throw new RuntimeException();
-        }
-        @Override public StandaloneTypeBinding visitUnknown() {
-          throw new RuntimeException();
+          ResolveAndGenerateScope resolveAndGenerateScope = new ResolveAndGenerateScope() {
+            // This class is responsible for generating ad hoc type.
+            // If we ever are to do it, we should generate into string buffer and put strings
+            // inside TypeDef class.
+            @Override public String getDomainName() {
+              return domain.domain();
+            }
+            @Override public TypeData.Direction getTypeDirection() {
+              return TypeData.Direction.INPUT;
+            }
+            @Override public String generateEnum(String description, List<String> enumConstants) {
+              throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T> QualifiedTypeData resolveType(T typedObject,
+                Generator.TypedObjectAccess<T> access) {
+              throw new UnsupportedOperationException();
+            }
+            @Override
+            public String generateNestedObject(String description,
+                List<ObjectProperty> properties) throws IOException {
+              throw new UnsupportedOperationException();
+            }
+          };
+          QualifiedTypeData itemTypeResolved =
+              resolveType(items, TypedObjectAccess.FOR_ARRAY_ITEM, resolveAndGenerateScope);
+
+          return createTypedefTypeBinding(getType(), itemTypeResolved.getJavaType(),
+              Naming.INPUT_TYPEDEF);
         }
       });
     }
@@ -305,9 +334,8 @@ class Generator {
       jsonProtocolParserClassNames.add(fullTypeName);
 
       return new StandaloneTypeBinding() {
-        @Override
-        public String getJavaFullName() {
-          return fullTypeName;
+        @Override public BoxableType getJavaType() {
+          return BoxableType.createReference(fullTypeName);
         }
 
         @Override
@@ -343,9 +371,8 @@ class Generator {
         final List<String> enumConstants) {
       final String name = type.id();
       return new StandaloneTypeBinding() {
-        @Override
-        public String getJavaFullName() {
-          return Naming.INPUT_ENUM.getFullName(domain.domain(), name);
+        @Override public BoxableType getJavaType() {
+          return BoxableType.createReference(Naming.INPUT_ENUM.getFullName(domain.domain(), name));
         }
 
         @Override
@@ -370,7 +397,7 @@ class Generator {
             } else {
               writer.write(",\n  ");
             }
-            writer.write(constName.toUpperCase());
+            writer.write(EnumValueCondition.decorateEnumConstantName(constName));
             first = false;
           }
           writer.write("\n");
@@ -387,16 +414,22 @@ class Generator {
      * refers to an actual type (such as String).
      */
     StandaloneTypeBinding createTypedefTypeBinding(final StandaloneType type,
-        String actualJavaName, final ClassNameScheme nameScheme) {
+        final BoxableType actualJavaType, final ClassNameScheme nameScheme) {
       final String name = type.id();
-      String typedefJavaName = nameScheme.getFullName(domain.domain(), name);
-      final String javaName = actualJavaName + "/*See " + typedefJavaName + "*/";
+      final String typedefJavaName = nameScheme.getFullName(domain.domain(), name);
 
       return new StandaloneTypeBinding() {
-        @Override public String getJavaFullName() {
-          return javaName;
+        @Override public BoxableType getJavaType() {
+          return BoxableType.create(decorateTypeName(actualJavaType.getBoxedTypeText()),
+              decorateTypeName(actualJavaType.getText()));
         }
-        @Override public void generate() throws IOException {
+
+        private String decorateTypeName(String typeName) {
+          return typeName + "/*See " + typedefJavaName + "*/";
+        }
+
+        @Override
+        public void generate() throws IOException {
           String description = type.description();
 
           String className = nameScheme.getShortName(name);
@@ -408,9 +441,12 @@ class Generator {
             writer.write("/**\n " + description + "\n */\n");
           }
 
-          writer.write("public class " + className +
-              " {/*Typedef class, merely holds a javadoc.*/}\n");
-
+          writer.write("public class " + className + " {\n");
+          writer.write("  /*\n   The class is 'typedef'.\n" +
+              "   If merely holds a type javadoc and its only field refers to an actual type.\n" +
+              "   */\n");
+          writer.write("  " + actualJavaType.getText() + " actualType;\n");
+          writer.write("}\n");
           fileUpdater.update();
         }
       };
@@ -519,82 +555,43 @@ class Generator {
        * Member scope is used to generate additional types that are used only from method.
        * These types will be named after this method.
        */
-      protected abstract class MemberScope {
+      protected abstract class MemberScope implements ResolveAndGenerateScope {
         private final String memberName;
 
         protected MemberScope(String memberName) {
           this.memberName = memberName;
         }
 
-        private ReturnTypeData resolveType(ObjectProperty objectProperty) {
+        private QualifiedTypeData resolveType(ObjectProperty objectProperty) {
           return resolveType(objectProperty, TypedObjectAccess.FOR_OBJECT_PROPERTY);
         }
 
-        private ReturnTypeData resolveType(Parameter parameter) {
+        private QualifiedTypeData resolveType(Parameter parameter) {
           return resolveType(parameter, TypedObjectAccess.FOR_PARAMETER);
         }
 
-        private ReturnTypeData resolveType(ArrayItemType arrayItemType) {
-          return resolveType(arrayItemType, TypedObjectAccess.FOR_ARRAY_ITEM);
-        }
-
-        <T> ReturnTypeData resolveType(final T typedObject, final TypedObjectAccess<T> access) {
-          ResolvedTypeData resolvedTypeData =
-              switchByType(typedObject, access, new TypeVisitor<ResolvedTypeData>() {
-            @Override public ResolvedTypeData visitRef(String refName) {
-              String refTypeName = resolveRefType(domain.domain(), refName, getTypeDirection());
-              return new ResolvedTypeData.UserType(refTypeName);
-            }
-            @Override public ResolvedTypeData visitBoolean() {
-              return ResolvedTypeData.BOOLEAN;
-            }
-
-            @Override public ResolvedTypeData visitEnum(List<String> enumConstants) {
-              String enumName = generateEnum(getDescription(), enumConstants);
-              return new ResolvedTypeData.UserType(enumName);
-            }
-
-            @Override public ResolvedTypeData visitString() {
-              return ResolvedTypeData.STRING;
-            }
-            @Override public ResolvedTypeData visitInteger() {
-              return ResolvedTypeData.LONG;
-            }
-            @Override public ResolvedTypeData visitNumber() {
-              return ResolvedTypeData.NUMBER;
-            }
-            @Override public ResolvedTypeData visitArray(ArrayItemType items) {
-              ReturnTypeData type = resolveType(items);
-              return new ResolvedTypeData.UserType("java.util.List<" + type.getBoxedName() + ">");
-            }
-            @Override public ResolvedTypeData visitObject(List<ObjectProperty> properties) {
-              String nestedObjectName;
-              try {
-                nestedObjectName = generateNestedObject(getDescription(), properties);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-              return new ResolvedTypeData.UserType(nestedObjectName);
-            }
-            @Override public ResolvedTypeData visitUnknown() {
-              return ResolvedTypeData.ANY;
-            }
-            private <T> String getDescription() {
-              return access.getDescription(typedObject);
-            }
-          });
-
-          return resolvedTypeData.getReturnTypeData(
-              access.getOptional(typedObject) == Boolean.TRUE);
+        @Override
+        public <T> QualifiedTypeData resolveType(T typedObject, TypedObjectAccess<T> access) {
+          return Generator.this.resolveType(typedObject, access, this);
         }
 
         protected String getMemberName() {
           return memberName;
         }
 
-        protected abstract String generateEnum(String description, List<String> enumConstants);
-        protected abstract String generateNestedObject(String description,
+        public abstract String generateEnum(String description, List<String> enumConstants);
+        public abstract String generateNestedObject(String description,
             List<ObjectProperty> propertyList) throws IOException;
+
+        @Override
+        public String getDomainName() {
+          return domain.domain();
+        }
+
+        @Override
+        public TypeData.Direction getTypeDirection() {
+          return ClassScope.this.getTypeDirection();
+        }
       }
     }
 
@@ -615,35 +612,38 @@ class Generator {
 
             ClassScope.MemberScope memberScope = newMemberScope(param.name());
 
-            ReturnTypeData returnTypeData = memberScope.resolveType(param);
+            QualifiedTypeData paramTypeData = memberScope.resolveType(param);
 
-            returnTypeData.writeAnnotations(getWriter(), "  ");
+            paramTypeData.writeAnnotations(getWriter(), "  ");
 
-            getWriter().write("  " + returnTypeData.getName() + " " + methodName + "();\n");
+            getWriter().write("  " + paramTypeData.getJavaType().getText() + " " +
+                methodName + "();\n");
             getWriter().write("\n");
           }
         }
       }
 
       void generateStandaloneTypeBody(List<ObjectProperty> properties) throws IOException {
-        for (ObjectProperty objectProperty : properties) {
-          String propertyName = objectProperty.name();
+        if (properties != null) {
+          for (ObjectProperty objectProperty : properties) {
+            String propertyName = objectProperty.name();
 
-          if (objectProperty.description() != null) {
-            getWriter().write("  /**\n   " + objectProperty.description() + "\n   */\n");
-          }
+            if (objectProperty.description() != null) {
+              getWriter().write("  /**\n   " + objectProperty.description() + "\n   */\n");
+            }
 
-          String methodName = generateMethodNameSubstitute(propertyName, getWriter());
+            String methodName = generateMethodNameSubstitute(propertyName, getWriter());
 
-          ClassScope.MemberScope memberScope = newMemberScope(propertyName);
+            ClassScope.MemberScope memberScope = newMemberScope(propertyName);
 
-          ReturnTypeData returnTypeData = memberScope.resolveType(objectProperty);
+            QualifiedTypeData propertyTypeData = memberScope.resolveType(objectProperty);
 
-          returnTypeData.writeAnnotations(getWriter(), "  ");
+            propertyTypeData.writeAnnotations(getWriter(), "  ");
 
-          getWriter().write("  " + returnTypeData.getName() + " " +
-              methodName + "();\n");
-          getWriter().write("\n");
+            getWriter().write("  " + propertyTypeData.getJavaType().getText() + " " +
+                methodName + "();\n");
+            getWriter().write("\n");
+        }
         }
       }
 
@@ -663,7 +663,7 @@ class Generator {
         }
 
         @Override
-        protected String generateEnum(String description, List<String> enumConstants) {
+        public String generateEnum(String description, List<String> enumConstants) {
           StringBuilder builder = new StringBuilder();
           if (description != null) {
             builder.append("  /**\n   " + description + "\n   */\n");
@@ -672,7 +672,7 @@ class Generator {
           String enumName = capitalizeFirstChar(getMemberName());
           builder.append("  public enum " + enumName + " {\n");
           for (String constant : enumConstants) {
-            builder.append("    " + constant.toUpperCase() + ",\n");
+            builder.append("    " + EnumValueCondition.decorateEnumConstantName(constant) + ",\n");
           }
           builder.append("  }\n");
           addMember(enumName, builder.toString());
@@ -681,7 +681,7 @@ class Generator {
         }
 
         @Override
-        protected String generateNestedObject(String description,
+        public String generateNestedObject(String description,
             List<ObjectProperty> propertyList) throws IOException {
           StringBuilder builder = new StringBuilder();
 
@@ -709,11 +709,11 @@ class Generator {
 
               MemberScope memberScope = newMemberScope(property.name());
 
-              ReturnTypeData returnTypeData = memberScope.resolveType(property);
+              QualifiedTypeData propertyTypeData = memberScope.resolveType(property);
 
-              returnTypeData.writeAnnotations(builder, "    ");
+              propertyTypeData.writeAnnotations(builder, "    ");
 
-              builder.append("    " + returnTypeData.getName() + " " + methodName +
+              builder.append("    " + propertyTypeData.getJavaType().getText() + " " + methodName +
                   "();\n");
               builder.append("\n");
             }
@@ -766,8 +766,9 @@ class Generator {
               }
               String paramName = getParamName(param, access);
               ClassScope.MemberScope memberScope = newMemberScope(paramName);
-              ReturnTypeData typeData = memberScope.resolveType(param, access.forTypedObject());
-              getWriter().write(typeData.getName() + " " + paramName);
+              QualifiedTypeData paramTypeData =
+                  memberScope.resolveType(param, access.forTypedObject());
+              getWriter().write(paramTypeData.getJavaType().getText() + " " + paramName);
               needComa = true;
             }
           }
@@ -807,7 +808,7 @@ class Generator {
         }
 
         @Override
-        protected String generateEnum(String description, List<String> enumConstants) {
+        public String generateEnum(String description, List<String> enumConstants) {
           StringBuilder builder = new StringBuilder();
           if (description != null) {
             builder.append("  /**\n   " + description + "\n   */\n");
@@ -815,7 +816,8 @@ class Generator {
           String enumName = capitalizeFirstChar(getMemberName());
           builder.append("  public enum " + enumName + " implements org.json.simple.JSONAware{\n");
           for (String constant : enumConstants) {
-            builder.append("    " + constant.toUpperCase() + "(\"" + constant + "\"),\n");
+            builder.append("    " + EnumValueCondition.decorateEnumConstantName(constant) +
+                "(\"" + constant + "\"),\n");
           }
           builder.append("    ;\n");
           builder.append("    private final String protocolValue;\n");
@@ -833,7 +835,7 @@ class Generator {
         }
 
         @Override
-        protected String generateNestedObject(String description,
+        public String generateNestedObject(String description,
             List<ObjectProperty> propertyList) throws IOException {
           throw new UnsupportedOperationException();
         }
@@ -841,94 +843,125 @@ class Generator {
     }
   }
 
-  private static abstract class ResolvedTypeData {
-    abstract ReturnTypeData getReturnTypeData(boolean optional);
+  private interface ResolveAndGenerateScope {
+    String getDomainName();
+    TypeData.Direction getTypeDirection();
 
-    private static class PredefinedTypeData extends ResolvedTypeData {
-      private final ReturnTypeData optionalReturnType;
-      private final ReturnTypeData nonOptionalReturnType;
+    <T> QualifiedTypeData resolveType(T typedObject, TypedObjectAccess<T> access);
 
-      PredefinedTypeData(String name, boolean nullable) {
-        this(name, name, nullable);
-      }
-
-      PredefinedTypeData(String nullableName, String nonNullableName, boolean nullable) {
-        this.optionalReturnType = new ReturnTypeImpl(nullableName, nullableName, true, nullable);
-        this.nonOptionalReturnType =
-            new ReturnTypeImpl(nonNullableName, nullableName, false, nullable);
-      }
-
-      @Override
-      ReturnTypeData getReturnTypeData(boolean optional) {
-        return optional ? optionalReturnType : nonOptionalReturnType;
-      }
-
-      private static class ReturnTypeImpl extends ReturnTypeData {
-        private final String name;
-        private final String boxedName;
-        private final boolean optional;
-        private final boolean nullable;
-
-        ReturnTypeImpl(String name, String boxedName, boolean optional, boolean nullable) {
-          this.name = name;
-          this.boxedName = boxedName;
-          this.optional = optional;
-          this.nullable = nullable;
-        }
-        @Override boolean isOptional() {
-          return optional;
-        }
-        @Override boolean isNullable() {
-          return nullable;
-        }
-        @Override String getName() {
-          return name;
-        }
-        @Override String getBoxedName() {
-          return boxedName;
-        }
-      }
-    }
-
-    static class UserType extends ResolvedTypeData {
-      private final String name;
-
-      UserType(String name) {
-        this.name = name;
-      }
-
-      @Override
-      ReturnTypeData getReturnTypeData(final boolean optional) {
-        return new ReturnTypeData() {
-          @Override boolean isOptional() {
-            return optional;
-          }
-          @Override boolean isNullable() {
-            return false;
-          }
-          @Override String getName() {
-            return name;
-          }
-          @Override
-          String getBoxedName() {
-            return name;
-          }
-        };
-      }
-    }
-
-    static final ResolvedTypeData BOOLEAN = new PredefinedTypeData("Boolean", "boolean", false);
-    static final ResolvedTypeData STRING = new PredefinedTypeData("String", false);
-    static final ResolvedTypeData LONG = new PredefinedTypeData("Long", "long", false);
-    static final ResolvedTypeData NUMBER = new PredefinedTypeData("Number", false);
-    static final ResolvedTypeData ANY = new PredefinedTypeData("Object", true);
+    String generateEnum(String description, List<String> enumConstants);
+    String generateNestedObject(String description,
+        List<ObjectProperty> properties) throws IOException;
   }
 
-  private static abstract class ReturnTypeData {
-    abstract boolean isOptional();
-    abstract boolean isNullable();
-    abstract String getName();
-    abstract String getBoxedName();
+  <T> QualifiedTypeData resolveType(final T typedObject, final TypedObjectAccess<T> access,
+      final ResolveAndGenerateScope scope) {
+    UnqualifiedTypeData unqualifiedType =
+        switchByType(typedObject, access, new TypeVisitor<UnqualifiedTypeData>() {
+      @Override public UnqualifiedTypeData visitRef(String refName) {
+        BoxableType typeRef = resolveRefType(scope.getDomainName(), refName,
+            scope.getTypeDirection());
+        return new UnqualifiedTypeData(typeRef);
+      }
+      @Override public UnqualifiedTypeData visitBoolean() {
+        return UnqualifiedTypeData.BOOLEAN;
+      }
+
+      @Override public UnqualifiedTypeData visitEnum(List<String> enumConstants) {
+        String enumName = scope.generateEnum(getDescription(), enumConstants);
+        return new UnqualifiedTypeData(BoxableType.createReference(enumName));
+      }
+
+      @Override public UnqualifiedTypeData visitString() {
+        return UnqualifiedTypeData.STRING;
+      }
+      @Override public UnqualifiedTypeData visitInteger() {
+        return UnqualifiedTypeData.LONG;
+      }
+      @Override public UnqualifiedTypeData visitNumber() {
+        return UnqualifiedTypeData.NUMBER;
+      }
+      @Override public UnqualifiedTypeData visitArray(ArrayItemType items) {
+        QualifiedTypeData itemQualifiedType =
+            scope.resolveType(items, TypedObjectAccess.FOR_ARRAY_ITEM);
+        String listTypeRef = "java.util.List<" +
+            itemQualifiedType.getJavaType().getBoxedTypeText() + ">";
+        return new UnqualifiedTypeData(listTypeRef);
+      }
+      @Override public UnqualifiedTypeData visitObject(List<ObjectProperty> properties) {
+        String nestedObjectName;
+        try {
+          nestedObjectName = scope.generateNestedObject(getDescription(), properties);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        return new UnqualifiedTypeData(nestedObjectName);
+      }
+      @Override public UnqualifiedTypeData visitUnknown() {
+        return UnqualifiedTypeData.ANY;
+      }
+      private <S> String getDescription() {
+        return access.getDescription(typedObject);
+      }
+    });
+
+    return unqualifiedType.getQualifiedType(access.getOptional(typedObject) == Boolean.TRUE);
+  }
+
+  private static class UnqualifiedTypeData {
+    private final BoxableType typeRef;
+    private final boolean nullable;
+
+    UnqualifiedTypeData(String typeRefText) {
+      this(BoxableType.createReference(typeRefText));
+    }
+
+    UnqualifiedTypeData(BoxableType typeRef) {
+      this(typeRef, false);
+    }
+
+    UnqualifiedTypeData(BoxableType typeRef, boolean nullable) {
+      this.typeRef = typeRef;
+      this.nullable = nullable;
+    }
+
+    QualifiedTypeData getQualifiedType(boolean optional) {
+      BoxableType ref;
+      if (optional) {
+        ref = typeRef.convertToPureReference();
+      } else {
+        ref = typeRef;
+      }
+      return new QualifiedTypeData(ref, optional, nullable);
+    }
+
+    static final UnqualifiedTypeData BOOLEAN = new UnqualifiedTypeData(BoxableType.BOOLEAN, false);
+    static final UnqualifiedTypeData STRING = new UnqualifiedTypeData(BoxableType.STRING, false);
+    static final UnqualifiedTypeData LONG = new UnqualifiedTypeData(BoxableType.LONG, false);
+    static final UnqualifiedTypeData NUMBER = new UnqualifiedTypeData(BoxableType.NUMBER, false);
+    static final UnqualifiedTypeData ANY = new UnqualifiedTypeData(BoxableType.OBJECT, true);
+  }
+
+  private static class QualifiedTypeData {
+    private final BoxableType typeRef;
+    private final boolean optional;
+    private final boolean nullable;
+
+    QualifiedTypeData(BoxableType typeRef, boolean optional, boolean nullable) {
+      this.typeRef = typeRef;
+      this.optional = optional;
+      this.nullable = nullable;
+    }
+
+    boolean isOptional() {
+      return optional;
+    }
+    boolean isNullable() {
+      return nullable;
+    }
+    BoxableType getJavaType() {
+      return typeRef;
+    }
 
     void writeAnnotations(Appendable appendable, String indent) throws IOException {
       if (isOptional()) {
@@ -939,7 +972,6 @@ class Generator {
       }
     }
   }
-
 
   private void generateParserInterfaceList() throws IOException {
     JavaFileUpdater fileUpdater =
@@ -979,6 +1011,45 @@ class Generator {
     writer.write("}\n");
 
     fileUpdater.update();
+  }
+
+  private static class BoxableType {
+    public static BoxableType create(String boxed, String unboxed) {
+      return new BoxableType(boxed, unboxed);
+    }
+
+    public static BoxableType createReference(String text) {
+      return new BoxableType(text, text);
+    }
+
+    private final String boxed;
+    private final String unboxed;
+
+    private BoxableType(String boxed, String unboxed) {
+      this.boxed = boxed;
+      this.unboxed = unboxed;
+    }
+
+    String getText() {
+      return unboxed;
+    }
+
+    String getBoxedTypeText() {
+      return boxed;
+    }
+    BoxableType convertToPureReference() {
+      if (boxed == unboxed) {
+        return this;
+      } else {
+        return new BoxableType(boxed, boxed);
+      }
+    }
+
+    static final BoxableType STRING = BoxableType.createReference("String");
+    static final BoxableType OBJECT = BoxableType.createReference("Object");
+    static final BoxableType NUMBER = BoxableType.createReference("Number");
+    static final BoxableType LONG = BoxableType.create("Long", "long");
+    static final BoxableType BOOLEAN = BoxableType.create("Boolean", "boolean");
   }
 
   private static class ParserRootInterfaceItem implements Comparable<ParserRootInterfaceItem> {
@@ -1183,7 +1254,7 @@ class Generator {
         return obj.type();
       }
       @Override ArrayItemType getItems(StandaloneType obj) {
-        return null;
+        return obj.items();
       }
       @Override List<ObjectProperty> getProperties(StandaloneType obj) {
         return obj.properties();
@@ -1221,7 +1292,7 @@ class Generator {
   /**
    * Resolve absolute (DOMAIN.TYPE) or relative (TYPE) typename.
    */
-  private String resolveRefType(String scopeDomainName, String refName,
+  private BoxableType resolveRefType(String scopeDomainName, String refName,
       TypeData.Direction direction) {
     int pos = refName.indexOf('.');
     String domainName;
@@ -1388,13 +1459,13 @@ class Generator {
       private boolean generated = false;
       private StandaloneTypeBinding binding = null;
 
-      String resolve(TypeMap typeMap, DomainGenerator domainGenerator) {
+      BoxableType resolve(TypeMap typeMap, DomainGenerator domainGenerator) {
         if (binding == null) {
           binding = resolveImpl(domainGenerator);
           typeMap.addTypeToGenerate(this);
           requested = true;
         }
-        return binding.getJavaFullName();
+        return binding.getJavaType();
       }
 
       abstract StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator);
@@ -1438,10 +1509,11 @@ class Generator {
           }
           return domainGenerator.createStandaloneInputTypeBinding(type);
         } else {
+          final BoxableType javaType = BoxableType.createReference(predefinedJavaTypeName);
           return new StandaloneTypeBinding() {
             @Override
-            public String getJavaFullName() {
-              return predefinedJavaTypeName;
+            public BoxableType getJavaType() {
+              return javaType;
             }
 
             @Override
@@ -1472,7 +1544,7 @@ class Generator {
   }
 
   private interface StandaloneTypeBinding {
-    abstract String getJavaFullName();
+    abstract BoxableType getJavaType();
     abstract void generate() throws IOException;
   }
 
@@ -1490,11 +1562,11 @@ class Generator {
       this.domainGeneratorMap = domainGeneratorMap;
     }
 
-    String resolve(String domainName, String typeName,
+    BoxableType resolve(String domainName, String typeName,
         TypeData.Direction direction) {
       DomainGenerator domainGenerator = domainGeneratorMap.get(domainName);
       if (domainGenerator == null) {
-        throw new RuntimeException();
+        throw new RuntimeException("Failed to find domain generator: " + domainName);
       }
       return getTypeData(domainName, typeName).get(direction).resolve(this, domainGenerator);
     }
@@ -1570,10 +1642,14 @@ class Generator {
     "Debugger",
     "Runtime",
     "Page",
+    "Network",
+    "Console",
+    "DOM",
   };
 
   private static void initializeKnownTypes(TypeMap typeMap) {
-    typeMap.getTypeData("Page", "Cookie").getInput().setJavaTypeName("Object");
+    // Code example:
+    // typeMap.getTypeData("Page", "Cookie").getInput().setJavaTypeName("Object");
   }
 
   private static final Set<String> BAD_METHOD_NAMES = new HashSet<String>(Arrays.asList(
