@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -12,7 +12,7 @@ public interface CallFrameValue {
   /**
    Call frame identifier. This identifier is only valid while the virtual machine is paused.
    */
-  String id();
+  String/*See org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameIdTypedef*/ callFrameId();
 
   /**
    Name of the JavaScript function called on this call frame.

@@ -1,11 +1,11 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@84351
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
 /**
-Steps into the statement.
+Steps into the function call.
  */
 public class StepIntoParams extends org.chromium.sdk.internal.wip.protocol.output.WipParams {
   public StepIntoParams() {

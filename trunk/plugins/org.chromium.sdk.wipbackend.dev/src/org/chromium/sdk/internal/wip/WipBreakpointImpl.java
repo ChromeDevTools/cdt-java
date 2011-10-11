@@ -410,7 +410,7 @@ public class WipBreakpointImpl implements Breakpoint {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
           long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(url, null, lineNumber, columnNumber, condition);
+        return new SetBreakpointByUrlParams(lineNumber, url, null, columnNumber, condition);
       }
     };
 
@@ -418,7 +418,7 @@ public class WipBreakpointImpl implements Breakpoint {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
           long lineNumber, long columnNumber, String condition) {
-        return new SetBreakpointByUrlParams(null, url, lineNumber, columnNumber, condition);
+        return new SetBreakpointByUrlParams(lineNumber, null, url, columnNumber, condition);
       }
     };
 

@@ -1,10 +1,16 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
 /**
  Unique script identifier.
  */
-public class ScriptIdTypedef {/*Typedef class, merely holds a javadoc.*/}
+public class ScriptIdTypedef {
+  /*
+   The class is 'typedef'.
+   If merely holds a type javadoc and its only field refers to an actual type.
+   */
+  String actualType;
+}

@@ -7,6 +7,7 @@ package org.chromium.sdk.internal.protocolparser.dynamicimpl;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.chromium.sdk.internal.protocolparser.EnumValueCondition;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolModelParseException;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.FileScope;
@@ -45,7 +46,7 @@ class EnumParser<T extends Enum<T>> extends QuickParser<T> {
       throw new JsonProtocolParseException("String value expected");
     }
     String stringValue = (String) value;
-    stringValue = stringValue.toUpperCase();
+    stringValue = EnumValueCondition.decorateEnumConstantName(stringValue);
     T result;
     try {
       result = enumClass.cast(methodValueOf.invoke(null, stringValue));

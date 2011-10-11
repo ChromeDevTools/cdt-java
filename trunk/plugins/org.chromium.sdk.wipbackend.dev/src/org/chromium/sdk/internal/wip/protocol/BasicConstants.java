@@ -16,5 +16,8 @@ public interface BasicConstants {
     String RUNTIME = "Runtime";
     String INSPECTOR = "Inspector";
     String PAGE = "Page";
+    String CONSOLE = "Console";
+    String DOM = "DOM";
+    String NETWORK = "Network";
   }
 }

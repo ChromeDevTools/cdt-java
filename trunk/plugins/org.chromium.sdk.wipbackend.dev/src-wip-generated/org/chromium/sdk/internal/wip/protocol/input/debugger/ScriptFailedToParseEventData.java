@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/92284/trunk/Source/WebCore/inspector/Inspector.json@92284
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -17,12 +17,12 @@ public interface ScriptFailedToParseEventData {
   /**
    Source text of the script that failed to parse.
    */
-  String data();
+  String scriptSource();
 
   /**
    Line offset of the script within the resource.
    */
-  long firstLine();
+  long startLine();
 
   /**
    Line with error.
