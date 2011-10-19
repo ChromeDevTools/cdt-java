@@ -32,7 +32,7 @@ Note that you can also connect to other V8-based applications via “Standalone 
 = First Steps =
 After debugger attached you should find a VirtualProject (in the Project Explorer view). That's where all running *scripts* are.
 
-Set a *breakpoint* on the function you are interested in. Note that it might be important to set correct *breakpoint type*, especially when some other debugger or language support is installed in the same Eclipse. You choose {{{Chrome/V8 breakpoints}}} in {{{Run | Breakpoint Types}}} menu item in this case.
+Set a *breakpoint* on the function you are interested in. Note that it might be important to set correct *breakpoint type*, especially when some other debugger or language support is installed in the same Eclipse. Choose {{{Chrome/V8 breakpoints}}} in {{{Run | Breakpoint Types}}} menu item in this case.
 
 Make the function with breakpoint run (for example provoke it by clicking something on the webpage) – program should stop there and debugger will put a cursor on the breakpoint line. You also can stop the program by pressing “Suspend” button in _Debug_ view.
 
