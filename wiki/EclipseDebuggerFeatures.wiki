@@ -6,7 +6,8 @@ Features of EclipseDebugger. See also DebuggerTutorial.
 <wiki:toc max_depth="2" />
 
 =Basic Capabilities=
-  * Breakpoints
+  * Breakpoints<br>(It is important you set the right breakpoint type "Chrome/V8 breakpoints" in {{{Run | Breakpoint Types}}} menu).
+
   * Step in/over/out
   * Stack context when suspended
   * Mouse on-hover identifier evaluation
