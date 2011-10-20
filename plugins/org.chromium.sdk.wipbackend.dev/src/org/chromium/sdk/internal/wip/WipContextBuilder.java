@@ -137,10 +137,11 @@ class WipContextBuilder {
     private final JsEvaluateContext globalContext;
 
     public WipDebugContextImpl(PausedEventData data) {
-      JSONObject additionalDataObject = data.data().getUnderlyingObject();
-      if (data.reason() == PausedEventData.Reason.EXCEPTION && additionalDataObject != null) {
+      PausedEventData.Data additionalData = data.data();
+      if (data.reason() == PausedEventData.Reason.EXCEPTION && additionalData != null) {
         RemoteObjectValue exceptionRemoteObject = null;
         try {
+          JSONObject additionalDataObject = additionalData.getUnderlyingObject();
           exceptionRemoteObject =
               WipParserAccess.get().parseRemoteObjectValue(additionalDataObject);
         } catch (JsonProtocolParseException e) {

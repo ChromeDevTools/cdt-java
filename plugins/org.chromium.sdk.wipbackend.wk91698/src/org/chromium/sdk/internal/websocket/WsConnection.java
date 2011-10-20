@@ -138,13 +138,6 @@ public class WsConnection {
   }
 
   public void startListening(final Listener listener) {
-    SignalRelay<CloseReason> listenerCloser =
-        SignalRelay.create(new SignalRelay.Callback<CloseReason>() {
-      @Override
-      public void onSignal(CloseReason reason, Exception cause) {
-      }
-    });
-
     final SocketWrapper.LoggableInputStream loggableReader = socketWrapper.getLoggableInput();
     final BufferedInputStream input = new BufferedInputStream(loggableReader.getInputStream());
     Runnable listenRunnable = new Runnable() {
@@ -294,10 +287,12 @@ public class WsConnection {
     byte[] bytes = message.getBytes(UTF_8_CHARSET);
     SocketWrapper.LoggableOutputStream loggableWriter = socketWrapper.getLoggableOutput();
     OutputStream output = loggableWriter.getOutputStream();
-    output.write((byte) 0);
-    output.write(bytes);
-    output.write((byte) 255);
-    output.flush();
+    synchronized (this) {
+      output.write((byte) 0);
+      output.write(bytes);
+      output.write((byte) 255);
+      output.flush();
+    }
     loggableWriter.markSeparatorForLog();
   }
 
