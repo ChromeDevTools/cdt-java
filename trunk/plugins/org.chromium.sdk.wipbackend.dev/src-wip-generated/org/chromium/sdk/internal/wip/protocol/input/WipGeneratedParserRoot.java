@@ -1,14 +1,11 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
 @org.chromium.sdk.internal.protocolparser.JsonParserRoot
 public interface WipGeneratedParserRoot {
-  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
-  org.chromium.sdk.internal.wip.protocol.input.console.EnableData parseConsoleEnableData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.console.MessageAddedEventData parseConsoleMessageAddedEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
@@ -158,6 +155,9 @@ public interface WipGeneratedParserRoot {
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.network.WebSocketWillSendHandshakeRequestEventData parseNetworkWebSocketWillSendHandshakeRequestEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData parsePageAddScriptToEvaluateOnLoadData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData parsePageDomContentEventFiredEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -15,34 +15,38 @@ public interface ConsoleMessageValue {
   Source source();
 
   /**
-   Console message type.
-   */
-  Type type();
-
-  /**
    Message severity.
    */
   Level level();
 
   /**
-   Line number in the resource that generated this message.
+   Message text.
    */
-  long line();
+  String text();
+
+  /**
+   Console message type.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Type type();
 
   /**
    URL of the message origin.
    */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String url();
+
+  /**
+   Line number in the resource that generated this message.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Long line();
 
   /**
    Repeat count for repeated messages.
    */
-  long repeatCount();
-
-  /**
-   Message text.
-   */
-  String text();
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Long repeatCount();
 
   /**
    Identifier of the network request associated with this message.
@@ -75,6 +79,16 @@ public interface ConsoleMessageValue {
     OTHER,
   }
   /**
+   Message severity.
+   */
+  public enum Level {
+    TIP,
+    LOG,
+    WARNING,
+    ERROR,
+    DEBUG,
+  }
+  /**
    Console message type.
    */
   public enum Type {
@@ -86,15 +100,5 @@ public interface ConsoleMessageValue {
     STARTGROUPCOLLAPSED,
     ENDGROUP,
     ASSERT,
-  }
-  /**
-   Message severity.
-   */
-  public enum Level {
-    TIP,
-    LOG,
-    WARNING,
-    ERROR,
-    DEBUG,
   }
 }
