@@ -136,6 +136,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
     scriptManager.pageReloaded();
     breakpointManager.clearNonProvisionalBreakpoints();
     WipTabImpl.this.tabListener.navigated(this.url);
+    contextBuilder.getEvaluateHack().pageReloaded();
   }
 
   WipScriptManager getScriptManager() {

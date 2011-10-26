@@ -117,7 +117,6 @@ class WipCommandProcessor {
       LOGGER.log(Level.SEVERE, "Failed to parse event", e);
       return;
     }
-    String eventName = event.method();
     EVENT_MAP.handleEvent(event, this);
   }
 

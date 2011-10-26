@@ -26,7 +26,6 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
-import org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.PauseParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetBreakpointsActiveParams;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.SetPauseOnExceptionsParams;
@@ -123,7 +122,14 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
         scriptManager.endPopulateScriptMode();
       }
     };
-    commandProcessor.send(new EnableParams(), null, syncCallback);
+
+    commandProcessor.send(
+        new org.chromium.sdk.internal.wip.protocol.output.debugger.EnableParams(),
+        null, syncCallback);
+
+    commandProcessor.send(
+        new org.chromium.sdk.internal.wip.protocol.output.page.EnableParams(),
+        null, null);
 
     frameManager.readFrames();
   }
@@ -136,6 +142,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
     scriptManager.pageReloaded();
     breakpointManager.clearNonProvisionalBreakpoints();
     WipTabImpl.this.tabListener.navigated(this.url);
+    contextBuilder.getEvaluateHack().pageReloaded();
   }
 
   WipScriptManager getScriptManager() {
