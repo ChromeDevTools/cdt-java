@@ -278,7 +278,11 @@ public class ChromiumSourceDirector extends AbstractSourceLookupDirector {
 
         private ScriptNameManipulator.FilePath getParsedScriptFileName(Object object,
             ScriptNameManipulator nameManipulator) throws CoreException {
-          final String scriptName = getVmResourceId(object).getName();
+          VmResourceId vmResourceId = getVmResourceId(object);
+          if (vmResourceId == null) {
+            return null;
+          }
+          final String scriptName = vmResourceId.getName();
           if (scriptName == null) {
             return UNKNOWN_NAME;
           }
