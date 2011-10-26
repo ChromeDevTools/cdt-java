@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/96998/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -54,17 +54,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.dom.SetChildNodesEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetNodeNameData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetOuterHTMLData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.BringToFrontEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.DidCreateWorkerEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.DidDestroyWorkerEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.DisconnectFromBackendEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.EvaluateForTestInFrontendEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.FrontendReusedEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.InspectEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.InspectEventData.Hints.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.ResetEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.ShowPanelEventData.class,
-    org.chromium.sdk.internal.wip.protocol.input.inspector.StartUserInitiatedDebuggingEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CachedResourceValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.DataReceivedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.GetResponseBodyData.class,

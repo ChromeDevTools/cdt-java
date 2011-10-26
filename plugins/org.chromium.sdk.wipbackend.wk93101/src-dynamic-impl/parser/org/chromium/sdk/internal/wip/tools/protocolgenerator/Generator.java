@@ -1570,7 +1570,6 @@ class Generator {
     "Debugger",
     "Runtime",
     "Page",
-    "Inspector",
   };
 
   private static void initializeKnownTypes(TypeMap typeMap) {
