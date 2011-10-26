@@ -97,6 +97,10 @@ public class EvaluateHack {
     Exception processFailure(Exception cause);
   }
 
+  synchronized void pageReloaded() {
+    objectInjected = false;
+  }
+
   /**
    * Corresponds to a one evaluate operation. Holds most of parameters. It does following:
    * <ol>
