@@ -67,6 +67,14 @@ This SDK version does not support any new features that [WIP WebKit Remote Debug
 ==WIP Backends==
 
 The list of available WIP backend versions. They get installed with the "!ChromeDevTools SDK WIP Backends" feature.
+
+==== Version 0.1.2 ====
+|| id || Chrome version || Chromium dev build ||
+|| WK@91698 || 14.0.835.`*`|| ||
+|| WK@93101 || 15.0.855.`*`, 15.0.874.`*` || 97053, 99889 ||
+|| WK@97678 || 16.0.912.`*`|| 106036 ||
+
+==== Version 0.1.0 (obsolete) ====
 || id || Chrome version || Debugger limitations || SDK limitations ||
 || WK@87771 || 13.0.782.112 (stable) || Auto-detect mode is missing,<br>live edit preview is missing. || '!RegExp' breakpoint targets not supported,<br>live edit preview is missing. ||
 || WK@91698 || 14.0.835.`*` (beta) || || ||
