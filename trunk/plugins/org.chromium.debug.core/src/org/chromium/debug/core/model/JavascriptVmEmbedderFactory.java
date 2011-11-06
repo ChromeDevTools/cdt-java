@@ -249,7 +249,7 @@ public class JavascriptVmEmbedderFactory {
       try {
         browserTab = getTabConnector().attach(tabDebugEventListener);
       } catch (IOException e) {
-        throw newCoreException("Failed to connect to browser tab", e);
+        throw newCoreException("Failed to connect to browser tab: " + e.getMessage(), e);
       }
       return new EmbedderBase() {
         public JavascriptVm getJavascriptVm() {
