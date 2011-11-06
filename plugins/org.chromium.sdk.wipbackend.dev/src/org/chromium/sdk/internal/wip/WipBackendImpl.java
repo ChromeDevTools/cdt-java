@@ -17,6 +17,7 @@ import java.util.List;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.websocket.Hybi00WsConnection;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
@@ -102,7 +103,7 @@ public class WipBackendImpl extends WipBackendBase {
       }
 
       URI uri = URI.create(webSocketDebuggerUrl);
-      WsConnection socket = WsConnection.connect(browserImpl.getSocketAddress(),
+      WsConnection socket = Hybi00WsConnection.connect(browserImpl.getSocketAddress(),
           DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
 
       return new WipTabImpl(socket, browserImpl, listener, description.url());

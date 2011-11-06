@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,20 +11,18 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.chromium.sdk.internal.transport.SocketWrapper;
+import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper;
 
 /**
  * A more or less straightforward implementation of WebSocket client-side handshake
@@ -33,30 +31,22 @@ import org.chromium.sdk.internal.transport.SocketWrapper;
  * <p>Note that the standard was reworked completely. This implementation is obsolete. However
  * it is still compatible with the current Chrome implementation.
  */
-class Handshake {
-  private static final Charset UTF_8_CHARSET = Charset.forName("UTF-8");
-  private static final Charset ASCII_CHARSET = Charset.forName("ASCII");
-
-  static void performHandshake(SocketWrapper socket, InetSocketAddress endpoint,
+class Hybi00Handshake {
+  static void performHandshake(AutoLoggingSocketWrapper socket, InetSocketAddress endpoint,
       String resourceName, String origin, Random random) throws IOException {
-    for (int i = 0; i < origin.length(); i++) {
-      char ch = origin.charAt(i);
-      if (ch >= 'A' && ch <= 'Z') {
-        throw new IllegalArgumentException();
-      }
-    }
+    HandshakeUtil.checkOriginString(origin);
 
     OutputStream output = socket.getLoggableOutput().getOutputStream();
-    Writer outputWriter = new OutputStreamWriter(output, UTF_8_CHARSET);
+    Writer outputWriter = new OutputStreamWriter(output, HandshakeUtil.UTF_8_CHARSET);
 
     outputWriter.write("GET " + resourceName + " HTTP/1.1\r\n");
 
-    List<String> fields = new ArrayList<String>();
+    List<String> fields = HandshakeUtil.createHttpFields(endpoint);
     fields.add("Upgrade: WebSocket");
-    fields.add("Connection: Upgrade");
-    String portSuffix = endpoint.getPort() == 80 ? "" : ":" + endpoint.getPort();
-    fields.add("Host: " + endpoint.getHostName() + portSuffix);
     fields.add("Origin: " + origin);
+    int port = endpoint.getPort();
+    String portSuffix = port == 80 ? "" : ":" + port;
+    fields.add("Host: " + endpoint.getHostName() + portSuffix);
     WsKey key1 = new WsKey(random);
     WsKey key2 = new WsKey(random);
     fields.add("Sec-WebSocket-Key1: " + key1.getKeySocketField());
@@ -76,6 +66,7 @@ class Handshake {
     output.write(key3);
     output.flush();
 
+
     byte[] expectedMd5Bytes;
     {
       // Challenge.
@@ -92,83 +83,36 @@ class Handshake {
       expectedMd5Bytes = digest.digest(challengeBytes.toByteArray());
     }
 
+    final InputStream input = socket.getLoggableInput().getInputStream();
 
-    InputStream input = socket.getLoggableInput().getInputStream();
+    HandshakeUtil.LineReader lineReader = new HandshakeLineReader(input);
 
-    // First line.
-    {
-      byte[] firstLine = readUpTo0x0D0A(input);
-      if (firstLine.length < 7 - 2) {
-        throw new IOException("Malformed response");
-      }
-      int space1Pos = byteIndexOf((byte)' ', firstLine, 0);
-      if (space1Pos == -1) {
-        throw new IOException("Malformed response");
-      }
-      int space2Pos = byteIndexOf((byte)' ', firstLine, space1Pos + 1);
-      if (space2Pos == -1) {
-        throw new IOException("Malformed response");
-      }
-      if (space2Pos - space1Pos != 4) {
-        throw new IOException("Malformed response");
-      }
-      int code = 0;
-      for (int i = space1Pos + 1; i < space2Pos; i++) {
-        code = code * 10 + firstLine[i] - (byte)'0';
-      }
-      if (code != 101) {
-        throw new IOException("Unexpected response code " + code);
-      }
+    HandshakeUtil.HttpResponse httpResponse = HandshakeUtil.readHttpResponse(lineReader);
+
+    if (httpResponse.getCode() != 101) {
+      throw new IOException("Unexpected response code " + httpResponse.getCode());
     }
 
-    // Fields.
-    {
-      Map<String, String> responseFields = new HashMap<String, String>();
-      while (true) {
-        byte[] line = readUpTo0x0D0A(input);
-        if (line.length == 0) {
-          break;
-        }
-        String lineStr = new String(line, UTF_8_CHARSET);
-        int colonPos = lineStr.indexOf(':');
-        if (colonPos == -1) {
-          throw new IOException("Malformed response field");
-        }
-        if (colonPos == 0) {
-          throw new IOException("Malformed response field: empty key");
-        }
-        String key = lineStr.substring(0, colonPos).toLowerCase();
-        if (!EXPECTED_FIELDS.contains(key)) {
-          continue;
-        }
-        if (lineStr.length() > colonPos + 1 && lineStr.charAt(colonPos + 1) == ' ') {
-          colonPos++;
-        }
-        String value = lineStr.substring(colonPos + 1);
-        Object conflict = responseFields.put(key, value);
-        if (conflict != null) {
-          throw new IOException("Malformed response field: duplicated field: " + key);
-        }
-      }
-      if (responseFields.size() != EXPECTED_FIELDS.size()) {
-        throw new IOException("Malformed response");
-      }
-      if (!responseFields.keySet().containsAll(EXPECTED_FIELDS)) {
-        throw new IOException("Malformed response");
-      }
-      if (!"WebSocket".equals(responseFields.get("upgrade"))) {
-        throw new IOException("Malformed response");
-      }
-      if (!"upgrade".equalsIgnoreCase(responseFields.get("connection"))) {
-        throw new IOException("Malformed response");
-      }
-      if (!origin.equals(responseFields.get("sec-websocket-origin"))) {
-        throw new IOException("Malformed response");
-      }
-      String expectedUrl = createUrl(endpoint, resourceName, false);
-      if (!expectedUrl.equals(responseFields.get("sec-websocket-location"))) {
-        throw new IOException("Malformed response: unexpected sec-websocket-location");
-      }
+    Map<String, String> responseFields = httpResponse.getFields();
+
+    if (responseFields.size() != EXPECTED_FIELDS.size()) {
+      throw new IOException("Malformed response");
+    }
+    if (!responseFields.keySet().containsAll(EXPECTED_FIELDS)) {
+      throw new IOException("Malformed response");
+    }
+    if (!"WebSocket".equals(responseFields.get("upgrade"))) {
+      throw new IOException("Malformed response");
+    }
+    if (!"upgrade".equalsIgnoreCase(responseFields.get("connection"))) {
+      throw new IOException("Malformed response");
+    }
+    if (!origin.equals(responseFields.get("sec-websocket-origin"))) {
+      throw new IOException("Malformed response");
+    }
+    String expectedUrl = createUrl(endpoint, resourceName, false);
+    if (!expectedUrl.equals(responseFields.get("sec-websocket-location"))) {
+      throw new IOException("Malformed response: unexpected sec-websocket-location");
     }
 
     {
@@ -206,10 +150,10 @@ class Handshake {
   }
 
   private static void writeIntBigEndian(long value, OutputStream output) throws IOException {
-    output.write((byte)((value & 0xFF000000L) >> (3 * 8)));
-    output.write((byte)((value & 0xFF0000L) >> (2 * 8)));
-    output.write((byte)((value & 0xFF00L) >> (1 * 8)));
-    output.write((byte)((value & 0xFFL)));
+    output.write((byte) ((value & 0xFF000000L) >> (3 * 8)));
+    output.write((byte) ((value & 0xFF0000L) >> (2 * 8)));
+    output.write((byte) ((value & 0xFF00L) >> (1 * 8)));
+    output.write((byte) ((value & 0xFFL)));
   }
 
   private static final Set<String> EXPECTED_FIELDS = new HashSet<String>(Arrays.asList(
@@ -219,45 +163,43 @@ class Handshake {
       "sec-websocket-location"
       ));
 
-  private static int byteIndexOf(byte b, byte[] array, int start) {
-    int i = start;
-    while (i < array.length) {
-      if (array[i] == b) {
-        return i;
-      }
-      i++;
-    }
-    return -1;
-  }
+  private static final class HandshakeLineReader extends HandshakeUtil.LineReader {
+    private final InputStream input;
 
-  private static byte[] readUpTo0x0D0A(InputStream input) throws IOException {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    while (true) {
-      // TODO(peter.rybin): this is slow (for connection logger implementation).
-      int i = input.read();
-      if (i == -1) {
-        throw new IOException("End of stream");
-      }
-      byte b = (byte)i;
-      if (b == 0x0D) {
-        break;
-      }
-      if (b == 0x0A) {
-        throw new IOException("Malformed end of line");
-      }
-      outputStream.write(b);
+    private HandshakeLineReader(InputStream input) {
+      this.input = input;
     }
-    {
-      int i = input.read();
-      if (i == -1) {
-        throw new IOException("End of stream");
+
+    @Override
+    byte[] readUpTo0x0D0A() throws IOException {
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      while (true) {
+        // TODO(peter.rybin): this is slow (for connection logger implementation).
+        int i = input.read();
+        if (i == -1) {
+          throw new IOException("End of stream");
+        }
+        byte b = (byte) i;
+        if (b == 0x0D) {
+          break;
+        }
+        if (b == 0x0A) {
+          throw new IOException("Malformed end of line");
+        }
+        outputStream.write(b);
       }
-      byte b = (byte)i;
-      if (b != 0x0A) {
-        throw new IOException("Malformed end of line");
+      {
+        int i = input.read();
+        if (i == -1) {
+          throw new IOException("End of stream");
+        }
+        byte b = (byte) i;
+        if (b != 0x0A) {
+          throw new IOException("Malformed end of line");
+        }
       }
+      return outputStream.toByteArray();
     }
-    return outputStream.toByteArray();
   }
 
   private static class WsKey {
@@ -276,26 +218,26 @@ class Handshake {
 
       String productStr = Long.toString(product);
       List<Byte> keyBytes = new ArrayList<Byte>(40);
-      keyBytes.addAll(Collections.nCopies(productStr.length(), (byte)'1'));
+      keyBytes.addAll(Collections.nCopies(productStr.length(), (byte) '1'));
       int stuffByteNumber = random.nextInt(12) + 1;
       for (int i = 0; i < stuffByteNumber; i++) {
         keyBytes.add(StuffBytes.getByte(random));
       }
       Collections.shuffle(keyBytes, random);
-      keyBytes.subList(0, keyBytes.size() - 1).addAll(Collections.nCopies(spaces, (byte)' '));
+      keyBytes.subList(0, keyBytes.size() - 1).addAll(Collections.nCopies(spaces, (byte) ' '));
       Collections.shuffle(keyBytes.subList(1, keyBytes.size() - 1), random);
       byte[] resultBytes = new byte[keyBytes.size()];
       int strPos = 0;
       for (int i = 0; i < resultBytes.length; i++) {
         byte b = keyBytes.get(i);
-        if (b == (byte)'1') {
-          b = (byte)productStr.charAt(strPos);
+        if (b == (byte) '1') {
+          b = (byte) productStr.charAt(strPos);
           strPos++;
         }
         resultBytes[i] = b;
       }
       assert(strPos == productStr.length());
-      keyString = new String(resultBytes, ASCII_CHARSET);
+      keyString = new String(resultBytes, HandshakeUtil.ASCII_CHARSET);
     }
 
     String getKeySocketField() {
@@ -318,9 +260,9 @@ class Handshake {
       private static byte getByte(Random random) {
         int i = random.nextInt(RANDOM_RANGE);
         if (i < RANDOM_RANGE_1) {
-          return (byte)(i + RANGE_1_BEGIN);
+          return (byte) (i + RANGE_1_BEGIN);
         } else {
-          return (byte)(i + - RANDOM_RANGE_1 + RANGE_2_BEGIN);
+          return (byte) (i + - RANDOM_RANGE_1 + RANGE_2_BEGIN);
         }
       }
     }

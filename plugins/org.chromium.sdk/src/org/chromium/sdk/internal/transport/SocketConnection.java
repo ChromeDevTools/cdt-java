@@ -63,9 +63,9 @@ public class SocketConnection implements Connection {
    */
   private class WriterThread extends InterruptibleThread {
 
-    private final SocketWrapper.LoggableOutputStream writer;
+    private final AutoLoggingSocketWrapper.LoggableOutputStream writer;
 
-    public WriterThread(SocketWrapper.LoggableOutputStream writer) {
+    public WriterThread(AutoLoggingSocketWrapper.LoggableOutputStream writer) {
       super("WriterThread");
       // Wrap writer into a buffered writer.
       this.writer = writer;
@@ -130,11 +130,11 @@ public class SocketConnection implements Connection {
    */
   private class ReaderThread extends InterruptibleThread {
 
-    private final SocketWrapper.LoggableInputStream reader;
-    private final SocketWrapper.LoggableOutputStream handshakeWriter;
+    private final AutoLoggingSocketWrapper.LoggableInputStream reader;
+    private final AutoLoggingSocketWrapper.LoggableOutputStream handshakeWriter;
 
-    public ReaderThread(SocketWrapper.LoggableInputStream reader,
-        SocketWrapper.LoggableOutputStream handshakeWriter) {
+    public ReaderThread(AutoLoggingSocketWrapper.LoggableInputStream reader,
+        AutoLoggingSocketWrapper.LoggableOutputStream handshakeWriter) {
       super("ReaderThread");
       this.reader = reader;
       this.handshakeWriter = handshakeWriter;
@@ -244,7 +244,7 @@ public class SocketConnection implements Connection {
   private AtomicBoolean isAttached = new AtomicBoolean(false);
 
   /** The communication socket. */
-  private SocketWrapper socket;
+  private AutoLoggingSocketWrapper socket;
 
   private final ConnectionLogger connectionLogger;
 
@@ -284,8 +284,8 @@ public class SocketConnection implements Connection {
   }
 
   void attach() throws IOException {
-    this.socket = new SocketWrapper(socketEndpoint, connectionTimeoutMs, connectionLogger,
-        SOCKET_CHARSET);
+    this.socket = new AutoLoggingSocketWrapper(socketEndpoint, connectionTimeoutMs,
+        connectionLogger, SOCKET_CHARSET);
 
     try {
       shutdownRelay.bind(this.socket.getShutdownRelay(), null, null);
