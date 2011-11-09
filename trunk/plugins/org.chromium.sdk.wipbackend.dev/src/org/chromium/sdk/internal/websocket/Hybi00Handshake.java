@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper;
+import org.chromium.sdk.internal.transport.SocketWrapper;
 
 /**
  * A more or less straightforward implementation of WebSocket client-side handshake
@@ -32,7 +32,7 @@ import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper;
  * it is still compatible with the current Chrome implementation.
  */
 class Hybi00Handshake {
-  static void performHandshake(AutoLoggingSocketWrapper socket, InetSocketAddress endpoint,
+  static void performHandshake(SocketWrapper socket, InetSocketAddress endpoint,
       String resourceName, String origin, Random random) throws IOException {
     HandshakeUtil.checkOriginString(origin);
 
