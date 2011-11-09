@@ -1,4 +1,5 @@
 #summary Instructions on reporting problem or asking a question
+#labels Featured
 
 = How to Report A Problem =
 If you got a problem with the project, don't hesitate to report it. The chances are we might be unaware of the issue since there are quite a number of protocol/platform versions.
