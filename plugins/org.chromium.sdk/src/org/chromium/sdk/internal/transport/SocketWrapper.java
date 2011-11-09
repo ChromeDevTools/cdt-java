@@ -18,11 +18,11 @@ import org.chromium.sdk.util.ByteToCharConverter;
 
 /**
  * A wrapper around platform socket that handles logging and closing.
+ * TODO: consider renaming into AutoLoggingSocketWrapper
  */
-public class AutoLoggingSocketWrapper
-    extends AbstractSocketWrapper<AutoLoggingSocketWrapper.LoggableInputStream,
-        AutoLoggingSocketWrapper.LoggableOutputStream> {
-  public AutoLoggingSocketWrapper(SocketAddress endpoint, int connectionTimeoutMs,
+public class SocketWrapper extends AbstractSocketWrapper<SocketWrapper.LoggableInputStream,
+        SocketWrapper.LoggableOutputStream> {
+  public SocketWrapper(SocketAddress endpoint, int connectionTimeoutMs,
       ConnectionLogger connectionLogger, Charset charset) throws IOException {
     super(endpoint, connectionTimeoutMs, connectionLogger, new FactoryImpl(charset));
   }

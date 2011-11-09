@@ -12,9 +12,9 @@ import java.net.InetSocketAddress;
 import java.util.Random;
 
 import org.chromium.sdk.ConnectionLogger;
-import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper;
-import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper.LoggableInputStream;
-import org.chromium.sdk.internal.transport.AutoLoggingSocketWrapper.LoggableOutputStream;
+import org.chromium.sdk.internal.transport.SocketWrapper;
+import org.chromium.sdk.internal.transport.SocketWrapper.LoggableInputStream;
+import org.chromium.sdk.internal.transport.SocketWrapper.LoggableOutputStream;
 
 /**
  * WebSocket connection. Sends and receives messages. Implements HyBi-00 protocol specification.
@@ -24,8 +24,8 @@ public class Hybi00WsConnection
 
   public static Hybi00WsConnection connect(InetSocketAddress endpoint, int timeout,
       String resourceId, String origin, ConnectionLogger connectionLogger) throws IOException {
-    AutoLoggingSocketWrapper socketWrapper =
-        new AutoLoggingSocketWrapper(endpoint, timeout, connectionLogger, LOGGER_CHARSET);
+    SocketWrapper socketWrapper =
+        new SocketWrapper(endpoint, timeout, connectionLogger, LOGGER_CHARSET);
 
     boolean handshakeDone = false;
     Exception handshakeException = null;
@@ -48,7 +48,7 @@ public class Hybi00WsConnection
     return new Hybi00WsConnection(socketWrapper, connectionLogger);
   }
 
-  private Hybi00WsConnection(AutoLoggingSocketWrapper socketWrapper,
+  private Hybi00WsConnection(SocketWrapper socketWrapper,
       ConnectionLogger connectionLogger) {
     super(socketWrapper, connectionLogger);
   }
