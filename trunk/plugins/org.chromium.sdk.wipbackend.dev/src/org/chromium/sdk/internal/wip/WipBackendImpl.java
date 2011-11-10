@@ -18,6 +18,7 @@ import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.websocket.Hybi00WsConnection;
+import org.chromium.sdk.internal.websocket.Hybi17WsConnection;
 import org.chromium.sdk.internal.websocket.WsConnection;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipTabList;
@@ -30,6 +31,8 @@ import org.json.simple.parser.ParseException;
 
 public class WipBackendImpl extends WipBackendBase {
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
+
+  private static final boolean USE_OLD_WEBSOCKET = false;
 
   private static final String ID = "current development";
   private static final String DESCRIPTION =
@@ -103,8 +106,16 @@ public class WipBackendImpl extends WipBackendBase {
       }
 
       URI uri = URI.create(webSocketDebuggerUrl);
-      WsConnection socket = Hybi00WsConnection.connect(browserImpl.getSocketAddress(),
-          DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
+      WsConnection socket;
+      if (USE_OLD_WEBSOCKET) {
+        socket = Hybi00WsConnection.connect(browserImpl.getSocketAddress(),
+            DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(), "empty origin", connectionLogger);
+      } else {
+        socket = Hybi17WsConnection.connect(browserImpl.getSocketAddress(),
+            DEFAULT_CONNECTION_TIMEOUT_MS, uri.getPath(),
+            Hybi17WsConnection.MaskStrategy.TRANSPARENT_MASK, connectionLogger);
+      }
+
 
       return new WipTabImpl(socket, browserImpl, listener, description.url());
     }
@@ -150,5 +161,4 @@ public class WipBackendImpl extends WipBackendBase {
           "Failed to parse tab list response (on protocol level)", e);
     }
   }
-
 }

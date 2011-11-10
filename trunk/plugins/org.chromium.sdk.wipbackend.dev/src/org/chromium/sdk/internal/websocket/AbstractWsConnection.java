@@ -268,6 +268,17 @@ public abstract class AbstractWsConnection<INPUT, OUTPUT> implements WsConnectio
     }
   };
 
+  protected static void dumpByte(byte b, StringBuilder output) {
+    output.append('%');
+    int code = (b + 256) % 256;
+    int d1 = code / 100 % 10;
+    int d2 = code / 10 % 10;
+    int d3 = code % 10;
+    output.append((char) ('0' + d1));
+    output.append((char) ('0' + d2));
+    output.append((char) ('0' + d3));
+  }
+
   static abstract class MessageDispatcher {
     /**
      * Dispatches message to user.
