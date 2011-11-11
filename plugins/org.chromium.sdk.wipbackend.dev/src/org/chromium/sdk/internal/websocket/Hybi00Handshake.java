@@ -85,7 +85,7 @@ class Hybi00Handshake {
 
     final InputStream input = socket.getLoggableInput().getInputStream();
 
-    HandshakeUtil.LineReader lineReader = new HandshakeLineReader(input);
+    HandshakeUtil.LineReader lineReader = HandshakeUtil.createLineReader(input);
 
     HandshakeUtil.HttpResponse httpResponse = HandshakeUtil.readHttpResponse(lineReader);
 
@@ -162,45 +162,6 @@ class Hybi00Handshake {
       "sec-websocket-origin",
       "sec-websocket-location"
       ));
-
-  private static final class HandshakeLineReader extends HandshakeUtil.LineReader {
-    private final InputStream input;
-
-    private HandshakeLineReader(InputStream input) {
-      this.input = input;
-    }
-
-    @Override
-    byte[] readUpTo0x0D0A() throws IOException {
-      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      while (true) {
-        // TODO(peter.rybin): this is slow (for connection logger implementation).
-        int i = input.read();
-        if (i == -1) {
-          throw new IOException("End of stream");
-        }
-        byte b = (byte) i;
-        if (b == 0x0D) {
-          break;
-        }
-        if (b == 0x0A) {
-          throw new IOException("Malformed end of line");
-        }
-        outputStream.write(b);
-      }
-      {
-        int i = input.read();
-        if (i == -1) {
-          throw new IOException("End of stream");
-        }
-        byte b = (byte) i;
-        if (b != 0x0A) {
-          throw new IOException("Malformed end of line");
-        }
-      }
-      return outputStream.toByteArray();
-    }
-  }
 
   private static class WsKey {
     private static final long SPEC_MAX = 4294967295l;
