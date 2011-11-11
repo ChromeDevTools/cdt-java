@@ -4,7 +4,9 @@
 
 package org.chromium.sdk.internal.websocket;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -14,7 +16,7 @@ import java.util.Map;
 /**
  * Methods, classes and constants used in all WebSocket handshake procedures.
  */
-class HandshakeUtil {
+public class HandshakeUtil {
   public static final Charset UTF_8_CHARSET = Charset.forName("UTF-8");
   public static final Charset ASCII_CHARSET = Charset.forName("ASCII");
 
@@ -33,13 +35,13 @@ class HandshakeUtil {
     }
   }
 
-  interface HttpResponse {
+  public interface HttpResponse {
     int getCode();
     Map<String, String> getFields();
     String getReasonPhrase();
   }
 
-  static HttpResponse readHttpResponse(LineReader input) throws IOException {
+  public static HttpResponse readHttpResponse(LineReader input) throws IOException {
     final int code;
     final String reasonPhrase;
     // First line.
@@ -110,8 +112,43 @@ class HandshakeUtil {
     };
   }
 
-  static abstract class LineReader {
+  public static abstract class LineReader {
     abstract byte[] readUpTo0x0D0A() throws IOException;
+  }
+
+  public static LineReader createLineReader(final InputStream input) {
+    return new LineReader() {
+      @Override
+      byte[] readUpTo0x0D0A() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        while (true) {
+          // TODO(peter.rybin): this is slow (for connection logger implementation).
+          int i = input.read();
+          if (i == -1) {
+            throw new IOException("End of stream");
+          }
+          byte b = (byte) i;
+          if (b == 0x0D) {
+            break;
+          }
+          if (b == 0x0A) {
+            throw new IOException("Malformed end of line");
+          }
+          outputStream.write(b);
+        }
+        {
+          int i = input.read();
+          if (i == -1) {
+            throw new IOException("End of stream");
+          }
+          byte b = (byte) i;
+          if (b != 0x0A) {
+            throw new IOException("Malformed end of line");
+          }
+        }
+        return outputStream.toByteArray();
+      }
+    };
   }
 
   private static int byteIndexOf(byte b, byte[] array, int start) {

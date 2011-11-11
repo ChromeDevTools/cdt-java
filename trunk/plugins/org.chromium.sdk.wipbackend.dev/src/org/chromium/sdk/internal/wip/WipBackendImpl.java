@@ -5,18 +5,19 @@
 package org.chromium.sdk.internal.wip;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URL;
 import java.util.AbstractList;
 import java.util.List;
 
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+import org.chromium.sdk.internal.transport.SocketWrapper;
+import org.chromium.sdk.internal.transport.SocketWrapper.LoggableInputStream;
+import org.chromium.sdk.internal.transport.SocketWrapper.LoggableOutputStream;
+import org.chromium.sdk.internal.websocket.HandshakeUtil;
 import org.chromium.sdk.internal.websocket.Hybi00WsConnection;
 import org.chromium.sdk.internal.websocket.Hybi17WsConnection;
 import org.chromium.sdk.internal.websocket.WsConnection;
@@ -45,11 +46,12 @@ public class WipBackendImpl extends WipBackendBase {
   }
 
   @Override
-  public List<? extends WipTabConnector> getTabs(final WipBrowserImpl browserImpl) throws IOException {
+  public List<? extends WipTabConnector> getTabs(final WipBrowserImpl browserImpl)
+      throws IOException {
     InetSocketAddress socketAddress = browserImpl.getSocketAddress();
 
-    URL url = new URL("http", socketAddress.getHostName(), socketAddress.getPort(), "/json");
-    String content = readURLContent(url);
+    String content = readHttpResponseContent(socketAddress, "/json",
+        browserImpl.getConnectionLoggerFactory());
 
     final List<WipTabList.TabDescription> list = parseJsonReponse(content);
 
@@ -121,26 +123,72 @@ public class WipBackendImpl extends WipBackendBase {
     }
   }
 
-  private static String readURLContent(URL url) throws IOException {
-    InputStream stream = url.openStream();
-    String content;
+  private String readHttpResponseContent(InetSocketAddress socketAddress, String resource,
+      LoggerFactory loggerFactory) throws IOException {
+    ConnectionLogger browserConnectionLogger = loggerFactory.newBrowserConnectionLogger();
+    final SocketWrapper socketWrapper = new SocketWrapper(
+        socketAddress, DEFAULT_CONNECTION_TIMEOUT_MS, browserConnectionLogger,
+        HandshakeUtil.ASCII_CHARSET);
     try {
-      Reader reader = new InputStreamReader(stream, "utf-8");
-      StringBuilder stringBuilder = new StringBuilder();
-      char[] buffer = new char[1024];
-      while (true) {
-        int res = reader.read(buffer);
-        if (res == -1) {
-          break;
+      browserConnectionLogger.start();
+      browserConnectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
+        @Override
+        public void closeConnection() {
+          socketWrapper.getShutdownRelay().sendSignal(null, new Exception("UI close request"));
         }
-        stringBuilder.append(buffer, 0, res);
+      });
+
+      LoggableOutputStream output = socketWrapper.getLoggableOutput();
+      writeHttpLine(output, "GET " + resource + " HTTP/1.1");
+      writeHttpLine(output, "User-Agent: ChromeDevTools for Java SDK");
+      writeHttpLine(output, "Host: " + socketAddress.getHostName() + ":" +
+          socketAddress.getPort());
+      writeHttpLine(output, "");
+      output.getOutputStream().flush();
+
+      LoggableInputStream input = socketWrapper.getLoggableInput();
+
+      HandshakeUtil.HttpResponse httpResponse =
+          HandshakeUtil.readHttpResponse(HandshakeUtil.createLineReader(input.getInputStream()));
+
+      if (httpResponse.getCode() != 200) {
+        throw new IOException("Unrecognized respose: " + httpResponse.getCode() + " " +
+            httpResponse.getReasonPhrase());
       }
-      content = stringBuilder.toString();
-      reader.close();
+
+      String lengthStr = httpResponse.getFields().get("content-length");
+      if (lengthStr == null) {
+        throw new IOException("Unrecognizable respose: no content-length");
+      }
+      int length;
+      try {
+        length = Integer.parseInt(lengthStr.trim());
+      } catch (NumberFormatException e) {
+        throw new IOException("Unrecognizable respose: incorrect content-length");
+      }
+      byte[] responseBytes = new byte[length];
+      {
+        int readSoFar = 0;
+        while (readSoFar < length) {
+          int res = input.getInputStream().read(responseBytes, readSoFar, length - readSoFar);
+          if (res == -1) {
+            throw new IOException("Unexpected EOS");
+          }
+          readSoFar += res;
+        }
+      }
+      return new String(responseBytes, HandshakeUtil.UTF_8_CHARSET);
     } finally {
-      stream.close();
+      browserConnectionLogger.handleEos();
+      socketWrapper.getShutdownRelay().sendSignal(null, null);
     }
-    return content;
+  }
+
+  private static void writeHttpLine(LoggableOutputStream output, String line) throws IOException {
+    OutputStream stream = output.getOutputStream();
+    stream.write(line.getBytes(HandshakeUtil.ASCII_CHARSET));
+    stream.write(0xD);
+    stream.write(0xA);
   }
 
   private static List<WipTabList.TabDescription> parseJsonReponse(String content)
@@ -151,7 +199,6 @@ public class WipBackendImpl extends WipBackendBase {
     } catch (ParseException e) {
       throw new IOException("Failed to parse a JSON tab list response", e);
     }
-
 
     try {
       WipTabList tabList = WipParserAccess.get().parseTabList(jsonValue);

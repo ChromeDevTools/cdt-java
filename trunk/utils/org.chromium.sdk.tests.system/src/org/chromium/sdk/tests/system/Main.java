@@ -276,7 +276,7 @@ public class Main {
           throws SmokeException, IOException {
         WipBrowserFactory.LoggerFactory wipLoggerFactory = new WipBrowserFactory.LoggerFactory() {
           @Override public ConnectionLogger newBrowserConnectionLogger() {
-            throw new UnsupportedOperationException();
+            return connectionLoggerFactory.newConnectionLogger();
           }
 
           @Override public ConnectionLogger newTabConnectionLogger() {
