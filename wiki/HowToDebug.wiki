@@ -24,4 +24,4 @@ Start _debugger_. First some steps to prepare it:
 All the classes should be under {{{External Plug-in Libraries/External Plug-ins}}} in {{{Package Explorer}}}. They are also available from the regular {{{Open Type (Ctrl+Shift+T)}}} dialog window.
 
 == Where to Start Debugging ==
-Finding a place for the first breakpoint in unfamiliar codebase may be tricky. If you have a stacktrace (HowToReportProblem tells how to fetch one from error message), everything should be quite straightforward. In all other cases there probably cannot be a general instruction. We welcome you to ask in discussion group if clueless.
+Finding a place for the first breakpoint in unfamiliar codebase may be tricky. If you have a stacktrace (HowToReportProblem tells how to fetch one from error message), everything should be quite straightforward. In all other cases there probably cannot be a general instruction. We welcome you to ask in [http://groups.google.com/group/chromedevtools-dev discussion group] if clueless.
