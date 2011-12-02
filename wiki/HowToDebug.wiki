@@ -2,6 +2,8 @@
 
 = How to Debug =
 
+For tutorial on how to use ChromeDevTools [EclipseDebugger Debugger] to debug JavaScript see the [DebuggerTutorial dedicated page]. This page is about debugging Debugger itself.
+
 Since the project is written in Java, it must be relatively easy to debug it from a Java IDE.
 
 You may want to look inside the running code if you are wondering how it works or if you see a problem and wish to contribute to the project by investigating.
