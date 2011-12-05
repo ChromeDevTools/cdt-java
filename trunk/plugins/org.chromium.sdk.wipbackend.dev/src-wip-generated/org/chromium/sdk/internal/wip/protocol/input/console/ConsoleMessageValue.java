@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -49,12 +49,6 @@ public interface ConsoleMessageValue {
   Long repeatCount();
 
   /**
-   Identifier of the network request associated with this message.
-   */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.RequestIdTypedef*/ networkRequestId();
-
-  /**
    Message parameters in case of the formatted message.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
@@ -65,6 +59,12 @@ public interface ConsoleMessageValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
+
+  /**
+   Identifier of the network request associated with this message.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  String/*See org.chromium.sdk.internal.wip.protocol.input.network.RequestIdTypedef*/ networkRequestId();
 
   /**
    Message source.

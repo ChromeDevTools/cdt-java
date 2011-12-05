@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92122
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -15,8 +15,9 @@ public class RemoteObjectParam extends org.json.simple.JSONObject {
    @param valueOpt Remote object value (in case of primitive values or JSON values if it was requested).
    @param descriptionOpt String representation of the object.
    @param objectIdOpt Unique object identifier (for non-primitive values).
+   @param functionLocationOpt Function location within owning script.
    */
-  public RemoteObjectParam(Type type, SubtypeOpt subtypeOpt, String classNameOpt, Object valueOpt, String descriptionOpt, String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectIdOpt) {
+  public RemoteObjectParam(Type type, SubtypeOpt subtypeOpt, String classNameOpt, Object valueOpt, String descriptionOpt, String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectIdOpt, org.chromium.sdk.internal.wip.protocol.output.debugger.LocationParam functionLocationOpt) {
     this.put("type", type);
     if (subtypeOpt != null) {
       this.put("subtype", subtypeOpt);
@@ -32,6 +33,9 @@ public class RemoteObjectParam extends org.json.simple.JSONObject {
     }
     if (objectIdOpt != null) {
       this.put("objectId", objectIdOpt);
+    }
+    if (functionLocationOpt != null) {
+      this.put("functionLocation", functionLocationOpt);
     }
   }
 
