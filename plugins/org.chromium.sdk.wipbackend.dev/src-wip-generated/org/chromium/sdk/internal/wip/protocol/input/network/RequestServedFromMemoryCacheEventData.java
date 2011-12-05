@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
 
 package org.chromium.sdk.internal.wip.protocol.input.network;
 
@@ -17,7 +17,7 @@ public interface RequestServedFromMemoryCacheEventData {
   /**
    Frame identifier.
    */
-  String frameId();
+  String/*See org.chromium.sdk.internal.wip.protocol.input.network.FrameIdTypedef*/ frameId();
 
   /**
    Loader identifier.

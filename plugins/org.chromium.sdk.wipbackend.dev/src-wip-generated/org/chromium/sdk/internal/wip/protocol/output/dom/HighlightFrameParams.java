@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -13,7 +13,7 @@ public class HighlightFrameParams extends org.chromium.sdk.internal.wip.protocol
    @param contentColorOpt The content box highlight fill color (default: transparent).
    @param contentOutlineColorOpt The content box highlight outline color (default: transparent).
    */
-  public HighlightFrameParams(String frameId, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentOutlineColorOpt) {
+  public HighlightFrameParams(String/*See org.chromium.sdk.internal.wip.protocol.output.network.FrameIdTypedef*/ frameId, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentOutlineColorOpt) {
     this.put("frameId", frameId);
     if (contentColorOpt != null) {
       this.put("contentColor", contentColorOpt);

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/!svn/bc/92284/trunk/Source/WebCore/inspector/Inspector.json@92284
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
 
 package org.chromium.sdk.internal.wip.protocol.output.page;
 
@@ -12,7 +12,7 @@ public class GetResourceContentParams extends org.chromium.sdk.internal.wip.prot
    @param frameId Frame id to get resource for.
    @param url URL of the resource to get content for.
    */
-  public GetResourceContentParams(String frameId, String url) {
+  public GetResourceContentParams(String/*See org.chromium.sdk.internal.wip.protocol.output.network.FrameIdTypedef*/ frameId, String url) {
     this.put("frameId", frameId);
     this.put("url", url);
   }
