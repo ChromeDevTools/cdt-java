@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -44,12 +44,6 @@ public interface RemoteObjectValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String/*See org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectIdTypedef*/ objectId();
-
-  /**
-   Function location within owning script.
-   */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue functionLocation();
 
   /**
    Object type.
