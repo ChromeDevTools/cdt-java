@@ -27,6 +27,10 @@ public class ChromiumScriptFileSystem extends FileSystem {
     return new ChromiumScriptFileStore(this, toPath(uri));
   }
 
+  public IFileStore getStore(IPath path) {
+    return getStore(toUri(path));
+  }
+
   /**
    * Constructs a URI by a path.
    *
