@@ -75,18 +75,22 @@ public class ResourceManager {
 
   public synchronized void addScript(Script newScript) {
     VmResourceId id = VmResourceId.forScript(newScript);
-    VmResourceInfo info = resourceIdToInfo.get(id);
-    ScriptSet scriptSet;
-    if (info == null) {
-      scriptSet = new ScriptSet();
-      info = createAndRegisterResourceFile(id, scriptSet);
-    } else {
-      // TODO(peter.rybin): support adding scripts to one resource at once not to rewrite file
-      // every time.
-      scriptSet = (ScriptSet) info.metadata;
+    try {
+      VmResourceInfo info = resourceIdToInfo.get(id);
+      ScriptSet scriptSet;
+      if (info == null) {
+        scriptSet = new ScriptSet();
+        info = createAndRegisterResourceFile(id, scriptSet);
+      } else {
+        // TODO(peter.rybin): support adding scripts to one resource at once not to rewrite file
+        // every time.
+        scriptSet = (ScriptSet) info.metadata;
+      }
+      scriptSet.add(newScript);
+      writeScriptSource(scriptSet.asCollection(), info.file);
+    } catch (RuntimeException e) {
+      throw new RuntimeException("Failed to add script " + id);
     }
-    scriptSet.add(newScript);
-    writeScriptSource(scriptSet.asCollection(), info.file);
   }
 
   public synchronized VmResource createTemporaryFile(final Metadata metadata,

@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -248,6 +249,10 @@ public class ChromiumDebugPluginUtil {
   private static <C> IFile createFile(final C container, final FileContainerHandler<C> handler,
       String filename) {
     String patchedName = FILE_NAME_BAD_CHARS.matcher(filename).replaceAll("_");
+    // In Linux and Mac it should be enough. However, lets check more.
+    if (!ResourcesPlugin.getWorkspace().validateName(patchedName, IResource.FILE).isOK()) {
+      patchedName = FILE_NAME_BAD_CHARS_FALLBACK.matcher(filename).replaceAll("_");
+    }
 
     UniqueKeyGenerator.Factory<IFile> factory =
         new UniqueKeyGenerator.Factory<IFile>() {
@@ -270,7 +275,8 @@ public class ChromiumDebugPluginUtil {
     return UniqueKeyGenerator.createUniqueKey(patchedName, 1000, factory);
   }
 
-  private static final Pattern FILE_NAME_BAD_CHARS = Pattern.compile("[?<>/]");
+  private static final Pattern FILE_NAME_BAD_CHARS = Pattern.compile("[/\\x00]");
+  private static final Pattern FILE_NAME_BAD_CHARS_FALLBACK = Pattern.compile("[^\\w\\._-]");
 
   /**
    * Helper class that provides polymorphic access to {@link IProject} and {@link IContainer}.
