@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.network;
 
@@ -12,17 +12,17 @@ public interface RequestServedFromMemoryCacheEventData {
   /**
    Request identifier.
    */
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.RequestIdTypedef*/ requestId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.RequestIdTypedef*/ requestId();
 
   /**
    Frame identifier.
    */
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.FrameIdTypedef*/ frameId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameId();
 
   /**
    Loader identifier.
    */
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.LoaderIdTypedef*/ loaderId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.LoaderIdTypedef*/ loaderId();
 
   /**
    URL of the document this request is loaded for.
@@ -32,7 +32,7 @@ public interface RequestServedFromMemoryCacheEventData {
   /**
    Timestamp.
    */
-  Number/*See org.chromium.sdk.internal.wip.protocol.input.network.TimestampTypedef*/ timestamp();
+  Number/*See org.chromium.sdk.internal.wip.protocol.common.network.TimestampTypedef*/ timestamp();
 
   /**
    Request initiator.

@@ -33,6 +33,7 @@ class Generator {
   private static final String ROOT_PACKAGE = "org.chromium.sdk.internal.wip.protocol";
   private static final String OUTPUT_PACKAGE = ROOT_PACKAGE + ".output";
   private static final String INPUT_PACKAGE = ROOT_PACKAGE + ".input";
+  private static final String COMMON_PACKAGE = ROOT_PACKAGE + ".common";
   private static final String PARSER_INTERFACE_LIST_CLASS_NAME = "GeneratedParserInterfaceList";
   private static final String PARSER_ROOT_INTERFACE_NAME = "WipGeneratedParserRoot";
 
@@ -222,10 +223,10 @@ class Generator {
       }
 
       @Override public StandaloneTypeBinding visitString() {
-        return createTypedefTypeBinding(type, BoxableType.STRING, getClassNameScheme());
+        return createTypedefTypeBinding(type, BoxableType.STRING, Naming.COMMON_TYPEDEF, null);
       }
       @Override public StandaloneTypeBinding visitInteger() {
-        return createTypedefTypeBinding(type, BoxableType.LONG, getClassNameScheme());
+        return createTypedefTypeBinding(type, BoxableType.LONG, Naming.COMMON_TYPEDEF, null);
       }
       @Override public StandaloneTypeBinding visitRef(String refName) {
         throw new RuntimeException();
@@ -234,22 +235,17 @@ class Generator {
         throw new RuntimeException();
       }
       @Override public StandaloneTypeBinding visitNumber() {
-        return createTypedefTypeBinding(type, BoxableType.NUMBER, getClassNameScheme());
+        return createTypedefTypeBinding(type, BoxableType.NUMBER, Naming.COMMON_TYPEDEF, null);
       }
       @Override public StandaloneTypeBinding visitUnknown() {
         throw new RuntimeException();
       }
-
-      protected abstract ClassNameScheme getClassNameScheme();
     }
 
     StandaloneTypeBinding createStandaloneOutputTypeBinding(StandaloneType type,
         final String name) {
       return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
           new CreateStandalonTypeBindingVisitorBase(type) {
-        @Override protected ClassNameScheme getClassNameScheme() {
-          return Naming.OUTPUT_TYPEDEF;
-        }
         @Override
         public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
           return new StandaloneTypeBinding() {
@@ -259,9 +255,12 @@ class Generator {
                   Naming.ADDITIONAL_PARAM.getFullName(domain.domain(), name));
             }
 
-            @Override
-            public void generate() throws IOException {
+            @Override public void generate() throws IOException {
               generateCommandAdditionalParam(getType());
+            }
+
+            @Override public TypeData.Direction getDirection() {
+              return TypeData.Direction.OUTPUT;
             }
           };
         }
@@ -279,9 +278,6 @@ class Generator {
     StandaloneTypeBinding createStandaloneInputTypeBinding(StandaloneType type) {
       return switchByType(type, TypedObjectAccess.FOR_STANDALONE,
           new CreateStandalonTypeBindingVisitorBase(type) {
-        @Override protected ClassNameScheme getClassNameScheme() {
-          return Naming.INPUT_TYPEDEF;
-        }
         @Override
         public StandaloneTypeBinding visitObject(List<ObjectProperty> properties) {
           return createStandaloneObjectInputTypeBinding(getType(), properties);
@@ -289,7 +285,8 @@ class Generator {
 
         @Override
         public StandaloneTypeBinding visitEnum(List<String> enumConstants) {
-          return createStandaloneEnumInputTypeBinding(getType(), enumConstants);
+          return createStandaloneEnumInputTypeBinding(getType(), enumConstants,
+              TypeData.Direction.INPUT);
         }
 
         @Override public StandaloneTypeBinding visitArray(ArrayItemType items) {
@@ -318,11 +315,15 @@ class Generator {
               throw new UnsupportedOperationException();
             }
           };
-          QualifiedTypeData itemTypeResolved =
+          QualifiedTypeData itemTypeData =
               resolveType(items, TypedObjectAccess.FOR_ARRAY_ITEM, resolveAndGenerateScope);
+          BoxableType itemBoxableType = itemTypeData.getJavaType();
 
-          return createTypedefTypeBinding(getType(), itemTypeResolved.getJavaType(),
-              Naming.INPUT_TYPEDEF);
+          BoxableType arrayType = BoxableType.createReference("java.util.List<" +
+              itemBoxableType.getBoxedTypeText() + ">");
+
+          return createTypedefTypeBinding(getType(), arrayType,
+              Naming.INPUT_TYPEDEF, TypeData.Direction.INPUT);
         }
       });
     }
@@ -364,11 +365,15 @@ class Generator {
 
           fileUpdater.update();
         }
+
+        @Override public TypeData.Direction getDirection() {
+          return TypeData.Direction.INPUT;
+        }
       };
     }
 
     StandaloneTypeBinding createStandaloneEnumInputTypeBinding(final StandaloneType type,
-        final List<String> enumConstants) {
+        final List<String> enumConstants, final TypeData.Direction direction) {
       final String name = type.id();
       return new StandaloneTypeBinding() {
         @Override public BoxableType getJavaType() {
@@ -406,6 +411,10 @@ class Generator {
 
           fileUpdater.update();
         }
+
+        @Override public TypeData.Direction getDirection() {
+          return direction;
+        }
       };
     }
 
@@ -414,7 +423,8 @@ class Generator {
      * refers to an actual type (such as String).
      */
     StandaloneTypeBinding createTypedefTypeBinding(final StandaloneType type,
-        final BoxableType actualJavaType, final ClassNameScheme nameScheme) {
+        final BoxableType actualJavaType,
+        final ClassNameScheme nameScheme, final TypeData.Direction direction) {
       final String name = type.id();
       final String typedefJavaName = nameScheme.getFullName(domain.domain(), name);
 
@@ -448,6 +458,10 @@ class Generator {
           writer.write("  " + actualJavaType.getText() + " actualType;\n");
           writer.write("}\n");
           fileUpdater.update();
+        }
+
+        @Override public TypeData.Direction getDirection() {
+          return direction;
         }
       };
     }
@@ -1127,18 +1141,33 @@ class Generator {
         return OUTPUT_PACKAGE + "." + domainName.toLowerCase();
       }
     }
+
+    static class Common extends ClassNameScheme {
+      Common(String suffix) {
+        super(suffix);
+      }
+
+      @Override protected String getPackageNameVirtual(String domainName) {
+        return getPackageName(domainName);
+      }
+
+      static String getPackageName(String domainName) {
+        return COMMON_PACKAGE + "." + domainName.toLowerCase();
+      }
+    }
   }
 
   interface Naming {
     ClassNameScheme PARAMS = new ClassNameScheme.Output("Params");
     ClassNameScheme ADDITIONAL_PARAM = new ClassNameScheme.Output("Param");
-    ClassNameScheme OUTPUT_TYPEDEF = new ClassNameScheme.Output("Typedef");
 
     ClassNameScheme.Input COMMAND_DATA = new ClassNameScheme.Input("Data");
     ClassNameScheme.Input EVENT_DATA = new ClassNameScheme.Input("EventData");
     ClassNameScheme INPUT_VALUE = new ClassNameScheme.Input("Value");
     ClassNameScheme INPUT_ENUM = new ClassNameScheme.Input("Enum");
     ClassNameScheme INPUT_TYPEDEF = new ClassNameScheme.Input("Typedef");
+
+    ClassNameScheme COMMON_TYPEDEF = new ClassNameScheme.Common("Typedef");
   }
 
   private static <P> String getParamName(P param, PropertyLikeAccess<P> access) {
@@ -1403,6 +1432,7 @@ class Generator {
     private Output output = null;
 
     private StandaloneType type = null;
+    private StandaloneTypeBinding commonBinding = null;
 
     TypeData(String domain, String name) {
       this.domain = domain;
@@ -1455,40 +1485,35 @@ class Generator {
     }
 
     abstract class TypeRef {
-      private boolean requested = false;
-      private boolean generated = false;
-      private StandaloneTypeBinding binding = null;
+      private StandaloneTypeBinding oneDirectionBinding = null;
 
       BoxableType resolve(TypeMap typeMap, DomainGenerator domainGenerator) {
-        if (binding == null) {
-          binding = resolveImpl(domainGenerator);
-          typeMap.addTypeToGenerate(this);
-          requested = true;
+        if (commonBinding != null) {
+          return commonBinding.getJavaType();
         }
+        if (oneDirectionBinding != null) {
+          return oneDirectionBinding.getJavaType();
+        }
+        StandaloneTypeBinding binding = resolveImpl(domainGenerator);
+        if (binding.getDirection() == null) {
+          commonBinding = binding;
+        } else {
+          oneDirectionBinding = binding;
+        }
+        typeMap.addTypeToGenerate(binding);
         return binding.getJavaType();
       }
 
       abstract StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator);
 
-      void generate() throws IOException {
-        if (!generated) {
-          generated = true;
-          binding.generate();
-        }
-      }
-
-      boolean isRequested() {
-        return requested;
-      }
-    }
-
-    class Output extends TypeRef {
       void checkResolved() {
         if (type == null) {
           throw new RuntimeException();
         }
       }
+    }
 
+    class Output extends TypeRef {
       @Override
       StandaloneTypeBinding resolveImpl(final DomainGenerator domainGenerator) {
         if (type == null) {
@@ -1499,53 +1524,22 @@ class Generator {
     }
 
     class Input extends TypeRef {
-      private String predefinedJavaTypeName = null;
-
       @Override
       StandaloneTypeBinding resolveImpl(DomainGenerator domainGenerator) {
-        if (predefinedJavaTypeName == null) {
-          if (type == null) {
-            throw new RuntimeException();
-          }
-          return domainGenerator.createStandaloneInputTypeBinding(type);
-        } else {
-          final BoxableType javaType = BoxableType.createReference(predefinedJavaTypeName);
-          return new StandaloneTypeBinding() {
-            @Override
-            public BoxableType getJavaType() {
-              return javaType;
-            }
-
-            @Override
-            public void generate() {
-            }
-          };
+        if (type == null) {
+          throw new RuntimeException();
         }
-      }
-
-      void checkResolved() {
-        if (predefinedJavaTypeName != null) {
-          if (type != null) {
-            throw new RuntimeException();
-          }
-          if (!isRequested()) {
-            throw new RuntimeException("Unused predifined type");
-          }
-        }
-      }
-
-      void setJavaTypeName(String javaTypeName) {
-        if (this.predefinedJavaTypeName != null) {
-          throw new RuntimeException("Type already initialized");
-        }
-        this.predefinedJavaTypeName = javaTypeName;
+        return domainGenerator.createStandaloneInputTypeBinding(type);
       }
     }
   }
 
   private interface StandaloneTypeBinding {
-    abstract BoxableType getJavaType();
-    abstract void generate() throws IOException;
+    BoxableType getJavaType();
+    void generate() throws IOException;
+
+    /** @return null if not direction-specific */
+    TypeData.Direction getDirection();
   }
 
 
@@ -1556,7 +1550,7 @@ class Generator {
   private static class TypeMap {
     private final Map<List<String>, TypeData> map = new HashMap<List<String>, TypeData>();
     private Map<String, DomainGenerator> domainGeneratorMap = null;
-    private List<TypeData.TypeRef> typesToGenerate = new ArrayList<TypeData.TypeRef>();
+    private List<StandaloneTypeBinding> typesToGenerate = new ArrayList<StandaloneTypeBinding>();
 
     void setDomainGeneratorMap(Map<String, DomainGenerator> domainGeneratorMap) {
       this.domainGeneratorMap = domainGeneratorMap;
@@ -1571,8 +1565,8 @@ class Generator {
       return getTypeData(domainName, typeName).get(direction).resolve(this, domainGenerator);
     }
 
-    void addTypeToGenerate(TypeData.TypeRef typeData) {
-      typesToGenerate.add(typeData);
+    void addTypeToGenerate(StandaloneTypeBinding binding) {
+      typesToGenerate.add(binding);
     }
 
     public void generateRequestedTypes() throws IOException {

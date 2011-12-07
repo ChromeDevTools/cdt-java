@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.console;
 
@@ -11,7 +11,7 @@ public class AddInspectedNodeParams extends org.chromium.sdk.internal.wip.protoc
   /**
    @param nodeId DOM node id to be accessible by means of $x command line API.
    */
-  public AddInspectedNodeParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId) {
+  public AddInspectedNodeParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId) {
     this.put("nodeId", nodeId);
   }
 

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -58,13 +58,13 @@ public interface ConsoleMessageValue {
    JavaScript stack trace for assertions and error messages.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue>/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
 
   /**
    Identifier of the network request associated with this message.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.RequestIdTypedef*/ networkRequestId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.RequestIdTypedef*/ networkRequestId();
 
   /**
    Message source.

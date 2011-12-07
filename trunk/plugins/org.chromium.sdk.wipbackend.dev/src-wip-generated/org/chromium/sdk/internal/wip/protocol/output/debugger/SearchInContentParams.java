@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -14,7 +14,7 @@ public class SearchInContentParams extends org.chromium.sdk.internal.wip.protoco
    @param caseSensitiveOpt If true, search is case sensitive.
    @param isRegexOpt If true, treats string parameter as regex.
    */
-  public SearchInContentParams(String/*See org.chromium.sdk.internal.wip.protocol.output.debugger.ScriptIdTypedef*/ scriptId, String query, Boolean caseSensitiveOpt, Boolean isRegexOpt) {
+  public SearchInContentParams(String/*See org.chromium.sdk.internal.wip.protocol.common.debugger.ScriptIdTypedef*/ scriptId, String query, Boolean caseSensitiveOpt, Boolean isRegexOpt) {
     this.put("scriptId", scriptId);
     this.put("query", query);
     if (caseSensitiveOpt != null) {

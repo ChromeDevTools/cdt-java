@@ -16,7 +16,7 @@ public class RemoteObjectParam extends org.json.simple.JSONObject {
    @param descriptionOpt String representation of the object.
    @param objectIdOpt Unique object identifier (for non-primitive values).
    */
-  public RemoteObjectParam(Type type, SubtypeOpt subtypeOpt, String classNameOpt, Object valueOpt, String descriptionOpt, String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectIdOpt) {
+  public RemoteObjectParam(Type type, SubtypeOpt subtypeOpt, String classNameOpt, Object valueOpt, String descriptionOpt, String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectIdOpt) {
     this.put("type", type);
     if (subtypeOpt != null) {
       this.put("subtype", subtypeOpt);

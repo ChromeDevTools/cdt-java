@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@92377
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -13,7 +13,7 @@ public class SetScriptSourceParams extends org.chromium.sdk.internal.wip.protoco
    @param scriptSource New content of the script.
    @param previewOpt  If true the change will not actually be applied. Preview mode may be used to get result description without actually modifying the code.
    */
-  public SetScriptSourceParams(String/*See org.chromium.sdk.internal.wip.protocol.output.debugger.ScriptIdTypedef*/ scriptId, String scriptSource, Boolean previewOpt) {
+  public SetScriptSourceParams(String/*See org.chromium.sdk.internal.wip.protocol.common.debugger.ScriptIdTypedef*/ scriptId, String scriptSource, Boolean previewOpt) {
     this.put("scriptId", scriptId);
     this.put("scriptSource", scriptSource);
     if (previewOpt != null) {

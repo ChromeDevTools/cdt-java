@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -12,7 +12,7 @@ public class RemoveAttributeParams extends org.chromium.sdk.internal.wip.protoco
    @param nodeId Id of the element to remove attribute from.
    @param name Name of the attribute to remove.
    */
-  public RemoveAttributeParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId, String name) {
+  public RemoveAttributeParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId, String name) {
     this.put("nodeId", nodeId);
     this.put("name", name);
   }

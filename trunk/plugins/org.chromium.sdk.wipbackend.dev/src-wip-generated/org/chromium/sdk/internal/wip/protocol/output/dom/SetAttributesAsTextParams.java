@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -13,7 +13,7 @@ public class SetAttributesAsTextParams extends org.chromium.sdk.internal.wip.pro
    @param text Text with a number of attributes. Will parse this text using HTML parser.
    @param nameOpt Attribute name to replace with new attributes derived from text in case text parsed successfully.
    */
-  public SetAttributesAsTextParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId, String text, String nameOpt) {
+  public SetAttributesAsTextParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId, String text, String nameOpt) {
     this.put("nodeId", nodeId);
     this.put("text", text);
     if (nameOpt != null) {

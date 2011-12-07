@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -12,7 +12,7 @@ public class SetNodeNameParams extends org.chromium.sdk.internal.wip.protocol.ou
    @param nodeId Id of the node to set name for.
    @param name New node's name.
    */
-  public SetNodeNameParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId, String name) {
+  public SetNodeNameParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId, String name) {
     this.put("nodeId", nodeId);
     this.put("name", name);
   }

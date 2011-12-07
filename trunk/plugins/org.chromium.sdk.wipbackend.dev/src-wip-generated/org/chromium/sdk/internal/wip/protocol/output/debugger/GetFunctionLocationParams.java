@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -11,7 +11,7 @@ public class GetFunctionLocationParams extends org.chromium.sdk.internal.wip.pro
   /**
    @param functionId Id of the function to get location for.
    */
-  public GetFunctionLocationParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ functionId) {
+  public GetFunctionLocationParams(String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ functionId) {
     this.put("functionId", functionId);
   }
 
