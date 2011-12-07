@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -13,7 +13,7 @@ public class SetAttributeValueParams extends org.chromium.sdk.internal.wip.proto
    @param name Attribute name.
    @param value Attribute value.
    */
-  public SetAttributeValueParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId, String name, String value) {
+  public SetAttributeValueParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId, String name, String value) {
     this.put("nodeId", nodeId);
     this.put("name", name);
     this.put("value", value);

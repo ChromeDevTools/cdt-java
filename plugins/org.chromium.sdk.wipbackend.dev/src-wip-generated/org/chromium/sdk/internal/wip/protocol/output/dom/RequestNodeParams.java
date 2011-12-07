@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -11,7 +11,7 @@ public class RequestNodeParams extends org.chromium.sdk.internal.wip.protocol.ou
   /**
    @param objectId JavaScript object id to convert into node.
    */
-  public RequestNodeParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectId) {
+  public RequestNodeParams(String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectId) {
     this.put("objectId", objectId);
   }
 

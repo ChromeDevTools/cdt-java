@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -12,6 +12,6 @@ public interface QuerySelectorAllData {
   /**
    Query selector result.
    */
-  java.util.List<Long/*See org.chromium.sdk.internal.wip.protocol.input.dom.NodeIdTypedef*/> nodeIds();
+  java.util.List<Long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/> nodeIds();
 
 }

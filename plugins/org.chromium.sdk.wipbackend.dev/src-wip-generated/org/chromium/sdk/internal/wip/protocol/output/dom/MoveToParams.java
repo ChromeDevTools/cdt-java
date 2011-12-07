@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -13,7 +13,7 @@ public class MoveToParams extends org.chromium.sdk.internal.wip.protocol.output.
    @param targetNodeId Id of the element to drop into.
    @param insertBeforeNodeIdOpt Drop node before given one.
    */
-  public MoveToParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId, long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ targetNodeId, Long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ insertBeforeNodeIdOpt) {
+  public MoveToParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId, long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ targetNodeId, Long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ insertBeforeNodeIdOpt) {
     this.put("nodeId", nodeId);
     this.put("targetNodeId", targetNodeId);
     if (insertBeforeNodeIdOpt != null) {

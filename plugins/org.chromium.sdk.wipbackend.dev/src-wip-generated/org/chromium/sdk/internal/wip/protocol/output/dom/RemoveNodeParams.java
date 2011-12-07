@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
@@ -11,7 +11,7 @@ public class RemoveNodeParams extends org.chromium.sdk.internal.wip.protocol.out
   /**
    @param nodeId Id of the node to remove.
    */
-  public RemoveNodeParams(long/*See org.chromium.sdk.internal.wip.protocol.output.dom.NodeIdTypedef*/ nodeId) {
+  public RemoveNodeParams(long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId) {
     this.put("nodeId", nodeId);
   }
 

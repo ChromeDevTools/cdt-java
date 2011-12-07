@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -15,7 +15,7 @@ public class EvaluateOnCallFrameParams extends org.chromium.sdk.internal.wip.pro
    @param includeCommandLineAPIOpt Specifies whether command line API should be available to the evaluated expression, defaults to false.
    @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
    */
-  public EvaluateOnCallFrameParams(String/*See org.chromium.sdk.internal.wip.protocol.output.debugger.CallFrameIdTypedef*/ callFrameId, String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean returnByValueOpt) {
+  public EvaluateOnCallFrameParams(String/*See org.chromium.sdk.internal.wip.protocol.common.debugger.CallFrameIdTypedef*/ callFrameId, String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean returnByValueOpt) {
     this.put("callFrameId", callFrameId);
     this.put("expression", expression);
     if (objectGroupOpt != null) {

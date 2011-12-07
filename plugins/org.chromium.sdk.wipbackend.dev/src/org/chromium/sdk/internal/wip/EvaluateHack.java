@@ -199,7 +199,7 @@ public class EvaluateHack {
             arguments = new ArrayList<CallArgumentParam>(additionalObjectIds.size());
             for (String objectId : additionalObjectIds) {
               RemoteObjectParam remoteObjectParam =
-                  new RemoteObjectParam(null, null, null, null, null, objectId, null);
+                  new RemoteObjectParam(null, null, null, null, null, objectId);
               arguments.add(new CallArgumentParam(null, remoteObjectParam));
             }
           }

@@ -1,13 +1,13 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
-package org.chromium.sdk.internal.wip.protocol.output.runtime;
+package org.chromium.sdk.internal.wip.protocol.common.network;
 
 /**
- Unique object identifier.
+ Unique loader identifier.
  */
-public class RemoteObjectIdTypedef {
+public class LoaderIdTypedef {
   /*
    The class is 'typedef'.
    If merely holds a type javadoc and its only field refers to an actual type.

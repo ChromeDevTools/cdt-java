@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -9,6 +9,6 @@ public interface AddScriptToEvaluateOnLoadData {
   /**
    Identifier of the added script.
    */
-  String/*See org.chromium.sdk.internal.wip.protocol.input.page.ScriptIdentifierTypedef*/ identifier();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.page.ScriptIdentifierTypedef*/ identifier();
 
 }

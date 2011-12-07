@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -12,12 +12,12 @@ public interface ChildNodeInsertedEventData {
   /**
    Id of the node that has changed.
    */
-  long/*See org.chromium.sdk.internal.wip.protocol.input.dom.NodeIdTypedef*/ parentNodeId();
+  long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ parentNodeId();
 
   /**
    If of the previous siblint.
    */
-  long/*See org.chromium.sdk.internal.wip.protocol.input.dom.NodeIdTypedef*/ previousNodeId();
+  long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ previousNodeId();
 
   /**
    Inserted node data.

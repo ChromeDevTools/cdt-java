@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.network;
 
@@ -11,7 +11,7 @@ public class GetResponseBodyParams extends org.chromium.sdk.internal.wip.protoco
   /**
    @param requestId Identifier of the network request to get content for.
    */
-  public GetResponseBodyParams(String/*See org.chromium.sdk.internal.wip.protocol.output.network.RequestIdTypedef*/ requestId) {
+  public GetResponseBodyParams(String/*See org.chromium.sdk.internal.wip.protocol.common.network.RequestIdTypedef*/ requestId) {
     this.put("requestId", requestId);
   }
 

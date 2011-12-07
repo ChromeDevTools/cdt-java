@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -14,7 +14,7 @@ public class CallFunctionOnParams extends org.chromium.sdk.internal.wip.protocol
    @param argumentsOpt Call arguments. All call arguments must belong to the same JavaScript world as the target object.
    @param returnByValueOpt Whether the result is expected to be a JSON object which should be sent by value.
    */
-  public CallFunctionOnParams(String/*See org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectIdTypedef*/ objectId, String functionDeclaration, java.util.List<org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam> argumentsOpt, Boolean returnByValueOpt) {
+  public CallFunctionOnParams(String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectId, String functionDeclaration, java.util.List<org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam> argumentsOpt, Boolean returnByValueOpt) {
     this.put("objectId", objectId);
     this.put("functionDeclaration", functionDeclaration);
     if (argumentsOpt != null) {

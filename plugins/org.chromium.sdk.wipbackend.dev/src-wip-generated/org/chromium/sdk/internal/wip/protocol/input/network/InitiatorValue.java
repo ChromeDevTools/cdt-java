@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.network;
 
@@ -18,7 +18,7 @@ public interface InitiatorValue {
    Initiator JavaScript stack trace, set for Script only.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue>/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
 
   /**
    Initiator URL, set for Parser type only.

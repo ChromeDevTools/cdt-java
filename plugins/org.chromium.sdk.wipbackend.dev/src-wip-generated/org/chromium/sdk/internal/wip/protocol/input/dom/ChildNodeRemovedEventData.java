@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -12,12 +12,12 @@ public interface ChildNodeRemovedEventData {
   /**
    Parent id.
    */
-  long/*See org.chromium.sdk.internal.wip.protocol.input.dom.NodeIdTypedef*/ parentNodeId();
+  long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ parentNodeId();
 
   /**
    Id of the node that has been removed.
    */
-  long/*See org.chromium.sdk.internal.wip.protocol.input.dom.NodeIdTypedef*/ nodeId();
+  long/*See org.chromium.sdk.internal.wip.protocol.common.dom.NodeIdTypedef*/ nodeId();
 
   public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.dom.ChildNodeRemovedEventData> TYPE
       = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.dom.ChildNodeRemovedEventData>("DOM.childNodeRemoved", org.chromium.sdk.internal.wip.protocol.input.dom.ChildNodeRemovedEventData.class) {

@@ -43,7 +43,7 @@ public interface RemoteObjectValue {
    Unique object identifier (for non-primitive values).
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  String/*See org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectIdTypedef*/ objectId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectId();
 
   /**
    Object type.

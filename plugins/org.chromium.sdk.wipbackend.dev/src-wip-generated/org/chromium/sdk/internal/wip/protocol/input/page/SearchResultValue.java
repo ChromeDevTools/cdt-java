@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -17,7 +17,7 @@ public interface SearchResultValue {
   /**
    Resource frame id.
    */
-  String/*See org.chromium.sdk.internal.wip.protocol.input.network.FrameIdTypedef*/ frameId();
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameId();
 
   /**
    Number of matches in the resource content.
