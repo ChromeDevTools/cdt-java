@@ -103,7 +103,6 @@
                 <mkdir dir="${p2Repository}" />
 		<copy todir="${buildDirectory}/plugins">
 			<fileset dir="${sourceBaseLocation}/plugins">
-				<include name="org.chromium.sdk.wipbackend.wk91698/**" />
 				<include name="org.chromium.sdk.wipbackend.wk93101/**" />
 				<include name="org.chromium.sdk.wipbackend.wk97678/**" />
 			</fileset>
