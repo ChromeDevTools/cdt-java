@@ -17,15 +17,20 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionLocationData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.GetFunctionLocationParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
+import org.chromium.sdk.util.AsyncFuture.Callback;
 
 /**
  * Responsible for loading values of properties. It works in pair with {@link WipValueBuilder}.
@@ -260,6 +265,32 @@ public abstract class WipValueLoader implements RemoteValueMapping {
       futureRef.initializeRunning(syncOperation.asAsyncOperation());
     }
     syncOperation.execute();
+  }
+
+  void loadFunctionLocationInFuture(final String objectId,
+      AsyncFutureRef<Getter<LocationValue>> loadedPositionRef) throws MethodIsBlockingException {
+
+    AsyncFuture.Operation<Getter<LocationValue>> operation =
+        new AsyncFuture.Operation<Getter<LocationValue>>() {
+      @Override
+      public RelayOk start(final Callback<Getter<LocationValue>> callback,
+          SyncCallback syncCallback) {
+        GetFunctionLocationParams request = new GetFunctionLocationParams(objectId);
+        GenericCallback<GetFunctionLocationData> wrappedCallback =
+            new GenericCallback<GetFunctionLocationData>() {
+          @Override public void success(GetFunctionLocationData value) {
+            callback.done(Getter.newNormal(value.location()));
+          }
+
+          @Override public void failure(Exception exception) {
+            callback.done(Getter.<LocationValue>newFailure(exception));
+          }
+        };
+        return tabImpl.getCommandProcessor().send(request, wrappedCallback, syncCallback);
+      }
+    };
+
+    loadedPositionRef.initializeRunning(operation);
   }
 
   /**

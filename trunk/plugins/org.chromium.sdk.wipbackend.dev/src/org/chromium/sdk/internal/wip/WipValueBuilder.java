@@ -21,13 +21,16 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ObjectPropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -216,16 +219,16 @@ class WipValueBuilder {
 
       @Override
       public String getRefId() {
-        String objectId = valueData.objectId();
-        if (objectId == null) {
-          return null;
-        }
-        return objectId;
+        return valueData.objectId();
       }
 
       @Override
       public WipValueLoader getRemoteValueMapping() {
         return valueLoader;
+      }
+
+      protected RemoteObjectValue getValueData() {
+        return valueData;
       }
 
       protected ObjectProperties getLoadedProperties() throws MethodIsBlockingException {
@@ -389,16 +392,64 @@ class WipValueBuilder {
     @Override
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
-      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
-        @Override public JsArray asArray() {
-          return null;
-        }
+      return new FunctionValueImpl(valueData, valueLoader, nameBuilder);
+    }
 
-        @Override public JsFunction asFunction() {
-          // TODO: make it a function, when backend provides data!
-          return null;
+    private class FunctionValueImpl extends ObjectTypeBase.JsObjectBase implements JsFunction {
+      private final AsyncFutureRef<Getter<LocationValue>> loadedPositionRef =
+          new AsyncFutureRef<Getter<LocationValue>>();
+
+      FunctionValueImpl(RemoteObjectValue valueData,
+          WipValueLoader valueLoader, ValueNameBuilder nameBuilder) {
+        super(valueData, valueLoader, nameBuilder);
+      }
+
+      @Override public JsArray asArray() {
+        return null;
+      }
+
+      @Override public JsFunction asFunction() {
+        return this;
+      }
+
+      @Override
+      public Script getScript() throws MethodIsBlockingException {
+        LocationValue functionPosition = getLoadedPosition();
+        WipScriptManager scriptManager = getRemoteValueMapping().getTabImpl().getScriptManager();
+        return scriptManager.getScript(functionPosition.scriptId());
+      }
+
+      @Override
+      public TextStreamPosition getOpenParenPosition()
+          throws MethodIsBlockingException {
+        final LocationValue functionPosition = getLoadedPosition();
+        return new TextStreamPosition() {
+          @Override public int getOffset() {
+            return WipBrowserImpl.throwUnsupported();
+          }
+
+          @Override public int getLine() {
+            return (int) functionPosition.lineNumber();
+          }
+
+          @Override
+          public int getColumn() {
+            Long columnObject = functionPosition.columnNumber();
+            if (columnObject == null) {
+              return NO_POSITION;
+            }
+            return columnObject.intValue();
+          }
+        };
+      }
+
+      private LocationValue getLoadedPosition() throws MethodIsBlockingException {
+        if (!loadedPositionRef.isInitialized()) {
+          getRemoteValueMapping().loadFunctionLocationInFuture(getValueData().objectId(),
+              loadedPositionRef);
         }
-      };
+        return loadedPositionRef.getSync().get();
+      }
     }
   }
 
