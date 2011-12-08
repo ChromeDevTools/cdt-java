@@ -95,6 +95,20 @@ class WipScriptManager {
         guardOne.asSyncCallback());
   }
 
+  Script getScript(String scriptId) {
+    ScriptData data;
+    synchronized (scriptIdToData) {
+      data = getSafe(scriptIdToData, scriptId);
+    }
+    if (data == null) {
+      return null;
+    }
+    if (!data.sourceLoadedFuture.isDone()) {
+      return null;
+    }
+    return data.scriptImpl;
+  }
+
 
   private Collection<Script> getCurrentScripts() {
     synchronized (scriptIdToData) {
