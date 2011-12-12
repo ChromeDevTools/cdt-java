@@ -18,4 +18,4 @@ Other helpful data points you can provide are:
   * Name and version of your debuggee: Google Chrome, Chromium, Node.JS, etc.
 
 ==How to Investigate Myself?==
-You may want to look into what's going wrong yourself. We shouldn't mention how valuable if could be with some sort of bugs (for example platform-specific). If you are ok with Java and Eclipse, debugging should be easy. There are some steps to start a debugger summarized [HowToDebug here].
+You may want to look into what's going wrong yourself. We shouldn't mention how valuable it could be with certain sorts of bugs (for example platform-specific). If you are ok with Java and Eclipse, debugging should be easy. There are some steps to start a debugger summarized [HowToDebug here].
