@@ -318,11 +318,11 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
           // Ignore.
           return;
         }
+        if (resumeReason == null) {
+          resumeReason = ResumeReason.UNSPECIFIED;
+        }
         currentStepState.dismiss();
         currentStepState = new RunningState(resumeReason);
-      }
-      if (resumeReason == null) {
-        resumeReason = ResumeReason.UNSPECIFIED;
       }
       getConnectedData().fireResumeEvent(resumeReason.detailCode);
     }
