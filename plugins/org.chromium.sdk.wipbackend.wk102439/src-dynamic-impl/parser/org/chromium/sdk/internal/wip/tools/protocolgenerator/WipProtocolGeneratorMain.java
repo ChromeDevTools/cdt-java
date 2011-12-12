@@ -168,5 +168,5 @@ public class WipProtocolGeneratorMain {
   }
 
   private static final ModelResourceLocation JSON_MODEL_FILE_URL = new RemoteSvnLocation(
-      "http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json");
+      "http://svn.webkit.org/repository/webkit/branches/chromium/963/Source/WebCore/inspector/Inspector.json");
 }
