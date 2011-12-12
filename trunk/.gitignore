@@ -11,12 +11,12 @@ plugins/org.chromium.sdk/bin
 plugins/org.chromium.sdk/build-output
 plugins/org.chromium.sdk.wip.eclipse/.settings
 plugins/org.chromium.sdk.wip.eclipse/bin
-plugins/org.chromium.sdk.wipbackend.wk91698/.settings
-plugins/org.chromium.sdk.wipbackend.wk91698/bin
 plugins/org.chromium.sdk.wipbackend.wk93101/.settings
 plugins/org.chromium.sdk.wipbackend.wk93101/bin
 plugins/org.chromium.sdk.wipbackend.wk97678/.settings
 plugins/org.chromium.sdk.wipbackend.wk97678/bin
+plugins/org.chromium.sdk.wipbackend.wk102439/.settings
+plugins/org.chromium.sdk.wipbackend.wk102439/bin
 plugins/org.chromium.sdk.wipbackend.dev/.settings
 plugins/org.chromium.sdk.wipbackend.dev/bin
 plugins/org.chromium.debug.jsdtbridge/.settings
