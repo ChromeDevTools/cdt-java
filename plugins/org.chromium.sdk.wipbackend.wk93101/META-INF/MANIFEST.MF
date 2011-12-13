@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Google Chrome Developer Tools SDK WIP backend WK93101
 Bundle-Vendor: The Chromium Authors
 Bundle-SymbolicName: org.chromium.sdk.wipbackend.wk93101;singleton:=true
-Bundle-Version: 0.3.2.qualifier
+Bundle-Version: 0.3.3.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.chromium.sdk;bundle-version="0.3.2"
+Require-Bundle: org.chromium.sdk;bundle-version="0.3.3"
 Export-Package: org.chromium.sdk.internal.wip.protocol
