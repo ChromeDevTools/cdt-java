@@ -19,7 +19,6 @@ public class Runner {
     BuildLoader.LoadedBuild build = BuildLoader.load();
     File chromeBinary = build.getChromeBinary();
 
-    administerTest(chromeBinary, "--remote-shell-port", "SHELL", 9223);
     administerTest(chromeBinary, "--remote-debugging-port", "DEBUGGING", 9224);
 
     System.out.println("OK");
