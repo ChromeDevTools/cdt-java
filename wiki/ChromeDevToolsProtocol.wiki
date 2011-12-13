@@ -1,6 +1,6 @@
 #summary Google Chrome Developer Tools Protocol
 
-The protocol is *deprecated*. See [#Deprecation below].
+The protocol is *deprecated* and its support is going to be closed. See [#Deprecation_And_Removal below].
 
 = Introduction =
 
@@ -130,6 +130,7 @@ The following *result* codes are possible:
 <p></p>
 
 = Deprecation =
-The new debug protocol [WIP "WebKit Remote Debug Protocol"] is being developed to succeed !ChromeDevTools protocol. !ChromeDevTools protocol should be considered _deprecated_. Google Chrome/Chromium browser is going to discontinue its support after the new protocol becomes stable.
+= Deprecation And Removal =
+The new debug protocol [WIP "WebKit Remote Debug Protocol"] is being developed to succeed !ChromeDevTools protocol. !ChromeDevTools protocol should be considered _deprecated_. Google Chrome/Chromium browser discontinued its support in 17.0.950.* version (in developer build numbers change is at 111534 -> 111559).
 
 The [ChromeDevToolsSdk SDK] and EclipseDebugger are going to simultaneously support both protocols behind the single interface starting from [Release_0_3_0 0.3.0 version].
