@@ -6,7 +6,9 @@
 This release succeeds the [Release_0_3_0 release 0.3.0].
 
 ==Overview==
-This is a minor bugfix release. It covers issues 44, 53, 54. It also introduces new WIP backend for Google Chrome 17.
+This is a minor bugfix release. It covers issues 44, 53, 54.
+
+It also introduces new WIP backend for Google Chrome 17. It uses more recent !WebSocket protocol (!HyBi-17). It also implements missing feature "Open Function" (see [Release_0_1_6 0.1.6 release notes]).
 
 ==WIP Backends==
 
