@@ -7,6 +7,7 @@ package org.chromium.sdk.tests.system;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
@@ -117,7 +119,7 @@ public class Main {
         String aValue;
         aValue = root.getProperty("a").getValue().getValueString();
         if (!"2".equals(aValue)) {
-          throw new RuntimeException();
+          throw new SmokeException();
         }
         evaluateSync(context.getGlobalEvaluateContext(), "debug_value_1.a = 3");
 
@@ -125,7 +127,24 @@ public class Main {
 
         aValue = root.getProperty("a").getValue().getValueString();
         if (!"3".equals(aValue)) {
-          throw new RuntimeException();
+          throw new SmokeException();
+        }
+      }
+
+      {
+        // Check literals.
+        for (LiteralTestCase literal : TEST_LITERALS) {
+          JsVariable resultVar = evaluateSync(context.getGlobalEvaluateContext(),
+              literal.javaScriptExpression);
+          JsValue resultValue = resultVar.getValue();
+          if (resultValue.getType() != literal.expectedType) {
+            throw new SmokeException("Unexpected type of '" + literal.javaScriptExpression +
+                "': " + resultValue.getType());
+          }
+          if (!literal.expectedDescription.equals(resultValue.getValueString())) {
+            throw new SmokeException("Unexpected string value of '" +
+                literal.javaScriptExpression + "': " + resultValue.getValueString());
+          }
         }
       }
 
@@ -337,6 +356,37 @@ public class Main {
       throw new SmokeException("Wrong expression value");
     }
   }
+
+  private static class LiteralTestCase {
+    final String javaScriptExpression;
+    final JsValue.Type expectedType;
+    final String expectedDescription;
+
+    LiteralTestCase(String javaScriptExpression, JsValue.Type expectedType,
+        String expectedDescription) {
+      this.javaScriptExpression = javaScriptExpression;
+      this.expectedType = expectedType;
+      this.expectedDescription = expectedDescription;
+    }
+  }
+
+  private static final List<LiteralTestCase> TEST_LITERALS = Arrays.asList(
+      new LiteralTestCase("2011", JsValue.Type.TYPE_NUMBER, "2011"),
+      new LiteralTestCase("0", JsValue.Type.TYPE_NUMBER, "0"),
+      new LiteralTestCase("-5", JsValue.Type.TYPE_NUMBER, "-5"),
+      new LiteralTestCase("123.4567", JsValue.Type.TYPE_NUMBER, "123.4567"),
+      new LiteralTestCase("NaN", JsValue.Type.TYPE_NUMBER, "NaN"),
+      new LiteralTestCase("Infinity", JsValue.Type.TYPE_NUMBER, "Infinity"),
+      new LiteralTestCase("-Infinity", JsValue.Type.TYPE_NUMBER, "-Infinity"),
+      new LiteralTestCase("null", JsValue.Type.TYPE_NULL, "null"),
+      new LiteralTestCase("(void 0)", JsValue.Type.TYPE_UNDEFINED, "undefined"),
+      new LiteralTestCase("true", JsValue.Type.TYPE_BOOLEAN, "true"),
+      new LiteralTestCase("false", JsValue.Type.TYPE_BOOLEAN, "false"),
+      new LiteralTestCase("'abc'", JsValue.Type.TYPE_STRING, "abc"),
+      new LiteralTestCase("'\"'", JsValue.Type.TYPE_STRING, "\""),
+      new LiteralTestCase("'\u0424'", JsValue.Type.TYPE_STRING, "\u0424"),
+      new LiteralTestCase("'\0'", JsValue.Type.TYPE_STRING, "\0"),
+      new LiteralTestCase("\"rrr\"", JsValue.Type.TYPE_STRING, "rrr"));
 
   /**
    * @return 1-base number of the source line containing marker or -1

@@ -82,18 +82,18 @@ class WipValueBuilder {
       this.jsValueType = jsValueType;
     }
 
-    protected abstract String getValueString(Object rawValue);
+    protected abstract String getValueString(RemoteObjectValue valueData);
 
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         ValueNameBuilder nameBuilder) {
-      final Object rawValue = valueData.value();
+      final String valueString = getValueString(valueData);
       return new JsValue() {
         @Override public Type getType() {
           return jsValueType;
         }
         @Override public String getValueString() {
-          return PrimitiveType.this.getValueString(rawValue);
+          return valueString;
         }
         @Override public JsObject asObject() {
           return null;
@@ -118,19 +118,30 @@ class WipValueBuilder {
     }
 
     @Override
-    protected String getValueString(Object rawValue) {
+    protected String getValueString(RemoteObjectValue valueData) {
       return stringValue;
     }
   }
 
-  private static class RegularPrimitiveType extends PrimitiveType {
-    RegularPrimitiveType(Type jsValueType) {
+  private static class PrimitiveTypeWithDescription extends PrimitiveType {
+    PrimitiveTypeWithDescription(Type jsValueType) {
       super(jsValueType);
     }
 
     @Override
-    protected String getValueString(Object rawValue) {
-      return rawValue.toString();
+    protected String getValueString(RemoteObjectValue valueData) {
+      return valueData.description();
+    }
+  }
+
+  private static class PrimitiveTypeWithValue extends PrimitiveType {
+    PrimitiveTypeWithValue(Type jsValueType) {
+      super(jsValueType);
+    }
+
+    @Override
+    protected String getValueString(RemoteObjectValue valueData) {
+      return valueData.value().toString();
     }
   }
 
@@ -491,11 +502,11 @@ class WipValueBuilder {
   static {
     PROTOCOL_TYPE_TO_VALUE_TYPE = new HashMap<RemoteObjectValue.Type, ValueType>();
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.STRING,
-        new RegularPrimitiveType(JsValue.Type.TYPE_STRING));
+        new PrimitiveTypeWithValue(JsValue.Type.TYPE_STRING));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.BOOLEAN,
-        new RegularPrimitiveType(JsValue.Type.TYPE_BOOLEAN));
+        new PrimitiveTypeWithValue(JsValue.Type.TYPE_BOOLEAN));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.NUMBER,
-        new RegularPrimitiveType(JsValue.Type.TYPE_NUMBER));
+        new PrimitiveTypeWithDescription(JsValue.Type.TYPE_NUMBER));
     PROTOCOL_TYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Type.UNDEFINED,
         new SingletonPrimitiveType(JsValue.Type.TYPE_UNDEFINED, "undefined"));
 
