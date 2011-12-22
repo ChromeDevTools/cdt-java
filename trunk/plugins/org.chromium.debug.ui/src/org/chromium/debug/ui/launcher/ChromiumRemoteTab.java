@@ -127,6 +127,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigur
 
   private ELEMENTS createControlImpl(Composite parent) {
     Composite composite = createDefaultComposite(parent);
+    setControl(composite);
 
     Runnable modifyListener = new Runnable() {
       @Override public void run() {
@@ -323,9 +324,8 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigur
     return DebugUITools.getImage(IDebugUIConstants.IMG_LCL_DISCONNECT);
   }
 
-  private Composite createDefaultComposite(Composite parent) {
+  static Composite createDefaultComposite(Composite parent) {
     Composite composite = new Composite(parent, SWT.NULL);
-    setControl(composite);
 
     GridLayout layout = new GridLayout();
     layout.numColumns = 1;
@@ -339,7 +339,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends AbstractLaunchConfigur
     return composite;
   }
 
-  private static Composite createInnerComposite(Composite parent, int numColumns) {
+  static Composite createInnerComposite(Composite parent, int numColumns) {
     Composite composite = new Composite(parent, SWT.NONE);
     composite.setLayout(new GridLayout(numColumns, false));
     GridData gd = new GridData(GridData.FILL_HORIZONTAL);

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.util.RangeBinarySearch;
+import org.chromium.debug.ui.PluginUtil;
 import org.chromium.sdk.UpdatableScript;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.TextPresentation;
@@ -33,7 +34,6 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.FontMetrics;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
@@ -127,15 +127,7 @@ public class LiveEditDiffViewer {
   private LiveEditDiffViewer(Composite parent, Configuration configuration) {
     colors = new Colors(parent.getDisplay());
 
-    FontMetrics defaultFontMetrics;
-    {
-      GC gc = new GC(parent.getDisplay());
-      try {
-        defaultFontMetrics = gc.getFontMetrics();
-      } finally {
-        gc.dispose();
-      }
-    }
+    FontMetrics defaultFontMetrics = PluginUtil.getFontMetrics(parent, null);
 
     Composite composite = new Composite(parent, SWT.NONE);
     {

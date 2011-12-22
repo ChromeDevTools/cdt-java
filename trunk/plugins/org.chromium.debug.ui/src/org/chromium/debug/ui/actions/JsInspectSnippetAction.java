@@ -6,6 +6,7 @@ package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.EvaluateContext;
 import org.chromium.debug.ui.ChromiumDebugUIPlugin;
+import org.chromium.debug.ui.PluginUtil;
 import org.chromium.debug.ui.editors.JavascriptUtil;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
@@ -20,7 +21,6 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -196,10 +196,6 @@ public class JsInspectSnippetAction implements IEditorActionDelegate {
   }
 
   private static int getFontHeight(StyledText textWidget) {
-    GC gc = new GC(textWidget);
-    gc.setFont(textWidget.getFont());
-    int height = gc.getFontMetrics().getHeight();
-    gc.dispose();
-    return height;
+    return PluginUtil.getFontMetrics(textWidget, textWidget.getFont()).getHeight();
   }
 }

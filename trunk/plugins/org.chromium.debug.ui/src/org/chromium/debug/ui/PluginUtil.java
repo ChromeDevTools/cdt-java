@@ -9,6 +9,10 @@ import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.swt.graphics.Drawable;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontMetrics;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -75,6 +79,21 @@ public class PluginUtil {
   public static String stripChromiumExtension(String fileName) {
     return fileName.substring(
         0, fileName.length() - ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX.length());
+  }
+
+  /**
+   * @param font or null to use default font
+   */
+  public static FontMetrics getFontMetrics(Drawable drawable, Font font) {
+    GC gc = new GC(drawable);
+    try {
+      if (font != null) {
+        gc.setFont(font);
+      }
+      return gc.getFontMetrics();
+    } finally {
+      gc.dispose();
+    }
   }
 
   private PluginUtil() {

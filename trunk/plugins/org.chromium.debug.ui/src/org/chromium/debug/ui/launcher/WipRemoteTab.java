@@ -10,6 +10,7 @@ import java.util.Map;
 import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.LaunchParams.LookupMode;
 import org.chromium.debug.core.model.LaunchParams.ValueConverter;
+import org.chromium.debug.ui.PluginUtil;
 import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.eclipse.BackendRegistry;
 import org.eclipse.core.runtime.CoreException;
@@ -175,9 +176,7 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
         Font font = composite.getFont();
         text.setFont(font);
         GridData textLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-        GC gc = new GC(text);
-        int fontHeight = gc.getFontMetrics().getHeight();
-        gc.dispose();
+        int fontHeight = PluginUtil.getFontMetrics(text, null).getHeight();
 
         textLayoutData.minimumHeight = fontHeight * 3;
         text.setLayoutData(textLayoutData);
