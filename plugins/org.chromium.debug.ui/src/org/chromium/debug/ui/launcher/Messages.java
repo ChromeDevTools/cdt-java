@@ -49,6 +49,22 @@ public class Messages extends NLS {
 
   public static String ChromiumRemoteTab_URL;
 
+  public static String DevToolsProtocolDeprecationTab_CONFIGURATION_NAME_SUFFIX;
+
+  public static String DevToolsProtocolDeprecationTab_COPY_LAUNCH_CONFIGURATION;
+
+  public static String DevToolsProtocolDeprecationTab_MAIN_TEXT;
+
+  public static String DevToolsProtocolDeprecationTab_NEW_PROTOCOL;
+
+  public static String DevToolsProtocolDeprecationTab_OLD_PROTOCOL;
+
+  public static String DevToolsProtocolDeprecationTab_PROJECT_SITE;
+
+  public static String DevToolsProtocolDeprecationTab_SEE_ALSO;
+
+  public static String DevToolsProtocolDeprecationTab_TITLE;
+
   public static String LaunchType_LogConsoleLaunchName;
   static {
     // initialize resource bundle
