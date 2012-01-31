@@ -50,8 +50,6 @@ public class WipBreakpointManager {
         condition = "";
       }
 
-      final String conditionFinal = condition;
-
       WipBreakpointImpl.SetBreakpointCallback wrappedCallback =
           new WipBreakpointImpl.SetBreakpointCallback() {
         @Override

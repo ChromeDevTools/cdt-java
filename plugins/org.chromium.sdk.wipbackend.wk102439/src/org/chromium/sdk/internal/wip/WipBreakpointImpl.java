@@ -324,9 +324,17 @@ public class WipBreakpointImpl implements Breakpoint {
    * @return
    */
   static RelayOk sendSetBreakpointRequest(Target target, final int lineNumber,
-      final int columnNumber, final String condition,
+      int columnNumber, final String condition,
       final SetBreakpointCallback callback, final SyncCallback syncCallback,
       final WipCommandProcessor commandProcessor) {
+
+    final Long columnNumberParam;
+    if (columnNumber == Breakpoint.EMPTY_VALUE) {
+      columnNumberParam = null;
+    } else {
+      columnNumberParam = Long.valueOf(columnNumber);
+    }
+
     return target.accept(new BreakpointTypeExtension.ScriptRegExpSupport.Visitor<RelayOk>() {
       @Override
       public RelayOk visitScriptName(String scriptName) {
@@ -352,7 +360,7 @@ public class WipBreakpointImpl implements Breakpoint {
       private <T, DATA, PARAMS extends WipParamsWithResponse<DATA>> RelayOk sendRequest(
           T parameter, final RequestHandler<T, DATA, PARAMS> handler) {
         PARAMS requestParams =
-            handler.createRequestParams(parameter, lineNumber, columnNumber, condition);
+            handler.createRequestParams(parameter, lineNumber, columnNumberParam, condition);
 
         GenericCallback<DATA> wrappedCallback;
         if (callback == null) {
@@ -386,7 +394,7 @@ public class WipBreakpointImpl implements Breakpoint {
   private static abstract class RequestHandler<T,
       DATA, PARAMS extends WipParamsWithResponse<DATA>> {
 
-    abstract PARAMS createRequestParams(T parameter, long lineNumber, long columnNumberOpt,
+    abstract PARAMS createRequestParams(T parameter, long lineNumber, Long columnNumberOpt,
         String conditionOpt);
 
     abstract String getBreakpointId(DATA data);
@@ -409,7 +417,7 @@ public class WipBreakpointImpl implements Breakpoint {
     static final ForUrlOrRegExp FOR_URL = new ForUrlOrRegExp() {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
-          long lineNumber, long columnNumber, String condition) {
+          long lineNumber, Long columnNumber, String condition) {
         return new SetBreakpointByUrlParams(lineNumber, url, null, columnNumber, condition);
       }
     };
@@ -417,7 +425,7 @@ public class WipBreakpointImpl implements Breakpoint {
     static final ForUrlOrRegExp FOR_REGEXP = new ForUrlOrRegExp() {
       @Override
       SetBreakpointByUrlParams createRequestParams(String url,
-          long lineNumber, long columnNumber, String condition) {
+          long lineNumber, Long columnNumber, String condition) {
         return new SetBreakpointByUrlParams(lineNumber, null, url, columnNumber, condition);
       }
     };
@@ -426,7 +434,7 @@ public class WipBreakpointImpl implements Breakpoint {
         new RequestHandler<String, SetBreakpointData, SetBreakpointParams>() {
           @Override
           SetBreakpointParams createRequestParams(String sourceId,
-              long lineNumber, long columnNumber, String condition) {
+              long lineNumber, Long columnNumber, String condition) {
             LocationParam locationParam =
                 new LocationParam(sourceId, lineNumber, columnNumber);
             return new SetBreakpointParams(locationParam, condition);
