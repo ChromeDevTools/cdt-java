@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106352
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -44,6 +44,12 @@ public interface ScriptParsedEventData {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   Boolean isContentScript();
+
+  /**
+   URL of source map associated with script (if any).
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  String sourceMapURL();
 
   public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData> TYPE
       = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData>("Debugger.scriptParsed", org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData.class) {

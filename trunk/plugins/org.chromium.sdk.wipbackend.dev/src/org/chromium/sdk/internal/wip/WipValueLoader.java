@@ -20,17 +20,17 @@ import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
-import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionLocationData;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
-import org.chromium.sdk.internal.wip.protocol.output.debugger.GetFunctionLocationParams;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.GetFunctionDetailsParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
 import org.chromium.sdk.util.AsyncFuture;
+import org.chromium.sdk.util.AsyncFuture.Callback;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
-import org.chromium.sdk.util.AsyncFuture.Callback;
 
 /**
  * Responsible for loading values of properties. It works in pair with {@link WipValueBuilder}.
@@ -275,11 +275,11 @@ public abstract class WipValueLoader implements RemoteValueMapping {
       @Override
       public RelayOk start(final Callback<Getter<LocationValue>> callback,
           SyncCallback syncCallback) {
-        GetFunctionLocationParams request = new GetFunctionLocationParams(objectId);
-        GenericCallback<GetFunctionLocationData> wrappedCallback =
-            new GenericCallback<GetFunctionLocationData>() {
-          @Override public void success(GetFunctionLocationData value) {
-            callback.done(Getter.newNormal(value.location()));
+        GetFunctionDetailsParams request = new GetFunctionDetailsParams(objectId);
+        GenericCallback<GetFunctionDetailsData> wrappedCallback =
+            new GenericCallback<GetFunctionDetailsData>() {
+          @Override public void success(GetFunctionDetailsData value) {
+            callback.done(Getter.newNormal(value.details().location()));
           }
 
           @Override public void failure(Exception exception) {
