@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.wip.tools.protocolgenerator;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -167,6 +169,29 @@ public class WipProtocolGeneratorMain {
     private static final Pattern REVISION_PATTERN = Pattern.compile("^\"([\\d]+)//");
   }
 
-  private static final ModelResourceLocation JSON_MODEL_FILE_URL = new RemoteSvnLocation(
-      "http://svn.webkit.org/repository/webkit/!svn/bc/97678/trunk/Source/WebCore/inspector/Inspector.json");
+  private static class LocalFileLocation implements ModelResourceLocation {
+    private final String fileName;
+
+    LocalFileLocation(String fileName) {
+      this.fileName = fileName;
+    }
+
+    @Override
+    public Connected connect() throws IOException {
+      return new Connected() {
+        @Override public String getResourceDescription() {
+          return "Local file " + fileName;
+        }
+
+        @Override
+        public InputStream getContent() throws IOException {
+          File file = new File(fileName);
+          return new FileInputStream(file);
+        }
+      };
+    }
+  }
+
+  private static final ModelResourceLocation JSON_MODEL_FILE_URL = new LocalFileLocation(
+      "Inspector.json.rev97678.patch106787");
 }
