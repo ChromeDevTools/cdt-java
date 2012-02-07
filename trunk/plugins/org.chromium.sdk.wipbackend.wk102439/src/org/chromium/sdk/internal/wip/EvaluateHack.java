@@ -22,7 +22,6 @@ import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.CallFunctionOnParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.EvaluateParams;
-import org.chromium.sdk.internal.wip.protocol.output.runtime.RemoteObjectParam;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -198,9 +197,7 @@ public class EvaluateHack {
           } else {
             arguments = new ArrayList<CallArgumentParam>(additionalObjectIds.size());
             for (String objectId : additionalObjectIds) {
-              RemoteObjectParam remoteObjectParam =
-                  new RemoteObjectParam(null, null, null, null, null, objectId);
-              arguments.add(new CallArgumentParam(null, remoteObjectParam));
+              arguments.add(new CallArgumentParam(null, objectId));
             }
           }
           return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, true);
