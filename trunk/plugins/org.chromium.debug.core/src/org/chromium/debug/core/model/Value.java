@@ -9,32 +9,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
-import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.debug.ui.IValueDetailListener;
 
 /**
  * A generic (non-array) implementation of IValue using a JsValue instance.
  */
-public class Value extends DebugElementImpl.WithEvaluate implements IValue {
-
-  private static final IVariable[] EMPTY_VARIABLES = new IVariable[0];
-
-  private final JsValue value;
-
-  private IVariable[] variables;
-
-  private final DetailBuilder detailBuilder = new DetailBuilder();
+public class Value extends ValueBase.ValueWithLazyVariables {
 
   public static Value create(EvaluateContext evaluateContext, JsValue value) {
     if (JsValue.Type.TYPE_ARRAY == value.getType()) {
@@ -43,7 +31,11 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
     return new Value(evaluateContext, value);
   }
 
-  Value(EvaluateContext evaluateContext, JsValue value) {
+  private final JsValue value;
+
+  private final DetailBuilder detailBuilder = new DetailBuilder();
+
+  protected Value(EvaluateContext evaluateContext, JsValue value) {
     super(evaluateContext);
     this.value = value;
   }
@@ -52,7 +44,7 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
     return value.getType().toString();
   }
 
-  public String getValueString() throws DebugException {
+  public String getValueString() {
     String valueText = JsValueStringifier.toVisibleString(value);
     if (value.asObject() != null) {
       String ref = value.asObject().getRefId();
@@ -63,28 +55,16 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
     return valueText;
   }
 
-  public IVariable[] getVariables() throws DebugException {
-    try {
-      // TODO: make this thread-safe.
-      // TODO: support clearing with cache clear.
-      if (variables == null) {
-        if (value.asObject() != null) {
-          variables = StackFrame.wrapVariables(getEvaluateContext(),
-              value.asObject().getProperties(), Collections.<String>emptySet(),
-              value.asObject().getInternalProperties());
-        } else {
-          variables = EMPTY_VARIABLES;
-        }
-      }
-      return variables;
-    } catch (RuntimeException e) {
-      // Log it, because Eclipse is likely to ignore it.
-      ChromiumDebugPlugin.log(e);
-      // We shouldn't throw RuntimeException from here, because calling
-      // ElementContentProvider#update will forget to call update.done().
-      throw new DebugException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-          "Failed to read variables", e)); //$NON-NLS-1$
+  // This method could be blocking -- it gets called from a worker thread.
+  // All data should be prepared here.
+  protected IVariable[] calculateVariables() {
+    JsObject asObject = value.asObject();
+    if (asObject == null) {
+      return EMPTY_VARIABLES;
     }
+    return StackFrame.wrapVariables(getEvaluateContext(),
+        asObject.getProperties(), Collections.<String>emptySet(),
+        asObject.getInternalProperties());
   }
 
   public boolean hasVariables() throws DebugException {
@@ -92,7 +72,11 @@ public class Value extends DebugElementImpl.WithEvaluate implements IValue {
   }
 
   public boolean isAllocated() throws DebugException {
-    return false;
+    return true;
+  }
+
+  @Override public Value asRealValue() {
+    return this;
   }
 
   public JsValue getJsValue() {

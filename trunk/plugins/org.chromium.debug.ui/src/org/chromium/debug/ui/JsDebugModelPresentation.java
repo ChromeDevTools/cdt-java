@@ -7,6 +7,7 @@ package org.chromium.debug.ui;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
+import org.chromium.debug.core.model.ValueBase;
 import org.chromium.debug.core.model.WorkspaceBridge.JsLabelProvider;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.ui.editors.JsEditor;
@@ -58,14 +59,20 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
   }
 
   public void computeDetail(IValue value, IValueDetailListener listener) {
-    if (value instanceof Value) {
-      Value chromiumValue = (Value) value;
-      chromiumValue.computeDetailAsync(listener);
-    } else {
+    ValueBase chromiumValue = ValueBase.cast(value);
+    if (chromiumValue == null) {
       String detail = BasicUtil.getStacktraceString(
           new Exception("Unexpected type of value: " + value));
       listener.detailComputed(value, detail);
+      return;
     }
+    Value realValue = chromiumValue.asRealValue();
+    if (realValue == null) {
+      String detail = chromiumValue.getValueString();
+      listener.detailComputed(value, detail);
+      return;
+    }
+    realValue.computeDetailAsync(listener);
   }
 
   public IEditorInput getEditorInput(Object element) {

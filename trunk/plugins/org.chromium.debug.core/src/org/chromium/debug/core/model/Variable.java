@@ -4,22 +4,12 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.JsArray;
-import org.chromium.sdk.JsFunction;
-import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsScope.WithScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.RemoteValueMapping;
-import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.util.RelaySyncCallback;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -35,11 +25,56 @@ import org.eclipse.debug.ui.actions.IWatchExpressionFactoryAdapter;
 public abstract class Variable extends DebugElementImpl.WithEvaluate implements IVariable {
 
   /**
-   * Represents a real variable -- wraps {@link JsVariable}.
-   * TODO: consider hiding this public class behind a static factory method.
+   * Wraps {@link JsVariable}. It extracts its {@link JsValue} if possible or provides error
+   * message as a {@link Value}.
    */
-  public static class Real extends Variable {
-    private final JsVariable variable;
+  public static Variable forRealValue(EvaluateContext evaluateContext, JsVariable jsVariable,
+      boolean isInternalProperty) {
+    ValueBase value;
+    if (jsVariable.isReadable()) {
+      JsValue jsValue = jsVariable.getValue();
+      if (jsValue == null) {
+        value = new ValueBase.ErrorMessageValue(evaluateContext, "Variable value is unavailable");
+      } else {
+        value = Value.create(evaluateContext, jsValue);
+      }
+    } else {
+      value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable variable");
+    }
+
+    return new Real(evaluateContext, jsVariable, value, isInternalProperty);
+  }
+
+  public static Variable forException(EvaluateContext evaluateContext,
+      ExceptionData exceptionData) {
+    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue());
+    return new Variable.Virtual(evaluateContext, "<exception>", JAVASCRIPT_REFERENCE_TYPE_NAME,
+        value);
+  }
+
+
+  public static Variable forScope(EvaluateContext evaluateContext, JsScope scope) {
+    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope);
+    String scopeVariableName = "<" + scope.getType() + ">";
+    return forScope(evaluateContext, scopeVariableName, scopeValue);
+  }
+
+  public static Variable forWithScope(EvaluateContext evaluateContext,
+      WithScope withScope) {
+    Value value = Value.create(evaluateContext, withScope.getWithArgument());
+    return forScope(evaluateContext, "<with>", value);
+  }
+
+  private static Variable forScope(EvaluateContext evaluateContext, String scopeName,
+      ValueBase scopeValue) {
+    return new Variable.Virtual(evaluateContext, scopeName, "<scope>", scopeValue);
+  }
+
+  /**
+   * Represents a real variable -- wraps {@link JsVariable}.
+   */
+  private static class Real extends Variable {
+    private final JsVariable jsVariable;
 
     /**
      * Specifies whether this variable is internal property (__proto__ etc).
@@ -47,215 +82,71 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
      */
     private final boolean isInternalProperty;
 
-    public Real(EvaluateContext evaluateContext, JsVariable variable,
-        boolean isInternalProperty) {
-      super(evaluateContext);
-      this.variable = variable;
+    Real(EvaluateContext evaluateContext, JsVariable jsVariable,
+        ValueBase value, boolean isInternalProperty) {
+      super(evaluateContext, value);
+      this.jsVariable = jsVariable;
       this.isInternalProperty = isInternalProperty;
     }
 
-    public String getName() {
-      return variable.getName();
+    @Override public String getName() {
+      return jsVariable.getName();
     }
 
-    public String getReferenceTypeName() throws DebugException {
-      return variable.getValue().getType().toString();
+    @Override public String getReferenceTypeName() {
+      return JAVASCRIPT_REFERENCE_TYPE_NAME;
     }
 
-    protected Value createValue() {
-      JsValue value = variable.isReadable()
-          ? variable.getValue()
-          : null;
-      if (value == null) {
-        return null;
-      }
-      return Value.create(getEvaluateContext(), value);
-    }
-
-    @Override
-    protected String createWatchExpression() {
-      return variable.getFullyQualifiedName();
+    @Override protected String createWatchExpression() {
+      return jsVariable.getFullyQualifiedName();
     }
   }
 
   /**
-   * Represents a scope as a variable, serves for grouping real variables in UI view.
-   * TODO: consider hiding this public class behind a static factory method.
+   * Represents some auxiliary variable. Its name and reference type are provided by a caller.
    */
-  public static class ScopeWrapper extends Variable {
-    private final JsScope jsScope;
-
-    public ScopeWrapper(EvaluateContext evaluateContext, JsScope scope) {
-      super(evaluateContext);
-      this.jsScope = scope;
-    }
-
-    @Override
-    public String getName() {
-      return "<" + jsScope.getType() + ">";
-    }
-
-    @Override
-    public String getReferenceTypeName() throws DebugException {
-      return "<scope>";
-    }
-
-    @Override
-    protected Value createValue() {
-      JsValue scopeValue = new ScopeObjectVariable();
-      return Value.create(getEvaluateContext(), scopeValue);
-    }
-
-    @Override
-    protected String createWatchExpression() {
-      return null;
-    }
-
-    /**
-     * Wraps JsScope as an object value with properties representing scope variables.
-     */
-    class ScopeObjectVariable implements JsObject {
-      @Override public JsArray asArray() {
-        return null;
-      }
-      @Override public JsFunction asFunction() {
-        return null;
-      }
-      @Override public String getClassName() {
-        return "#Scope";
-      }
-      @Override public Collection<? extends JsVariable> getProperties() {
-        return jsScope.getVariables();
-      }
-      @Override public Collection<? extends JsVariable> getInternalProperties() {
-        return Collections.emptyList();
-      }
-      @Override public JsVariable getProperty(String name) {
-        for (JsVariable var : getProperties()) {
-          if (var.getName().equals(name)) {
-            return var;
-          }
-        }
-        return null;
-      }
-      @Override public JsObject asObject() {
-        return this;
-      }
-      @Override public Type getType() {
-        return Type.TYPE_OBJECT;
-      }
-      @Override public String getValueString() {
-        return getClassName();
-      }
-      @Override public String getRefId() {
-        return null;
-      }
-      @Override public RemoteValueMapping getRemoteValueMapping() {
-        return null;
-      }
-      @Override public boolean isTruncated() {
-        return false;
-      }
-      @Override public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
-          SyncCallback syncCallback) {
-        return RelaySyncCallback.finish(syncCallback);
-      }
-    }
-  }
-
-  /**
-   * A fake variable that represents an exception about to be thrown. Used in a fake
-   * ExceptionStackFrame.
-   * TODO: consider hiding this public class behind a static factory method.
-   */
-  public static class NamedHolder extends Variable {
-    public static Variable forWithScope(EvaluateContext evaluateContext, JsValue withValue) {
-      return new NamedHolder(evaluateContext, "<with>", withValue);
-    }
-
-    public static Variable forException(EvaluateContext evaluateContext,
-        ExceptionData exceptionData) {
-      return new NamedHolder(evaluateContext, "<exception>", exceptionData.getExceptionValue());
-    }
-
+  private static class Virtual extends Variable {
     private final String name;
-    private final JsValue jsValue;
+    private final String referenceTypeName;
 
-    private NamedHolder(EvaluateContext evaluateContext, String name, JsValue jsValue) {
-      super(evaluateContext);
+    Virtual(EvaluateContext evaluateContext, String name, String referenceTypeName,
+        ValueBase value) {
+      super(evaluateContext, value);
       this.name = name;
-      this.jsValue = jsValue;
+      this.referenceTypeName = referenceTypeName;
     }
 
-    @Override
-    public String getName() {
+    @Override public String getName() {
       return name;
     }
 
-    @Override
-    public String getReferenceTypeName() throws DebugException {
-      return jsValue.getType().toString();
+    @Override public String getReferenceTypeName() {
+      return referenceTypeName;
     }
 
-    @Override
-    protected Value createValue() {
-      return Value.create(getEvaluateContext(), jsValue);
-    }
-
-    @Override
-    protected String createWatchExpression() {
+    @Override protected String createWatchExpression() {
       return null;
     }
   }
 
+  private final ValueBase value;
 
-  private final AtomicReference<Value> valueRef = new AtomicReference<Value>(null);
-
-  public Variable(EvaluateContext evaluateContext) {
+  protected Variable(EvaluateContext evaluateContext, ValueBase value) {
     super(evaluateContext);
+    this.value = value;
   }
 
-  public abstract String getName();
+  @Override public abstract String getName();
 
-  public abstract String getReferenceTypeName() throws DebugException;
+  @Override public abstract String getReferenceTypeName();
 
-  public Value getValue() {
-    Value result = valueRef.get();
-    if (result != null) {
-      return result;
-    }
-    // Only set a value if it hasn't be set already (by a concurrent thread).
-    valueRef.compareAndSet(null, createValue());
-    return valueRef.get();
+  @Override public ValueBase getValue() {
+    return value;
   }
 
-  protected abstract Value createValue();
-
-  public boolean hasValueChanged() throws DebugException {
+  @Override public boolean hasValueChanged() throws DebugException {
     return false;
   }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public Object getAdapter(Class adapter) {
-    if (IWatchExpressionFactoryAdapter.class == adapter) {
-      return EXPRESSION_FACTORY_ADAPTER;
-    }
-    return super.getAdapter(adapter);
-  }
-
-  private final static IWatchExpressionFactoryAdapter EXPRESSION_FACTORY_ADAPTER =
-      new IWatchExpressionFactoryAdapter() {
-    public String createWatchExpression(IVariable variable) throws CoreException {
-      Variable castVariable = (Variable) variable;
-      String expressionText = castVariable.createWatchExpression();
-      if (expressionText == null) {
-        throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-            Messages.Variable_CANNOT_BUILD_EXPRESSION));
-      }
-      return expressionText;
-    }
-  };
 
   public void setValue(String expression) throws DebugException {
   }
@@ -283,4 +174,31 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    * @return expression or null
    */
   protected abstract String createWatchExpression();
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public Object getAdapter(Class adapter) {
+    if (IWatchExpressionFactoryAdapter.class == adapter) {
+      return EXPRESSION_FACTORY_ADAPTER;
+    }
+    return super.getAdapter(adapter);
+  }
+
+  private final static IWatchExpressionFactoryAdapter EXPRESSION_FACTORY_ADAPTER =
+      new IWatchExpressionFactoryAdapter() {
+    public String createWatchExpression(IVariable variable) throws CoreException {
+      Variable castVariable = (Variable) variable;
+      String expressionText = castVariable.createWatchExpression();
+      if (expressionText == null) {
+        throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            Messages.Variable_CANNOT_BUILD_EXPRESSION));
+      }
+      return expressionText;
+    }
+  };
+
+  /**
+   * A type of JavaScript reference. All JavaScript references have no type.
+   */
+  private static final String JAVASCRIPT_REFERENCE_TYPE_NAME = "";
 }

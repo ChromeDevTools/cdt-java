@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsArray;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IIndexedValue;
