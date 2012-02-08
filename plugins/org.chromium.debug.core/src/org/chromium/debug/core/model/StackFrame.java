@@ -77,14 +77,14 @@ public class StackFrame extends StackFrameBase {
       if (propertyNameBlackList.contains(jsVar.getName())) {
         continue;
       }
-      vars.add(new Variable.Real(evaluateContext, jsVar, false));
+      vars.add(Variable.forRealValue(evaluateContext, jsVar, false));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
     if (jsInternalProperties != null) {
       for (JsVariable jsMetaVar : jsInternalProperties) {
-        vars.add(new Variable.Real(evaluateContext, jsMetaVar, true));
+        vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true));
       }
     }
     return vars.toArray(new IVariable[vars.size()]);
@@ -97,17 +97,17 @@ public class StackFrame extends StackFrameBase {
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(new Variable.Real(evaluateContext, receiverVariable, false));
+          vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false));
           receiverVariable = null;
         }
-        vars.add(new Variable.ScopeWrapper(evaluateContext, scope));
+        vars.add(Variable.forScope(evaluateContext, scope));
       } else if (scope.asWithScope() != null) {
         JsScope.WithScope withScope = scope.asWithScope();
-        vars.add(Variable.NamedHolder.forWithScope(evaluateContext, withScope.getWithArgument()));
+        vars.add(Variable.forWithScope(evaluateContext, withScope));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
-          vars.add(new Variable.Real(evaluateContext, var, false));
+          vars.add(Variable.forRealValue(evaluateContext, var, false));
         }
         int endPos = vars.size();
         List<Variable> sublist = vars.subList(startPos, endPos);
@@ -115,7 +115,7 @@ public class StackFrame extends StackFrameBase {
       }
     }
     if (receiverVariable != null) {
-      vars.add(new Variable.Real(evaluateContext, receiverVariable, false));
+      vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false));
     }
 
     IVariable[] result = new IVariable[vars.size()];

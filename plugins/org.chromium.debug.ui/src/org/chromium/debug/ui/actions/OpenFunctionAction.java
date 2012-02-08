@@ -4,16 +4,15 @@
 
 package org.chromium.debug.ui.actions;
 
-import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.ConnectedTargetData;
+import org.chromium.debug.core.model.DebugElementImpl;
+import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.Variable;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
-import org.chromium.debug.ui.JsDebugModelPresentation;
-import org.chromium.debug.ui.editors.JsEditor;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
@@ -33,7 +32,6 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.IActionDelegate2;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbench;
@@ -232,7 +230,7 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
       final Variable variable = (Variable) element;
       return new VariableWrapper() {
         public Value getValue() {
-          return variable.getValue();
+          return variable.getValue().asRealValue();
         }
         public IDebugElement getDebugElement() {
           return variable;
