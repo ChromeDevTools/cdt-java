@@ -19,6 +19,7 @@ public interface JsEvaluateContext {
 
   /**
    * A callback for the "evaluate" request.
+   * TODO: support thrown JavaScript exception here. Currently they are passed as pseudoobject.
    */
   interface EvaluateCallback {
     void success(JsVariable variable);

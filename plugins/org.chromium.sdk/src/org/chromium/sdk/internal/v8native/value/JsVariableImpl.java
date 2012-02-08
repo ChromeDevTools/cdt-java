@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.v8native.value;
 
 
 import org.chromium.sdk.JsValue.Type;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsVariable;
 
 /**
@@ -109,6 +110,11 @@ public class JsVariableImpl implements JsVariable {
     if (!isMutable()) {
       throw new UnsupportedOperationException();
     }
+  }
+
+  @Override
+  public JsObjectProperty asObjectProperty() {
+    return null;
   }
 
   @Override

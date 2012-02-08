@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
@@ -66,7 +67,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
   void loadJsObjectPropertiesInFuture(final String objectId,
       PropertyNameBuilder innerNameBuilder, boolean reload, int currentCacheState,
       AsyncFutureRef<Getter<ObjectProperties>> futureRef) throws MethodIsBlockingException {
-    ObjectPropertyProcessor propertyProcessor = new ObjectPropertyProcessor(innerNameBuilder);
+    ObjectPropertyProcessor propertyProcessor =
+        new ObjectPropertyProcessor(innerNameBuilder, objectId);
     loadPropertiesInFuture(objectId, propertyProcessor, reload, currentCacheState, futureRef);
   }
 
@@ -110,7 +112,7 @@ public abstract class WipValueLoader implements RemoteValueMapping {
   }
 
   interface ObjectProperties {
-    List<? extends JsVariable> properties();
+    List<? extends JsObjectProperty> properties();
     JsVariable getProperty(String name);
 
     List<? extends JsVariable> internalProperties();
@@ -130,30 +132,33 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
   private class ObjectPropertyProcessor implements LoadPostprocessor<Getter<ObjectProperties>> {
     private final PropertyNameBuilder propertyNameBuilder;
+    private final String objectId;
 
-    ObjectPropertyProcessor(PropertyNameBuilder propertyNameBuilder) {
+    ObjectPropertyProcessor(PropertyNameBuilder propertyNameBuilder, String objectId) {
       this.propertyNameBuilder = propertyNameBuilder;
+      this.objectId = objectId;
     }
 
     @Override
     public Getter<ObjectProperties> process(
         List<? extends PropertyDescriptorValue> propertyList, final int currentCacheState) {
-      final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
+      final List<JsObjectProperty> properties =
+          new ArrayList<JsObjectProperty>(propertyList.size());
       final List<JsVariable> internalProperties = new ArrayList<JsVariable>(2);
 
-      for (PropertyDescriptorValue property : propertyList) {
-        // TODO: support getters and setters in PropertyDescriptorValue.
-        String name = property.name();
+      for (PropertyDescriptorValue propertyDescriptor : propertyList) {
+        String name = propertyDescriptor.name();
         boolean isInternal = INTERNAL_PROPERTY_NAME.contains(name);
 
         ValueNameBuilder valueNameBuilder =
             WipExpressionBuilder.createValueOfPropertyNameBuilder(name, propertyNameBuilder);
 
-        JsVariable variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
+        JsObjectProperty property = valueBuilder.createObjectProperty(propertyDescriptor,
+            objectId, valueNameBuilder);
         if (isInternal) {
-          internalProperties.add(variable);
+          internalProperties.add(property);
         } else {
-          properties.add(variable);
+          properties.add(property);
         }
       }
 
@@ -161,7 +166,7 @@ public abstract class WipValueLoader implements RemoteValueMapping {
         private volatile Map<String, JsVariable> propertyMap = null;
 
         @Override
-        public List<? extends JsVariable> properties() {
+        public List<? extends JsObjectProperty> properties() {
           return properties;
         }
 
@@ -206,7 +211,7 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
   private static final Getter<ObjectProperties> EMPTY_OBJECT_PROPERTIES_GETTER =
       Getter.newNormal(((ObjectProperties) new ObjectProperties() {
-        @Override public List<? extends JsVariable> properties() {
+        @Override public List<? extends JsObjectProperty> properties() {
           return Collections.emptyList();
         }
         @Override public JsVariable getProperty(String name) {
@@ -222,7 +227,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
   <RES> void loadPropertiesInFuture(final String objectId,
       final LoadPostprocessor<RES> propertyPostprocessor, boolean reload,
-      final int currentCacheState, AsyncFutureRef<RES> futureRef) throws MethodIsBlockingException {
+      final int currentCacheState, AsyncFutureRef<RES> futureRef)
+      throws MethodIsBlockingException {
     if (objectId == null) {
       futureRef.initializeTrivial(propertyPostprocessor.getEmptyResult());
       return;

@@ -17,7 +17,9 @@ import java.util.logging.Logger;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsValue;
+import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -31,6 +33,7 @@ import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -48,12 +51,117 @@ class WipValueBuilder {
     this.valueLoader = valueLoader;
   }
 
+  public JsObjectProperty createObjectProperty(final PropertyDescriptorValue propertyDescriptor,
+      final String hostObjectRefId, ValueNameBuilder nameBuilder) {
+    final QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+    JsValue jsValue = wrap(propertyDescriptor.value(), qualifiedNameBuilder);
+
+    final JsFunction getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(),
+        qualifiedNameBuilder, "getter");
+
+    final JsFunction setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(),
+        qualifiedNameBuilder, "setter");
+
+    return new ObjectPropertyBase(jsValue, nameBuilder) {
+      @Override public boolean isWritable() {
+        return propertyDescriptor.writable();
+      }
+      @Override public JsFunction getGetter() {
+        return getter;
+      }
+      @Override public JsFunction getSetter() {
+        return setter;
+      }
+      @Override public boolean isConfigurable() {
+        return propertyDescriptor.configurable();
+      }
+      @Override public boolean isEnumerable() {
+        return propertyDescriptor.enumerable();
+      }
+
+      @Override
+      public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
+        WipContextBuilder.GlobalEvaluateContext evaluateContext =
+            new WipContextBuilder.GlobalEvaluateContext(valueLoader);
+
+        Map<String, String> context = new HashMap<String, String>(2);
+        context.put(GETTER_VAR_NAME, getter.getRefId());
+        context.put(OBJECT_VAR_NAME, hostObjectRefId);
+        final QualifiedNameBuilder pseudoPropertyNameBuilder =
+            createPseudoPropertyNameBuilder(qualifiedNameBuilder, "value");
+        ValueNameBuilder valueNameBuilder = new ValueNameBuilder() {
+          @Override
+          public String getShortName() {
+            return "value";
+          }
+
+          @Override
+          public QualifiedNameBuilder getQualifiedNameBuilder() {
+            return pseudoPropertyNameBuilder;
+          }
+        };
+
+        return evaluateContext.evaluateAsync(EVALUATE_EXPRESSION, valueNameBuilder,
+            context, callback, syncCallback);
+      }
+      private static final String GETTER_VAR_NAME = "gttr";
+      private static final String OBJECT_VAR_NAME = "obj";
+      private static final String EVALUATE_EXPRESSION =
+          GETTER_VAR_NAME + ".call(" + OBJECT_VAR_NAME + ")";
+    };
+  }
+
+  private static QualifiedNameBuilder createPseudoPropertyNameBuilder(
+      final QualifiedNameBuilder propertyValueNameBuilder, final String symbolicName) {
+    return new QualifiedNameBuilder() {
+      @Override public boolean needsParentheses() {
+        return false;
+      }
+
+      @Override
+      public void append(StringBuilder output) {
+        propertyValueNameBuilder.append(output);
+        output.append("::[[").append(symbolicName).append("]]");
+      }
+    };
+  }
+
+  private JsFunction wrapPropertyDescriptorFunction(RemoteObjectValue value,
+      QualifiedNameBuilder propertyValueNameBuilder, String symbolicName) {
+    if (value == null) {
+      return null;
+    }
+
+    QualifiedNameBuilder qualifiedNameBuilder =
+        createPseudoPropertyNameBuilder(propertyValueNameBuilder, symbolicName);
+
+    JsValue jsValue = wrap(value, qualifiedNameBuilder);
+    JsObject jsObject = jsValue.asObject();
+    if (jsObject == null) {
+      throw new RuntimeException("Value should be a function.");
+    }
+    JsFunction jsFunction = jsObject.asFunction();
+    if (jsFunction == null) {
+      throw new RuntimeException("Value should be a function.");
+    }
+    return jsFunction;
+  }
+
   public JsVariable createVariable(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
-    JsValue jsValue = wrap(valueData, nameBuilder);
+    QualifiedNameBuilder qualifiedNameBuilder;
+    if (nameBuilder == null) {
+      qualifiedNameBuilder = null;
+    } else {
+      qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+    }
+    JsValue jsValue = wrap(valueData, qualifiedNameBuilder);
     return createVariable(jsValue, nameBuilder);
   }
 
-  public JsValue wrap(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
+  public JsValue wrap(RemoteObjectValue valueData, QualifiedNameBuilder nameBuilder) {
+    if (valueData == null) {
+      return null;
+    }
     return getValueType(valueData).build(valueData, valueLoader, nameBuilder);
   }
 
@@ -75,7 +183,7 @@ class WipValueBuilder {
 
   private static abstract class ValueType {
     abstract JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder);
+        QualifiedNameBuilder qualifiedNameBuilder);
   }
 
   private static abstract class PrimitiveType extends ValueType {
@@ -89,7 +197,7 @@ class WipValueBuilder {
 
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
+        QualifiedNameBuilder qualifiedNameBuilder) {
       final String valueString = getValueString(valueData);
       return new JsValue() {
         @Override public Type getType() {
@@ -158,23 +266,23 @@ class WipValueBuilder {
 
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
+        QualifiedNameBuilder qualifiedNameBuilder) {
       // TODO: Implement caching here.
-      return buildNewInstance(valueData, valueLoader, nameBuilder);
+      return buildNewInstance(valueData, valueLoader, qualifiedNameBuilder);
     }
 
     abstract JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder);
+        QualifiedNameBuilder qualifiedNameBuilder);
 
     abstract class JsObjectBase implements JsObject {
       private final RemoteObjectValue valueData;
       private final WipValueLoader valueLoader;
-      private final ValueNameBuilder nameBuilder;
+      private final QualifiedNameBuilder nameBuilder;
       private final AsyncFutureRef<Getter<ObjectProperties>> loadedPropertiesRef =
           new AsyncFutureRef<Getter<ObjectProperties>>();
 
       JsObjectBase(RemoteObjectValue valueData, WipValueLoader valueLoader,
-          ValueNameBuilder nameBuilder) {
+          QualifiedNameBuilder nameBuilder) {
         this.valueData = valueData;
         this.valueLoader = valueLoader;
         this.nameBuilder = nameBuilder;
@@ -212,7 +320,7 @@ class WipValueBuilder {
       }
 
       @Override
-      public Collection<? extends JsVariable> getProperties()
+      public Collection<? extends JsObjectProperty> getProperties()
           throws MethodIsBlockingException {
         return getLoadedProperties().properties();
       }
@@ -262,12 +370,7 @@ class WipValueBuilder {
         if (nameBuilder == null) {
           innerNameBuilder = null;
         } else {
-          QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-          if (qualifiedNameBuilder == null) {
-            innerNameBuilder = null;
-          } else {
-            innerNameBuilder = new ObjectPropertyNameBuilder(qualifiedNameBuilder);
-          }
+          innerNameBuilder = new ObjectPropertyNameBuilder(nameBuilder);
         }
         valueLoader.loadJsObjectPropertiesInFuture(valueData.objectId(), innerNameBuilder,
             reload, currentCacheState, loadedPropertiesRef);
@@ -282,8 +385,8 @@ class WipValueBuilder {
 
     @Override
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
-      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, nameBuilder) {
+        QualifiedNameBuilder qualifiedNameBuilder) {
+      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, qualifiedNameBuilder) {
         @Override public JsArray asArray() {
           return null;
         }
@@ -302,7 +405,7 @@ class WipValueBuilder {
 
     @Override
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
+        QualifiedNameBuilder nameBuilder) {
       return new Array(valueData, valueLoader, nameBuilder);
     }
 
@@ -311,7 +414,7 @@ class WipValueBuilder {
           new AtomicReference<ArrayProperties>(null);
 
       Array(RemoteObjectValue valueData, WipValueLoader valueLoader,
-          ValueNameBuilder nameBuilder) {
+          QualifiedNameBuilder nameBuilder) {
         super(valueData, valueLoader, nameBuilder);
       }
 
@@ -402,7 +505,7 @@ class WipValueBuilder {
 
     @Override
     JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
+        QualifiedNameBuilder nameBuilder) {
       return new FunctionValueImpl(valueData, valueLoader, nameBuilder);
     }
 
@@ -411,7 +514,7 @@ class WipValueBuilder {
           new AsyncFutureRef<Getter<LocationValue>>();
 
       FunctionValueImpl(RemoteObjectValue valueData,
-          WipValueLoader valueLoader, ValueNameBuilder nameBuilder) {
+          WipValueLoader valueLoader, QualifiedNameBuilder nameBuilder) {
         super(valueData, valueLoader, nameBuilder);
       }
 
@@ -464,12 +567,12 @@ class WipValueBuilder {
     }
   }
 
-  private static class VariableImpl implements JsVariable {
+  private static abstract class VariableBase implements JsVariable {
     private final JsValue jsValue;
     private final ValueNameBuilder nameBuilder;
     private volatile String qualifiedName = null;
 
-    public VariableImpl(JsValue jsValue, ValueNameBuilder nameBuilder) {
+    VariableBase(JsValue jsValue, ValueNameBuilder nameBuilder) {
       this.jsValue = jsValue;
       this.nameBuilder = nameBuilder;
     }
@@ -517,11 +620,33 @@ class WipValueBuilder {
     }
   }
 
+  private static class VariableImpl extends VariableBase {
+    VariableImpl(JsValue jsValue, ValueNameBuilder nameBuilder) {
+      super(jsValue, nameBuilder);
+    }
+
+    @Override public JsObjectProperty asObjectProperty() {
+      return null;
+    }
+  }
+
+  private static abstract class ObjectPropertyBase
+      extends VariableBase implements JsObjectProperty {
+    ObjectPropertyBase(JsValue jsValue, ValueNameBuilder nameBuilder) {
+      super(jsValue, nameBuilder);
+    }
+
+    @Override public JsObjectProperty asObjectProperty() {
+      return this;
+    }
+  }
+
   private static class ObjectType extends ValueType {
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        ValueNameBuilder nameBuilder) {
-      ValueType secondLevelValueType = getSafe(PROTOCOL_SUBTYPE_TO_VALUE_TYPE, valueData.subtype());
+        QualifiedNameBuilder nameBuilder) {
+      ValueType secondLevelValueType =
+          getSafe(PROTOCOL_SUBTYPE_TO_VALUE_TYPE, valueData.subtype());
 
       if (secondLevelValueType == null) {
         LOGGER.severe("Unexpected value type: " + valueData.type() + " " + valueData.subtype());
@@ -545,7 +670,8 @@ class WipValueBuilder {
 
       PROTOCOL_SUBTYPE_TO_VALUE_TYPE.put(RemoteObjectValue.Subtype.NODE, objectSubtype);
       // Plus 1 for null - object.
-      assert PROTOCOL_SUBTYPE_TO_VALUE_TYPE.size() == RemoteObjectValue.Subtype.values().length + 1;
+      assert PROTOCOL_SUBTYPE_TO_VALUE_TYPE.size() ==
+          RemoteObjectValue.Subtype.values().length + 1;
     }
   }
 
