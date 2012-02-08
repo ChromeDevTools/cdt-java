@@ -28,6 +28,7 @@ import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -139,7 +140,7 @@ class WipContextBuilder {
     public WipDebugContextImpl(PausedEventData data) {
       PausedEventData.Data additionalData = data.data();
       if (data.reason() == PausedEventData.Reason.EXCEPTION && additionalData != null) {
-        RemoteObjectValue exceptionRemoteObject = null;
+        RemoteObjectValue exceptionRemoteObject;
         try {
           JSONObject additionalDataObject = additionalData.getUnderlyingObject();
           exceptionRemoteObject =
@@ -148,7 +149,7 @@ class WipContextBuilder {
           throw new RuntimeException("Failed to parse exception data", e);
         }
         JsValue exceptionValue =
-            valueLoader.getValueBuilder().wrap(exceptionRemoteObject, EXCEPTION_NAME);
+            valueLoader.getValueBuilder().wrap(exceptionRemoteObject, null);
         exceptionData = new ExceptionDataImpl(exceptionValue);
       } else {
         exceptionData = null;
@@ -544,7 +545,7 @@ class WipContextBuilder {
       private final JsValue jsValue;
 
       WithScopeImpl(ScopeValue scopeData) {
-        jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), WITH_OBJECT_NAME);
+        jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), null);
       }
 
       @Override

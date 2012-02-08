@@ -28,6 +28,7 @@ public interface JsVariable {
    *
    * @return a [probably compound] JsValue corresponding to this variable.
    *         {@code null} if there was an error reading the value data
+   *         or the property has accessor descriptor
    * @see #isReadable()
    * @throws UnsupportedOperationException if this variable is not readable
    */
@@ -60,4 +61,9 @@ public interface JsVariable {
    */
   String getFullyQualifiedName();
 
+  /**
+   * Returns object property data if variable is an object property and its descriptor
+   * is available.
+   */
+  JsObjectProperty asObjectProperty();
 }

@@ -23,6 +23,8 @@ public interface JsObject extends JsValue {
    * @return the own properties of this compound value (does <strong>not</strong> include
    *     properties from proto object)
    * @throws MethodIsBlockingException because it may need to load value from remote
+   * TODO: make it return list of JsObjectProperty once hacks for supporting exceptions are
+   *       removed.
    */
   Collection<? extends JsVariable> getProperties() throws MethodIsBlockingException;
 
