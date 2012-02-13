@@ -5,10 +5,7 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.ConnectedTargetData;
-import org.chromium.debug.core.model.DebugElementImpl;
-import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
-import org.chromium.debug.core.model.Variable;
 import org.chromium.debug.core.model.VmResourceId;
 import org.chromium.debug.core.sourcemap.SourcePosition;
 import org.chromium.debug.core.sourcemap.SourcePositionMap;
@@ -19,23 +16,12 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.debug.core.model.IDebugElement;
-import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ISourceLocator;
-import org.eclipse.debug.core.model.IValue;
-import org.eclipse.debug.core.model.IWatchExpression;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.ui.IActionDelegate2;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -47,8 +33,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * The action for context menu in Variable/Expression views that opens selected
  * function source text in editor.
  */
-public abstract class OpenFunctionAction implements IObjectActionDelegate,
-    IActionDelegate2 {
+public abstract class OpenFunctionAction extends VariableBasedAction {
   public static class ForVariable extends OpenFunctionAction {
     public ForVariable() {
       super(VARIABLE_VIEW_ELEMENT_HANDLER);
@@ -60,36 +45,11 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     }
   }
 
-  public interface VariableWrapper {
-    Value getValue();
-    IDebugElement getDebugElement();
-    ConnectedTargetData getConnectedTargetData();
-  }
-
-  private final ElementHandler elementHandler;
-  private Runnable currentRunnable = null;
-
   protected OpenFunctionAction(ElementHandler elementHandler) {
-    this.elementHandler = elementHandler;
+    super(elementHandler);
   }
 
-  public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-  }
-
-  public void run(IAction action) {
-    if (currentRunnable == null) {
-      return;
-    }
-    currentRunnable.run();
-  }
-
-  public void selectionChanged(IAction action, ISelection selection) {
-    VariableWrapper wrapper = getElementFromSelection(selection, elementHandler);
-    currentRunnable = createRunnable(wrapper);
-    action.setEnabled(currentRunnable != null);
-  }
-
-  private Runnable createRunnable(VariableWrapper wrapper) {
+  protected Runnable createRunnable(VariableWrapper wrapper) {
     if (wrapper == null) {
       return null;
     }
@@ -170,20 +130,6 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     };
   }
 
-  public void dispose() {
-    currentRunnable = null;
-  }
-
-  public void init(IAction action) {
-  }
-
-  public void runWithEvent(IAction action, Event event) {
-    if (currentRunnable == null) {
-      return;
-    }
-    currentRunnable.run();
-  }
-
   private JsFunction getJsFunctionFromElement(VariableWrapper wrapper) {
     if (wrapper == null) {
       return null;
@@ -203,72 +149,4 @@ public abstract class OpenFunctionAction implements IObjectActionDelegate,
     }
     return jsObject.asFunction();
   }
-
-  static VariableWrapper getElementFromSelection(ISelection selection,
-      ElementHandler elementHandler) {
-    if (selection instanceof IStructuredSelection == false) {
-      return null;
-    }
-    IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-    if (structuredSelection.size() != 1) {
-      // We do not support multiple selection.
-      return null;
-    }
-    Object element = structuredSelection.getFirstElement();
-    return elementHandler.castElement(element);
-  }
-
-  public static abstract class ElementHandler {
-    public abstract VariableWrapper castElement(Object element);
-  }
-
-  public static final ElementHandler VARIABLE_VIEW_ELEMENT_HANDLER = new ElementHandler() {
-    @Override public VariableWrapper castElement(Object element) {
-      if (element instanceof Variable == false) {
-        return null;
-      }
-      final Variable variable = (Variable) element;
-      return new VariableWrapper() {
-        public Value getValue() {
-          return variable.getValue().asRealValue();
-        }
-        public IDebugElement getDebugElement() {
-          return variable;
-        }
-        public ConnectedTargetData getConnectedTargetData() {
-          return variable.getConnectedData();
-        }
-      };
-    }
-  };
-  public static final ElementHandler EXPRESSION_VIEW_ELEMENT_HANDLER = new ElementHandler() {
-    @Override
-    public VariableWrapper castElement(Object element) {
-      if (element instanceof IWatchExpression == false) {
-        return null;
-      }
-      final IWatchExpression watchExpression = (IWatchExpression) element;
-      return new VariableWrapper() {
-        public Value getValue() {
-          IValue value = watchExpression.getValue();
-          if (value instanceof Value == false) {
-            return null;
-          }
-          Value chromiumValue = (Value) value;
-          return chromiumValue;
-        }
-        public IDebugElement getDebugElement() {
-          return watchExpression;
-        }
-        public ConnectedTargetData getConnectedTargetData() {
-          IDebugTarget debugTarget = watchExpression.getDebugTarget();
-          if (debugTarget instanceof DebugTargetImpl == false) {
-            return null;
-          }
-          DebugTargetImpl debugTargetImpl = (DebugTargetImpl) debugTarget;
-          return debugTargetImpl.getConnectedOrNull();
-        }
-      };
-    }
-  };
 }
