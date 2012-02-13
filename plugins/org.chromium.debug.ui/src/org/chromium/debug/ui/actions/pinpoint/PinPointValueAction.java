@@ -6,9 +6,9 @@ package org.chromium.debug.ui.actions.pinpoint;
 
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.ui.actions.OpenFunctionAction;
-import org.chromium.debug.ui.actions.OpenFunctionAction.ElementHandler;
-import org.chromium.debug.ui.actions.OpenFunctionAction.VariableWrapper;
 import org.chromium.debug.ui.actions.SelectionBasedAction;
+import org.chromium.debug.ui.actions.VariableBasedAction.ElementHandler;
+import org.chromium.debug.ui.actions.VariableBasedAction.VariableWrapper;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPart;
 
