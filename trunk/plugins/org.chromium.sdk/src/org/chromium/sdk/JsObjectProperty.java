@@ -15,14 +15,19 @@ public interface JsObjectProperty extends JsVariable {
   boolean isWritable();
 
   /**
-   * @return property getter or null
+   * @return property getter value (function or undefined) or null if not an accessor property
    */
-  JsFunction getGetter();
+  JsValue getGetter();
 
   /**
-   * @return property setter or null
+   * @return {@link #getGetter()} result as function or null if cannot cast
    */
-  JsFunction getSetter();
+  JsFunction getGetterAsFunction();
+
+  /**
+   * @return property setter value (function or undefined) or null if not an accessor property
+   */
+  JsValue getSetter();
 
   /**
    * @return whether property described as 'configurable'
@@ -35,7 +40,9 @@ public interface JsObjectProperty extends JsVariable {
   boolean isEnumerable();
 
   /**
-   * Asynchronously evaluates property getter and returns property value.
+   * Asynchronously evaluates property getter and returns property value. Must only be used
+   * if {@link #getGetterAsFunction()} returns not null; otherwise behavior is undefined and
+   * implementation-specific.
    */
   RelayOk evaluateGet(JsEvaluateContext.EvaluateCallback callback, SyncCallback syncCallback);
 }
