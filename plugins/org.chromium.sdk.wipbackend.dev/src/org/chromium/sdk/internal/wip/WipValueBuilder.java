@@ -56,20 +56,20 @@ class WipValueBuilder {
     final QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
     JsValue jsValue = wrap(propertyDescriptor.value(), qualifiedNameBuilder);
 
-    final JsFunction getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(),
+    final JsValue getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(),
         qualifiedNameBuilder, "getter");
 
-    final JsFunction setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(),
+    final JsValue setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(),
         qualifiedNameBuilder, "setter");
 
     return new ObjectPropertyBase(jsValue, nameBuilder) {
       @Override public boolean isWritable() {
         return propertyDescriptor.writable();
       }
-      @Override public JsFunction getGetter() {
+      @Override public JsValue getGetter() {
         return getter;
       }
-      @Override public JsFunction getSetter() {
+      @Override public JsValue getSetter() {
         return setter;
       }
       @Override public boolean isConfigurable() {
@@ -80,12 +80,26 @@ class WipValueBuilder {
       }
 
       @Override
+      public JsFunction getGetterAsFunction() {
+        JsObject getterObject = getter.asObject();
+        if (getterObject == null) {
+          return null;
+        }
+        return getterObject.asFunction();
+      }
+
+      @Override
       public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
         WipContextBuilder.GlobalEvaluateContext evaluateContext =
             new WipContextBuilder.GlobalEvaluateContext(valueLoader);
 
+        JsFunction getterFunction = getGetterAsFunction();
+        if (getterFunction == null) {
+          throw new RuntimeException("Getter is not a function");
+        }
+
         Map<String, String> context = new HashMap<String, String>(2);
-        context.put(GETTER_VAR_NAME, getter.getRefId());
+        context.put(GETTER_VAR_NAME, getterFunction.getRefId());
         context.put(OBJECT_VAR_NAME, hostObjectRefId);
         final QualifiedNameBuilder pseudoPropertyNameBuilder =
             createPseudoPropertyNameBuilder(qualifiedNameBuilder, "value");
@@ -126,7 +140,7 @@ class WipValueBuilder {
     };
   }
 
-  private JsFunction wrapPropertyDescriptorFunction(RemoteObjectValue value,
+  private JsValue wrapPropertyDescriptorFunction(RemoteObjectValue value,
       QualifiedNameBuilder propertyValueNameBuilder, String symbolicName) {
     if (value == null) {
       return null;
@@ -135,16 +149,7 @@ class WipValueBuilder {
     QualifiedNameBuilder qualifiedNameBuilder =
         createPseudoPropertyNameBuilder(propertyValueNameBuilder, symbolicName);
 
-    JsValue jsValue = wrap(value, qualifiedNameBuilder);
-    JsObject jsObject = jsValue.asObject();
-    if (jsObject == null) {
-      throw new RuntimeException("Value should be a function.");
-    }
-    JsFunction jsFunction = jsObject.asFunction();
-    if (jsFunction == null) {
-      throw new RuntimeException("Value should be a function.");
-    }
-    return jsFunction;
+    return wrap(value, qualifiedNameBuilder);
   }
 
   public JsVariable createVariable(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
