@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@107567
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -23,7 +23,8 @@ public interface PropertyDescriptorValue {
   /**
    True if the value associated with the property may be changed (data descriptors only).
    */
-  boolean writable();
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Boolean writable();
 
   /**
    A function which serves as a getter for the property, or <code>undefined</code> if there is no getter (accessor descriptors only).
