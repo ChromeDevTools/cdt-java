@@ -512,8 +512,13 @@ class WipContextBuilder {
 
               ValueNameBuilder valueNameBuilder =
                   WipExpressionBuilder.createRootName(name, false);
-              JsVariable variable =
-                  valueBuilder.createVariable(property.value(), valueNameBuilder);
+
+              JsVariable variable;
+              if (objectId == null) {
+                variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
+              } else {
+                variable = valueBuilder.createObjectProperty(property, objectId, valueNameBuilder);
+              }
               properties.add(variable);
             }
             final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);

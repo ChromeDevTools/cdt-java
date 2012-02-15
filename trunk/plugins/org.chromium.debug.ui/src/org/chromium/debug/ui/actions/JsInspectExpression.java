@@ -67,7 +67,7 @@ public class JsInspectExpression extends PlatformObject
 
   public IValue getValue() {
     return variable != null
-        ? Value.create(evaluateContext, variable.getValue())
+        ? Value.create(evaluateContext, variable.getValue(), null)
         : null;
   }
 

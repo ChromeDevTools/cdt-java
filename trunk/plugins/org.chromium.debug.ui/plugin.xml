@@ -266,6 +266,13 @@
                id="org.chromium.debug.ui.actions.OpenFunctionAction$ForVariable">
          </action>
          <action
+               label="%WatchPropertyDescriptor.label"
+               class="org.chromium.debug.ui.actions.WatchPropertyDescriptor$ForVariable"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.WatchPropertyDescriptor$ForVariable">
+         </action>
+         <action
                label="%LoadFullValueAction.label"
                class="org.chromium.debug.ui.actions.LoadFullValueAction$ForVariable"
                menubarPath="emptyNavigationGroup"
@@ -289,6 +296,13 @@
                menubarPath="emptyNavigationGroup"
                enablesFor="1"
                id="org.chromium.debug.ui.actions.OpenFunctionAction$ForExpression">
+         </action>
+         <action
+               label="%WatchPropertyDescriptor.label"
+               class="org.chromium.debug.ui.actions.WatchPropertyDescriptor$ForExpression"
+               menubarPath="emptyNavigationGroup"
+               enablesFor="1"
+               id="org.chromium.debug.ui.actions.WatchPropertyDescriptor$ForExpression">
          </action>
          <action
                label="%LoadFullValueAction.label"

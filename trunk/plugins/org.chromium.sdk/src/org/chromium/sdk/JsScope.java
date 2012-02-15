@@ -10,6 +10,7 @@ import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * An object that represents a scope in JavaScript.
+ * TODO: consider adding object getter for both with and global scopes.
  */
 public interface JsScope {
 

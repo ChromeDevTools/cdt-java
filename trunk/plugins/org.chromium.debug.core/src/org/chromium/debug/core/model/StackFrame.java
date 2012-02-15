@@ -71,20 +71,20 @@ public class StackFrame extends StackFrameBase {
   static IVariable[] wrapVariables(
       EvaluateContext evaluateContext, Collection<? extends JsVariable> jsVars,
       Set<? extends String> propertyNameBlackList,
-      Collection <? extends JsVariable> jsInternalProperties) {
+      Collection <? extends JsVariable> jsInternalProperties, Variable.Real.HostObject hostObject) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
     for (JsVariable jsVar : jsVars) {
       if (propertyNameBlackList.contains(jsVar.getName())) {
         continue;
       }
-      vars.add(Variable.forRealValue(evaluateContext, jsVar, false));
+      vars.add(Variable.forRealValue(evaluateContext, jsVar, false, hostObject));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
     if (jsInternalProperties != null) {
       for (JsVariable jsMetaVar : jsInternalProperties) {
-        vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true));
+        vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true, hostObject));
       }
     }
     return vars.toArray(new IVariable[vars.size()]);
@@ -97,17 +97,24 @@ public class StackFrame extends StackFrameBase {
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false));
+          vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false, null));
           receiverVariable = null;
         }
-        vars.add(Variable.forScope(evaluateContext, scope));
+        // Probably there is no better expression for referring the global object in JS.
+        ValueBase.ValueAsHostObject hostObject = new ValueBase.ValueAsHostObject() {
+          @Override
+          public String getExpression() {
+            return "((function(){return this;})())";
+          }
+        };
+        vars.add(Variable.forScope(evaluateContext, scope, hostObject));
       } else if (scope.asWithScope() != null) {
         JsScope.WithScope withScope = scope.asWithScope();
         vars.add(Variable.forWithScope(evaluateContext, withScope));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
-          vars.add(Variable.forRealValue(evaluateContext, var, false));
+          vars.add(Variable.forRealValue(evaluateContext, var, false, null));
         }
         int endPos = vars.size();
         List<Variable> sublist = vars.subList(startPos, endPos);
@@ -115,7 +122,7 @@ public class StackFrame extends StackFrameBase {
       }
     }
     if (receiverVariable != null) {
-      vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false));
+      vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false, null));
     }
 
     IVariable[] result = new IVariable[vars.size()];
