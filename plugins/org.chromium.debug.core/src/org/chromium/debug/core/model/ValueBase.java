@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.Variable.Real;
+import org.chromium.debug.core.model.Variable.Real.HostObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -48,6 +50,12 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
   public abstract Value asRealValue();
 
   public abstract String getValueString();
+
+  /**
+   * Represents a value as {@link HostObject}. This will be passed to value subproperties.
+   */
+  interface ValueAsHostObject extends Variable.Real.HostObject {
+  }
 
   /**
    * A base implementation of Value that lazily calculates its inner variables.
@@ -93,10 +101,13 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
    */
   static class ScopeValue extends ValueBase.ValueWithLazyVariables {
     private final JsScope jsScope;
+    private final ValueBase.ValueAsHostObject selfAsHostObject;
 
-    ScopeValue(EvaluateContext evaluateContext, JsScope jsScope) {
+    ScopeValue(EvaluateContext evaluateContext, JsScope jsScope,
+        ValueBase.ValueAsHostObject selfAsHostObject) {
       super(evaluateContext);
       this.jsScope = jsScope;
+      this.selfAsHostObject = selfAsHostObject;
     }
     @Override public String getReferenceTypeName() throws DebugException {
       return "#Scope";
@@ -117,7 +128,7 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
     @Override
     protected IVariable[] calculateVariables() {
       return StackFrame.wrapVariables(getEvaluateContext(), jsScope.getVariables(),
-          Collections.<String>emptySet(), Collections.<JsVariable>emptyList());
+          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), selfAsHostObject);
     }
   }
 

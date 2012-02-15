@@ -24,20 +24,25 @@ import org.eclipse.debug.ui.IValueDetailListener;
  */
 public class Value extends ValueBase.ValueWithLazyVariables {
 
-  public static Value create(EvaluateContext evaluateContext, JsValue value) {
+  public static Value create(EvaluateContext evaluateContext, JsValue value,
+      ValueBase.ValueAsHostObject hostObject) {
     if (JsValue.Type.TYPE_ARRAY == value.getType()) {
-      return new ArrayValue(evaluateContext, (JsArray) value);
+      return new ArrayValue(evaluateContext, (JsArray) value, hostObject);
     }
-    return new Value(evaluateContext, value);
+    return new Value(evaluateContext, value, hostObject);
   }
 
   private final JsValue value;
 
+  private final ValueBase.ValueAsHostObject hostObject;
+
   private final DetailBuilder detailBuilder = new DetailBuilder();
 
-  protected Value(EvaluateContext evaluateContext, JsValue value) {
+  protected Value(EvaluateContext evaluateContext, JsValue value,
+      ValueBase.ValueAsHostObject hostObject) {
     super(evaluateContext);
     this.value = value;
+    this.hostObject = hostObject;
   }
 
   public String getReferenceTypeName() throws DebugException {
@@ -64,7 +69,7 @@ public class Value extends ValueBase.ValueWithLazyVariables {
     }
     return StackFrame.wrapVariables(getEvaluateContext(),
         asObject.getProperties(), Collections.<String>emptySet(),
-        asObject.getInternalProperties());
+        asObject.getInternalProperties(), hostObject);
   }
 
   public boolean hasVariables() throws DebugException {
@@ -93,6 +98,10 @@ public class Value extends ValueBase.ValueWithLazyVariables {
 
   public boolean isTruncated() {
     return this.value.isTruncated() || detailBuilder.getCurrentDetailWrapper().isTruncated();
+  }
+
+  protected ValueBase.ValueAsHostObject getHostObject() {
+    return hostObject;
   }
 
   public void reloadBiggerValue(final ReloadValueCallback callback) {

@@ -21,8 +21,9 @@ public class ArrayValue extends Value implements IIndexedValue {
 
   private final AtomicReference<IVariable[]> elementsRef = new AtomicReference<IVariable[]>(null);
 
-  public ArrayValue(EvaluateContext evaluateContext, JsArray array) {
-    super(evaluateContext, array);
+  public ArrayValue(EvaluateContext evaluateContext, JsArray array,
+      ValueBase.ValueAsHostObject hostObject) {
+    super(evaluateContext, array, hostObject);
   }
 
   private IVariable[] createElements() {
@@ -30,7 +31,7 @@ public class ArrayValue extends Value implements IIndexedValue {
     return StackFrame.wrapVariables(getEvaluateContext(), jsArray.getProperties(),
         ARRAY_HIDDEN_PROPERTY_NAMES,
         // Do not show internal properties for arrays (this may be an option).
-        null);
+        null, getHostObject());
   }
 
   private IVariable[] getElements() {

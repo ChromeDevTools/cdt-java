@@ -29,39 +29,40 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    * message as a {@link Value}.
    */
   public static Variable forRealValue(EvaluateContext evaluateContext, JsVariable jsVariable,
-      boolean isInternalProperty) {
+      boolean isInternalProperty, Real.HostObject hostObject) {
     ValueBase value;
     if (jsVariable.isReadable()) {
       JsValue jsValue = jsVariable.getValue();
       if (jsValue == null) {
         value = new ValueBase.ErrorMessageValue(evaluateContext, "Variable value is unavailable");
       } else {
-        value = Value.create(evaluateContext, jsValue);
+        SelfAsHostObject selfAsHostObject = new SelfAsHostObject(jsVariable);
+        value = Value.create(evaluateContext, jsValue, selfAsHostObject);
       }
     } else {
       value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable variable");
     }
 
-    return new Real(evaluateContext, jsVariable, value, isInternalProperty);
+    return new Real(evaluateContext, jsVariable, value, isInternalProperty, hostObject);
   }
 
   public static Variable forException(EvaluateContext evaluateContext,
       ExceptionData exceptionData) {
-    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue());
+    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue(), null);
     return new Variable.Virtual(evaluateContext, "<exception>", JAVASCRIPT_REFERENCE_TYPE_NAME,
         value);
   }
 
-
-  public static Variable forScope(EvaluateContext evaluateContext, JsScope scope) {
-    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope);
+  public static Variable forScope(EvaluateContext evaluateContext, JsScope scope,
+      ValueBase.ValueAsHostObject selfAsHostObject) {
+    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope, selfAsHostObject);
     String scopeVariableName = "<" + scope.getType() + ">";
     return forScope(evaluateContext, scopeVariableName, scopeValue);
   }
 
   public static Variable forWithScope(EvaluateContext evaluateContext,
       WithScope withScope) {
-    Value value = Value.create(evaluateContext, withScope.getWithArgument());
+    Value value = Value.create(evaluateContext, withScope.getWithArgument(), null);
     return forScope(evaluateContext, "<with>", value);
   }
 
@@ -73,8 +74,9 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   /**
    * Represents a real variable -- wraps {@link JsVariable}.
    */
-  private static class Real extends Variable {
+  public static class Real extends Variable {
     private final JsVariable jsVariable;
+    private final HostObject hostObject;
 
     /**
      * Specifies whether this variable is internal property (__proto__ etc).
@@ -83,22 +85,42 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     private final boolean isInternalProperty;
 
     Real(EvaluateContext evaluateContext, JsVariable jsVariable,
-        ValueBase value, boolean isInternalProperty) {
+        ValueBase value, boolean isInternalProperty, HostObject hostObject) {
       super(evaluateContext, value);
       this.jsVariable = jsVariable;
       this.isInternalProperty = isInternalProperty;
+      this.hostObject = hostObject;
     }
 
     @Override public String getName() {
       return jsVariable.getName();
     }
-
     @Override public String getReferenceTypeName() {
       return JAVASCRIPT_REFERENCE_TYPE_NAME;
     }
-
     @Override protected String createWatchExpression() {
       return jsVariable.getFullyQualifiedName();
+    }
+    @Override public Real asRealVariable() {
+      return this;
+    }
+    public JsVariable getJsVariable() {
+      return jsVariable;
+    }
+    public HostObject getHostObject() {
+      return hostObject;
+    }
+
+    /**
+     * If variable is a property of some object, it need an access to this object. This is used
+     * to build an expression for getting property descriptor.
+     */
+    public interface HostObject {
+      /**
+       * @return a JavaScript descriptor that return a value of that object -- the same that
+       *     {@link JsVariable#getFullyQualifiedName()} returns
+       */
+      String getExpression();
     }
   }
 
@@ -119,13 +141,31 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     @Override public String getName() {
       return name;
     }
-
     @Override public String getReferenceTypeName() {
       return referenceTypeName;
     }
-
+    @Override public Real asRealVariable() {
+      return null;
+    }
     @Override protected String createWatchExpression() {
       return null;
+    }
+  }
+
+  /**
+   * Implements ValueAsHostObject based on JsVariable. This goes to the
+   * corresponding Value instance.
+   */
+  private static class SelfAsHostObject implements ValueBase.ValueAsHostObject {
+    private final JsVariable jsVariable;
+
+    SelfAsHostObject(JsVariable jsVariable) {
+      this.jsVariable = jsVariable;
+    }
+
+    @Override
+    public String getExpression() {
+      return jsVariable.getFullyQualifiedName();
     }
   }
 
@@ -174,6 +214,8 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    * @return expression or null
    */
   protected abstract String createWatchExpression();
+
+  public abstract Real asRealVariable();
 
   @SuppressWarnings("unchecked")
   @Override
