@@ -5,11 +5,15 @@
 package org.chromium.debug.core.model;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsScope.WithScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -34,7 +38,18 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     if (jsVariable.isReadable()) {
       JsValue jsValue = jsVariable.getValue();
       if (jsValue == null) {
-        value = new ValueBase.ErrorMessageValue(evaluateContext, "Variable value is unavailable");
+        JsObjectProperty objectProperty = jsVariable.asObjectProperty();
+        if (objectProperty == null) {
+          value = new ValueBase.ErrorMessageValue(evaluateContext,
+              "Variable value is unavailable");
+        } else {
+          // This is blocking. Consider making this call async and the entire method async
+          // to parallel if for several properties.
+          value = calculateAccessorPropertyBlocking(objectProperty, evaluateContext);
+          if (value == null) {
+            value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable object property");
+          }
+        }
       } else {
         SelfAsHostObject selfAsHostObject = new SelfAsHostObject(jsVariable);
         value = Value.create(evaluateContext, jsValue, selfAsHostObject);
@@ -44,6 +59,29 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     }
 
     return new Real(evaluateContext, jsVariable, value, isInternalProperty, hostObject);
+  }
+
+  private static ValueBase calculateAccessorPropertyBlocking(final JsObjectProperty property,
+      final EvaluateContext evaluateContext) {
+    if (property.getGetterAsFunction() == null) {
+      return new ValueBase.ErrorMessageValue(evaluateContext, "Property has undefined getter");
+    }
+    class Callback implements JsEvaluateContext.EvaluateCallback {
+      ValueBase result = null;
+      @Override public void success(JsVariable variable) {
+        result = Value.create(evaluateContext, variable.getValue(),
+            new SelfAsHostObject(property));
+      }
+      @Override public void failure(String errorMessage) {
+        result = new ValueBase.ErrorMessageValue(evaluateContext,
+            "Failed to evaluate property value: " + errorMessage);
+      }
+    }
+    Callback callback = new Callback();
+    CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
+    RelayOk relayOk = property.evaluateGet(callback, callbackSemaphore);
+    callbackSemaphore.acquireDefault(relayOk);
+    return callback.result;
   }
 
   public static Variable forException(EvaluateContext evaluateContext,
