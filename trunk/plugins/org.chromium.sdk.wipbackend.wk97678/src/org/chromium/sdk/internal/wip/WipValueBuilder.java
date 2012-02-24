@@ -48,107 +48,6 @@ class WipValueBuilder {
     this.valueLoader = valueLoader;
   }
 
-  public JsObjectProperty createObjectProperty(final PropertyDescriptorValue propertyDescriptor,
-      final String hostObjectRefId, ValueNameBuilder nameBuilder) {
-    final QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-    JsValue jsValue = wrap(propertyDescriptor.value(), qualifiedNameBuilder);
-
-    final JsValue getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(),
-        qualifiedNameBuilder, "getter");
-
-    final JsValue setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(),
-        qualifiedNameBuilder, "setter");
-
-    return new ObjectPropertyBase(jsValue, nameBuilder) {
-      @Override public boolean isWritable() {
-        return propertyDescriptor.writable() == Boolean.TRUE;
-      }
-      @Override public JsValue getGetter() {
-        return getter;
-      }
-      @Override public JsValue getSetter() {
-        return setter;
-      }
-      @Override public boolean isConfigurable() {
-        return propertyDescriptor.configurable() == Boolean.TRUE;
-      }
-      @Override public boolean isEnumerable() {
-        return propertyDescriptor.enumerable() == Boolean.TRUE;
-      }
-
-      @Override
-      public JsFunction getGetterAsFunction() {
-        JsObject getterObject = getter.asObject();
-        if (getterObject == null) {
-          return null;
-        }
-        return getterObject.asFunction();
-      }
-
-      @Override
-      public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
-        WipContextBuilder.GlobalEvaluateContext evaluateContext =
-            new WipContextBuilder.GlobalEvaluateContext(valueLoader);
-
-        JsFunction getterFunction = getGetterAsFunction();
-        if (getterFunction == null) {
-          throw new RuntimeException("Getter is not a function");
-        }
-
-        Map<String, String> context = new HashMap<String, String>(2);
-        context.put(GETTER_VAR_NAME, getterFunction.getRefId());
-        context.put(OBJECT_VAR_NAME, hostObjectRefId);
-        final QualifiedNameBuilder pseudoPropertyNameBuilder =
-            createPseudoPropertyNameBuilder(qualifiedNameBuilder, "value");
-        ValueNameBuilder valueNameBuilder = new ValueNameBuilder() {
-          @Override
-          public String getShortName() {
-            return "value";
-          }
-
-          @Override
-          public QualifiedNameBuilder getQualifiedNameBuilder() {
-            return pseudoPropertyNameBuilder;
-          }
-        };
-
-        return evaluateContext.evaluateAsync(EVALUATE_EXPRESSION, valueNameBuilder,
-            context, callback, syncCallback);
-      }
-      private static final String GETTER_VAR_NAME = "gttr";
-      private static final String OBJECT_VAR_NAME = "obj";
-      private static final String EVALUATE_EXPRESSION =
-          GETTER_VAR_NAME + ".call(" + OBJECT_VAR_NAME + ")";
-    };
-  }
-
-  private static QualifiedNameBuilder createPseudoPropertyNameBuilder(
-      final QualifiedNameBuilder propertyValueNameBuilder, final String symbolicName) {
-    return new QualifiedNameBuilder() {
-      @Override public boolean needsParentheses() {
-        return false;
-      }
-
-      @Override
-      public void append(StringBuilder output) {
-        propertyValueNameBuilder.append(output);
-        output.append("::[[").append(symbolicName).append("]]");
-      }
-    };
-  }
-
-  private JsValue wrapPropertyDescriptorFunction(RemoteObjectValue value,
-      QualifiedNameBuilder propertyValueNameBuilder, String symbolicName) {
-    if (value == null) {
-      return null;
-    }
-
-    QualifiedNameBuilder qualifiedNameBuilder =
-        createPseudoPropertyNameBuilder(propertyValueNameBuilder, symbolicName);
-
-    return wrap(value, qualifiedNameBuilder);
-  }
-
   public JsVariable createVariable(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
     QualifiedNameBuilder qualifiedNameBuilder;
     if (nameBuilder == null) {
@@ -322,7 +221,7 @@ class WipValueBuilder {
       }
 
       @Override
-      public Collection<? extends JsObjectProperty> getProperties()
+      public Collection<? extends JsVariable> getProperties()
           throws MethodIsBlockingException {
         return getLoadedProperties().properties();
       }
