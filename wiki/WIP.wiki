@@ -11,11 +11,24 @@ WIP name stands for "!WebInspector Protocol" and is used within "Google Chrome D
 
 The development process earned a dedicated [WipBackendDevelopment article].
 
+=== How to start Google Chrome/Chromium ===
+{{{
+chrome --remote-debugging-port=<port>
+}}}
+
+=== How to attach from [EclipseDebugger Debugger] ===
+A launch configuration named "!WebKit Protocol" should be created (see [DebuggerTutorial#Connect tutorial]).
+
+=== How to attach from SDK ===
+Use the following create method:
+{{{
+org.chromium.sdk.wip.WipBrowserFactory.INSTANCE.createBrowser(...)
+}}}
+
 === Protocol Name ===
 Protocol is called '!WebKit Debug Protocol'. The name is widely used though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
-{{{
---remote-debugging-port=<port>
-}}}
+{{{--remote-debugging-port=<port>}}}
+
 Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
 
 == !WebKit Remote Debugging Protocol ==
