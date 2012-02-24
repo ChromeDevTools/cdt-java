@@ -1,8 +1,8 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Google Chrome Developer Tools SDK WIP backend WK102439
+Bundle-Name: Google Chrome Developer Tools SDK WIP backend Protocol v. 1.0
 Bundle-Vendor: The Chromium Authors
-Bundle-SymbolicName: org.chromium.sdk.wipbackend.wk102439;singleton:=true
+Bundle-SymbolicName: org.chromium.sdk.wipbackend.protocol_1_0;singleton:=true
 Bundle-Version: 0.3.3.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Require-Bundle: org.chromium.sdk;bundle-version="0.3.3"
