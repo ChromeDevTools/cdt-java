@@ -193,5 +193,5 @@ public class WipProtocolGeneratorMain {
   }
 
   private static final ModelResourceLocation JSON_MODEL_FILE_URL = new LocalFileLocation(
-      "Inspector.json.branch903.patch106787");
+      "Inspector.json.branch903.patch106787.manual_fix");
 }
