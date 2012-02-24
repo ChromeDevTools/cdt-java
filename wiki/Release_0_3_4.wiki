@@ -19,6 +19,9 @@ In Debugger, object properties with getters now have their values displayed. Sma
 
 In SDK a new interface [http://chromedevtools.googlecode.com/svn//trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JsObjectProperty.html org.chromium.sdk.JsObjectProperty] was added.
 
+==Javadocs==
+See here for [http://chromedevtools.googlecode.com/svn/!svn/bc/938/trunk/plugins/org.chromium.sdk/javadocs/index.html version 0.3.4].
+
 ==WIP Backends==
 As !WebKit Remote Debugging Protocol matures, we are gradually switching from !WebKit revision numbers to protocol official version names. See table below.
 
