@@ -61,7 +61,7 @@ class WipValueBuilder {
 
     return new ObjectPropertyBase(jsValue, nameBuilder) {
       @Override public boolean isWritable() {
-        return propertyDescriptor.writable();
+        return propertyDescriptor.writable() == Boolean.TRUE;
       }
       @Override public JsValue getGetter() {
         return getter;
@@ -70,10 +70,10 @@ class WipValueBuilder {
         return setter;
       }
       @Override public boolean isConfigurable() {
-        return propertyDescriptor.configurable();
+        return propertyDescriptor.configurable() == Boolean.TRUE;
       }
       @Override public boolean isEnumerable() {
-        return propertyDescriptor.enumerable();
+        return propertyDescriptor.enumerable() == Boolean.TRUE;
       }
 
       @Override

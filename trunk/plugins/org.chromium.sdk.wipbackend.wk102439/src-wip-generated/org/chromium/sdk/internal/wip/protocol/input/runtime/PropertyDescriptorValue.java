@@ -23,7 +23,8 @@ public interface PropertyDescriptorValue {
   /**
    True if the value associated with the property may be changed (data descriptors only).
    */
-  boolean writable();
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Boolean writable();
 
   /**
    A function which serves as a getter for the property, or <code>undefined</code> if there is no getter (accessor descriptors only).
@@ -40,12 +41,14 @@ public interface PropertyDescriptorValue {
   /**
    True if the type of this property descriptor may be changed and if the property may be deleted from the corresponding object.
    */
-  boolean configurable();
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Boolean configurable();
 
   /**
    True if this property shows up during enumeration of the properties on the corresponding object.
    */
-  boolean enumerable();
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Boolean enumerable();
 
   /**
    True if the result was thrown during the evaluation.
