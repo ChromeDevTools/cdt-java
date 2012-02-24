@@ -17,6 +17,8 @@ plugins/org.chromium.sdk.wipbackend.wk97678/.settings
 plugins/org.chromium.sdk.wipbackend.wk97678/bin
 plugins/org.chromium.sdk.wipbackend.wk102439/.settings
 plugins/org.chromium.sdk.wipbackend.wk102439/bin
+plugins/org.chromium.sdk.wipbackend.protocol_1_0/.settings
+plugins/org.chromium.sdk.wipbackend.protocol_1_0/bin
 plugins/org.chromium.sdk.wipbackend.dev/.settings
 plugins/org.chromium.sdk.wipbackend.dev/bin
 plugins/org.chromium.debug.jsdtbridge/.settings
