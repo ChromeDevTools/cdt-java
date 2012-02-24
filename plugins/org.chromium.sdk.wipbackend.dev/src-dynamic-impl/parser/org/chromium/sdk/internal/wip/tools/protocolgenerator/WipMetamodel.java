@@ -19,14 +19,8 @@ import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.ArrayI
 public interface WipMetamodel {
   @JsonType
   interface Root {
-    Version version();
+    @JsonOptionalField Object version();
     List<Domain> domains();
-  }
-
-  @JsonType
-  interface Version {
-    String major();
-    String minor();
   }
 
   @JsonType

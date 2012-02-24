@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: Local file Inspector-1.0.json.r107603.manual_fix
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -93,5 +93,11 @@ public interface NodeValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String value();
+
+  /**
+   Content document for frame owner elements.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue contentDocument();
 
 }

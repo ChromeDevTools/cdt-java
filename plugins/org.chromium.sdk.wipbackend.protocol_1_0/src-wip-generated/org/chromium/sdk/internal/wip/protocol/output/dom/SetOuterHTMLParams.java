@@ -1,13 +1,13 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: Local file Inspector-1.0.json.r107603.manual_fix
 
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
 /**
 Sets node HTML markup, returns new node id.
  */
-public class SetOuterHTMLParams extends org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse<org.chromium.sdk.internal.wip.protocol.input.dom.SetOuterHTMLData> {
+public class SetOuterHTMLParams extends org.chromium.sdk.internal.wip.protocol.output.WipParams {
   /**
    @param nodeId Id of the node to set markup for.
    @param outerHTML Outer HTML markup to set.
@@ -21,10 +21,6 @@ public class SetOuterHTMLParams extends org.chromium.sdk.internal.wip.protocol.o
 
   @Override protected String getRequestName() {
     return METHOD_NAME;
-  }
-
-  @Override public org.chromium.sdk.internal.wip.protocol.input.dom.SetOuterHTMLData parseResponse(org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, org.chromium.sdk.internal.wip.protocol.input.WipGeneratedParserRoot parser) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {
-    return parser.parseDOMSetOuterHTMLData(data.getUnderlyingObject());
   }
 
 }
