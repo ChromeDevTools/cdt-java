@@ -11,11 +11,23 @@ The proposed protocol can be used as a transport for other debugging-related pro
 
 A single subsystem that uses !ChromeDevTools protocol as a transport for its own debugging-related protocol is called a "Tool". A V8 VM Debugger, a DOM debugger, or a Developer Tools Service are examples of a Tool.
 
+=== How to start Google Chrome/Chromium ===
+{{{
+chrome --remote-shell-port=<port>
+}}}
+
+=== How to attach from [EclipseDebugger Debugger] ===
+A launch configuration named "Chromium !JavaScript" should be created (see [DebuggerTutorial#Connect tutorial]).
+
+=== How to attach from SDK ===
+Use the following create method:
+{{{
+org.chromium.sdk.BrowserFactory.getInstance().create(...)
+}}}
+
 === Protocol Name ===
 Protocol is called '!ChromeDevTools Protocol'. The name is pretty overloaded though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
-{{{
---remote-shell-port=<port>
-}}}
+{{{--remote-shell-port=<port>}}}
 Compare with [WIP#Protocol_Name WebKit Remote Debugging Protocol].
 
 == Protocol Message Structure ==
