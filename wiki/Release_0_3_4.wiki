@@ -13,14 +13,14 @@ Since Google Chrome/Chromium 17.0.950.`*` old debug protocol support is disconti
 Old {{{Chromium JavaScript}}} launch configurations will now have a "Deprecation" tab warning that the old protocol now goes. It also has a button "Copy Launch Configuration" that should help transfer old configurations to the new type.
 
 ==Property Descriptor Support==
-JavaScript property descriptors now got a clear support in the project. Currently it is only supported by WebKit protocol.
+!JavaScript property descriptors now got a clear support in the project. Currently it is only supported by !WebKit protocol.
 
 In Debugger, object properties with getters now have their values displayed. Small auxiliary command was added to a property context menu: "Watch Property Descriptor". Since Eclise UI can't seem to have a proper display for both property value and property descriptor, this action allows to watch property descriptor on request. It merely creates for you a new expression in "Expressions" view.
 
 In SDK a new interface [http://chromedevtools.googlecode.com/svn//trunk/plugins/org.chromium.sdk/javadocs/org/chromium/sdk/JsObjectProperty.html org.chromium.sdk.JsObjectProperty] was added.
 
 ==WIP Backends==
-As WebKit Remote Debugging Protocol matures, we are gradually switching from WebKit revision numbers to protocol official version names. See table below.
+As !WebKit Remote Debugging Protocol matures, we are gradually switching from !WebKit revision numbers to protocol official version names. See table below.
 
 ==== Backend Set Version 0.1.6 ====
 || id || Protocol version || Chrome version || New features ||
