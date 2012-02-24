@@ -28,6 +28,7 @@ org.chromium.sdk.BrowserFactory.getInstance().create(...)
 === Protocol Name ===
 Protocol is called '!ChromeDevTools Protocol'. The name is pretty overloaded though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
 {{{--remote-shell-port=<port>}}}
+
 Compare with [WIP#Protocol_Name WebKit Remote Debugging Protocol].
 
 == Protocol Message Structure ==
