@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@101756
+// Origin: Local file Inspector-1.0.json.r107603.manual_fix
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -16,7 +16,8 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.CanSetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CausesRecompilationData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionLocationData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.GetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.GlobalObjectClearedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue.class,
@@ -56,7 +57,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.dom.ResolveNodeData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetChildNodesEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetNodeNameData.class,
-    org.chromium.sdk.internal.wip.protocol.input.dom.SetOuterHTMLData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CachedResourceValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CanClearBrowserCacheData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CanClearBrowserCookiesData.class,

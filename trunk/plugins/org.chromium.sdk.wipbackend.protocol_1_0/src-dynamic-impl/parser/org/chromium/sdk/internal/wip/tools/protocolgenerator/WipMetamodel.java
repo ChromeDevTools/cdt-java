@@ -10,7 +10,6 @@ import org.chromium.sdk.internal.protocolparser.FieldLoadStrategy;
 import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.ArrayItemType;
 
 /**
  * Defines schema of WIP metamodel defined in
@@ -19,14 +18,8 @@ import org.chromium.sdk.internal.wip.tools.protocolgenerator.WipMetamodel.ArrayI
 public interface WipMetamodel {
   @JsonType
   interface Root {
-    Version version();
+    @JsonOptionalField Object version();
     List<Domain> domains();
-  }
-
-  @JsonType
-  interface Version {
-    String major();
-    String minor();
   }
 
   @JsonType

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: Local file Inspector-1.0.json.r107603.manual_fix
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -22,11 +22,11 @@ public interface CallFrameValue {
   /**
    JavaScript script line number.
    */
-  String lineNumber();
+  long lineNumber();
 
   /**
    JavaScript script column number.
    */
-  String columnNumber();
+  long columnNumber();
 
 }

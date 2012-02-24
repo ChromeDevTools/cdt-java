@@ -35,7 +35,6 @@ interface WipMetamodelParser {
     static {
       Class<?>[] classes = {
           WipMetamodel.Root.class,
-          WipMetamodel.Version.class,
           WipMetamodel.Domain.class,
           WipMetamodel.Command.class,
           WipMetamodel.Parameter.class,
