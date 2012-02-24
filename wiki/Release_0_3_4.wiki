@@ -27,3 +27,11 @@ As WebKit Remote Debugging Protocol matures, we are gradually switching from Web
 || WK@97678 || 0.1 || 16.0.912.`*` || ||
 || WK@102439 || n/a || 17.0.963.3+ || function position, property descriptor ||
 || Protocol 1.0 || 1.0 || 18.`*`.`*`.`*` || function position, property descriptor ||
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 is also tested. ||
+|| *Java:* || J2SE-1.6 or newer. ||
+
+Optional:
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
