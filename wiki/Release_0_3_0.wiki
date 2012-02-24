@@ -57,7 +57,7 @@ All scripts currently loaded in the VM are shown under a VirtualProject. To keep
 ==SDK==
 The main change in SDK is the support of !WebKit Remote Debugging Protocol that is locally called [WIP].
 
-See also a new SdkTutorial and generated [http://chromedevtools.googlecode.com/svn/trunk/plugins/org.chromium.sdk/javadocs/index.html javadocs].
+See also a new SdkTutorial and generated [http://chromedevtools.googlecode.com/svn/!svn/bc/936/trunk/plugins/org.chromium.sdk/javadocs/index.html javadocs].
 
 Other changes are moderate interfaces redesign, support for clearing internal property caches (see [http://code.google.com/p/chromedevtools/issues/detail?id=44 issue#44]) and a faster JSON parser that is implemented without Java reflection.
 
