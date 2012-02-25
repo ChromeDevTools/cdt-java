@@ -21,7 +21,7 @@ Start the Google Chrome (or Chromium) browser as:
 
 In Eclipse create a new debug configuration (under {{{Run | Debug Configurations...}}}) from the "Chromium !JavaScript" configuration type (you might need to switch to the Debug perspective first):
 
-[http://chromedevtools.googlecode.com/svn/wiki/rel022-debug-configurations-remote.png]
+[http://chromedevtools.googlecode.com/svn/wiki/rel034-debug-configurations-remote.png]
 
 Then specify the {{{debugger port}}} you have chosen, in the "Remote" tab.
 
