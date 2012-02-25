@@ -1,13 +1,9 @@
 #summary WIP term explained
 
 = Introduction =
-WIP is a codename for adopting a new debug protocol -- [#WebKit_Remote_Debugging_Protocol WebKit Remote Debugging Protocol]. Google Chrome/Chromium have used ChromeDevToolsProtocol for remote debugging (which is a slightly extended [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 debugger protocol].) However currently browser is switching to a new one.
+WIP is a codename [#WebKit_Remote_Debugging_Protocol WebKit Remote Debugging Protocol] Java implementation. This is the main Google Chrome/Chromium debug protocol and historically it succeeds ChromeDevToolsProtocol. It is natively used by in-browser Developer Tools.
 
-The new protocol is an internal protocol of in-browser Developer Tools.
-
-WIP name stands for "!WebInspector Protocol" and is used within "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
-
-'WIP' term should be gone when the support reaches stable state and becomes a regular part of the project.
+WIP stands for "!WebInspector Protocol" and is used within "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
 
 The development process earned a dedicated [WipBackendDevelopment article].
 
@@ -25,8 +21,11 @@ Use the following create method:
 org.chromium.sdk.wip.WipBrowserFactory.INSTANCE.createBrowser(...)
 }}}
 
+== WIP Backends ==
+Note that the project contains several alternative protocol implementations for the different versions. They are deployed as "WIP Backends" (see [WipBackends main article]).
+
 === Protocol Name ===
-Protocol is called '!WebKit Debug Protocol'. The name is widely used though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
+Protocol is called '!WebKit Remote Debuggin Protocol'. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
 {{{--remote-debugging-port=<port>}}}
 
 Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
