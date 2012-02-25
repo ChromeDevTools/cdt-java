@@ -21,7 +21,7 @@ Several configuration types are supported for different protocols.
 
 [http://chromedevtools.googlecode.com/svn/wiki/rel034-debug-configurations-remote.png]
 
-=== WebKit Protocol ===
+=== !WebKit Protocol ===
 This is default Google Chrome/Chromium debug protocol: [WIP WebKit Remote Debugging Protocol].
 You should start browser with the following command-line:
 {{{
