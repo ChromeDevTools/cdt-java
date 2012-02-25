@@ -16,12 +16,27 @@ Finish installation and restart Eclipse as prompted.
 See also HowToInstall.
 
 =Connect =
-Start the Google Chrome (or Chromium) browser as: 
-{{{chrome --remote-shell-port=9222}}} (or some other debugger port of your choice.) Open the URL you want to debug.
-
-In Eclipse create a new debug configuration (under {{{Run | Debug Configurations...}}}) from the "Chromium !JavaScript" configuration type (you might need to switch to the Debug perspective first):
+In Eclipse create a new debug configuration (under {{{Run | Debug Configurations...}}}) (you might need to switch to the Debug perspective first).
+Several configuration types are supported for different protocols.
 
 [http://chromedevtools.googlecode.com/svn/wiki/rel034-debug-configurations-remote.png]
+
+=== WebKit Protocol ===
+This is default Google Chrome/Chromium debug protocol: [WIP WebKit Remote Debugging Protocol].
+You should start browser with the following command-line:
+{{{
+chrome --remote-debugging-port=<debug port>
+}}}
+
+=== Standalone V8 VM ===
+This is for the native V8 debug protocol. There is no standard way to enable it, as V8 is only a library and doesn't control it. A particular application is [http://code.google.com/p/v8/wiki/AddDebuggerSupport responsible for this].
+
+=== Chromium !JavaScript ===
+This is what historically was the first Google Chrome/Chromium [ChromeDevToolsProtocol debug protocol]. It is being phasing out so you probably won't need it.
+
+Once you chose a configuration type, all other settings should be pretty much the same.
+
+However note that for "!WebKit Protocol" you will have to manually choose a backend (see [WipBackends main article]).
 
 Then specify the {{{debugger port}}} you have chosen, in the "Remote" tab.
 
