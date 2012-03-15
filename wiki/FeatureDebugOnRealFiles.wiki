@@ -29,11 +29,9 @@ https://chromedevtools.googlecode.com/svn/wiki/rel030-script-properties.png
 
 2. Use "Less" and "More" buttons to add or remove file path components. By default, only the file name is used, but you may add its parent directory or a longer path. All selected file path components will be used for matching this file. 
 
+== Exact match method ==
+This method accurately works with the full file path, so you would need to provide more details about your directory structure than in "Auto-detect" method.
 
-
-Unfortunately V8 requires quite precise breakpoint information for this to work. That's why there follow several steps that cannot be automatized:
-
-= How to Set Up =
 First let’s see how V8 identifies those remote scripts. While debugging a script in the virtual project open “Properties” (context menu on file in “Project Explorer” or with Alt+Enter in an editor).
 
 http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-script-properties.png
@@ -49,6 +47,8 @@ Add a new source container with identifier mapping and make sure it is above the
 http://chromedevtools.googlecode.com/svn/wiki/EclipseDebuggerFeatures-source-name-mapper.png
 
 Depending on your configuration, enter the common URL prefix (e.g. {{{http://server:8080/}}}) and specify the target container (choose type and configure it).
+
+Also make sure that you selected "Exact match" method in "Remote" tab of launch configuration,
 
 See also a [http://www.youtube.com/watch?v=GVxFFw7lkYg screen-cast video].
 
