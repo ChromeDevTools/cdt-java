@@ -41,4 +41,4 @@ Optional:
 || *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
 
 =Known Issues=
-Debugger won't start with WebKit Protocol with Backend "Protocol 1.0" or "WK@102439" if "Show debug network communication console" is disabled. [http://code.google.com/p/chromedevtools/issues/detail?id=65 Issue #65]. Quick work-around: enable "Show debug network communication console".
+Debugger won't start with !WebKit Protocol with Backend "Protocol 1.0" or "WK@102439" if "Show debug network communication console" is disabled. Issue [http://code.google.com/p/chromedevtools/issues/detail?id=65 #65]. Quick work-around: enable "Show debug network communication console".
