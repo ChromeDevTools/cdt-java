@@ -129,14 +129,15 @@ public class WipBackendImpl extends WipBackendBase {
         socketAddress, DEFAULT_CONNECTION_TIMEOUT_MS, browserConnectionLogger,
         HandshakeUtil.ASCII_CHARSET);
     try {
-      browserConnectionLogger.start();
-      browserConnectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
-        @Override
-        public void closeConnection() {
-          socketWrapper.getShutdownRelay().sendSignal(null, new Exception("UI close request"));
-        }
-      });
-
+      if (browserConnectionLogger != null) {
+        browserConnectionLogger.start();
+        browserConnectionLogger.setConnectionCloser(new ConnectionLogger.ConnectionCloser() {
+          @Override
+          public void closeConnection() {
+            socketWrapper.getShutdownRelay().sendSignal(null, new Exception("UI close request"));
+          }
+        });
+      }
       LoggableOutputStream output = socketWrapper.getLoggableOutput();
       writeHttpLine(output, "GET " + resource + " HTTP/1.1");
       writeHttpLine(output, "User-Agent: ChromeDevTools for Java SDK");
@@ -178,7 +179,9 @@ public class WipBackendImpl extends WipBackendBase {
       }
       return new String(responseBytes, HandshakeUtil.UTF_8_CHARSET);
     } finally {
-      browserConnectionLogger.handleEos();
+      if (browserConnectionLogger != null) {
+        browserConnectionLogger.handleEos();
+      }
       socketWrapper.getShutdownRelay().sendSignal(null, null);
     }
   }
