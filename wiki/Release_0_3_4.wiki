@@ -6,7 +6,7 @@
 This release succeeds the [Release_0_3_2 release 0.3.2].
 
 ==Overview==
-This is mostly a bugfix release. It covers issues 56-60. It also introduces several minor changes to [EclipseDebugger Debugger] and SDK.
+This is mostly a bugfix release. It covers issues 56-60. It also introduces several minor changes to [EclipseDebugger Debugger] and SDK. It also have some [#Known_Issues known issues].
 
 ==Old Debug Configuration Converter==
 Since Google Chrome/Chromium 17.0.950.`*` old debug protocol support is discontinued (see [ChromeDevToolsProtocol#Deprecation_And_Removal details]). [WIP WebKit Remote Debugging Protocol] should be used instead. When [DebuggerTutorial#Connect connecting] from Debugger {{{WebKit Protocol}}} launch configuration type should be used.
