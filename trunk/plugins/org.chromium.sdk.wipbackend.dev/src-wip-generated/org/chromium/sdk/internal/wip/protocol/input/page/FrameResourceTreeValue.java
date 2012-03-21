@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@90626
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -41,6 +41,18 @@ public interface FrameResourceTreeValue {
      Resource mimeType as determined by the browser.
      */
     String mimeType();
+
+    /**
+     True if the resource failed to load.
+     */
+    @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+    Boolean failed();
+
+    /**
+     True if the resource was canceled during loading.
+     */
+    @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+    Boolean canceled();
 
   }
 }
