@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106352
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -57,6 +57,8 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.dom.ResolveNodeData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetChildNodesEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.SetNodeNameData.class,
+    org.chromium.sdk.internal.wip.protocol.input.dom.ShadowRootPoppedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.dom.ShadowRootPushedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CachedResourceValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CanClearBrowserCacheData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.CanClearBrowserCookiesData.class,
