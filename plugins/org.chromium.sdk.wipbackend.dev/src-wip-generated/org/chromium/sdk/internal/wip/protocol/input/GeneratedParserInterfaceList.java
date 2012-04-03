@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@113013
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -82,6 +82,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketResponseValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketWillSendHandshakeRequestEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CookieValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
