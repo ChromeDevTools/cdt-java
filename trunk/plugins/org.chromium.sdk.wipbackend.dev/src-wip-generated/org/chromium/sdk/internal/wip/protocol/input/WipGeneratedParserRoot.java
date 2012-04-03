@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@113013
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -179,6 +179,9 @@ public interface WipGeneratedParserRoot {
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData parsePageAddScriptToEvaluateOnLoadData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData parsePageCanOverrideDeviceMetricsData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData parsePageDomContentEventFiredEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
