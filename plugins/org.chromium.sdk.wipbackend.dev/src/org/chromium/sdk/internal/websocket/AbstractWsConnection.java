@@ -70,7 +70,12 @@ public abstract class AbstractWsConnection<INPUT, OUTPUT> implements WsConnectio
     /**
      * Connection close has been requested from remote side.
      */
-    REMOTE_CLOSE_REQUEST
+    REMOTE_CLOSE_REQUEST,
+
+    /**
+     * Remote side silently closed connection (without breaking a message).
+     */
+    REMOTE_SILENTLY_CLOSED,
   }
 
   @Override
@@ -109,6 +114,10 @@ public abstract class AbstractWsConnection<INPUT, OUTPUT> implements WsConnectio
         CloseReason closeReason = null;
         try {
           closeReason = runListenLoop(loggableReader);
+          if (closeReason == CloseReason.REMOTE_SILENTLY_CLOSED) {
+            LOGGER.log(Level.INFO,
+                "Remote side silently closed connection without 'close' message");
+          }
         } catch (IOException e) {
           closeCause = e;
           LOGGER.log(Level.SEVERE, "Connection read failure", e);
