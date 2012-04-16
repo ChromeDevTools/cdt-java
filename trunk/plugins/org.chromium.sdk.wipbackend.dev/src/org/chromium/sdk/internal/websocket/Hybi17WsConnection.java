@@ -147,7 +147,11 @@ public class Hybi17WsConnection extends AbstractWsConnection<LoggableInput, Logg
       return runListenLoopImpl(loggableReader);
     } catch (IOException e) {
       String stackTrace = BasicUtil.getStacktraceString(e);
-      sendClosingMessage(StatusCode.PROTOCOL_ERROR, stackTrace);
+      try {
+        sendClosingMessage(StatusCode.PROTOCOL_ERROR, stackTrace);
+      } catch (IOException e2) {
+        // Connection may be closed by this time. We probably don't want to log this exception.
+      }
       throw new IOException(e);
     } catch (IncomingProtocolException e) {
       String stackTrace = BasicUtil.getStacktraceString(e);
@@ -174,7 +178,7 @@ public class Hybi17WsConnection extends AbstractWsConnection<LoggableInput, Logg
         if (isClosingGracefully()) {
           return CloseReason.USER_REQUEST;
         } else {
-          throw new IOException("Unexpected end of stream");
+          return CloseReason.REMOTE_SILENTLY_CLOSED;
         }
       }
 
@@ -387,6 +391,11 @@ public class Hybi17WsConnection extends AbstractWsConnection<LoggableInput, Logg
         throw new IOException("WebSocket is already closed for output");
       }
 
+      if (isClosingMessage) {
+        // Close it before actually sending, because we can fail on it.
+        setOutputClosed(true);
+      }
+
       byte firstByte = (byte) (FrameBits.FIN_BIT | OpCode.TEXT);
 
       output.writeByte(firstByte);
@@ -415,10 +424,6 @@ public class Hybi17WsConnection extends AbstractWsConnection<LoggableInput, Logg
         output.writeBytes(maskBytes);
       }
       loggablePayload.send(output, maskBytes);
-
-      if (isClosingMessage) {
-        setOutputClosed(true);
-      }
     }
 
     output.markSeparatorForLog();

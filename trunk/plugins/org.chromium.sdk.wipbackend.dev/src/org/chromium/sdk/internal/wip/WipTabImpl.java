@@ -74,6 +74,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
       @Override
       public void onSignal(Void signal, Exception cause) {
         WipTabImpl.this.tabListener.closed();
+        WipTabImpl.this.tabListener.getDebugEventListener().disconnected();
       }
     });
 
