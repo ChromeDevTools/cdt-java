@@ -141,36 +141,36 @@ class Generator {
         baseTypeBuilder.append("WipParams");
       }
 
-      StringBuilder additionalMemberBuilder = new StringBuilder();
-      additionalMemberBuilder.append("  public static final String METHOD_NAME = " +
+      DeferredWriter additionalMemberBuilder = new DeferredWriter();
+      additionalMemberBuilder.append("\t  public static final String METHOD_NAME = " +
           "org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain." +
           domain.domain().toUpperCase() + " + \"." + command.name() + "\";\n");
       additionalMemberBuilder.append("\n");
 
 
-      additionalMemberBuilder.append("  @Override protected String getRequestName() {\n");
-      additionalMemberBuilder.append("    return METHOD_NAME;\n");
-      additionalMemberBuilder.append("  }\n");
-      additionalMemberBuilder.append("\n");
+      additionalMemberBuilder.append("\t  @Override protected String getRequestName() {\n");
+      additionalMemberBuilder.append("\t    return METHOD_NAME;\n");
+      additionalMemberBuilder.append("\t  }\n");
+      additionalMemberBuilder.append("\t\n");
 
       if (hasResponse) {
         String dataInterfaceFullname =
             Naming.COMMAND_DATA.getFullName(domain.domain(), command.name());
         additionalMemberBuilder.append(
-            "  @Override public " + dataInterfaceFullname + " parseResponse(" +
+            "\t  @Override public " + dataInterfaceFullname + " parseResponse(" +
             "org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Data data, " +
             "org.chromium.sdk.internal.wip.protocol.input." +
             PARSER_ROOT_INTERFACE_NAME + " parser) " +
             "throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n");
-        additionalMemberBuilder.append("    return parser." +
+        additionalMemberBuilder.append("\t    return parser." +
             Naming.COMMAND_DATA.getParseMethodName(domain.domain(), command.name()) +
             "(data.getUnderlyingObject());\n");
-        additionalMemberBuilder.append("  }\n");
-        additionalMemberBuilder.append("\n");
+        additionalMemberBuilder.append("\t  }\n");
+        additionalMemberBuilder.append("\t\n");
       }
 
       generateOutputClass(Naming.PARAMS, command.name(), command.description(),
-          baseTypeBuilder.toString(), additionalMemberBuilder.toString(), command.parameters(),
+          baseTypeBuilder.toString(), additionalMemberBuilder, command.parameters(),
           PropertyLikeAccess.PARAMETER);
     }
 
@@ -180,32 +180,33 @@ class Generator {
     }
 
     private <P> void generateOutputClass(ClassNameScheme nameScheme, String baseName,
-        String description, String baseType, String additionalMemberText,
+        String description, String baseType, DeferredWriter additionalMemberText,
         List<P> properties, PropertyLikeAccess<P> propertyAccess) throws IOException {
       String className = nameScheme.getShortName(baseName);
       JavaFileUpdater fileUpdater = startJavaFile(nameScheme, domain, baseName);
 
-      Writer writer = fileUpdater.getWriter();
+      Writer fileWriter = fileUpdater.getWriter();
+      IndentWriter writer = new IndentWriterImpl(fileWriter, "");
 
       if (description != null) {
-        writer.write("/**\n" + description + "\n */\n");
+        writer.append("\t/**\n" + description + "\n */\n");
       }
-      writer.write("public class " + className +
+      writer.append("\tpublic class " + className +
           " extends " + baseType + " {\n");
 
-      OutputClassScope classScope = new OutputClassScope(writer, className);
+      OutputClassScope classScope = new OutputClassScope(className);
 
       if (additionalMemberText != null) {
         classScope.addMember("param-specific", additionalMemberText);
       }
 
-      classScope.generateCommandParamsBody(properties, propertyAccess, baseName);
+      classScope.generateCommandParamsBody(writer, properties, propertyAccess, baseName);
 
       classScope.writeAdditionalMembers(writer);
 
-      writer.write("}\n");
+      writer.append("\t}\n");
 
-      writer.close();
+      fileWriter.close();
 
       fileUpdater.update();
     }
@@ -346,22 +347,22 @@ class Generator {
           String className = Naming.INPUT_VALUE.getShortName(name);
           JavaFileUpdater fileUpdater = startJavaFile(Naming.INPUT_VALUE, domain, name);
 
-          Writer writer = fileUpdater.getWriter();
+          IndentWriter writer = new IndentWriterImpl(fileUpdater.getWriter(), "");
 
           if (description != null) {
-            writer.write("/**\n " + description + "\n */\n");
+            writer.append("\t/**\n " + description + "\n */\n");
           }
 
-          writer.write("@org.chromium.sdk.internal.protocolparser.JsonType\n");
-          writer.write("public interface " + className +" {\n");
+          writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType\n");
+          writer.append("\tpublic interface " + className +" {\n");
 
-          InputClassScope classScope = new InputClassScope(writer, className);
+          InputClassScope classScope = new InputClassScope(className);
 
-          classScope.generateStandaloneTypeBody(properties);
+          classScope.generateStandaloneTypeBody(writer, properties);
 
           classScope.writeAdditionalMembers(writer);
 
-          writer.write("}\n");
+          writer.append("\t}\n");
 
           fileUpdater.update();
         }
@@ -445,18 +446,19 @@ class Generator {
           String className = nameScheme.getShortName(name);
           JavaFileUpdater fileUpdater = startJavaFile(nameScheme, domain, name);
 
-          Writer writer = fileUpdater.getWriter();
+          IndentWriter writer = new IndentWriterImpl(fileUpdater.getWriter(), "");
 
           if (description != null) {
-            writer.write("/**\n " + description + "\n */\n");
+            writer.append("\t/**\n " + description + "\n */\n");
           }
 
-          writer.write("public class " + className + " {\n");
-          writer.write("  /*\n   The class is 'typedef'.\n" +
-              "   If merely holds a type javadoc and its only field refers to an actual type.\n" +
-              "   */\n");
-          writer.write("  " + actualJavaType.getText() + " actualType;\n");
-          writer.write("}\n");
+          writer.append("\tpublic class " + className + " {\n");
+          writer.append("\t  /*\n   The class is 'typedef'.\n" +
+              "\t   It merely holds a type javadoc and its only field refers to an " +
+              "actual type.\n" +
+              "\t   */\n");
+          writer.append("\t  " + actualJavaType.getText() + " actualType;\n");
+          writer.append("\t}\n");
           fileUpdater.update();
         }
 
@@ -470,7 +472,7 @@ class Generator {
       String className = Naming.COMMAND_DATA.getShortName(command.name());
       JavaFileUpdater fileUpdater = startJavaFile(Naming.COMMAND_DATA, domain, command.name());
 
-      Writer writer = fileUpdater.getWriter();
+      IndentWriter writer = new IndentWriterImpl(fileUpdater.getWriter(), "");
 
       generateJsonProtocolInterface(writer, className, command.description(),
           command.returns(), null);
@@ -484,21 +486,23 @@ class Generator {
       String domainName = domain.domain();
       String fullName = Naming.EVENT_DATA.getFullName(domainName, event.name());
 
-      String eventTypeMemberText =
-          "  public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
+      DeferredWriter eventTypeMemberText = new DeferredWriter();
+      eventTypeMemberText.append(
+          "\t  public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
           fullName +
-          "> TYPE\n      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
+          "> TYPE\n\t      = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<" +
           fullName +
           ">(\"" + domainName + "." + event.name() + "\", " + fullName + ".class) {\n" +
-          "    @Override public " + fullName + " parse(" + INPUT_PACKAGE + "." +
+          "\t    @Override public " + fullName + " parse(" + INPUT_PACKAGE + "." +
           PARSER_ROOT_INTERFACE_NAME + " parser, org.json.simple.JSONObject obj)" +
           " throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException {\n" +
-          "      return parser." + Naming.EVENT_DATA.getParseMethodName(domainName, event.name()) +
+          "\t      return parser." +
+          Naming.EVENT_DATA.getParseMethodName(domainName, event.name()) +
           "(obj);\n" +
-          "    }\n" +
-          "  };\n";
+          "\t    }\n" +
+          "\t  };\n");
 
-      Writer writer = fileUpdater.getWriter();
+      IndentWriter writer = new IndentWriterImpl(fileUpdater.getWriter(), "");
 
       generateJsonProtocolInterface(writer, className, event.description(), event.parameters(),
           eventTypeMemberText);
@@ -506,36 +510,35 @@ class Generator {
       fileUpdater.update();
     }
 
-    private void generateJsonProtocolInterface(Writer writer, String className, String description,
-        List<Parameter> parameters, String additionalMembersText) throws IOException {
+    private void generateJsonProtocolInterface(IndentWriter writer, String className,
+        String description, List<Parameter> parameters, DeferredWriter additionalMembersText)
+        throws IOException {
       if (description != null) {
-        writer.write("/**\n " + description + "\n */\n");
+        writer.append("\t/**\n " + description + "\n */\n");
       }
 
-      writer.write("@org.chromium.sdk.internal.protocolparser.JsonType\n");
-      writer.write("public interface " + className +" {\n");
+      writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType\n");
+      writer.append("\tpublic interface " + className +" {\n");
 
-      InputClassScope classScope = new InputClassScope(writer, className);
+      InputClassScope classScope = new InputClassScope(className);
 
       if (additionalMembersText != null) {
         classScope.addMember("extra", additionalMembersText);
       }
 
-      classScope.generateMainJsonProtocolInterfaceBody(parameters);
+      classScope.generateMainJsonProtocolInterfaceBody(writer, parameters);
 
       classScope.writeAdditionalMembers(writer);
 
-      writer.write("}\n");
+      writer.append("\t}\n");
     }
 
     private abstract class ClassScope {
-      private final List<String> additionalMemberTexts = new ArrayList<String>(2);
-      private final Writer writer;
+      private final List<DeferredWriter> additionalMemberTexts = new ArrayList<DeferredWriter>(2);
       private final String packageName;
       private final String shortClassName;
 
-      ClassScope(Writer writer, String packageName, String shortClassName) {
-        this.writer = writer;
+      ClassScope(String packageName, String shortClassName) {
         this.packageName = packageName;
         this.shortClassName = shortClassName;
       }
@@ -548,18 +551,14 @@ class Generator {
         return packageName + "." + shortClassName;
       }
 
-      void addMember(String key, String text) {
-        additionalMemberTexts.add(text);
+      void addMember(String key, DeferredWriter deferredWriter) {
+        additionalMemberTexts.add(deferredWriter);
       }
 
-      void writeAdditionalMembers(Writer writer) throws IOException {
-        for (String text : additionalMemberTexts) {
-          writer.write(text);
+      void writeAdditionalMembers(IndentWriter writer) throws IOException {
+        for (DeferredWriter deferredWriter : additionalMemberTexts) {
+          deferredWriter.writeContent(writer);
         }
-      }
-
-      protected Writer getWriter() {
-        return writer;
       }
 
       protected abstract MemberScope newMemberScope(String memberName);
@@ -610,54 +609,55 @@ class Generator {
     }
 
     class InputClassScope extends ClassScope {
-      InputClassScope(Writer writer, String shortClassName) {
-        super(writer, ClassNameScheme.Input.getPackageName(domain.domain()), shortClassName);
+      InputClassScope(String shortClassName) {
+        super(ClassNameScheme.Input.getPackageName(domain.domain()), shortClassName);
       }
 
-      public void generateMainJsonProtocolInterfaceBody(List<Parameter> parameters)
-          throws IOException {
+      public void generateMainJsonProtocolInterfaceBody(IndentWriter writer,
+          List<Parameter> parameters) throws IOException {
         if (parameters != null) {
           for (Parameter param : parameters) {
             if (param.description() != null) {
-              getWriter().write("  /**\n   " + param.description() + "\n   */\n");
+              writer.append("\t  /**\n   " + param.description() + "\n   */\n");
             }
 
-            String methodName = generateMethodNameSubstitute(param.name(), getWriter());
+            String methodName = generateMethodNameSubstitute(param.name(), writer);
 
             ClassScope.MemberScope memberScope = newMemberScope(param.name());
 
             QualifiedTypeData paramTypeData = memberScope.resolveType(param);
 
-            paramTypeData.writeAnnotations(getWriter(), "  ");
+            paramTypeData.writeAnnotations(writer, "  ");
 
-            getWriter().write("  " + paramTypeData.getJavaType().getText() + " " +
+            writer.append("\t  " + paramTypeData.getJavaType().getText() + " " +
                 methodName + "();\n");
-            getWriter().write("\n");
+            writer.append("\t\n");
           }
         }
       }
 
-      void generateStandaloneTypeBody(List<ObjectProperty> properties) throws IOException {
+      void generateStandaloneTypeBody(IndentWriter writer, List<ObjectProperty> properties)
+          throws IOException {
         if (properties != null) {
           for (ObjectProperty objectProperty : properties) {
             String propertyName = objectProperty.name();
 
             if (objectProperty.description() != null) {
-              getWriter().write("  /**\n   " + objectProperty.description() + "\n   */\n");
+              writer.append("\t  /**\n   " + objectProperty.description() + "\n   */\n");
             }
 
-            String methodName = generateMethodNameSubstitute(propertyName, getWriter());
+            String methodName = generateMethodNameSubstitute(propertyName, writer);
 
             ClassScope.MemberScope memberScope = newMemberScope(propertyName);
 
             QualifiedTypeData propertyTypeData = memberScope.resolveType(objectProperty);
 
-            propertyTypeData.writeAnnotations(getWriter(), "  ");
+            propertyTypeData.writeAnnotations(writer, "  ");
 
-            getWriter().write("  " + propertyTypeData.getJavaType().getText() + " " +
+            writer.append("\t  " + propertyTypeData.getJavaType().getText() + " " +
                 methodName + "();\n");
-            getWriter().write("\n");
-        }
+            writer.append("\t\n");
+          }
         }
       }
 
@@ -678,18 +678,19 @@ class Generator {
 
         @Override
         public String generateEnum(String description, List<String> enumConstants) {
-          StringBuilder builder = new StringBuilder();
+          DeferredWriter builder = new DeferredWriter();
           if (description != null) {
-            builder.append("  /**\n   " + description + "\n   */\n");
+            builder.append("\t  /**\n   " + description + "\n   */\n");
           }
 
           String enumName = capitalizeFirstChar(getMemberName());
-          builder.append("  public enum " + enumName + " {\n");
+          builder.append("\t  public enum " + enumName + " {\n");
           for (String constant : enumConstants) {
-            builder.append("    " + EnumValueCondition.decorateEnumConstantName(constant) + ",\n");
+            builder.append("\t    " +
+                EnumValueCondition.decorateEnumConstantName(constant) + ",\n");
           }
-          builder.append("  }\n");
-          addMember(enumName, builder.toString());
+          builder.append("\t  }\n");
+          addMember(enumName, builder);
 
           return enumName;
         }
@@ -697,26 +698,26 @@ class Generator {
         @Override
         public String generateNestedObject(String description,
             List<ObjectProperty> propertyList) throws IOException {
-          StringBuilder builder = new StringBuilder();
+          DeferredWriter builder = new DeferredWriter();
 
           if (description != null) {
-            builder.append("  /**\n   " + description + "\n   */\n");
+            builder.append("\t  /**\n   " + description + "\n   */\n");
           }
 
           String objectName = capitalizeFirstChar(getMemberName());
 
           if (propertyList == null) {
-            builder.append("  @org.chromium.sdk.internal.protocolparser.JsonType(" +
+            builder.append("\t  @org.chromium.sdk.internal.protocolparser.JsonType(" +
                 "allowsOtherProperties=true)\n");
-            builder.append("  public interface " + objectName +
+            builder.append("\t  public interface " + objectName +
                 " extends org.chromium.sdk.internal.protocolparser.JsonObjectBased {\n");
-            builder.append("  }\n");
+            builder.append("\t  }\n");
           } else {
-            builder.append("  @org.chromium.sdk.internal.protocolparser.JsonType\n");
-            builder.append("  public interface " + objectName + " {\n");
+            builder.append("\t  @org.chromium.sdk.internal.protocolparser.JsonType\n");
+            builder.append("\t  public interface " + objectName + " {\n");
             for (ObjectProperty property : propertyList) {
               if (property.description() != null) {
-                builder.append("    /**\n     " + property.description() + "\n     */\n");
+                builder.append("\t    /**\n     " + property.description() + "\n     */\n");
               }
 
               String methodName = generateMethodNameSubstitute(property.name(), builder);
@@ -727,14 +728,14 @@ class Generator {
 
               propertyTypeData.writeAnnotations(builder, "    ");
 
-              builder.append("    " + propertyTypeData.getJavaType().getText() + " " + methodName +
-                  "();\n");
-              builder.append("\n");
+              builder.append("\t    " + propertyTypeData.getJavaType().getText() + " " +
+                  methodName +  "();\n");
+              builder.append("\t\n");
             }
-            builder.append("  }\n");
+            builder.append("\t  }\n");
           }
 
-          addMember(objectName, builder.toString());
+          addMember(objectName, builder);
 
           jsonProtocolParserClassNames.add(getFullName() + "." + objectName);
 
@@ -744,12 +745,13 @@ class Generator {
     }
 
     class OutputClassScope extends ClassScope {
-      OutputClassScope(Writer writer, String shortClassName) {
-        super(writer, ClassNameScheme.Output.getPackageName(domain.domain()), shortClassName);
+      OutputClassScope(String shortClassName) {
+        super(ClassNameScheme.Output.getPackageName(domain.domain()), shortClassName);
       }
 
-      <P> void generateCommandParamsBody(List<P> parameters, PropertyLikeAccess<P> access,
-          String commandName) throws IOException {
+      <P> void generateCommandParamsBody(IndentWriter writer, List<P> parameters,
+          PropertyLikeAccess<P> access, String commandName) throws IOException {
+
         if (parameters != null) {
           boolean hasDoc = false;
           for (P param : parameters) {
@@ -759,51 +761,51 @@ class Generator {
             }
           }
           if (hasDoc) {
-            getWriter().write("  /**\n");
+            writer.append("\t  /**\n");
             for (P param : parameters) {
               String propertyDescription = access.forTypedObject().getDescription(param);
               if (propertyDescription != null) {
-                getWriter().write("   @param " + getParamName(param, access) + " " +
+                writer.append("\t   @param " + getParamName(param, access) + " " +
                     propertyDescription + "\n");
               }
             }
-            getWriter().write("   */\n");
+            writer.append("\t   */\n");
           }
         }
-        getWriter().write("  public " + getShortClassName() +"(");
+        writer.append("\t  public " + getShortClassName() +"(");
         {
           boolean needComa = false;
           if (parameters != null) {
             for (P param : parameters) {
               if (needComa) {
-                getWriter().write(", ");
+                writer.append(", ");
               }
               String paramName = getParamName(param, access);
               ClassScope.MemberScope memberScope = newMemberScope(paramName);
               QualifiedTypeData paramTypeData =
                   memberScope.resolveType(param, access.forTypedObject());
-              getWriter().write(paramTypeData.getJavaType().getText() + " " + paramName);
+              writer.append(paramTypeData.getJavaType().getText() + " " + paramName);
               needComa = true;
             }
           }
         }
-        getWriter().write(") {\n");
+        writer.append(") {\n");
         if (parameters != null) {
           for (P param : parameters) {
             boolean isOptional = access.forTypedObject().getOptional(param) == Boolean.TRUE;
             String paramName = getParamName(param, access);
             if (isOptional) {
-              getWriter().write("    if (" + paramName + " != null) {\n  ");
+              writer.append("\t    if (" + paramName + " != null) {\n  ");
             }
-            getWriter().write("    this.put(\"" + access.getName(param) + "\", " + paramName +
+            writer.append("\t    this.put(\"" + access.getName(param) + "\", " + paramName +
                 ");\n");
             if (isOptional) {
-              getWriter().write("    }\n");
+              writer.append("\t    }\n");
             }
           }
         }
-        getWriter().write("  }\n");
-        getWriter().write("\n");
+        writer.append("\t  }\n");
+        writer.append("\n");
       }
 
       @Override
@@ -823,28 +825,29 @@ class Generator {
 
         @Override
         public String generateEnum(String description, List<String> enumConstants) {
-          StringBuilder builder = new StringBuilder();
+          DeferredWriter builder = new DeferredWriter();
           if (description != null) {
-            builder.append("  /**\n   " + description + "\n   */\n");
+            builder.append("\t  /**\n   " + description + "\n   */\n");
           }
           String enumName = capitalizeFirstChar(getMemberName());
-          builder.append("  public enum " + enumName + " implements org.json.simple.JSONAware{\n");
+          builder.append("\t  public enum " + enumName +
+              " implements org.json.simple.JSONAware{\n");
           for (String constant : enumConstants) {
-            builder.append("    " + EnumValueCondition.decorateEnumConstantName(constant) +
+            builder.append("\t    " + EnumValueCondition.decorateEnumConstantName(constant) +
                 "(\"" + constant + "\"),\n");
           }
-          builder.append("    ;\n");
-          builder.append("    private final String protocolValue;\n");
-          builder.append("\n");
-          builder.append("    " + enumName + "(String protocolValue) {\n");
-          builder.append("      this.protocolValue = protocolValue;\n");
-          builder.append("    }\n");
-          builder.append("\n");
-          builder.append("    @Override public String toJSONString() {\n");
-          builder.append("      return '\"' + protocolValue + '\"';\n");
-          builder.append("    }\n");
-          builder.append("  }\n");
-          addMember(enumName, builder.toString());
+          builder.append("\t    ;\n");
+          builder.append("\t    private final String protocolValue;\n");
+          builder.append("\t\n");
+          builder.append("\t    " + enumName + "(String protocolValue) {\n");
+          builder.append("\t      this.protocolValue = protocolValue;\n");
+          builder.append("\t    }\n");
+          builder.append("\t\n");
+          builder.append("\t    @Override public String toJSONString() {\n");
+          builder.append("\t      return '\"' + protocolValue + '\"';\n");
+          builder.append("\t    }\n");
+          builder.append("\t  }\n");
+          addMember(enumName, builder);
           return enumName;
         }
 
@@ -854,6 +857,76 @@ class Generator {
           throw new UnsupportedOperationException();
         }
       }
+    }
+  }
+
+  /**
+   * An abstract code writer that supports indents. This approach is an attempt to build
+   * purely data-driven writer. In other versions similar interfaces usually had
+   * "new line" and "append" separate methods that have to be called in proper order.
+   * <p>
+   * Here "\t" symbol has a special treatment -- it denotes line start spaces in any
+   * fragment. The writer simply replaces it with a necessary number of spaces.
+   */
+  private interface IndentWriter {
+    void append(String text);
+
+    IndentWriter createInner();
+
+    String INDENT = "  ";
+  }
+
+  private static class DeferredWriter implements IndentWriter {
+    private final String indent;
+    private final StringBuilder builder;
+
+    DeferredWriter() {
+      this("", new StringBuilder());
+    }
+
+    DeferredWriter(String indent, StringBuilder builder) {
+      this.indent = indent;
+      this.builder = builder;
+    }
+
+    @Override
+    public void append(String text) {
+      text = text.replaceAll("\t", "\t" + indent);
+      builder.append(text);
+    }
+
+    @Override
+    public IndentWriter createInner() {
+      return new DeferredWriter(indent + INDENT, builder);
+    }
+
+    void writeContent(IndentWriter output) {
+      output.append(builder.toString());
+    }
+  }
+
+  private static class IndentWriterImpl implements IndentWriter {
+    private final String indent;
+    private final Appendable output;
+
+    IndentWriterImpl(Appendable output, String indent) {
+      this.output = output;
+      this.indent = indent;
+    }
+
+    @Override
+    public void append(String text) {
+      text = text.replaceAll("\t", indent);
+      try {
+        output.append(text);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public IndentWriter createInner() {
+      return new IndentWriterImpl(output, indent + INDENT);
     }
   }
 
@@ -977,12 +1050,14 @@ class Generator {
       return typeRef;
     }
 
-    void writeAnnotations(Appendable appendable, String indent) throws IOException {
+    void writeAnnotations(IndentWriter appendable, String indent) throws IOException {
       if (isOptional()) {
-        appendable.append(indent + "@org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
+        appendable.append("\t" + indent +
+            "@org.chromium.sdk.internal.protocolparser.JsonOptionalField\n");
       }
       if (isNullable()) {
-        appendable.append(indent + "@org.chromium.sdk.internal.protocolparser.JsonNullable\n");
+        appendable.append("\t" + indent +
+            "@org.chromium.sdk.internal.protocolparser.JsonNullable\n");
       }
     }
   }
@@ -1051,6 +1126,7 @@ class Generator {
     String getBoxedTypeText() {
       return boxed;
     }
+
     BoxableType convertToPureReference() {
       if (boxed == unboxed) {
         return this;
@@ -1336,7 +1412,7 @@ class Generator {
     return typeMap.resolve(domainName, shortName, direction);
   }
 
-  private String generateMethodNameSubstitute(String originalName, Appendable output)
+  private String generateMethodNameSubstitute(String originalName, IndentWriter output)
       throws IOException {
     if (!BAD_METHOD_NAMES.contains(originalName)) {
       return originalName;
