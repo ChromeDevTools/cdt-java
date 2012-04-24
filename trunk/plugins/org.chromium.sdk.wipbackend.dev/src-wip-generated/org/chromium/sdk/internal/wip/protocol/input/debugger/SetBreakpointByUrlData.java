@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@114632
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -17,7 +17,6 @@ public interface SetBreakpointByUrlData {
   /**
    List of the locations this breakpoint resolved into upon addition.
    */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue> locations();
 
 }

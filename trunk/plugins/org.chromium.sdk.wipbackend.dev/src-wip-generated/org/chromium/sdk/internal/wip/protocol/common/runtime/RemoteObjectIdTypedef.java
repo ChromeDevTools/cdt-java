@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@114632
 
 package org.chromium.sdk.internal.wip.protocol.common.runtime;
 
@@ -10,7 +10,7 @@ package org.chromium.sdk.internal.wip.protocol.common.runtime;
 public class RemoteObjectIdTypedef {
   /*
    The class is 'typedef'.
-   If merely holds a type javadoc and its only field refers to an actual type.
+   It merely holds a type javadoc and its only field refers to an actual type.
    */
   String actualType;
 }

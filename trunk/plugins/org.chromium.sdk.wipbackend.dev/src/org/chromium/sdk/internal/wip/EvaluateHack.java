@@ -205,7 +205,7 @@ public class EvaluateHack {
               arguments.add(new CallArgumentParam(null, objectId));
             }
           }
-          return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, true);
+          return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, null, true);
         }
 
         @Override
@@ -277,7 +277,7 @@ public class EvaluateHack {
         @Override
         public WipParamsWithResponse<CallFunctionOnData> getParams() {
           String functionText = "function() { return String(this.message); }";
-          return new CallFunctionOnParams(remoteObjectValue.objectId(), functionText, null, true);
+          return new CallFunctionOnParams(remoteObjectValue.objectId(), functionText, null, null, true);
         }
 
         @Override
