@@ -396,7 +396,7 @@ class WipContextBuilder {
         protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
             String expression, WipValueLoader destinationValueLoader) {
           return new EvaluateOnCallFrameParams(id, expression,
-              destinationValueLoader.getObjectGroupId(), false, false);
+              destinationValueLoader.getObjectGroupId(), false, null, false);
         }
 
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {

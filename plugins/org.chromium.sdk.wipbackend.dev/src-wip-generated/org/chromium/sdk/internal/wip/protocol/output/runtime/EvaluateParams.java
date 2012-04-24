@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@114632
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -12,11 +12,11 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    @param expression Expression to evaluate.
    @param objectGroupOpt Symbolic group name that can be used to release multiple objects.
    @param includeCommandLineAPIOpt Determines whether Command Line API should be available during the evaluation.
-   @param doNotPauseOnExceptionsOpt Specifies whether evaluation should stop on exceptions. Overrides setPauseOnException state.
+   @param doNotPauseOnExceptionsAndMuteConsoleOpt Specifies whether evaluation should stop on exceptions and mute console. Overrides setPauseOnException state.
    @param frameIdOpt Specifies in which frame to perform evaluation.
    @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
    */
-  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsOpt, String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameIdOpt, Boolean returnByValueOpt) {
+  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsAndMuteConsoleOpt, String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameIdOpt, Boolean returnByValueOpt) {
     this.put("expression", expression);
     if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
@@ -24,8 +24,8 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
     if (includeCommandLineAPIOpt != null) {
       this.put("includeCommandLineAPI", includeCommandLineAPIOpt);
     }
-    if (doNotPauseOnExceptionsOpt != null) {
-      this.put("doNotPauseOnExceptions", doNotPauseOnExceptionsOpt);
+    if (doNotPauseOnExceptionsAndMuteConsoleOpt != null) {
+      this.put("doNotPauseOnExceptionsAndMuteConsole", doNotPauseOnExceptionsAndMuteConsoleOpt);
     }
     if (frameIdOpt != null) {
       this.put("frameId", frameIdOpt);
