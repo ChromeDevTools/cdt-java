@@ -169,4 +169,9 @@ public interface JavascriptVm {
    *     or null if unsupported by VM
    */
   IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension();
+
+  /**
+   * @return extension that returns function hidden scopes or null if unsupported by VM
+   */
+  FunctionScopeExtension getFunctionScopeExtension();
 }
