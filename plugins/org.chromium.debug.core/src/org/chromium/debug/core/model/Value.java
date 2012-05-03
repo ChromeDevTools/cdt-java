@@ -10,8 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.util.JsValueStringifier;
+import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -67,9 +69,36 @@ public class Value extends ValueBase.ValueWithLazyVariables {
     if (asObject == null) {
       return EMPTY_VARIABLES;
     }
+    List<Variable> functionScopes = calculateFunctionScopesVariable(asObject);
     return StackFrame.wrapVariables(getEvaluateContext(),
         asObject.getProperties(), Collections.<String>emptySet(),
-        asObject.getInternalProperties(), hostObject);
+        asObject.getInternalProperties(), hostObject, functionScopes);
+  }
+
+  /**
+   * Returns 'function scopes' node packed as a list or an empty list if the input is not
+   * a function. The 'function scopes' node holds actual scope variables as its children.
+   * @return list of 0 or 1 elements
+   */
+  private List<Variable> calculateFunctionScopesVariable(JsObject jsObject) {
+    JsFunction asFunction = jsObject.asFunction();
+    if (asFunction == null) {
+      return null;
+    }
+    FunctionScopeExtension functionScopeExtension =
+        getConnectedData().getJavascriptVm().getFunctionScopeExtension();
+    if (functionScopeExtension == null) {
+      return null;
+    }
+    if (functionScopeExtension.getScopes(asFunction).isEmpty()) {
+      return null;
+    }
+    Variable functionScopesVariable =
+        Variable.forFunctionScopes(getEvaluateContext(), asFunction, functionScopeExtension);
+    if (functionScopesVariable == null) {
+      return null;
+    }
+    return Collections.singletonList(functionScopesVariable);
   }
 
   public boolean hasVariables() throws DebugException {

@@ -21,4 +21,10 @@ public class V8VersionFeatures {
   public static boolean isRegExpBreakpointSupported(Version vmVersion) {
     return vmVersion != null && REG_EXP_BREAKPOINT.compareTo(vmVersion) <= 0;
   }
+
+  private final static Version FUNCTION_SCOPE = new Version(3, 10, 7);
+
+  public static boolean isFunctionScopeSupported(Version vmVersion) {
+    return vmVersion != null && FUNCTION_SCOPE.compareTo(vmVersion) < 0;
+  }
 }

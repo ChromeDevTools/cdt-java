@@ -16,9 +16,11 @@ import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
+import org.chromium.sdk.internal.v8native.InternalContext;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.SyncOperation;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -28,23 +30,54 @@ import org.chromium.sdk.util.MethodIsBlockingException;
  */
 public abstract class JsScopeImpl<D> implements JsScope {
 
-  private final CallFrameImpl callFrameImpl;
+  /**
+   * An abstraction over object that hosts the scope. It could be either call frame or function.
+   */
+  public static abstract class Host {
+    public static Host create(final CallFrameImpl callFrameImpl) {
+      return new Host() {
+        @Override InternalContext getInternalContext() {
+          return callFrameImpl.getInternalContext();
+        }
+        @Override DebuggerMessageFactory.ScopeHostParameter getFactoryParameter() {
+          return DebuggerMessageFactory.ScopeHostParameter.forFrame(callFrameImpl.getIdentifier());
+        }
+      };
+    }
+
+    public static Host create(final JsFunctionImpl jsFunctionImpl) {
+      return new Host() {
+        @Override InternalContext getInternalContext() {
+          return jsFunctionImpl.getInternalContext();
+        }
+        @Override DebuggerMessageFactory.ScopeHostParameter getFactoryParameter() {
+          return DebuggerMessageFactory.ScopeHostParameter.forFunction(jsFunctionImpl.getRef());
+        }
+      };
+    }
+
+    abstract InternalContext getInternalContext();
+
+    abstract DebuggerMessageFactory.ScopeHostParameter getFactoryParameter();
+  }
+
+  private final Host host;
   private final int scopeIndex;
   private final Type type;
   private final AtomicReference<AsyncFuture<D>> deferredDataRef =
       new AtomicReference<AsyncFuture<D>>(null);
 
-  public static JsScopeImpl<?> create(CallFrameImpl callFrameImpl, ScopeRef scopeRef) {
+  public static JsScopeImpl<?> create(Host host, ScopeRef scopeRef) {
     Type type = convertType((int) scopeRef.type());
     if (type == Type.WITH) {
-      return new With(callFrameImpl, type, (int) scopeRef.index());
+      return new With(host, type, (int) scopeRef.index());
     } else {
-      return new NoWith(callFrameImpl, type, (int) scopeRef.index());
+      return new NoWith(host, type, (int) scopeRef.index());
     }
   }
 
-  protected JsScopeImpl(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
-    this.callFrameImpl = callFrameImpl;
+  protected JsScopeImpl(Host host, Type type, int scopeIndex) {
+    this.host = host;
     this.type = type;
     this.scopeIndex = scopeIndex;
   }
@@ -61,7 +94,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
 
   protected D getDeferredData() throws MethodIsBlockingException {
     AsyncFuture<D> future = deferredDataRef.get();
-    ValueLoaderImpl valueLoader = callFrameImpl.getInternalContext().getValueLoader();
+    ValueLoaderImpl valueLoader = host.getInternalContext().getValueLoader();
     int cacheState = valueLoader.getCurrentCacheState();
     boolean restartOperation;
     if (future == null) {
@@ -91,13 +124,9 @@ public abstract class JsScopeImpl<D> implements JsScope {
 
   protected abstract int getDataCacheState(D data);
 
-  protected CallFrameImpl getCallFrameImpl() {
-    return callFrameImpl;
-  }
-
   protected ObjectValueHandle loadScopeObject(ValueLoaderImpl valueLoader)
       throws MethodIsBlockingException {
-    return valueLoader.loadScopeFields(scopeIndex, callFrameImpl.getIdentifier());
+    return valueLoader.loadScopeFields(scopeIndex, host.getFactoryParameter());
   }
 
   public static Type convertType(int typeCode) {
@@ -109,8 +138,8 @@ public abstract class JsScopeImpl<D> implements JsScope {
   }
 
   private static class NoWith extends JsScopeImpl<NoWith.DeferredData> {
-    NoWith(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
-      super(callFrameImpl, type, scopeIndex);
+    NoWith(Host host, Type type, int scopeIndex) {
+      super(host, type, scopeIndex);
     }
 
     @Override
@@ -172,8 +201,8 @@ public abstract class JsScopeImpl<D> implements JsScope {
   }
 
   private static class With extends JsScopeImpl<With.DeferredData> implements JsScope.WithScope {
-    With(CallFrameImpl callFrameImpl, Type type, int scopeIndex) {
-      super(callFrameImpl, type, scopeIndex);
+    With(Host host, Type type, int scopeIndex) {
+      super(host, type, scopeIndex);
     }
 
     @Override

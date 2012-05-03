@@ -31,7 +31,7 @@ public class ArrayValue extends Value implements IIndexedValue {
     return StackFrame.wrapVariables(getEvaluateContext(), jsArray.getProperties(),
         ARRAY_HIDDEN_PROPERTY_NAMES,
         // Do not show internal properties for arrays (this may be an option).
-        null, getHostObject());
+        null, getHostObject(), null);
   }
 
   private IVariable[] getElements() {

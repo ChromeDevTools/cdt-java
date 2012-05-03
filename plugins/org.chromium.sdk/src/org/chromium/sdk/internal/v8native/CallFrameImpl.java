@@ -192,7 +192,7 @@ public class CallFrameImpl implements CallFrame {
     List<ScopeRef> scopes = frameObject.scopes();
     List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(scopes.size());
     for (ScopeRef scopeRef : scopes) {
-      result.add(JsScopeImpl.create(this, scopeRef));
+      result.add(JsScopeImpl.create(JsScopeImpl.Host.create(this), scopeRef));
     }
     return result;
   }

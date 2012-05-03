@@ -9,11 +9,13 @@ import java.io.IOException;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
+import org.chromium.sdk.internal.v8native.value.JsFunctionImpl;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
@@ -84,6 +86,14 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
   @Override
   public IgnoreCountBreakpointExtension getIgnoreCountBreakpointExtension() {
     return BreakpointImpl.IGNORE_COUNT_EXTENSION;
+  }
+
+  @Override
+  public FunctionScopeExtension getFunctionScopeExtension() {
+    if (!V8VersionFeatures.isFunctionScopeSupported(getDebugSession().getVmVersion())) {
+      return null;
+    }
+    return JsFunctionImpl.FUNCTION_SCOPE_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

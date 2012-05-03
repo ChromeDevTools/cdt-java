@@ -4,19 +4,26 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
+import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.v8native.DebugSession;
+import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
 import org.chromium.sdk.internal.v8native.protocol.input.data.FunctionValueHandle;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
  * Generic implementation of {@link JsFunction}.
  */
-class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implements JsFunction {
+public class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData>
+    implements JsFunction {
   private volatile TextStreamPosition openParenPosition = null;
 
   JsFunctionImpl(ValueLoader valueLoader, String parentFqn, ValueMirror valueState) {
@@ -32,6 +39,15 @@ class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implem
     }
     DebugSession debugSession = getInternalContext().getDebugSession();
     return debugSession.getScriptManager().findById(scriptId);
+  }
+
+  private List<? extends JsScope> getVariableScopes() {
+    List<ScopeRef> rawScopes = getAdditionalPropertyData().scopes();
+    List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(rawScopes.size());
+    for (ScopeRef scopeRef : rawScopes) {
+      result.add(JsScopeImpl.create(JsScopeImpl.Host.create(JsFunctionImpl.this), scopeRef));
+    }
+    return result;
   }
 
   @Override
@@ -99,4 +115,14 @@ class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData> implem
     result.append(']');
     return result.toString();
   }
+
+  public static final FunctionScopeExtension FUNCTION_SCOPE_EXTENSION =
+      new FunctionScopeExtension() {
+        @Override
+        public List<? extends JsScope> getScopes(JsFunction function)
+            throws MethodIsBlockingException {
+          JsFunctionImpl functionImpl = (JsFunctionImpl) function;
+          return functionImpl.getVariableScopes();
+        }
+      };
 }

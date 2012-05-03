@@ -71,7 +71,8 @@ public class StackFrame extends StackFrameBase {
   static IVariable[] wrapVariables(
       EvaluateContext evaluateContext, Collection<? extends JsVariable> jsVars,
       Set<? extends String> propertyNameBlackList,
-      Collection <? extends JsVariable> jsInternalProperties, Variable.Real.HostObject hostObject) {
+      Collection <? extends JsVariable> jsInternalProperties, Variable.Real.HostObject hostObject,
+      Collection<? extends Variable> additional) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
     for (JsVariable jsVar : jsVars) {
       if (propertyNameBlackList.contains(jsVar.getName())) {
@@ -86,6 +87,9 @@ public class StackFrame extends StackFrameBase {
       for (JsVariable jsMetaVar : jsInternalProperties) {
         vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true, hostObject));
       }
+    }
+    if (additional != null) {
+      vars.addAll(additional);
     }
     return vars.toArray(new IVariable[vars.size()]);
   }

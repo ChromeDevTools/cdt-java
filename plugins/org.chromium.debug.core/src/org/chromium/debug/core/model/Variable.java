@@ -4,10 +4,14 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.List;
+
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ExceptionData;
+import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsScope.WithScope;
@@ -107,6 +111,38 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   private static Variable forScope(EvaluateContext evaluateContext, String scopeName,
       ValueBase scopeValue) {
     return new Variable.Virtual(evaluateContext, scopeName, "<scope>", scopeValue);
+  }
+
+  public static Variable forFunctionScopes(EvaluateContext evaluateContext,
+      final JsFunction jsFunction, final FunctionScopeExtension functionScopeExtension) {
+    ValueBase value = new ValueBase.ValueWithLazyVariables(evaluateContext) {
+      @Override public String getReferenceTypeName() throws DebugException {
+        return "<function scope>";
+      }
+
+      @Override public boolean isAllocated() throws DebugException {
+        return true;
+      }
+
+      @Override public boolean hasVariables() throws DebugException {
+        return !functionScopeExtension.getScopes(jsFunction).isEmpty();
+      }
+
+      @Override protected IVariable[] calculateVariables() {
+        List<? extends JsScope> list = functionScopeExtension.getScopes(jsFunction);
+        return StackFrame.wrapScopes(getEvaluateContext(), list, null);
+      }
+
+      @Override public Value asRealValue() {
+        return null;
+      }
+
+      @Override public String getValueString() {
+        return "";
+      }
+    };
+
+    return forScope(evaluateContext, "<function scope>", value);
   }
 
   /**

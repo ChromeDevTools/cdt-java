@@ -16,6 +16,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
 import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.CallbackSemaphore;
+import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
@@ -235,6 +236,10 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   @Override
   public EvaluateToMappingExtension getEvaluateWithDestinationMappingExtension() {
     return WipEvaluateContextBase.EVALUATE_TO_MAPPING_EXTENSION;
+  }
+
+  @Override public FunctionScopeExtension getFunctionScopeExtension() {
+    return null;
   }
 
   @Override
