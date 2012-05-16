@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@113013
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@116768
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -77,6 +77,10 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.ResponseValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketClosedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketCreatedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.network.WebSocketFrameErrorEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.network.WebSocketFrameReceivedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.network.WebSocketFrameSentEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.network.WebSocketFrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketHandshakeResponseReceivedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketRequestValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketResponseValue.class,
@@ -93,6 +97,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.GetCookiesData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceContentData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.GetScriptExecutionStatusData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.LoadEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourcesData.class,
@@ -100,7 +105,9 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.SearchResultValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.ExecutionContextDescriptionValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.IsolatedContextCreatedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue.class,
   };
