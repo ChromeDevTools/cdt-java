@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@114632
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@116768
 
 package org.chromium.sdk.internal.wip.protocol.output.runtime;
 
@@ -13,10 +13,10 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
    @param objectGroupOpt Symbolic group name that can be used to release multiple objects.
    @param includeCommandLineAPIOpt Determines whether Command Line API should be available during the evaluation.
    @param doNotPauseOnExceptionsAndMuteConsoleOpt Specifies whether evaluation should stop on exceptions and mute console. Overrides setPauseOnException state.
-   @param frameIdOpt Specifies in which frame to perform evaluation.
+   @param contextIdOpt Specifies in which isolated context to perform evaluation. Each content script lives in an isolated context and this parameter may be used to specify on of those contexts. If the parameter is omitted or 0 the evaluation will be performed in the context of the inspected page.
    @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
    */
-  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsAndMuteConsoleOpt, String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameIdOpt, Boolean returnByValueOpt) {
+  public EvaluateParams(String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsAndMuteConsoleOpt, Long contextIdOpt, Boolean returnByValueOpt) {
     this.put("expression", expression);
     if (objectGroupOpt != null) {
       this.put("objectGroup", objectGroupOpt);
@@ -27,8 +27,8 @@ public class EvaluateParams extends org.chromium.sdk.internal.wip.protocol.outpu
     if (doNotPauseOnExceptionsAndMuteConsoleOpt != null) {
       this.put("doNotPauseOnExceptionsAndMuteConsole", doNotPauseOnExceptionsAndMuteConsoleOpt);
     }
-    if (frameIdOpt != null) {
-      this.put("frameId", frameIdOpt);
+    if (contextIdOpt != null) {
+      this.put("contextId", contextIdOpt);
     }
     if (returnByValueOpt != null) {
       this.put("returnByValue", returnByValueOpt);

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@116768
 
 package org.chromium.sdk.internal.wip.protocol.input.network;
 
@@ -43,12 +43,6 @@ public interface RequestWillBeSentEventData {
    Request initiator.
    */
   org.chromium.sdk.internal.wip.protocol.input.network.InitiatorValue initiator();
-
-  /**
-   JavaScript stack trace upon issuing this request.
-   */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  java.util.List<org.chromium.sdk.internal.wip.protocol.input.console.CallFrameValue>/*See org.chromium.sdk.internal.wip.protocol.input.console.StackTraceTypedef*/ stackTrace();
 
   /**
    Redirect response data.

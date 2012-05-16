@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@116768
 
 package org.chromium.sdk.internal.wip.protocol.input.page;
 
@@ -32,7 +32,7 @@ public interface CookieValue {
   /**
    Cookie expires.
    */
-  long expires();
+  Number expires();
 
   /**
    Cookie size.
