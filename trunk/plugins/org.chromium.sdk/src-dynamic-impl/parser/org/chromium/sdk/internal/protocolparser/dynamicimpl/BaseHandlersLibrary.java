@@ -14,7 +14,6 @@ import org.chromium.sdk.internal.protocolparser.AnyObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonObjectBased;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
 import org.chromium.sdk.internal.protocolparser.dynamicimpl.JavaCodeGenerator.ClassScope;
-import org.chromium.sdk.internal.v8native.value.SubpropertiesMirror.JsonBased;
 import org.json.simple.JSONObject;
 
 /**
