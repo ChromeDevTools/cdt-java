@@ -8,6 +8,8 @@
 
 <project name="chromedevtools" default="buildAll" basedir=".">
 
+  <import file="build-wipbackend/backendIterator.xml" />
+
   <!-- The source repository location (where the plugins and features folders are) -->
   <property name="sourceBaseLocation" value="${basedir}/.." />
 
@@ -20,7 +22,7 @@
   <property file="build.properties"/>
 
 
-  <target name="buildAll" depends="buildMain, buildBackends, repack">
+  <target name="buildAll" depends="buildMain, buildBackends, repack, buildLibs">
   </target>
 
   <target name="buildMain">
@@ -34,11 +36,11 @@
       <arg value="-Djava.rt=${java.rt}" />
       <arg value="-DbuildDirectory=${buildDirectory}/mainBuild" />
     </exec>
-    <property name="finalOutput" value="${buildDirectory}/mainResult" />
-    <delete dir="${finalOutput}" quiet="true"/>
-    <mkdir dir="${finalOutput}"/>
-    <mkdir dir="${finalOutput}/eclipse"/>
-    <copy todir="${finalOutput}/eclipse">
+    <property name="mainOutput" value="${buildDirectory}/mainResult" />
+    <delete dir="${mainOutput}" quiet="true"/>
+    <mkdir dir="${mainOutput}"/>
+    <mkdir dir="${mainOutput}/eclipse"/>
+    <copy todir="${mainOutput}/eclipse">
       <fileset dir="${buildDirectory}/mainBuild/buildRepo"/>
     </copy>
   </target>
@@ -54,11 +56,11 @@
       <arg value="-Djava.rt=${java.rt}" />
       <arg value="-DbuildDirectory=${buildDirectory}/backendsBuild" />
     </exec>
-    <property name="finalOutput" value="${buildDirectory}/backendsResult" />
-    <delete dir="${finalOutput}" quiet="true"/>
-    <mkdir dir="${finalOutput}"/>
-    <mkdir dir="${finalOutput}/eclipse"/>
-    <copy todir="${finalOutput}/eclipse">
+    <property name="backendsOutput" value="${buildDirectory}/backendsResult" />
+    <delete dir="${backendsOutput}" quiet="true"/>
+    <mkdir dir="${backendsOutput}"/>
+    <mkdir dir="${backendsOutput}/eclipse"/>
+    <copy todir="${backendsOutput}/eclipse">
       <fileset dir="${buildDirectory}/backendsBuild/buildRepo"/>
     </copy>
   </target>
@@ -101,6 +103,47 @@
       <arg value="chrome_dev_tools_category_0_3_4" />
     </exec>
 
+  </target>
+
+  <target name="buildLibs">
+    <property name="output" value="${buildDirectory}/result/libs" />
+
+    <delete dir="${output}" />
+    <mkdir dir="${output}" />
+
+    <exec executable="./buildVersionExtractor.py">
+      <arg value="${buildDirectory}/result/eclipse" />
+      <arg value="${buildDirectory}/lib_rebuild" />
+    </exec>
+
+    <!-- Imports current version numbers calcaulated by a previous task. -->
+    <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
+    
+    <mkdir dir="${buildDirectory}/lib_rebuild" />
+    <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.jar">
+        <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk_${mainVersion}.${mainBuilderVersion}.jar" includes="org/**" />
+    </jar>
+    <tar destfile="${output}/org.chromium.sdk-lib-${mainVersion}.tar">
+        <fileset file="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.jar"/>
+        <fileset file="${sourceBaseLocation}/plugins/org.chromium.sdk/lib/json_simple/json_simple*.jar"/>
+    </tar>
+
+    <antcall target="iterateWipBackends">
+        <param name="callback" value="repackBackend" />
+    </antcall>
+
+    <tar destfile="${output}/org.chromium.sdk-wipbackends-${mainVersion}-${backendVersion}.tar">
+        <fileset file="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.wipbackend.*.jar"/>
+    </tar>
+
+    <zip destfile="${output}/chromedevtools-${mainVersion}-wipbackends-${backendVersion}-site.zip" basedir="${buildDirectory}/result/eclipse"/>
+    
+  </target>
+
+  <target name="repackBackend">
+    <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.wipbackend.${backendName}.jar">
+        <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk.wipbackend.${backendName}_${mainVersion}.${backendBuilderVersion}.jar" includes="org/**" />
+    </jar>
   </target>
 
   <target name="clean">
