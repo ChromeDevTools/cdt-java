@@ -8,6 +8,9 @@
 	<property name="allElementsFile" location="${eclipse.pdebuild.templates}/headless-build/allElements.xml"/>
 
 	<import file="${allElementsFile}" />
+
+	<import file="../backendIterator.xml"/>
+
 	<target name="allElements">
 		<antcall target="allElementsDelegator" />
 	</target>
@@ -114,15 +117,11 @@
 		<delete>
 			<fileset dir="${buildDirectory}/mainPlugins/" includes="org.chromium.sdk_*.jar"/>
 		</delete>
-		<antcall target="prepareBackendSources">
-			 <param name="backendName" value="wk97678"/>
+
+		<antcall target="iterateWipBackends">
+			<param name="callback" value="prepareBackendSources"/>
 		</antcall>
-		<antcall target="prepareBackendSources">
-			 <param name="backendName" value="wk102439"/>
-		</antcall>
-		<antcall target="prepareBackendSources">
-			 <param name="backendName" value="protocol_1_0"/>
-		</antcall>
+                
 		<copy todir="${buildDirectory}/features">
 			<fileset dir="${sourceBaseLocation}/features">
 				<include name="org.chromium.sdk.wipbackends/**" />
