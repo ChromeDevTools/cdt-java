@@ -4,6 +4,7 @@
 
 package org.chromium.debug.core.model;
 
+import java.util.AbstractList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -130,7 +131,10 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
 
       @Override protected IVariable[] calculateVariables() {
         List<? extends JsScope> list = functionScopeExtension.getScopes(jsFunction);
-        return StackFrame.wrapScopes(getEvaluateContext(), list, null);
+        // Put scopes in the opposite order: innermost first.
+        // Closure tends to be parameterized by the innermost variable at most.
+        List<? extends JsScope> reverseList = reverseList(list);
+        return StackFrame.wrapScopes(getEvaluateContext(), reverseList, null);
       }
 
       @Override public Value asRealValue() {
@@ -139,6 +143,19 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
 
       @Override public String getValueString() {
         return "";
+      }
+
+      private <T> List<T> reverseList(final List<T> input) {
+        return new AbstractList<T>() {
+          @Override
+          public T get(int index) {
+            return input.get(input.size() - index - 1);
+          }
+          @Override
+          public int size() {
+            return input.size();
+          }
+        };
       }
     };
 
