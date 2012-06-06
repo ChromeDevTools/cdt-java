@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106352
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@118685
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -31,5 +31,11 @@ public interface FunctionDetailsValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String inferredName();
+
+  /**
+   Scope chain for this closure.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  java.util.List<org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue> scopeChain();
 
 }

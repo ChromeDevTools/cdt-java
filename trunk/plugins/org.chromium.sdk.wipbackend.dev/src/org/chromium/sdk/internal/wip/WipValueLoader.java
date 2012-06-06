@@ -21,6 +21,7 @@ import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
+import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
@@ -274,22 +275,23 @@ public abstract class WipValueLoader implements RemoteValueMapping {
   }
 
   void loadFunctionLocationInFuture(final String objectId,
-      AsyncFutureRef<Getter<LocationValue>> loadedPositionRef) throws MethodIsBlockingException {
+      AsyncFutureRef<Getter<FunctionDetailsValue>> loadedPositionRef)
+      throws MethodIsBlockingException {
 
-    AsyncFuture.Operation<Getter<LocationValue>> operation =
-        new AsyncFuture.Operation<Getter<LocationValue>>() {
+    AsyncFuture.Operation<Getter<FunctionDetailsValue>> operation =
+        new AsyncFuture.Operation<Getter<FunctionDetailsValue>>() {
       @Override
-      public RelayOk start(final Callback<Getter<LocationValue>> callback,
+      public RelayOk start(final Callback<Getter<FunctionDetailsValue>> callback,
           SyncCallback syncCallback) {
         GetFunctionDetailsParams request = new GetFunctionDetailsParams(objectId);
         GenericCallback<GetFunctionDetailsData> wrappedCallback =
             new GenericCallback<GetFunctionDetailsData>() {
           @Override public void success(GetFunctionDetailsData value) {
-            callback.done(Getter.newNormal(value.details().location()));
+            callback.done(Getter.newNormal(value.details()));
           }
 
           @Override public void failure(Exception exception) {
-            callback.done(Getter.<LocationValue>newFailure(exception));
+            callback.done(Getter.<FunctionDetailsValue>newFailure(exception));
           }
         };
         return tabImpl.getCommandProcessor().send(request, wrappedCallback, syncCallback);

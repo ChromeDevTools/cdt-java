@@ -302,11 +302,7 @@ class WipContextBuilder {
 
             for (int i = 0; i < scopeDataList.size(); i++) {
               ScopeValue scopeData = scopeDataList.get(i);
-              JsScope.Type type = WIP_TO_SDK_SCOPE_TYPE.get(scopeData.type());
-              if (type == null) {
-                type = JsScope.Type.UNKNOWN;
-              }
-              scopes.add(createScope(scopeData, type));
+              scopes.add(createScope(scopeData, valueLoader));
             }
             return scopes;
           }
@@ -445,145 +441,152 @@ class WipContextBuilder {
       return tabImpl;
     }
 
-    JsScope createScope(ScopeValue scopeData, JsScope.Type type) {
-      if (type == JsScope.Type.WITH) {
-        return new WithScopeImpl(scopeData);
-      } else {
-        return new ScopeImpl(scopeData, type);
-      }
-    }
-
-    private class ScopeImpl implements JsScope {
-      private final AsyncFutureRef<Getter<ScopeVariables>> propertiesRef =
-          new AsyncFutureRef<Getter<ScopeVariables>>();
-      private final String objectId;
-      private final Type type;
-
-      public ScopeImpl(ScopeValue scopeData, Type type) {
-        this.type = type;
-        this.objectId = scopeData.object().objectId();
-      }
-
-      @Override
-      public Type getType() {
-        return type;
-      }
-
-      @Override
-      public WithScope asWithScope() {
-        return null;
-      }
-
-      @Override
-      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
-        int currentCacheState = valueLoader.getCacheState();
-        if (propertiesRef.isInitialized()) {
-          ScopeVariables result = propertiesRef.getSync().get();
-          if (result.cacheState == currentCacheState) {
-            return result.variables;
-          }
-          startLoadOperation(true, currentCacheState);
-        } else {
-          startLoadOperation(false, currentCacheState);
-        }
-
-        // This is blocking.
-        return propertiesRef.getSync().get().variables;
-      }
-
-      /**
-       * Starts load operation that works synchronously, i.e. it may block the calling method.
-       * This is done because some thread must take post-processing anyway and it shouldn't
-       * be the Dispatch thread.
-       * The method may not be blocking, if another thread is already doing the same operation.
-       */
-      private void startLoadOperation(boolean reload, int currentCacheState)
-          throws MethodIsBlockingException {
-        WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
-            new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
-          @Override
-          public Getter<ScopeVariables> process(
-              List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
-            final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
-
-            WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
-            for (PropertyDescriptorValue property : propertyList) {
-              final String name = property.name();
-
-              ValueNameBuilder valueNameBuilder =
-                  WipExpressionBuilder.createRootName(name, false);
-
-              JsVariable variable;
-              if (objectId == null) {
-                variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
-              } else {
-                variable = valueBuilder.createObjectProperty(property, objectId, valueNameBuilder);
-              }
-              properties.add(variable);
-            }
-            final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);
-            return new Getter<ScopeVariables>() {
-              @Override
-              ScopeVariables get() {
-                return scopeVariables;
-              }
-            };
-          }
-
-          @Override
-          public Getter<ScopeVariables> getEmptyResult() {
-            return EMPTY_SCOPE_VARIABLES_OPTIONAL;
-          }
-
-          @Override
-          public Getter<ScopeVariables> forException(Exception exception) {
-            return WipValueLoader.Getter.newFailure(exception);
-          }
-        };
-        // This is blocking.
-        valueLoader.loadPropertiesInFuture(objectId, processor, reload, currentCacheState,
-            propertiesRef);
-      }
-    }
-
-    private class WithScopeImpl implements JsScope.WithScope {
-      private final JsValue jsValue;
-
-      WithScopeImpl(ScopeValue scopeData) {
-        jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), null);
-      }
-
-      @Override
-      public Type getType() {
-        return Type.WITH;
-      }
-
-      @Override
-      public WithScope asWithScope() {
-        return this;
-      }
-
-      @Override
-      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
-        JsObject asObject = jsValue.asObject();
-        if (asObject == null) {
-          return Collections.emptyList();
-        }
-        return new ArrayList<JsVariable>(asObject.getProperties());
-      }
-
-      @Override
-      public JsValue getWithArgument() {
-        return jsValue;
-      }
-    }
-
     private final WipValueLoader valueLoader = new WipValueLoader(tabImpl) {
       @Override
       String getObjectGroupId() {
         return null;
       }
     };
+  }
+
+
+  static JsScope createScope(ScopeValue scopeData, WipValueLoader valueLoader) {
+    JsScope.Type type = WIP_TO_SDK_SCOPE_TYPE.get(scopeData.type());
+    if (type == null) {
+      type = JsScope.Type.UNKNOWN;
+    }
+    if (type == JsScope.Type.WITH) {
+      return new WithScopeImpl(scopeData, valueLoader);
+    } else {
+      return new ScopeImpl(scopeData, type, valueLoader);
+    }
+  }
+
+  private static class ScopeImpl implements JsScope {
+    private final AsyncFutureRef<Getter<ScopeVariables>> propertiesRef =
+        new AsyncFutureRef<Getter<ScopeVariables>>();
+    private final String objectId;
+    private final Type type;
+    private final WipValueLoader valueLoader;
+
+    public ScopeImpl(ScopeValue scopeData, Type type, WipValueLoader valueLoader) {
+      this.type = type;
+      this.objectId = scopeData.object().objectId();
+      this.valueLoader = valueLoader;
+    }
+
+    @Override
+    public Type getType() {
+      return type;
+    }
+
+    @Override
+    public WithScope asWithScope() {
+      return null;
+    }
+
+    @Override
+    public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
+      int currentCacheState = valueLoader.getCacheState();
+      if (propertiesRef.isInitialized()) {
+        ScopeVariables result = propertiesRef.getSync().get();
+        if (result.cacheState == currentCacheState) {
+          return result.variables;
+        }
+        startLoadOperation(true, currentCacheState);
+      } else {
+        startLoadOperation(false, currentCacheState);
+      }
+
+      // This is blocking.
+      return propertiesRef.getSync().get().variables;
+    }
+
+    /**
+     * Starts load operation that works synchronously, i.e. it may block the calling method.
+     * This is done because some thread must take post-processing anyway and it shouldn't
+     * be the Dispatch thread.
+     * The method may not be blocking, if another thread is already doing the same operation.
+     */
+    private void startLoadOperation(boolean reload, int currentCacheState)
+        throws MethodIsBlockingException {
+      WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
+          new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
+        @Override
+        public Getter<ScopeVariables> process(
+            List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
+          final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
+
+          WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
+          for (PropertyDescriptorValue property : propertyList) {
+            final String name = property.name();
+
+            ValueNameBuilder valueNameBuilder =
+                WipExpressionBuilder.createRootName(name, false);
+
+            JsVariable variable;
+            if (objectId == null) {
+              variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
+            } else {
+              variable = valueBuilder.createObjectProperty(property, objectId, valueNameBuilder);
+            }
+            properties.add(variable);
+          }
+          final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);
+          return new Getter<ScopeVariables>() {
+            @Override
+            ScopeVariables get() {
+              return scopeVariables;
+            }
+          };
+        }
+
+        @Override
+        public Getter<ScopeVariables> getEmptyResult() {
+          return EMPTY_SCOPE_VARIABLES_OPTIONAL;
+        }
+
+        @Override
+        public Getter<ScopeVariables> forException(Exception exception) {
+          return WipValueLoader.Getter.newFailure(exception);
+        }
+      };
+      // This is blocking.
+      valueLoader.loadPropertiesInFuture(objectId, processor, reload, currentCacheState,
+          propertiesRef);
+    }
+  }
+
+  private static class WithScopeImpl implements JsScope.WithScope {
+    private final JsValue jsValue;
+
+    WithScopeImpl(ScopeValue scopeData, WipValueLoader valueLoader) {
+      jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.WITH;
+    }
+
+    @Override
+    public WithScope asWithScope() {
+      return this;
+    }
+
+    @Override
+    public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
+      JsObject asObject = jsValue.asObject();
+      if (asObject == null) {
+        return Collections.emptyList();
+      }
+      return new ArrayList<JsVariable>(asObject.getProperties());
+    }
+
+    @Override
+    public JsValue getWithArgument() {
+      return jsValue;
+    }
   }
 
   static JsVariable wrapExceptionValue(RemoteObjectValue valueData,
@@ -726,7 +729,7 @@ class WipContextBuilder {
     }
   }
 
-  private final Getter<ScopeVariables> EMPTY_SCOPE_VARIABLES_OPTIONAL =
+  private static final Getter<ScopeVariables> EMPTY_SCOPE_VARIABLES_OPTIONAL =
       new Getter<ScopeVariables>() {
         private final ScopeVariables value =
           new ScopeVariables(Collections.<JsVariable>emptyList(), Integer.MAX_VALUE);

@@ -241,7 +241,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
 
   @Override
   public FunctionScopeExtension getFunctionScopeExtension() {
-    return null;
+    return WipValueBuilder.FUNCTION_SCOPE_EXTENSION;
   }
 
   @Override
