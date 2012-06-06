@@ -4,25 +4,18 @@
 
 package org.chromium.debug.ui.liveedit;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
-import org.chromium.debug.core.util.ScriptTargetMapping;
+import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.FunctionNode;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.Side;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.SourcePosition;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.SourceText;
-import org.chromium.sdk.Script;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.NewFunctionNode;
 import org.chromium.sdk.UpdatableScript.OldFunctionNode;
 import org.chromium.sdk.UpdatableScript.TextualDiff;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.CoreException;
 
 /**
  * Parses LiveEdit push result and produces input for {@link LiveEditDiffViewer}.
@@ -31,35 +24,37 @@ import org.eclipse.core.runtime.CoreException;
  */
 public class PushResultParser {
   static LiveEditDiffViewer.Input createViewerInput(
-      final UpdatableScript.ChangeDescription changeDescription, ScriptTargetMapping filePair,
+      final UpdatableScript.ChangeDescription changeDescription, PushChangesPlan changesPlan,
       boolean previewMode) {
-    Script script = filePair.getSingleScript();
-    IFile file = filePair.getFile();
-    String newSourceTemp;
-    try {
-      byte[] newSourceBytes = ChromiumDebugPluginUtil.readFileContents(file);
-      newSourceTemp = new String(newSourceBytes, "UTF-8"); //$NON-NLS-1$
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    } catch (IOException e) {
-      newSourceTemp = Messages.PushResultParser_FAILED_SEE_LOG;
-      ChromiumDebugPlugin.log(e);
-    } catch (CoreException e) {
-      newSourceTemp = Messages.PushResultParser_FAILED_SEE_LOG;
-      ChromiumDebugPlugin.log(e);
+
+    final String newSource;
+    final String oldSource;
+
+    final TextualDiff textualDiff;
+
+    String newSourceRaw = changesPlan.getNewSource();
+    String oldSourceRaw = changesPlan.getScript().getSource();
+
+    int oldPositionOffset;
+    int newPositionOffset;
+
+    // TODO: support alternative case that supports source wrapping.
+    {
+      oldSource = oldSourceRaw;
+      newSource = newSourceRaw;
+      textualDiff = changeDescription.getTextualDiff();
+      oldPositionOffset = 0;
+      newPositionOffset = 0;
     }
 
-    final String finelNewSource = newSourceTemp;
-    final String oldSource = script.getSource();
-
-    TreeBuilder builder = new TreeBuilder(previewMode);
+    TreeBuilder builder = new TreeBuilder(previewMode, oldPositionOffset, newPositionOffset);
     final FunctionNode rootFunction = builder.build(changeDescription);
 
     return new LiveEditDiffViewer.Input() {
       public SourceText getNewSource() {
         return new SourceText() {
           public String getText() {
-            return finelNewSource;
+            return newSource;
           }
           public String getTitle() {
             return Messages.PushResultParser_LOCAL_FILE;
@@ -83,7 +78,7 @@ public class PushResultParser {
 
       @Override
       public TextualDiff getTextualDiff() {
-        return changeDescription.getTextualDiff();
+        return textualDiff;
       }
     };
   }
@@ -91,14 +86,18 @@ public class PushResultParser {
   private static class TreeBuilder {
     private final StatusRenderer statusRenderer;
     private final boolean hideOldVersion;
+    private final int oldPositionOffset;
+    private final int newPositionOffset;
 
-    public TreeBuilder(boolean previewOnly) {
+    public TreeBuilder(boolean previewOnly, int oldPositionOffset, int newPositionOffset) {
       if (previewOnly) {
         this.statusRenderer = PREVIEW_STATUS_RENDERER;
       } else {
         this.statusRenderer = RESULT_STATUS_RENDERER;
       }
       this.hideOldVersion = !previewOnly;
+      this.oldPositionOffset = oldPositionOffset;
+      this.newPositionOffset = newPositionOffset;
     }
 
     public FunctionNode build(UpdatableScript.ChangeDescription changeDescription) {
@@ -113,7 +112,7 @@ public class PushResultParser {
       }
       List<NodeImpl> childListSecond = new ArrayList<NodeImpl>();
       for (NewFunctionNode newChild : oldFunction.newChildren()) {
-        NodeImpl nodeImpl = buildNode(newChild);
+        NodeImpl nodeImpl = buildNode(newChild, newPositionOffset);
         childListSecond.add(nodeImpl);
       }
       // Merge lists by positions SIDE.NEW
@@ -146,29 +145,32 @@ public class PushResultParser {
           }
         }
       }
-      return new NodeImpl(oldFunction, createPosition(oldFunction.getPositions()),
-          createPosition(oldFunction.getNewPositions()), childList);
+      return new NodeImpl(oldFunction,
+          createPosition(oldFunction.getPositions(), oldPositionOffset),
+          createPosition(oldFunction.getNewPositions(), newPositionOffset), childList);
     }
-    private NodeImpl buildNode(UpdatableScript.NewFunctionNode newFunction) {
+    private NodeImpl buildNode(UpdatableScript.NewFunctionNode newFunction,
+        int newPositionOffset) {
       List<NodeImpl> childList = new ArrayList<NodeImpl>();
       for (UpdatableScript.NewFunctionNode newChild : newFunction.children()) {
-        NodeImpl nodeImpl = buildNode(newChild);
+        NodeImpl nodeImpl = buildNode(newChild, newPositionOffset);
         childList.add(nodeImpl);
       }
-      return new NodeImpl(newFunction, null, createPosition(newFunction.getPositions()), childList);
+      return new NodeImpl(newFunction, null,
+          createPosition(newFunction.getPositions(), newPositionOffset), childList);
     }
 
     private static SourcePosition createPosition(
-        final UpdatableScript.FunctionPositions positions) {
+        final UpdatableScript.FunctionPositions positions, final int offset) {
       if (positions == null) {
         return null;
       }
       return new SourcePosition() {
         public int getStart() {
-          return (int) positions.getStart();
+          return (int) positions.getStart() + offset;
         }
         public int getEnd() {
-          return (int) positions.getEnd();
+          return (int) positions.getEnd() + offset;
         }
       };
     }

@@ -4,23 +4,14 @@
 
 package org.chromium.debug.ui.actions;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.VmResource;
-import org.chromium.debug.core.model.VmResource.ScriptHolder;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
+import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.core.util.ScriptTargetMapping;
-import org.chromium.debug.ui.liveedit.LiveEditDiffViewer;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Shell;
@@ -40,6 +31,8 @@ public class PushChangesAction extends V8ScriptAction {
   }
 
   private void execute(final ScriptTargetMapping filePair, final Shell shell) {
+    final PushChangesPlan plan = PushChangesPlan.create(filePair);
+
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       @Override
       public void success(Object report, ChangeDescription changeDescription) {
@@ -53,35 +46,13 @@ public class PushChangesAction extends V8ScriptAction {
           @Override
           public void run() {
             LiveEditResultDialog dialog = new LiveEditResultDialog(shell,
-                LiveEditResultDialog.createTextInput(message, filePair));
+                LiveEditResultDialog.createTextInput(message, plan));
             dialog.open();
           }
         });
       }
     };
-    execute(filePair, callback, null, false);
-  }
 
-  public static RelayOk execute(final ScriptTargetMapping filePair,
-      UpdatableScript.UpdateCallback callback, SyncCallback syncCallback, boolean previewOnly) {
-    // TODO: fix the rough behavior (inside this call).
-    Script script = filePair.getSingleScript();
-    byte[] fileData;
-    try {
-      fileData = ChromiumDebugPluginUtil.readFileContents(filePair.getFile());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (CoreException e) {
-      throw new RuntimeException(e);
-    }
-
-    // We are using default charset here like usually.
-    String newSource = new String(fileData);
-
-    if (previewOnly) {
-      return script.previewSetSource(newSource, callback, syncCallback);
-    } else {
-      return script.setSourceOnRemote(newSource, callback, syncCallback);
-    }
+    plan.execute(false, callback, null);
   }
 }

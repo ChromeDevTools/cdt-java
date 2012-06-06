@@ -7,7 +7,7 @@ package org.chromium.debug.ui.liveedit;
 import static org.chromium.debug.ui.DialogUtils.createErrorOptional;
 import static org.chromium.debug.ui.DialogUtils.createOptional;
 
-import org.chromium.debug.core.util.ScriptTargetMapping;
+import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.ui.DialogUtils.Message;
 import org.chromium.debug.ui.DialogUtils.MessagePriority;
 import org.chromium.debug.ui.DialogUtils.Optional;
@@ -15,7 +15,6 @@ import org.chromium.debug.ui.DialogUtils.Scope;
 import org.chromium.debug.ui.DialogUtils.Updater;
 import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueSource;
-import org.chromium.debug.ui.actions.PushChangesAction;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
 import org.eclipse.osgi.util.NLS;
@@ -30,13 +29,13 @@ import org.eclipse.osgi.util.NLS;
  * is optional and is not required for wizard's work, the loader should be kept passive until
  * user actually needs its result (turns the page).
  */
-class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescription>> {
+class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
   private final Updater updater;
-  private final ValueSource<ScriptTargetMapping> inputParameterSource;
+  private final ValueSource<PushChangesPlan> inputParameterSource;
   private boolean active = false;
   private final Monitor dataMonitor = new Monitor();
 
-  PreviewLoader(Updater updater, ValueSource<ScriptTargetMapping> inputParameterSource) {
+  PreviewLoader(Updater updater, ValueSource<PushChangesPlan> inputParameterSource) {
     this.updater = updater;
     this.inputParameterSource = inputParameterSource;
   }
@@ -55,8 +54,8 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
   }
 
   private void requestPreview() {
-    final ScriptTargetMapping inputPair = inputParameterSource.getValue();
-    boolean inputIsNew = dataMonitor.updateInputAndStarted(inputPair);
+    final PushChangesPlan plan = inputParameterSource.getValue();
+    boolean inputIsNew = dataMonitor.updateInputAndStarted(plan);
     if (!inputIsNew) {
       return;
     }
@@ -66,40 +65,55 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       public void failure(String message) {
-        Optional<UpdatableScript.ChangeDescription> error = createErrorOptional(
+        Optional<Data> error = createErrorOptional(
             new Message(NLS.bind(Messages.PreviewLoader_FAILED_TO_GET, message),
                 MessagePriority.WARNING));
         done(error);
       }
-      public void success(Object report, UpdatableScript.ChangeDescription changeDescription) {
-        Optional<UpdatableScript.ChangeDescription> result;
+      public void success(Object report,
+          final UpdatableScript.ChangeDescription changeDescription) {
+        Optional<Data> result;
         if (changeDescription == null) {
           result = EMPTY_DATA;
         } else {
-          result = createOptional(changeDescription);
+          Data data = new Data() {
+            @Override public PushChangesPlan getChangesPlan() {
+              return plan;
+            }
+            @Override public ChangeDescription getChangeDescription() {
+              return changeDescription;
+            }
+          };
+          result = createOptional(data);
         }
         done(result);
       }
-      private void done(Optional<UpdatableScript.ChangeDescription> result) {
-        boolean resultTaken = dataMonitor.updateResult(result, inputPair);
+      private void done(Optional<Data> result) {
+        boolean resultTaken = dataMonitor.updateResult(result, plan);
         if (resultTaken) {
           updater.reportChanged(PreviewLoader.this);
           updater.updateAsync();
         }
       }
     };
-    PushChangesAction.execute(inputPair, callback, null, true);
+
+    plan.execute(true, callback, null);
   }
 
-  public Optional<UpdatableScript.ChangeDescription> getValue() {
+  public interface Data {
+    UpdatableScript.ChangeDescription getChangeDescription();
+    PushChangesPlan getChangesPlan();
+  }
+
+  public Optional<Data> getValue() {
     return dataMonitor.getValue();
   }
 
   // A consumer that receive the actual input parameter (ScriptTargetMapping).
   private final ValueConsumer parametersConsumer = new ValueConsumer() {
     public void update(Updater updater) {
-      ScriptTargetMapping inputPair = inputParameterSource.getValue();
-      boolean updated = dataMonitor.updateInput(inputPair);
+      PushChangesPlan inputPlan = inputParameterSource.getValue();
+      boolean updated = dataMonitor.updateInput(inputPlan);
       if (updated && active) {
         requestPreview();
       }
@@ -108,12 +122,12 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
 
   // Makes sure that some fields are only accessed in synchronized fashion.
   private static class Monitor {
-    private ScriptTargetMapping input = null;
+    private PushChangesPlan input = null;
     private boolean alreadyStarted = false;
-    private Optional<UpdatableScript.ChangeDescription> result = NO_DATA;
+    private Optional<Data> result = NO_DATA;
 
-    synchronized boolean updateInputAndStarted(ScriptTargetMapping inputFilePair) {
-      if (inputFilePair == input) {
+    synchronized boolean updateInputAndStarted(PushChangesPlan inputPlan) {
+      if (inputPlan == input) {
         if (alreadyStarted) {
           return false;
         } else {
@@ -121,31 +135,31 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
           return true;
         }
       } else {
-        input = inputFilePair;
+        input = inputPlan;
         result = NO_DATA;
         alreadyStarted = true;
         return true;
       }
     }
 
-    synchronized boolean updateInput(ScriptTargetMapping inputFilePair) {
-      if (inputFilePair == input) {
+    synchronized boolean updateInput(PushChangesPlan inputPlan) {
+      if (inputPlan == input) {
         return false;
       } else {
-        input = inputFilePair;
+        input = inputPlan;
         result = NO_DATA;
         alreadyStarted = false;
         return true;
       }
     }
 
-    synchronized Optional<UpdatableScript.ChangeDescription> getValue() {
+    synchronized Optional<Data> getValue() {
       return result;
     }
 
-    synchronized boolean updateResult(Optional<ChangeDescription> result,
-        ScriptTargetMapping inputPair) {
-      if (inputPair != input) {
+    synchronized boolean updateResult(Optional<Data> result,
+        PushChangesPlan inputPlan) {
+      if (inputPlan != input) {
         return false;
       }
       this.result = result;
@@ -153,8 +167,8 @@ class PreviewLoader implements ValueSource<Optional<UpdatableScript.ChangeDescri
     }
   }
 
-  private static final Optional<UpdatableScript.ChangeDescription> NO_DATA = createErrorOptional(
+  private static final Optional<Data> NO_DATA = createErrorOptional(
       new Message(Messages.PreviewLoader_WAITING_FOR_DIFF, MessagePriority.NONE));
-  private static final Optional<UpdatableScript.ChangeDescription> EMPTY_DATA =
+  private static final Optional<Data> EMPTY_DATA =
       createErrorOptional(new Message(Messages.PreviewLoader_FAILED_TO_LOAD, MessagePriority.NONE));
 }
