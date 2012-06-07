@@ -21,8 +21,12 @@ import org.eclipse.core.runtime.CoreException;
  */
 public class PushChangesPlan {
   public static PushChangesPlan create(ScriptTargetMapping filePair) {
+    SourceWrapSupport sourceWrapSupport = filePair.getConnectedTargetData().getSourceWrapSupport();
     // TODO: fix the rough behavior (inside this call).
     Script script = filePair.getSingleScript();
+
+    SourceWrapSupport.Wrapper.Match wrapperMatch =
+        sourceWrapSupport.chooseWrapper(script.getSource());
 
     byte[] fileData;
     try {
@@ -36,18 +40,24 @@ public class PushChangesPlan {
     // We are using default charset here as usual.
     String newSource = new String(fileData);
 
-    return new PushChangesPlan(script, filePair, newSource);
+    return new PushChangesPlan(script, filePair, newSource, wrapperMatch);
   }
 
   private final Script script;
   private final String newSource;
   private final ScriptTargetMapping scriptTargetMapping;
+  private final SourceWrapSupport.Wrapper.Match wrapperMatch;
 
   private PushChangesPlan(Script script, ScriptTargetMapping scriptTargetMapping,
-      String newSource) {
+      String newSource, SourceWrapSupport.Wrapper.Match wrapperMatch) {
     this.script = script;
     this.newSource = newSource;
     this.scriptTargetMapping = scriptTargetMapping;
+    this.wrapperMatch = wrapperMatch;
+  }
+
+  public SourceWrapSupport.Wrapper.Match getSourceWrapperMatch() {
+    return wrapperMatch;
   }
 
   public String getNewSource() {
@@ -64,7 +74,12 @@ public class PushChangesPlan {
 
   public RelayOk execute(boolean previewOnly,
       UpdatableScript.UpdateCallback callback, SyncCallback syncCallback) {
-    String wrappedSource = newSource;
+    String wrappedSource;
+    if (wrapperMatch == null) {
+      wrappedSource = newSource;
+    } else {
+      wrappedSource = wrapperMatch.wrap(newSource);
+    }
 
     if (previewOnly) {
       return script.previewSetSource(wrappedSource, callback, syncCallback);
