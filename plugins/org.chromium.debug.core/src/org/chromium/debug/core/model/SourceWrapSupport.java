@@ -86,7 +86,7 @@ public class SourceWrapSupport {
     private final String prefix;
     private final String suffix;
 
-    private StringBasedWrapper(String name, String prefix, String suffix) {
+    public StringBasedWrapper(String name, String prefix, String suffix) {
       this.name = name;
       this.prefix = prefix;
       this.suffix = suffix;
