@@ -85,8 +85,15 @@
        class="org.chromium.debug.core.FilePropertyTester$ForFile">
     </propertyTester>
   </extension>
+  
+  <extension point="org.chromium.debug.core.model_IPredefinedSourceWrapProvider">
+    <wrap-provider class="org.chromium.debug.core.model.HardcodedSourceWrapProvider"/>
+  </extension>
 
   <extension-point id="model_JavaScriptFormatter"
       name="org.chromium.debug.core.model.JavaScriptFormatter"/>
+
+  <extension-point id="model_IPredefinedSourceWrapProvider"
+      name="org.chromium.debug.core.model.IPredefinedSourceWrapProvider"/>
       
 </plugin>
