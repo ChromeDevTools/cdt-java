@@ -162,7 +162,7 @@ public class ConnectedTargetData {
   }
 
   public SourceWrapSupport getSourceWrapSupport() {
-    return SourceWrapSupport.EMPTY_INSTANCE;
+    return debugTargetImpl.getSourceWrapSupport();
   }
 
   public DebugTargetImpl getDebugTarget() {

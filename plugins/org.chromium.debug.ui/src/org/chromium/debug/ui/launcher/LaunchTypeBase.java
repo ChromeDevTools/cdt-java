@@ -4,15 +4,20 @@
 
 package org.chromium.debug.ui.launcher;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
+import org.chromium.debug.core.model.IPredefinedSourceWrapProvider;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
+import org.chromium.debug.core.model.SourceWrapSupport;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.ui.PluginUtil;
@@ -21,6 +26,8 @@ import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructingGuard;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
@@ -53,6 +60,8 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
     boolean addNetworkConsole = config.getAttribute(LaunchParams.ADD_NETWORK_CONSOLE, false);
 
+    SourceWrapSupport sourceWrapSupport = createSourceWrapSupportFromConfig(config);
+
     JavascriptVmEmbedder.ConnectionToRemote remoteServer =
         createConnectionToRemote(host, port, launch, addNetworkConsole);
     try {
@@ -74,7 +83,8 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
         WorkspaceBridge.Factory bridgeFactory =
             new VProjectWorkspaceBridge.FactoryImpl(projectNameBase);
 
-        final DebugTargetImpl target = new DebugTargetImpl(launch, bridgeFactory);
+        final DebugTargetImpl target =
+            new DebugTargetImpl(launch, bridgeFactory, sourceWrapSupport);
 
         Destructable targetDestructor = new Destructable() {
           public void destruct() {
@@ -149,6 +159,26 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
     };
 
     return new ConnectionLoggerImpl(consoleRetransmitter, consoleController);
+  }
+
+  private static SourceWrapSupport createSourceWrapSupportFromConfig(ILaunchConfiguration config)
+      throws CoreException {
+    String attributeValue = config.getAttribute(LaunchParams.PREDEFINED_SOURCE_WRAPPER_IDS, "");
+    List<String> predefinedWrapperIds =
+        LaunchParams.PREDEFINED_SOURCE_WRAPPER_IDS_CONVERTER.decode(attributeValue);
+    Map<String, IPredefinedSourceWrapProvider.Entry> entries =
+        IPredefinedSourceWrapProvider.Access.getEntries();
+    List<SourceWrapSupport.Wrapper> wrappers =
+        new ArrayList<SourceWrapSupport.Wrapper>(predefinedWrapperIds.size());
+    for (String id : predefinedWrapperIds) {
+      IPredefinedSourceWrapProvider.Entry entry = entries.get(id);
+      if (entry == null) {
+        throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            "Failed to find source wrapper by id '" + id + "'"));
+      }
+      wrappers.add(entry.getWrapper());
+    }
+    return new SourceWrapSupport(wrappers);
   }
 
   static final NamedConnectionLoggerFactory NO_CONNECTION_LOGGER_FACTORY =
