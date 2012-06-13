@@ -66,6 +66,8 @@ public class Messages extends NLS {
   public static String DevToolsProtocolDeprecationTab_TITLE;
 
   public static String LaunchType_LogConsoleLaunchName;
+
+  public static String ScriptMappingTab_TAB_NAME;
   static {
     // initialize resource bundle
     NLS.initializeMessages(BUNDLE_NAME, Messages.class);

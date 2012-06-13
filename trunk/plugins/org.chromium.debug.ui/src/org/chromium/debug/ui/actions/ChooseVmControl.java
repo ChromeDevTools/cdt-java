@@ -45,7 +45,7 @@ public class ChooseVmControl {
 
     table.setHeaderVisible(true);
 
-    tableViewer.setContentProvider(new ContentProviderImpl());
+    tableViewer.setContentProvider(TableUtils.OBJECT_ARRAY_CONTENT_PROVIDER);
 
     ValueAdapter<ScriptTargetMapping, ConnectedTargetData> pairToTargetAdapter =
         new ValueAdapter<ScriptTargetMapping, ConnectedTargetData>() {
@@ -148,17 +148,6 @@ public class ChooseVmControl {
     TableData(List<? extends ScriptTargetMapping> targets) {
       this.targets = targets;
     }
-  }
-
-  private static class ContentProviderImpl implements IStructuredContentProvider {
-    public Object[] getElements(Object inputElement) {
-      TableData input = (TableData) inputElement;
-      return input.targets.toArray();
-    }
-
-    public void dispose() {}
-
-    public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
   }
 
   private static class LaunchNameLabelProvider extends ColumnLabelProvider<ConnectedTargetData> {

@@ -6,6 +6,7 @@ package org.chromium.debug.ui.launcher;
 
 import java.util.ArrayList;
 
+import org.chromium.debug.ui.launcher.ChromiumRemoteTab.HostChecker;
 import org.chromium.sdk.util.BasicUtil;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTabGroup;
 import org.eclipse.debug.ui.CommonTab;
@@ -50,11 +51,31 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
   protected ArrayList<ILaunchConfigurationTab> createTabList(ILaunchConfigurationDialog dialog,
       String mode) {
     ArrayList<ILaunchConfigurationTab> result = new ArrayList<ILaunchConfigurationTab>(4);
-    result.add(createRemoteTab());
+    ChromiumRemoteTab<?> remoteTab = createRemoteTab();
+    result.add(remoteTab);
     result.add(new SourceLookupTab());
+    result.add(new ScriptMappingTab(remoteTab.getParams()));
     result.add(new CommonTab());
     return result;
   }
 
   protected abstract ChromiumRemoteTab<?> createRemoteTab();
+
+  static class Params {
+    private final HostChecker hostChecker;
+    private final String scriptNameDescription;
+
+    Params(HostChecker hostChecker, String scriptNameDescription) {
+      this.hostChecker = hostChecker;
+      this.scriptNameDescription = scriptNameDescription;
+    }
+
+    HostChecker getHostChecker() {
+      return hostChecker;
+    }
+
+    String getScriptNameDescription() {
+      return scriptNameDescription;
+    }
+  }
 }
