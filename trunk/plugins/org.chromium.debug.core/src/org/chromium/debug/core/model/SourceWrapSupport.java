@@ -4,7 +4,6 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -14,13 +13,10 @@ import java.util.List;
  * known wrappers.
  */
 public class SourceWrapSupport {
-  // TODO: implement a proper constructor.
-  public static final SourceWrapSupport EMPTY_INSTANCE = new SourceWrapSupport();
-
   private final List<Wrapper> wrappers;
 
-  private SourceWrapSupport() {
-    wrappers = Collections.emptyList();
+  public SourceWrapSupport(List<Wrapper> wrappers) {
+    this.wrappers = wrappers;
   }
 
   /**

@@ -125,12 +125,16 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   private final WorkspaceBridge.Factory workspaceBridgeFactory;
 
+  private final SourceWrapSupport sourceWrapSupport;
+
   private final ILaunch launch;
   private volatile State currentState = new TargetInitializeState(this);
 
-  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory) {
+  public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory,
+      SourceWrapSupport sourceWrapSupport) {
     this.launch = launch;
     this.workspaceBridgeFactory = workspaceBridgeFactory;
+    this.sourceWrapSupport = sourceWrapSupport;
   }
 
   public void fireTargetCreated() {
@@ -278,6 +282,10 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
 
   public ConnectedTargetData getConnectedOrNull() {
     return currentState.getConnectedTargetDataOrNull();
+  }
+
+  public SourceWrapSupport getSourceWrapSupport() {
+    return sourceWrapSupport;
   }
 
   @SuppressWarnings("unchecked")
