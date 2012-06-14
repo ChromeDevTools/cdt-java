@@ -64,10 +64,13 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
   static class Params {
     private final HostChecker hostChecker;
     private final String scriptNameDescription;
+    private final boolean enableSourceWrapper;
 
-    Params(HostChecker hostChecker, String scriptNameDescription) {
+    Params(HostChecker hostChecker, String scriptNameDescription,
+        boolean enableSourceWrapper) {
       this.hostChecker = hostChecker;
       this.scriptNameDescription = scriptNameDescription;
+      this.enableSourceWrapper = enableSourceWrapper;
     }
 
     HostChecker getHostChecker() {
@@ -76,6 +79,10 @@ public abstract class LaunchTabGroup extends AbstractLaunchConfigurationTabGroup
 
     String getScriptNameDescription() {
       return scriptNameDescription;
+    }
+
+    boolean preEnableSourceWrapper() {
+      return enableSourceWrapper;
     }
   }
 }

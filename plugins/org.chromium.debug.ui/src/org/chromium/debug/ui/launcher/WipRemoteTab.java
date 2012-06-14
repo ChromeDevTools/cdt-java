@@ -134,7 +134,7 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
   }
 
   private static final Params PARAMS = new Params(HostChecker.LOCAL_ONLY,
-      Messages.ChromiumRemoteTab_URL);
+      Messages.ChromiumRemoteTab_URL, false);
 
   /**
    * UI control elements that allows to choose {@link WipBackend}. It consists of a dialog group,

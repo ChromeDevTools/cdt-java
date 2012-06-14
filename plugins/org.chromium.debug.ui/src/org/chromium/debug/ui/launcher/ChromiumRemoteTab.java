@@ -198,35 +198,12 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
   }
 
   @Override
-  public boolean isValid(ILaunchConfiguration config) {
-    MessageData messageData;
-    try {
-      messageData = isValidImpl(config);
-    } catch (CoreException e) {
-      ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
-      messageData = new MessageData(true, "Internal error " + e.getMessage()); //$NON-NLS-1$
-    }
-
-    if (messageData.isValid) {
-      setMessage(messageData.message);
-      setErrorMessage(null);
-    } else {
-      setMessage(null);
-      setErrorMessage(messageData.message);
-    }
-    return messageData.isValid;
-  }
-
-  /**
-   * Tries to check whether config is valid and return message or fails with exception.
-   */
-  private MessageData isValidImpl(ILaunchConfiguration config) throws CoreException {
+  protected MessageData isValidImpl(ILaunchConfiguration config) throws CoreException {
     int port = config.getAttribute(LaunchParams.CHROMIUM_DEBUG_PORT, -1);
     if (port < minimumPortValue || port > maximumPortValue) {
       return new MessageData(false, Messages.ChromiumRemoteTab_InvalidPortNumberError);
     }
-    final String message = getWarning(config);
-
+    String message = getWarning(config);
     return new MessageData(true, message);
   }
 
@@ -242,15 +219,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
       }
     }
     return sourceContainerChecker.check(config);
-  }
-
-  private static class MessageData {
-    MessageData(boolean isValid, String message) {
-      this.isValid = isValid;
-      this.message = message;
-    }
-    final boolean isValid;
-    final String message;
   }
 
 
@@ -431,7 +399,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
 
     private static final Params PARAMS = new Params(
         ChromiumRemoteTab.HostChecker.LOCAL_ONLY,
-        Messages.ChromiumRemoteTab_URL);
+        Messages.ChromiumRemoteTab_URL, false);
   }
 
   static class Standalone extends ChromiumRemoteTab<TabElements> {
@@ -451,6 +419,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     }
 
     private static final Params PARAMS = new Params(null,
-        Messages.ChromiumRemoteTab_FILE_PATH);
+        Messages.ChromiumRemoteTab_FILE_PATH, true);
   }
 }
