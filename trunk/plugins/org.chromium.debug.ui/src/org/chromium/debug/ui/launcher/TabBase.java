@@ -78,6 +78,55 @@ abstract class TabBase<ELEMENTS, PARAMS> extends AbstractLaunchConfigurationTab 
     }
   }
 
+  @Override
+  public boolean isValid(ILaunchConfiguration config) {
+    MessageData messageData;
+    try {
+      messageData = isValidImpl(config);
+    } catch (CoreException e) {
+      ChromiumDebugPlugin.log(new Exception("Unexpected storage problem", e)); //$NON-NLS-1$
+      messageData = new MessageData(true, "Internal error " + e.getMessage()); //$NON-NLS-1$
+    }
+    if (messageData == null) {
+      messageData = MessageData.EMPTY_OK;
+    }
+
+    if (messageData.isValid()) {
+      setMessage(messageData.getMessage());
+      setErrorMessage(null);
+    } else {
+      setMessage(null);
+      setErrorMessage(messageData.getMessage());
+    }
+    return messageData.isValid();
+  }
+
+  /**
+   * Tries to check whether config is valid and return message or fails with exception.
+   */
+  protected abstract MessageData isValidImpl(ILaunchConfiguration config) throws CoreException;
+
+  /**
+   * Describes a tab error/warning message.
+   */
+  protected static class MessageData {
+    public static final MessageData EMPTY_OK = new MessageData(true, null);
+
+    private final boolean valid;
+    private final String message;
+
+    public MessageData(boolean isValid, String message) {
+      this.valid = isValid;
+      this.message = message;
+    }
+    public boolean isValid() {
+      return valid;
+    }
+    public String getMessage() {
+      return message;
+    }
+  }
+
   protected abstract List<? extends TabField<?, ?, ? super ELEMENTS, PARAMS>> getTabFields();
 
   /**

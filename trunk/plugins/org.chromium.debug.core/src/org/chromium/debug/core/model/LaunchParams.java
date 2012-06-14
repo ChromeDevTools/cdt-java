@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
@@ -35,8 +36,7 @@ public class LaunchParams {
 
   public static final String WIP_BACKEND_ID = "wip_backend_id"; //$NON-NLS-1$
 
-  public static final String PREDEFINED_SOURCE_WRAPPER_IDS =
-      "predefined_source_wrapperd_ids"; //$NON-NLS-1$
+  // PREDEFINED_SOURCE_WRAPPER_IDS see below.
 
   public enum LookupMode {
     EXACT_MATCH() {
@@ -178,32 +178,56 @@ public class LaunchParams {
     return -1;
   }
 
-  public static final ValueConverter<String, List<String>>
-      PREDEFINED_SOURCE_WRAPPER_IDS_CONVERTER =
-      new ValueConverter<String, List<String>>() {
-        @Override
-        public String encode(List<String> logical) {
-          StringBuilder builder = new StringBuilder();
-          List<String> list = new ArrayList<String>(logical);
-          Collections.sort(list);
-          for (String id : list) {
-            MementoFormat.encodeComponent(id, builder);
-          }
-          return builder.toString();
-        }
+  public static class PredefinedSourceWrapperIds {
+    public static String CONFIG_PROPERTY = "predefined_source_wrapperd_ids"; //$NON-NLS-1$
 
-        @Override
-        public List<String> decode(String persistent) throws CoreException {
-          List<String> result = new ArrayList<String>();
-          MementoFormat.Parser parser = new MementoFormat.Parser(persistent);
-          while (parser.hasMore()) {
-            try {
-              result.add(parser.nextComponent());
-            } catch (ParserException e) {
-              throw new RuntimeException("Failed to read config value '" + persistent + "'", e);
+    public static final ValueConverter<String, List<String>> CONVERTER =
+        new ValueConverter<String, List<String>>() {
+          @Override
+          public String encode(List<String> logical) {
+            StringBuilder builder = new StringBuilder();
+            List<String> list = new ArrayList<String>(logical);
+            Collections.sort(list);
+            for (String id : list) {
+              MementoFormat.encodeComponent(id, builder);
             }
+            return builder.toString();
           }
-          return result;
+
+          @Override
+          public List<String> decode(String persistent) throws CoreException {
+            List<String> result = new ArrayList<String>();
+            MementoFormat.Parser parser = new MementoFormat.Parser(persistent);
+            while (parser.hasMore()) {
+              try {
+                result.add(parser.nextComponent());
+              } catch (ParserException e) {
+                throw new RuntimeException("Failed to read config value '" + persistent + "'", e);
+              }
+            }
+            return result;
+          }
+        };
+
+    public static List<IPredefinedSourceWrapProvider.Entry> resolveEntries(
+        ILaunchConfiguration config) throws CoreException {
+      String attributeValue = config.getAttribute(
+          LaunchParams.PredefinedSourceWrapperIds.CONFIG_PROPERTY, "");
+      List<String> predefinedWrapperIds =
+          LaunchParams.PredefinedSourceWrapperIds.CONVERTER.decode(attributeValue);
+      Map<String, IPredefinedSourceWrapProvider.Entry> entries =
+          IPredefinedSourceWrapProvider.Access.getEntries();
+      List<IPredefinedSourceWrapProvider.Entry> result =
+          new ArrayList<IPredefinedSourceWrapProvider.Entry>(predefinedWrapperIds.size());
+      for (String id : predefinedWrapperIds) {
+        IPredefinedSourceWrapProvider.Entry entry = entries.get(id);
+        if (entry == null) {
+          throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+              "Failed to find source wrapper by id '" + id + "'"));
         }
-      };
+        result.add(entry);
+      }
+      return result;
+    }
+  }
 }

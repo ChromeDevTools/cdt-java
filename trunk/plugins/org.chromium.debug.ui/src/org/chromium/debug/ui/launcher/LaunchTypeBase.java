@@ -6,7 +6,6 @@ package org.chromium.debug.ui.launcher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
@@ -26,8 +25,6 @@ import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructingGuard;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
@@ -163,20 +160,12 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
   private static SourceWrapSupport createSourceWrapSupportFromConfig(ILaunchConfiguration config)
       throws CoreException {
-    String attributeValue = config.getAttribute(LaunchParams.PREDEFINED_SOURCE_WRAPPER_IDS, "");
-    List<String> predefinedWrapperIds =
-        LaunchParams.PREDEFINED_SOURCE_WRAPPER_IDS_CONVERTER.decode(attributeValue);
-    Map<String, IPredefinedSourceWrapProvider.Entry> entries =
-        IPredefinedSourceWrapProvider.Access.getEntries();
+    List<IPredefinedSourceWrapProvider.Entry> entries =
+        LaunchParams.PredefinedSourceWrapperIds.resolveEntries(config);
     List<SourceWrapSupport.Wrapper> wrappers =
-        new ArrayList<SourceWrapSupport.Wrapper>(predefinedWrapperIds.size());
-    for (String id : predefinedWrapperIds) {
-      IPredefinedSourceWrapProvider.Entry entry = entries.get(id);
-      if (entry == null) {
-        throw new CoreException(new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
-            "Failed to find source wrapper by id '" + id + "'"));
-      }
-      wrappers.add(entry.getWrapper());
+        new ArrayList<SourceWrapSupport.Wrapper>(entries.size());
+    for (IPredefinedSourceWrapProvider.Entry en : entries) {
+      wrappers.add(en.getWrapper());
     }
     return new SourceWrapSupport(wrappers);
   }
