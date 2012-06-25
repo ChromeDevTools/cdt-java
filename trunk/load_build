@@ -1,0 +1,1 @@
+java -cp utils/org.chromium.sdk.tests.system.runner/bin org.chromium.sdk.tests.system.runner.BuildLoader
