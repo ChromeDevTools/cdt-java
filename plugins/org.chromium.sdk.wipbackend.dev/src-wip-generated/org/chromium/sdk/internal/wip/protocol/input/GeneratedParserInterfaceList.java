@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@116768
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@121014
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -15,6 +15,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CanSetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CausesRecompilationData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.CompileScriptData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData.class,
@@ -23,7 +24,10 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData.Data.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.RestartFrameData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.RestartFrameData.Result.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.RunScriptData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptFailedToParseEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.ScriptParsedEventData.class,
@@ -32,7 +36,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.Result.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.SupportsNativeBreakpointsData.class,
+    org.chromium.sdk.internal.wip.protocol.input.debugger.SupportsSeparateScriptCompilationAndExecutionData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.AttributeModifiedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.AttributeRemovedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.CharacterDataModifiedEventData.class,
