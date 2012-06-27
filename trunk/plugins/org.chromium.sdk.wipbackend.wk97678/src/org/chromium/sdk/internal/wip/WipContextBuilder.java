@@ -28,7 +28,6 @@ import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
-import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -40,7 +39,6 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
-import org.chromium.sdk.internal.wip.protocol.input.WipProtocolParser;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData;
@@ -242,7 +240,12 @@ class WipContextBuilder {
     @Override
     public void continueVm(StepAction stepAction, int stepCount,
         ContinueCallback callback) {
+      continueVm(stepAction, stepCount, callback, null);
+    }
 
+    @Override
+    public RelayOk continueVm(StepAction stepAction, int stepCount,
+        ContinueCallback callback, SyncCallback syncCallback) {
       {
         boolean updated = closeRequest.compareAndSet(null, new CloseRequest(callback));
         if (!updated) {
@@ -251,7 +254,7 @@ class WipContextBuilder {
       }
 
       WipParams params = sdkStepToProtocolStep(stepAction);
-      tabImpl.getCommandProcessor().send(params, null, null);
+      return tabImpl.getCommandProcessor().send(params, null, syncCallback);
     }
 
     @Override

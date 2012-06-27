@@ -18,17 +18,21 @@ import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.Script;
+import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.util.GenericCallback;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
+import org.eclipse.debug.core.model.IDropToFrame;
 import org.eclipse.debug.core.model.IVariable;
 
 /**
  * An IStackFrame implementation over a JsStackFrame instance.
  */
-public class StackFrame extends StackFrameBase {
+public class StackFrame extends StackFrameBase implements IDropToFrame {
 
   private final CallFrame stackFrame;
 
@@ -139,6 +143,49 @@ public class StackFrame extends StackFrameBase {
 
   public boolean hasVariables() throws DebugException {
     return stackFrame.getReceiverVariable() != null || stackFrame.getVariableScopes().size() > 0;
+  }
+
+  @Override
+  public boolean canDropToFrame() {
+    RestartFrameExtension resetFrameExtension = getSdkResetFrameExtension();
+
+    return resetFrameExtension != null && resetFrameExtension.canRestartFrame(stackFrame);
+  }
+
+  @Override
+  public void dropToFrame() throws DebugException {
+    GenericCallback<Boolean> callback = new GenericCallback<Boolean>() {
+      @Override
+      public void success(Boolean stackResumed) {
+        if (stackResumed) {
+          // We could report it to Eclipse debug framework, but we simply ignore it, because
+          // resumed will arrive real soon and Eclipse is okey about double suspended event.
+        } else {
+          // TODO: update stack frames in Eclipse debug framework. However this branch
+          // is never reachable with current V8 implementation.
+        }
+      }
+
+      @Override
+      public void failure(Exception exception) {
+        ChromiumDebugPlugin.log(new Exception("Failed to 'drop to frame' action", exception));
+      }
+    };
+
+    SyncCallback syncCallback = new SyncCallback() {
+      @Override
+      public void callbackDone(RuntimeException e) {
+        if (e != null) {
+          ChromiumDebugPlugin.log(e);
+        }
+      }
+    };
+
+    getSdkResetFrameExtension().restartFrame(stackFrame, callback, syncCallback);
+  }
+
+  private RestartFrameExtension getSdkResetFrameExtension() {
+    return getConnectedData().getJavascriptVm().getRestartFrameExtension();
   }
 
   public int getLineNumber() throws DebugException {
