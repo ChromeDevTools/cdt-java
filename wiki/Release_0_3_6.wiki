@@ -1,0 +1,29 @@
+#summary upcoming release 0.3.6 notes
+
+
+=Google Chrome Developer Tools for Java. Upcoming Release 0.3.6.=
+
+This release succeeds the [Release_0_3_4 release 0.3.4].
+
+=Draft=
+
+==Issues Fixed==
+  * i62 (i65)
+  * i64
+  * i66
+
+==Features==
+
+===Function Scope===
+Versions: V8 v3.10.7 and WIP WK118685/1180  21.0.1180.*
+
+===Internal property===
+AKA primitive value (V8 v3.10.5)
+
+===Source Wrapper===
+(need picture here)
+
+===Restart Frame===
+(need picture here)
+
+restart frame (V8 v3.12.0 and WIP r120709 wk >1180 22.0.1188.*)
