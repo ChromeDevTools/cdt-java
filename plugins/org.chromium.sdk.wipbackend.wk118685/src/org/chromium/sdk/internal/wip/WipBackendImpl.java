@@ -35,11 +35,10 @@ public class WipBackendImpl extends WipBackendBase {
 
   private static final boolean USE_OLD_WEBSOCKET = false;
 
-  private static final String ID = "current development";
+  private static final String ID = "WK@118685";
   private static final String DESCRIPTION =
-      "Google Chrome/Chromium: \n" +
-      "Chromium build: \n" +
-      "WebKit revision: \n";
+      "Google Chrome/Chromium: 21.0.1180.*\n" +
+      "WebKit revision: 118685\n";
 
   public WipBackendImpl() {
     super(ID, DESCRIPTION);
