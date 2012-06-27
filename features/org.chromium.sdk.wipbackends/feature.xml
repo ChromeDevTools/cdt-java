@@ -31,20 +31,6 @@
    </requires>
 
    <plugin
-         id="org.chromium.sdk.wipbackend.wk97678"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="org.chromium.sdk.wipbackend.wk102439"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="org.chromium.sdk.wipbackend.protocol_1_0"
          download-size="0"
          install-size="0"

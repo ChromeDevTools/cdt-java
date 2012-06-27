@@ -10,14 +10,9 @@
 
    <target name="iterateWipBackends">
        <antcall target="${callback}">
-           <param name="backendName" value="wk97678"/>
-       </antcall>
-       <antcall target="${callback}">
-           <param name="backendName" value="wk102439"/>
-       </antcall>
-       <antcall target="${callback}">
            <param name="backendName" value="protocol_1_0"/>
        </antcall>
+
        <antcall target="${callback}">
            <param name="backendName" value="wk118685"/>
        </antcall>
