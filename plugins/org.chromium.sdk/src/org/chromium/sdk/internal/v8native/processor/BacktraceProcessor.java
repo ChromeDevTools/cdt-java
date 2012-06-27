@@ -21,20 +21,20 @@ import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
-import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 
 /**
  * Handles the "backtrace" V8 command replies.
  */
-class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
+public class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
 
   private final ContextBuilder.ExpectingBacktraceStep step2;
 
   BacktraceProcessor(ContextBuilder.ExpectingBacktraceStep step2) {
     this.step2 = step2;
- }
+  }
 
+  @Override
   public void messageReceived(CommandResponse response) {
     String commandString = response.command();
 
@@ -47,15 +47,15 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
       handleWrongStacktrace();
     }
 
-    final DebugContext debugContext = setFrames(successResponse);
+    final DebugContext debugContext = setFrames(successResponse, step2);
     final DebugSession debugSession = step2.getInternalContext().getDebugSession();
 
     JavascriptVm.ScriptsCallback afterScriptsAreLoaded = new JavascriptVm.ScriptsCallback() {
-      public void failure(String errorMessage) {
+      @Override public void failure(String errorMessage) {
         handleWrongStacktrace();
       }
 
-      public void success(Collection<Script> scripts) {
+      @Override public void success(Collection<Script> scripts) {
         debugSession.getDebugEventListener().suspended(debugContext);
       }
     };
@@ -63,7 +63,8 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
     debugSession.getScriptManagerProxy().getAllScripts(afterScriptsAreLoaded, null);
   }
 
-  private DebugContext setFrames(SuccessCommandResponse response) {
+  public static DebugContext setFrames(SuccessCommandResponse response,
+      ContextBuilder.ExpectingBacktraceStep step2) {
     BacktraceCommandBody body;
     try {
       body = response.body().asBacktraceCommandBody();
@@ -83,6 +84,7 @@ class BacktraceProcessor implements V8CommandProcessor.V8HandlerCallback {
     return step2.setFrames(jsonFrames);
   }
 
+  @Override
   public void failure(String message) {
     handleWrongStacktrace();
   }

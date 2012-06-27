@@ -19,6 +19,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TabDebugEventListener;
@@ -236,6 +237,11 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
   @Override
   public EvaluateToMappingExtension getEvaluateWithDestinationMappingExtension() {
     return WipEvaluateContextBase.EVALUATE_TO_MAPPING_EXTENSION;
+  }
+
+  @Override
+  public RestartFrameExtension getRestartFrameExtension() {
+    return null;
   }
 
   @Override public FunctionScopeExtension getFunctionScopeExtension() {

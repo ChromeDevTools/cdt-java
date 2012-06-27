@@ -174,4 +174,9 @@ public interface JavascriptVm {
    * @return extension that returns function hidden scopes or null if unsupported by VM
    */
   FunctionScopeExtension getFunctionScopeExtension();
+
+  /**
+   * @return extension that restarts frame or null if unsupported by VM
+   */
+  RestartFrameExtension getRestartFrameExtension();
 }

@@ -13,6 +13,7 @@ import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.IgnoreCountBreakpointExtension;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.v8native.value.JsFunctionImpl;
@@ -94,6 +95,14 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
       return null;
     }
     return JsFunctionImpl.FUNCTION_SCOPE_EXTENSION;
+  }
+
+  @Override
+  public RestartFrameExtension getRestartFrameExtension() {
+    if (!V8VersionFeatures.isRestartFrameSupported(getDebugSession().getVmVersion())) {
+      return null;
+    }
+    return CallFrameImpl.RESTART_FRAME_EXTENSION;
   }
 
   protected abstract DebugSession getDebugSession();

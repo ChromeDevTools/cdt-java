@@ -242,7 +242,12 @@ class WipContextBuilder {
     @Override
     public void continueVm(StepAction stepAction, int stepCount,
         ContinueCallback callback) {
+      continueVm(stepAction, stepCount, callback, null);
+    }
 
+    @Override
+    public RelayOk continueVm(StepAction stepAction, int stepCount,
+        ContinueCallback callback, SyncCallback syncCallback) {
       {
         boolean updated = closeRequest.compareAndSet(null, new CloseRequest(callback));
         if (!updated) {
@@ -251,7 +256,7 @@ class WipContextBuilder {
       }
 
       WipParams params = sdkStepToProtocolStep(stepAction);
-      tabImpl.getCommandProcessor().send(params, null, null);
+      return tabImpl.getCommandProcessor().send(params, null, syncCallback);
     }
 
     @Override

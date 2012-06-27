@@ -11,8 +11,11 @@ import java.util.List;
  */
 public interface UpdatableScript {
   /**
-   * Demands that script text should be replaced with a new one if possible.
+   * Demands that script text should be replaced with a new one if possible. VM may get resumed
+   * after this command (this is defined by {@link ChangeDescription#isStackModified()}). In this
+   * case a standard 'suspended' notification is expected in a moment.
    * @param newSource new text of script
+   * TODO: add an explicit output parameter about whether VM was resumed or not.
    */
   RelayOk setSourceOnRemote(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
