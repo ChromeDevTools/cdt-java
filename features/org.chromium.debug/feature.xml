@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.debug"
       label="%featureName"
-      version="0.3.4.qualifier"
+      version="0.3.6.qualifier"
       provider-name="%providerName"
       plugin="org.chromium.debug">
 
@@ -28,7 +28,7 @@
    </url>
 
    <requires>
-      <import feature="org.chromium.sdk" version="0.3.4" match="compatible"/>
+      <import feature="org.chromium.sdk" version="0.3.6" match="compatible"/>
       <import plugin="org.eclipse.core.runtime"/>
       <import plugin="org.eclipse.core.filesystem" version="1.2.0" match="greaterOrEqual"/>
       <import plugin="org.eclipse.debug.ui" version="3.4.1" match="greaterOrEqual"/>
