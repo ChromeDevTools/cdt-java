@@ -247,7 +247,7 @@ public class WipTabImpl implements WipBrowserTab, WipJavascriptVm {
 
   @Override
   public RestartFrameExtension getRestartFrameExtension() {
-    return WipContextBuilder.RESTART_FRAME_EXTENSION;
+    return null;
   }
 
   @Override
