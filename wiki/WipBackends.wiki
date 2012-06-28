@@ -9,4 +9,4 @@ WIP Backend is currently a user-visible detail. This means that it's a user resp
 
 The exact set of backends change from release to release. That's why they are normally listed in release notes.
 
-WIP Backends are deployed as a separate Eclipse feature "ChromeDevTools SDK WIP Backends".
+WIP Backends are deployed as a separate Eclipse feature "!ChromeDevTools SDK WIP Backends".
