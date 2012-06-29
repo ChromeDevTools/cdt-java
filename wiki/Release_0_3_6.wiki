@@ -31,7 +31,7 @@ Since now you can do it if you expand function's properties and open the pseudo-
 
 _Note:_ this is supported in Chrome starting from WK118685 backend, and via Standalone V8 protocol starting since version 3.10.7.
 
-Another small enhancement is a visible “primitive value” property. In !JavaScript simple values (number, string and boolean) can be wrapped as objects. For example:  {{{Object(-1)}}}  or  {{{Object("crazy")}}}  returns no number or string. Those are objects that wrap original primitive value in an invisible internal property. With this release you can see it explicitly in Variables/Expressions view.
+Another small enhancement is a visible “primitive value” property. In !JavaScript simple values (number, string and boolean) can be wrapped as objects. For example  {{{Object(-1)}}}  or  {{{Object("crazy")}}}  returns no number or string. Those are objects that wrap original primitive value in an invisible internal property. With this release you can see it explicitly in Variables/Expressions view.
 
 _Note:_ this currently works only for Standalone V8 protocol since V8 3.10.5.
 
