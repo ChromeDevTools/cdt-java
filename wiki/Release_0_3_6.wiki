@@ -1,29 +1,60 @@
 #summary upcoming release 0.3.6 notes
 
-
 =Google Chrome Developer Tools for Java. Upcoming Release 0.3.6.=
 
 This release succeeds the [Release_0_3_4 release 0.3.4].
 
-=Draft=
+==Overview==
 
-==Issues Fixed==
-  * i62 (i65)
-  * i64
-  * i66
+This release brings some new debugger features. It also fixes issues 62 (AKA 65), 64 and 66.
 
-==Features==
+==Launch Configuration UI==
+A small UI change is made to launch configuration dialog. It gets a new tab “Script Mapping”, that adopts “Source look-up method” control from overcrowded “Remote” tab, and has a new Source Wrapping control (see [#Source_Wrapping_Support below]).
 
-===Function Scope===
-Versions: V8 v3.10.7 and WIP WK118685/1180  21.0.1180.*
+==Function Scope and Primitve Values==
+!JavaScript language is known to support _closures_. A closure is a nested function that “sees” local variables of a parent function. Typically the _pointer_ to the closure will be kept and called later, after the parent function has finished. This means that the closure must keep those variables somehow. Together these variables are called a closure/function's _scope_.
 
-===Internal property===
-AKA primitive value (V8 v3.10.5)
+Being able to inspect this scope may be a valuable thing when you have a pointer to a function and want to know what it does without actually calling it. Of course you can always navigate to the function's text, but the text itself might be not enough. For example, you function could be defined like in the following snippet:
+{{{
+var limit = a + b;
+return function(x) {
+    return x <= limit;
+};
+}}}
+Its behavior is trivial, but what it actually does depends on the additional data: what 'limit' value is.
 
-===Source Wrapper===
-(need picture here)
+Since now you can do it if you expand function's properties and open the pseudo-property: <function scope>. That's where the value of {{{limit}}} is kept together with all other _bound_ variables of this particular instance of function.
 
-===Restart Frame===
-(need picture here)
+_Note:_ this is supported in Chrome starting from WK118685 backend, and via Standalone V8 protocol starting since version 3.10.7.
 
-restart frame (V8 v3.12.0 and WIP r120709 wk >1180 22.0.1188.*)
+Another small enhancement is a visible 'primitive value' property. In !JavaScript simple values (number, string and boolean) can be wrapped as objects. For example:  {{{Object(-1)}}}  or  {{{Object(“crazy”)}}}  returns no number or string. Those are objects that wrap original primitive value in an invisible internal property. With this release you can see it explicitly in Variables/Expressions view.
+
+_Note:_ this currently works only for Standalone V8 protocol since V8 3.10.5.
+
+==Restart Frame/Drop To Frame==
+
+The distinctive behavior of live editing is that it will rewind a function, if it was halfway through when its text changed. Naturally sometimes such rewind could be useful by itself.  This is called 'restarting a frame'. Eclipse has a standard UI button next to step in/step over/step out buttons:
+
+http://chromedevtools.googlecode.com/svn/wiki/rel036-step-icons.svg
+
+In this release this button is finally wired up. In Eclipse its name is “Drop to frame” which better reflects that not only the topmost frame you can rewind, but also any frame. In this case all frames above are just gone.
+
+Note that the 'rewind' does not reset the entire VM back to its previous state. It simply allows you to execute the same statements from the beginning. What external changes were done are done. For example if your function increments some global variable, that won't be undone.
+
+_Note:_ this works in Chrome in backend WK120709 and Standalone V8 since 3.12.0.
+
+==Source Wrapping Support==
+Some !JavaScript frameworks employ a technique of wrapping user script source with some prefix and suffix. This way it puts your script in some additional framework-provided context. In such frameworks as Node.JS you can easily notice it if you compare the script under a VirtualProject with your original file.
+
+Unfortunately this breaks live editing LINK feature, when edits are done to your original (working) files LINK. Live edit would simply push new version to VM without reconstructing prefix and suffix, effectively ruining established structure.
+
+This release makes an attempt to mitigate this problem. A small subsystem will recognize and support certain predefined prefixes and suffixes. Currently only Node.JS framework is chosen for experiment and demonstration (though an Eclipse extension point is ready for third parties).
+
+Source wrapping support can be enabled from the launch configuration dialog.
+
+http://chromedevtools.googlecode.com/svn/wiki/rel036-debug-configurations-mapping.svg
+
+To better see how it works for Node.JS scripts, you can perform live editing push with a preview dialog ({{{context menu | V8 Debugging | Preview and Push Source Changes to VM...}}})
+
+==SDK==
+SDK gets couple of extensions backing the new features (see javadoc for 0.3.6 LINK). It comes with 2 new wip backends LINK for Chrome 21 and early Chrome 22. 
