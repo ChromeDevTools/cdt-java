@@ -37,11 +37,13 @@ _Note:_ this currently works only for Standalone V8 protocol since V8 3.10.5.
 
 ==Restart Frame/Drop To Frame==
 
-The distinctive behavior of live editing is that it will rewind a function, if it was halfway through when its text changed. Naturally sometimes such rewind could be useful by itself.  This is called 'restarting a frame'. Eclipse has a standard UI button next to step in/step over/step out buttons:
+The distinctive behavior of live editing is that it will rewind a function, if it was halfway through when its text changed. Naturally sometimes such rewind could be useful by itself.  This is called 'restarting a frame'. Eclipse has a standard UI button to the right of Step In/Over/Out buttons:
 
 http://chromedevtools.googlecode.com/svn/wiki/rel036-step-icons.svg
 
-In this release this button is finally wired up. In Eclipse its name is “Drop to frame” which better reflects that not only the topmost frame you can rewind, but also any frame. In this case all frames above are just gone.
+In this release this button is finally wired up.
+
+In Eclipse its name is “Drop to frame” which better reflects that not only the topmost frame you can rewind, but also any frame. In this case all frames above are just gone.
 
 Note that the 'rewind' does not reset the entire VM back to its previous state. It simply allows you to execute the same statements from the beginning. What external changes were done are done. For example if your function increments some global variable, that won't be undone.
 
