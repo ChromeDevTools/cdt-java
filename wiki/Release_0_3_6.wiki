@@ -25,13 +25,13 @@ return function(x) {
     return x <= limit;
 };
 }}}
-Its behavior is trivial, but what it actually does depends on the additional data: what 'limit' value is.
+Its behavior is trivial, but what it actually does depends on the additional data: what {{{limit}}} value is.
 
-Since now you can do it if you expand function's properties and open the pseudo-property: <function scope>. That's where the value of {{{limit}}} is kept together with all other _bound_ variables of this particular instance of function.
+Since now you can do it if you expand function's properties and open the pseudo-property: <function scope>. That's where the value of {{{limit}}} is displayed together with all other _bound_ variables of this particular instance of function.
 
 _Note:_ this is supported in Chrome starting from WK118685 backend, and via Standalone V8 protocol starting since version 3.10.7.
 
-Another small enhancement is a visible 'primitive value' property. In !JavaScript simple values (number, string and boolean) can be wrapped as objects. For example:  {{{Object(-1)}}}  or  {{{Object(“crazy”)}}}  returns no number or string. Those are objects that wrap original primitive value in an invisible internal property. With this release you can see it explicitly in Variables/Expressions view.
+Another small enhancement is a visible “primitive value” property. In !JavaScript simple values (number, string and boolean) can be wrapped as objects. For example:  {{{Object(-1)}}}  or  {{{Object("crazy")}}}  returns no number or string. Those are objects that wrap original primitive value in an invisible internal property. With this release you can see it explicitly in Variables/Expressions view.
 
 _Note:_ this currently works only for Standalone V8 protocol since V8 3.10.5.
 
@@ -50,7 +50,7 @@ _Note:_ this works in Chrome in backend WK120709 and Standalone V8 since 3.12.0.
 ==Source Wrapping Support==
 Some !JavaScript frameworks employ a technique of wrapping user script source with some prefix and suffix. This way it puts your script in some additional framework-provided context. In such frameworks as Node.JS you can easily notice it if you compare the script under a VirtualProject with your original file.
 
-Unfortunately this breaks live editing LINK feature, when edits are done to your original (working) files LINK. Live edit would simply push new version to VM without reconstructing prefix and suffix, effectively ruining established structure.
+Unfortunately this breaks [EclipseDebuggerFeatures#Live_Editing live editing] feature, when edits are done to [FeatureDebugOnRealFiles your original (working) files]. Live edit would simply push new version to VM without reconstructing prefix and suffix, effectively ruining established structure.
 
 This release makes an attempt to mitigate this problem. A small subsystem will recognize and support certain predefined prefixes and suffixes. Currently only Node.JS framework is chosen for experiment and demonstration (though an Eclipse extension point is ready for third parties).
 
@@ -61,4 +61,7 @@ http://chromedevtools.googlecode.com/svn/wiki/rel036-debug-configurations-mappin
 To better see how it works for Node.JS scripts, you can perform live editing push with a preview dialog ({{{context menu | V8 Debugging | Preview and Push Source Changes to VM...}}})
 
 ==SDK==
-SDK gets couple of extensions backing the new features (see javadoc for 0.3.6 LINK). It comes with 2 new wip backends LINK for Chrome 21 and early Chrome 22. 
+SDK gets couple of extensions backing the new features (see javadoc for 0.3.6 LINK). It comes with 2 new [WipBackends wip backends] for Chrome 21 and early Chrome 22. 
+
+== WIP Backends==
+TBD
