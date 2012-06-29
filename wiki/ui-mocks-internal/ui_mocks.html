@@ -45,6 +45,7 @@
     border-color: black;
     height: 1em;
     padding-left: 4px;
+    padding-bottom: 1px;
     margin: 0px 4px 0px 4px;
   }
   TABLE.tabs {
@@ -793,7 +794,181 @@
 <br>&nbsp;
 <br>&nbsp;
 <br>
+<h1>Release 0.3.6 </h1>
 
+
+<div style="display: inline-block; padding-left: 0.3em; border-top: solid thin; border-bottom: solid thin; padding-top: 0.3em; padding-bottom: 0.3em; padding-left: 2em; padding-right: 2em">
+  <img src="step_in.svg" width="32px">
+  <img src="step_over.svg" width="32px">
+  <img src="step_out.svg" width="32px">
+  <img src="drop_to_frame.svg" width="32px">
+</div>
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+<div class="dialogwindow">
+  <div class="dialogtitle">
+    Debug Configurations
+  </div>
+  <div  style="width: 16em;"></div>
+
+  <div class="windowbody">
+    <div style="width: 32em;"></div>
+    <table style="width: 100%">
+      <tr>
+        <td style="border-right: solid thin; vertical-align: top; padding-right: 0.6em;">
+          <img src="launch_icons.svg">
+          <li>Chromium JavaScript</li>
+          <li>Standalone V8 VM</li>
+          <li>WebKit Protocol</li>
+          <div style="display: inline; padding-left: 2em;">chrome 9222 mysite</div>
+        </td>
+        <td style="vertical-align: top; padding-left: 0.3em;">
+          <div style="padding-left: 0.2em; padding-top: 0.1em;">
+            <table>
+              <td>Name:</td>
+              <td style="width: 100%">
+              <div style="display: block;" class="inputfield">chrome 9222 mysite&nbsp;</div>
+              </td>
+            </table>
+          </div>
+          <div style="height: 0.5em;"></div>
+          <div>
+            <table class="tabs">
+              <td class="tabhead"><b>Remote</b></td>
+              <td class="tabhead">Source</td>
+              <td class="tabhead">Script&nbsp;Mapping</td>
+              <td class="tabhead">Common</td>
+              <td  class="tabemptyhead"></td>
+            </table>
+          </div>
+          <div style="height: 0.5em;"></div>
+          Connection
+          <div style="padding: 0 10px 0 0.5em;">
+            Host:
+            <div style="display: block; margin-left: 0; width: 100%;" class="inputfield">foo.intranet</div>
+            Port:
+            <div style="display: block; margin-left: 0; width: 100%;" class="inputfield">9222</div>
+            &#x2610;Show debugger network communication console
+          </div>
+          <div style="height: 0.7em;"></div>
+          Breakpoint sync on launch
+          <div style="padding: 0 0 0 0.5em;">
+            &#x26ab; Merge local and remote breakpoints
+            <br>&#x26aa; Reset breakpoints on remote
+            <br>&#x26aa; None
+          </div>
+
+          <div style="height: 0.7em;"></div>
+          Wip backend
+          <div style="height: 0.2em;"></div>
+          <div style="display: block;" class="inputfield">
+            <div style="display: inline; float: right;">&#11015;</div>Protocol 1.0
+          </div>
+
+          <div style="height: 2em;"></div>
+          <div class="buttonarea">
+            <div class="button">Apply</div>
+            <div class="button">Revert</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+  <div style="height: 0.6em;"></div>
+  <div class="buttonarea">
+    <div class="button">Debug</div>
+    <div class="button">Close</div>
+  </div>
+</div>
+
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
+
+<div class="dialogwindow">
+  <div class="dialogtitle">
+    Debug Configurations
+  </div>
+  <div  style="width: 16em;"></div>
+
+  <div class="windowbody">
+    <div style="width: 32em;"></div>
+    <table style="width: 100%">
+      <tr>
+        <td style="border-right: solid thin; vertical-align: top; padding-right: 0.6em;">
+          <img src="launch_icons.svg">
+          <li>Chromium JavaScript</li>
+          <li>Standalone V8 VM</li>
+          <div style="display: inline; padding-left: 2em;">v8 5858 webserv</div>
+          <li>WebKit Protocol</li>
+        </td>
+        <td style="vertical-align: top; padding-left: 0.3em;">
+          <div style="padding-left: 0.2em; padding-top: 0.1em;">
+            <table>
+              <td>Name:</td>
+              <td style="width: 100%">
+              <div style="display: block;" class="inputfield">v8 5858 webserv&nbsp;</div>
+              </td>
+            </table>
+          </div>
+          <div style="height: 0.5em;"></div>
+          <div>
+            <table class="tabs">
+              <td class="tabhead">Remote</td>
+              <td class="tabhead">Source</td>
+              <td class="tabhead"><b>Script&nbsp;Mapping</b></td>
+              <td class="tabhead">Common</td>
+              <td  class="tabemptyhead"></td>
+            </table>
+          </div>
+          <div style="height: 0.7em;"></div>
+          Source look-up method
+          <table>
+            <tr>
+              <td style="padding-left: 0.5em; padding-right: 2em;">&#x26aa; Exact match</td>
+              <td>Full script names are used.</td>
+            </tr>
+            <tr>
+              <td style="padding-left: 0.5em;">&#x26ab; Auto-detect</td>
+              <td>Only short file names are used.</td>
+            </tr>
+          </table>
+
+          <div style="height: 0.7em;"></div>
+          Recognized Source Wrapping
+          <div style="padding: 0 0 0 0.5em;">
+            &#x2611; Node.JS
+          </div>
+
+          <div style="height: 7em;"></div>
+          <div class="buttonarea">
+            <div class="button">Apply</div>
+            <div class="button">Revert</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+  <div style="height: 0.6em;"></div>
+  <div class="buttonarea">
+    <div class="button">Debug</div>
+    <div class="button">Close</div>
+  </div>
+</div>
+
+<br>
+
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>
 
 </body>
 </html>
