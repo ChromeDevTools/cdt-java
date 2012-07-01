@@ -168,6 +168,8 @@
 
   <target name="uploadToDownloads">
     <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
+
+    <!-- Check out http://support.googlecode.com/svn/trunk into directory code_google_com_support next to source directory. -->
     <exec executable="python" failonerror="true">
       <arg value="uploadToDownloads.py" />
       <arg value="${buildDirectory}/result/libs" />
