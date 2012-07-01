@@ -111,7 +111,8 @@
     <delete dir="${output}" />
     <mkdir dir="${output}" />
 
-    <exec executable="./buildVersionExtractor.py">
+    <mkdir dir="${buildDirectory}/lib_rebuild" />
+    <exec executable="./buildVersionExtractor.py" failonerror="true">
       <arg value="${buildDirectory}/result/eclipse" />
       <arg value="${buildDirectory}/lib_rebuild" />
     </exec>
@@ -119,7 +120,6 @@
     <!-- Imports current version numbers calcaulated by a previous task. -->
     <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
     
-    <mkdir dir="${buildDirectory}/lib_rebuild" />
     <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.jar">
         <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk_${mainVersion}.${mainBuilderVersion}.jar" includes="org/**" />
     </jar>
@@ -129,7 +129,7 @@
     </tar>
 
     <antcall target="iterateWipBackends">
-        <param name="callback" value="repackBackend" />
+        <param name="callback" value="_repackBackend" />
     </antcall>
 
     <tar destfile="${output}/org.chromium.sdk-wipbackends-${mainVersion}-${backendVersion}.tar">
@@ -140,10 +140,26 @@
     
   </target>
 
-  <target name="repackBackend">
+  <target name="_repackBackend">
     <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.wipbackend.${backendName}.jar">
         <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk.wipbackend.${backendName}_${mainVersion}.${backendBuilderVersion}.jar" includes="org/**" />
     </jar>
+  </target>
+
+  <target name="sdkJavadocs">
+    <property name="javadocOutput" value="${buildDirectory}/result/sdkJavadocs" />
+
+    <delete dir="${javadocOutput}" />
+    <mkdir dir="${javadocOutput}" />
+    <javadoc destdir="${javadocOutput}" Use="true" Splitindex="true">
+      <packageset dir="${sourceBaseLocation}/plugins/org.chromium.sdk/src" defaultexcludes="yes">
+        <include name="org/chromium/sdk"/>
+        <include name="org/chromium/sdk/util"/>
+      </packageset>
+      <packageset dir="${sourceBaseLocation}/plugins/org.chromium.sdk/src-wip" defaultexcludes="yes">
+        <include name="org/chromium/sdk/wip"/>
+      </packageset>
+    </javadoc>
   </target>
 
   <target name="clean">
