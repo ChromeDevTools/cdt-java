@@ -6,7 +6,7 @@ This release succeeds the [Release_0_3_4 release 0.3.4].
 
 ==Overview==
 
-This release brings some new debugger features. It also fixes issues [http://code.google.com/p/chromedevtools/issues/detail?id=61 62]
+This release brings some new debugger features. It also fixes issues [http://code.google.com/p/chromedevtools/issues/detail?id=62 62]
 (AKA [http://code.google.com/p/chromedevtools/issues/detail?id=65 65]),
 [http://code.google.com/p/chromedevtools/issues/detail?id=64 64]
 and 
