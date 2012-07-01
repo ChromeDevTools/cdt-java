@@ -65,5 +65,19 @@ To better see how it works for Node.JS scripts, you can perform live editing pus
 ==SDK==
 SDK gets couple of extensions backing the new features (see javadoc for 0.3.6 LINK). It comes with 2 new [WipBackends wip backends] for Chrome 21 and early Chrome 22. 
 
-== WIP Backends==
-TBD
+==WIP Backends==
+As !WebKit Remote Debugging Protocol evolves beyond [https://developers.google.com/chrome-developer-tools/docs/protocol/1.0/index 1.0 version], it gains new features that are supported by 2 new backens. See table below.
+
+==== Backend Set Version 0.1.8 ====
+|| id || Chrome version || New features ||
+|| Protocol 1.0 || 18.`*`.`*`.`*` || ||
+|| WK@118685 || 21.0.1180.`*` || function scope, primitive value ||
+|| WK@120709 ||22.0.1188.`*` || function scope, primitive value, restart frame ||
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 is also tested. ||
+|| *Java:* || J2SE-1.6 or newer. ||
+
+Optional:
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
