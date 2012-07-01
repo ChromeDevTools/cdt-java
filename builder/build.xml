@@ -166,5 +166,19 @@
    <delete dir="${buildDirectory}"/>
   </target>
 
+  <target name="uploadToDownloads">
+    <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
+    <exec executable="python" failonerror="true">
+      <arg value="uploadToDownloads.py" />
+      <arg value="${buildDirectory}/result/libs" />
+      <arg value="${code.google.com.username}" />
+      <arg value="${mainVersion}" />
+      <arg value="${backendVersion}" />
+
+
+      <env key="PYTHONPATH" value="${PYTHONPATH}:../../code_google_com_support/scripts" />
+    </exec>
+
+  </target>
 
 </project>
