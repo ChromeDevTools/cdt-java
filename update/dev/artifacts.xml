@@ -2,7 +2,7 @@
 <?artifactRepository version='1.1.0'?>
 <repository name='ChromeDevTools Update Site Artifacts' type='org.eclipse.equinox.p2.artifact.repository.simpleRepository' version='1'>
   <properties size='2'>
-    <property name='p2.timestamp' value='1330125943725'/>
+    <property name='p2.timestamp' value='1341251707529'/>
     <property name='p2.compressed' value='false'/>
   </properties>
   <mappings size='3'>
@@ -10,7 +10,7 @@
     <rule filter='(&amp; (classifier=binary))' output='${repoUrl}/binary/${id}_${version}'/>
     <rule filter='(&amp; (classifier=org.eclipse.update.feature))' output='${repoUrl}/features/${id}_${version}.jar'/>
   </mappings>
-  <artifacts size='117'>
+  <artifacts size='140'>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.2.0.201012100304'>
       <properties size='4'>
         <property name='artifact.size' value='2494'/>
@@ -24,6 +24,13 @@
         <property name='artifact.size' value='596543'/>
         <property name='download.size' value='596543'/>
         <property name='download.md5' value='41ea9ed2e08764db45d5146082f9e0ac'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='620356'/>
+        <property name='download.size' value='620356'/>
+        <property name='download.md5' value='a1b55534e59427cd4165285f6088331e'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackends.source' version='0.1.4.201112130212'>
@@ -41,6 +48,13 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.protocol_1_0' version='0.3.6.201207022104'>
+      <properties size='3'>
+        <property name='artifact.size' value='647903'/>
+        <property name='download.size' value='647903'/>
+        <property name='download.md5' value='87a55f2d5c905d474113e84eb0bcdf8a'/>
+      </properties>
+    </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.3.0.201108190405'>
       <properties size='4'>
         <property name='artifact.size' value='3713'/>
@@ -54,6 +68,14 @@
         <property name='artifact.size' value='2495'/>
         <property name='download.size' value='2495'/>
         <property name='download.md5' value='5acfd03293ea6b5b1470305d2daaf4b1'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.jsdtbridge' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='3813'/>
+        <property name='download.size' value='3813'/>
+        <property name='download.md5' value='45baf0f0ad8485e5d9b8fd1382bfc153'/>
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
@@ -80,6 +102,13 @@
         <property name='download.md5' value='9781eadc02188c595770bdecda84675a'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='223881'/>
+        <property name='download.size' value='223881'/>
+        <property name='download.md5' value='cc37ef25546f8ef18d619fc0cd50bd75'/>
+      </properties>
+    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.3.4.201202250214'>
       <properties size='3'>
         <property name='artifact.size' value='5168'/>
@@ -94,19 +123,19 @@
         <property name='download.md5' value='1e6e90ece5acdca850aa4fdbc87e173d'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk97678' version='0.3.0.201110272148'>
+      <properties size='3'>
+        <property name='artifact.size' value='566008'/>
+        <property name='download.size' value='566008'/>
+        <property name='download.md5' value='e0c4603c2a7ec179c29abb81457d4b6e'/>
+      </properties>
+    </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.1.6.201008092223'>
       <properties size='4'>
         <property name='artifact.size' value='2479'/>
         <property name='download.size' value='2479'/>
         <property name='download.md5' value='beac9771dbd3dfdebb7b6a624510c884'/>
         <property name='download.contentType' value='application/zip'/>
-      </properties>
-    </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk97678' version='0.3.0.201110272148'>
-      <properties size='3'>
-        <property name='artifact.size' value='566008'/>
-        <property name='download.size' value='566008'/>
-        <property name='download.md5' value='e0c4603c2a7ec179c29abb81457d4b6e'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.2.0.201012100304'>
@@ -125,11 +154,27 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wipbackends.source' version='0.1.8.201207022104'>
+      <properties size='4'>
+        <property name='artifact.size' value='2523'/>
+        <property name='download.size' value='2523'/>
+        <property name='download.md5' value='a35e0d42925908e728e7ea5b70d67470'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.source' version='0.3.0.201108190405'>
       <properties size='3'>
         <property name='artifact.size' value='214912'/>
         <property name='download.size' value='214912'/>
         <property name='download.md5' value='112bf7c9390230c9b407605ec7655789'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='2529'/>
+        <property name='download.size' value='2529'/>
+        <property name='download.md5' value='8fd12f81e27e97777253308dfb1b6867'/>
+        <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wip.eclipse' version='0.3.0.201108190405'>
@@ -201,18 +246,18 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.2.2.201102182139'>
-      <properties size='3'>
-        <property name='artifact.size' value='239472'/>
-        <property name='download.size' value='239472'/>
-        <property name='download.md5' value='920b36c0c43495fbc9d2c42609f7141b'/>
-      </properties>
-    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk91698' version='0.3.0.201110272148'>
       <properties size='3'>
         <property name='artifact.size' value='358892'/>
         <property name='download.size' value='358892'/>
         <property name='download.md5' value='4a20bb498ec38a767a67abf741ad3705'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.2.2.201102182139'>
+      <properties size='3'>
+        <property name='artifact.size' value='239472'/>
+        <property name='download.size' value='239472'/>
+        <property name='download.md5' value='920b36c0c43495fbc9d2c42609f7141b'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wipbackends' version='0.1.2.201110272148'>
@@ -231,6 +276,21 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.source' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='242359'/>
+        <property name='download.size' value='242359'/>
+        <property name='download.md5' value='bbda8877840659e145e1798c0e808fd6'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='3713'/>
+        <property name='download.size' value='3713'/>
+        <property name='download.md5' value='82ad1ad66cbd87932e5884ba5e4cf909'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk' version='0.1.6.201008092223'>
       <properties size='4'>
         <property name='artifact.size' value='3651'/>
@@ -239,11 +299,25 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='354760'/>
+        <property name='download.size' value='354760'/>
+        <property name='download.md5' value='95268a51c34bcc26b149f80ccab5a3e5'/>
+      </properties>
+    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackends.source' version='0.1.6.201202250216'>
       <properties size='3'>
         <property name='artifact.size' value='524734'/>
         <property name='download.size' value='524734'/>
         <property name='download.md5' value='14e609e5facfe46fe5fbd013f0c8cc5c'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackends.source' version='0.1.8.201207022104'>
+      <properties size='3'>
+        <property name='artifact.size' value='576353'/>
+        <property name='download.size' value='576353'/>
+        <property name='download.md5' value='23364a588cc284e3ef687a4214782e2f'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.2.0.201012100304'>
@@ -259,6 +333,13 @@
         <property name='download.size' value='3713'/>
         <property name='download.md5' value='893b809ea06ea7911c8091b38ae0e9c8'/>
         <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.jsdtbridge' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='13099'/>
+        <property name='download.size' value='13099'/>
+        <property name='download.md5' value='6d5d464d4d0b6706cc759e7423a329c4'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk97678' version='0.3.2.201112130212'>
@@ -290,6 +371,14 @@
         <property name='download.md5' value='ea8ca3a9cb0fd26db76671eb1f95a735'/>
       </properties>
     </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='2494'/>
+        <property name='download.size' value='2494'/>
+        <property name='download.md5' value='5fbfedf6d838924f7bddf7f3b68b287d'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk' version='0.2.2.201102182139'>
       <properties size='3'>
         <property name='artifact.size' value='498686'/>
@@ -302,6 +391,13 @@
         <property name='artifact.size' value='6547'/>
         <property name='download.size' value='6547'/>
         <property name='download.md5' value='2f5c63514ab0afc597fa48d8e9c3206a'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wip.eclipse' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='3682'/>
+        <property name='download.size' value='3682'/>
+        <property name='download.md5' value='426ac47a41ce36e11403f48a6a6f2c03'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk102439' version='0.3.4.201202250216'>
@@ -459,11 +555,11 @@
         <property name='download.md5' value='896bd2bd3155be303248d0909af7e1f3'/>
       </properties>
     </artifact>
-    <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.2.0.201012100304'>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.jsdtbridge.source' version='0.3.6.201207022103'>
       <properties size='4'>
-        <property name='artifact.size' value='3688'/>
-        <property name='download.size' value='3688'/>
-        <property name='download.md5' value='edf5f6ac055cad513f0c74f240d5917c'/>
+        <property name='artifact.size' value='2548'/>
+        <property name='download.size' value='2548'/>
+        <property name='download.md5' value='e428dc12eb89f6f2f28e47b70298e5ea'/>
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
@@ -472,6 +568,14 @@
         <property name='artifact.size' value='13098'/>
         <property name='download.size' value='13098'/>
         <property name='download.md5' value='2ce6af6d2f3a5080ff11a181f7188510'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.2.0.201012100304'>
+      <properties size='4'>
+        <property name='artifact.size' value='3688'/>
+        <property name='download.size' value='3688'/>
+        <property name='download.md5' value='edf5f6ac055cad513f0c74f240d5917c'/>
+        <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wipbackends' version='0.1.6.201202250216'>
@@ -487,6 +591,14 @@
         <property name='artifact.size' value='369625'/>
         <property name='download.size' value='369625'/>
         <property name='download.md5' value='9e28059353fd7a03769d2ce3e66070a1'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wipbackends' version='0.1.8.201207022104'>
+      <properties size='4'>
+        <property name='artifact.size' value='3789'/>
+        <property name='download.size' value='3789'/>
+        <property name='download.md5' value='08d4d46b0b71b58eabd234e9e9cf3b24'/>
+        <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.source' version='0.2.2.201102182139'>
@@ -540,6 +652,13 @@
         <property name='download.size' value='3779'/>
         <property name='download.md5' value='075fe8d83741c685fba21a0fc4d505a8'/>
         <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk120709' version='0.3.6.201207022104'>
+      <properties size='3'>
+        <property name='artifact.size' value='704859'/>
+        <property name='download.size' value='704859'/>
+        <property name='download.md5' value='2be9be3012cabdf382367f8f052022c6'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.source' version='0.3.0.201108190405'>
@@ -608,6 +727,21 @@
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.source' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='3689'/>
+        <property name='download.size' value='3689'/>
+        <property name='download.md5' value='37b23e6e7e1b81548da54993ec1a45c6'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='538521'/>
+        <property name='download.size' value='538521'/>
+        <property name='download.md5' value='3a2007010e3f808421e64723c850f079'/>
+      </properties>
+    </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.jsdtbridge.source' version='0.3.0.201108190405'>
       <properties size='4'>
         <property name='artifact.size' value='2549'/>
@@ -636,6 +770,14 @@
         <property name='artifact.size' value='327837'/>
         <property name='download.size' value='327837'/>
         <property name='download.md5' value='50c6e06b21e32401ad3369451e1467a6'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug' version='0.3.6.201207022103'>
+      <properties size='4'>
+        <property name='artifact.size' value='3922'/>
+        <property name='download.size' value='3922'/>
+        <property name='download.md5' value='d2f06fafc957137ba676e6052268cfc4'/>
+        <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.debug.core' version='0.2.0.201012100304'>
@@ -668,6 +810,13 @@
         <property name='download.md5' value='266f44dc3e0e41c03d46f1b494986e8c'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.jsdtbridge.source' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='6552'/>
+        <property name='download.size' value='6552'/>
+        <property name='download.md5' value='2262ee1ed9715fdbf7534426d6d69a0f'/>
+      </properties>
+    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.2.0.201012100304'>
       <properties size='3'>
         <property name='artifact.size' value='5167'/>
@@ -675,11 +824,33 @@
         <property name='download.md5' value='5da8b31f8807c144dbd0cfd6138d5465'/>
       </properties>
     </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackend.wk118685' version='0.3.6.201207022104'>
+      <properties size='3'>
+        <property name='artifact.size' value='688599'/>
+        <property name='download.size' value='688599'/>
+        <property name='download.md5' value='8dc8ac85f455199c0a2725467c1a2c1e'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug' version='0.3.6.201207022103'>
+      <properties size='3'>
+        <property name='artifact.size' value='5168'/>
+        <property name='download.size' value='5168'/>
+        <property name='download.md5' value='fde48a42bbbb688853d292d07eb48510'/>
+      </properties>
+    </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wipbackends.source' version='0.1.2.201110272148'>
       <properties size='4'>
         <property name='artifact.size' value='2522'/>
         <property name='download.size' value='2522'/>
         <property name='download.md5' value='5e6f9aed62c7e16f0087f268705023be'/>
+        <property name='download.contentType' value='application/zip'/>
+      </properties>
+    </artifact>
+    <artifact classifier='org.eclipse.update.feature' id='org.chromium.sdk.wip.source' version='0.1.8.201207022104'>
+      <properties size='4'>
+        <property name='artifact.size' value='3685'/>
+        <property name='download.size' value='3685'/>
+        <property name='download.md5' value='1e6e559787267bebe7f7c82db6beaa93'/>
         <property name='download.contentType' value='application/zip'/>
       </properties>
     </artifact>
@@ -815,18 +986,18 @@
         <property name='download.md5' value='45267b99d20204efc3eac2b9bab89639'/>
       </properties>
     </artifact>
-    <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.6.201008092223'>
-      <properties size='3'>
-        <property name='artifact.size' value='316626'/>
-        <property name='download.size' value='316626'/>
-        <property name='download.md5' value='dcea6a9d613719d69177a4dfe4cc0d08'/>
-      </properties>
-    </artifact>
     <artifact classifier='osgi.bundle' id='org.chromium.sdk.wipbackends.source' version='0.1.2.201110272148'>
       <properties size='3'>
         <property name='artifact.size' value='354506'/>
         <property name='download.size' value='354506'/>
         <property name='download.md5' value='786e73a87dbb97c86c734c36f4fda306'/>
+      </properties>
+    </artifact>
+    <artifact classifier='osgi.bundle' id='org.chromium.debug.ui' version='0.1.6.201008092223'>
+      <properties size='3'>
+        <property name='artifact.size' value='316626'/>
+        <property name='download.size' value='316626'/>
+        <property name='download.md5' value='dcea6a9d613719d69177a4dfe4cc0d08'/>
       </properties>
     </artifact>
     <artifact classifier='org.eclipse.update.feature' id='org.chromium.debug.jsdtbridge' version='0.2.0.201012100304'>
