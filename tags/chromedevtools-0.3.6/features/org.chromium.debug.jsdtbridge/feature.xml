@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2010 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+<feature
+      id="org.chromium.debug.jsdtbridge"
+      label="%featureName"
+      version="0.3.6.qualifier"
+      provider-name="%providerName">
+
+   <description url="http://code.google.com/p/chromedevtools/wiki/EclipseDebugger">
+      %description
+   </description>
+
+   <copyright>
+      Copyright (c) 2010 The Chromium Authors. All rights reserved.
+   </copyright>
+
+   <license url="%licenseUrl">
+      %licenseAgreement
+   </license>
+
+   <url>
+      <update label="ChromeDevTools Update Site" url="http://chromedevtools.googlecode.com/svn/update/dev/"/>
+   </url>
+
+   <requires>
+      <import feature="org.chromium.debug" version="0.3.6.qualifier"/>
+      <import feature="org.eclipse.wst.jsdt.feature" version="1.2.0" match="compatible"/>
+   </requires>
+
+   <plugin
+         id="org.chromium.debug.jsdtbridge"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

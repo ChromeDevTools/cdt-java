@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+
+<!--
+  Copyright (c) 2012 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<project name="List of all wip backends that should be built." basedir=".">
+
+   <target name="iterateWipBackends">
+       <antcall target="${callback}">
+           <param name="backendName" value="protocol_1_0"/>
+       </antcall>
+
+       <antcall target="${callback}">
+           <param name="backendName" value="wk118685"/>
+       </antcall>
+       <antcall target="${callback}">
+           <param name="backendName" value="wk120709"/>
+       </antcall>
+   </target>
+
+</project>
