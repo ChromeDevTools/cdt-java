@@ -1,4 +1,5 @@
 #summary release 0.3.6 notes
+#labels Featured
 
 =Google Chrome Developer Tools for Java. Release 0.3.6.=
 
