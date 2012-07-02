@@ -8,6 +8,7 @@ import java.util.Collection;
 
 import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.VmResource;
+import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.Script;
 import org.eclipse.core.resources.IFile;
@@ -68,5 +69,13 @@ public class ScriptTargetMapping {
     }
     VmResource.ScriptHolder scriptHolder = (VmResource.ScriptHolder) resource.getMetadata();
     return scriptHolder.getSingleScript();
+  }
+
+  /**
+   * @return true if the mapped file is actually a file from the Virtual Project
+   */
+  public boolean isVirtualProjectResource() {
+    WorkspaceBridge workspaceBridge = connectedTargetData.getWorkspaceRelations();
+    return workspaceBridge.getVProjectVmResource(file) != null;
   }
 }

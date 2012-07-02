@@ -309,6 +309,10 @@ public class PushResultParser {
     };
   }
 
+  // There is a problem with this approach. We have sent a source with prefix and suffix
+  // and expect V8 to recognize them as such. However V8 diff algorithm theoretically
+  // can treat part of the suffix/prefix as original source, while matching unchanged text
+  // nearby as diff.
   private static TextualDiff shiftNewPositions(TextualDiff textualDiff,
       int oldCommentLength, int newCommentLength, int prefixLength, int suffixLength,
       int originalOldLength, int originalNewLength) {

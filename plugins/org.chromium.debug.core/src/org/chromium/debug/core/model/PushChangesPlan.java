@@ -21,12 +21,18 @@ import org.eclipse.core.runtime.CoreException;
  */
 public class PushChangesPlan {
   public static PushChangesPlan create(ScriptTargetMapping filePair) {
-    SourceWrapSupport sourceWrapSupport = filePair.getConnectedTargetData().getSourceWrapSupport();
     // TODO: fix the rough behavior (inside this call).
     Script script = filePair.getSingleScript();
 
-    SourceWrapSupport.Wrapper.Match wrapperMatch =
-        sourceWrapSupport.chooseWrapper(script.getSource());
+    SourceWrapSupport.Wrapper.Match wrapperMatch;
+    if (filePair.isVirtualProjectResource()) {
+      wrapperMatch = null;
+    } else {
+      SourceWrapSupport sourceWrapSupport =
+          filePair.getConnectedTargetData().getSourceWrapSupport();
+
+      wrapperMatch = sourceWrapSupport.chooseWrapper(script.getSource());
+    }
 
     byte[] fileData;
     try {
