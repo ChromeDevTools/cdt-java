@@ -27,7 +27,7 @@ return function(x) {
 }}}
 The behavior is trivial, but what the function actually does depends on the data: what {{{limit}}} value is.
 
-Since now you can inspect this in Variables/Expressions view by expanding function's properties and opening the pseudo-property <function scope>. That's where the value of {{{limit}}} is displayed together with all other _bound_ variables of function.
+Since now you can inspect this in Variables/Expressions view by expanding function's properties and opening the pseudo-property <function scope>. That's where the value of {{{limit}}} is displayed together with all other _bound_ variables of function. (Currently this doesn't work for function generated from _bind_ method).
 
 _Note:_ this is supported in Chrome starting from WK118685 backend, and via Standalone V8 protocol starting since version 3.10.7.
 
