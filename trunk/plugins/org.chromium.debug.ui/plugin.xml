@@ -355,7 +355,7 @@
       </objectContribution>
   </extension>
 
-   <extension
+   <!--extension
          point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension
             targetID="org.eclipse.debug.ui.DebugPerspective">
@@ -363,7 +363,7 @@
                id="org.chromium.debug.ui.ChromiumDebugActionSet">
          </actionSet>
       </perspectiveExtension>
-  </extension>
+  </extension-->
 
   <extension
          point="org.eclipse.ui.popupMenus">

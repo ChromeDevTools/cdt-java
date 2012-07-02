@@ -69,6 +69,8 @@ public class ScriptFilePage extends PropertyPage {
   }
 
   private boolean isVProjectFile(IFile file, ScriptTargetMapping mapping) {
+    // TODO: Consider calling mapping.isVirtualProjectResource() instead.
+
     IProject project = file.getProject();
     if (project == null) {
       return false;
