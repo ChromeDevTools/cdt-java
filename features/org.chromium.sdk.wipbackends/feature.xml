@@ -27,7 +27,7 @@
    </url>
 
    <requires>
-      <import feature="org.chromium.sdk" version="0.3.6"/>
+      <import feature="org.chromium.sdk" version="0.3.7"/>
    </requires>
 
    <plugin
