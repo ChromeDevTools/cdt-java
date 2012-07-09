@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+
+<!--
+  Copyright (c) 2010 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<plugin>
+   <extension
+         point="org.chromium.debug.core.model_JavaScriptFormatter">
+      <formatter class="org.chromium.debug.jsdtbridge.JsdtFormatterBridge"/>
+   </extension>
+</plugin>

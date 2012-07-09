@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Builds repository with a proper title using bundles and features from one or
+# several other repositories (they should be passed as command line params).
+
+# Configuration.
+
+ECLIPSE_DIR=<FILL ME>
+ECLIPSE_CMD="$ECLIPSE_DIR/eclipse -vm <FILL ME>"
+DEST=<FILL ME>
+CATEGORY_FILE=<FILL ME>
+
+REPOSITORY_LIST=$*
+
+
+# Implementation.
+
+_pluginList=$(for f1 in $REPOSITORY_LIST; do echo -n $f1/plugins,; done)
+_featureList=$(for f1 in $REPOSITORY_LIST; do echo -n $f1/features,; done)
+rm $DEST -r
+
+ECLIPSE_CMD="$ECLIPSE_CMD -nosplash"
+
+$ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher \
+   -metadataRepository file:$DEST/repository  \
+   -artifactRepository file:$DEST/repository  \
+   -bundles $_pluginList      \
+   -features $_featureList      \
+   -metadataRepositoryName "ChromeDevTools Update Site" \
+   -artifactRepositoryName "ChromeDevTools Update Site Artifacts" \
+   -publishArtifacts
+
+$ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.CategoryPublisher \
+   -metadataRepository file:$DEST/repository \
+   -categoryDefinition file:$CATEGORY_FILE
+
