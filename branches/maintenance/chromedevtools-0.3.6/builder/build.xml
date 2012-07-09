@@ -1,0 +1,186 @@
+<?xml version="1.0" ?>
+
+<!--
+  Copyright (c) 2012 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<project name="chromedevtools" default="buildAll" basedir=".">
+
+  <import file="build-wipbackend/backendIterator.xml" />
+
+  <!-- The source repository location (where the plugins and features folders are) -->
+  <property name="sourceBaseLocation" value="${basedir}/.." />
+
+  <!-- The location of the PDE build configuration -->
+  <property name="builder" value="${basedir}/releng.builder" />
+
+  <!-- This is a destination directory -->
+  <property name="buildDirectory" value="${sourceBaseLocation}/../staging" />
+
+  <property file="build.properties"/>
+
+
+  <target name="buildAll" depends="buildMain, buildBackends, repack, buildLibs">
+  </target>
+
+  <target name="buildMain">
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.pde.build.Build" />
+      <arg value="-nosplash" />
+      <arg value="-DsourceBaseLocation=${sourceBaseLocation}" />
+      <arg value="-Dbuilder=${basedir}/build-main/releng.builder" />
+      <arg value="-DbaseLocation=${baseLocation}" />
+      <arg value="-Djava.rt=${java.rt}" />
+      <arg value="-DbuildDirectory=${buildDirectory}/mainBuild" />
+    </exec>
+    <property name="mainOutput" value="${buildDirectory}/mainResult" />
+    <delete dir="${mainOutput}" quiet="true"/>
+    <mkdir dir="${mainOutput}"/>
+    <mkdir dir="${mainOutput}/eclipse"/>
+    <copy todir="${mainOutput}/eclipse">
+      <fileset dir="${buildDirectory}/mainBuild/buildRepo"/>
+    </copy>
+  </target>
+
+  <target name="buildBackends">
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.pde.build.Build" />
+      <arg value="-nosplash" />
+      <arg value="-DsourceBaseLocation=${sourceBaseLocation}" />
+      <arg value="-Dbuilder=${basedir}/build-wipbackend/releng.builder" />
+      <arg value="-DbaseLocation=${baseLocation}" />
+      <arg value="-Djava.rt=${java.rt}" />
+      <arg value="-DbuildDirectory=${buildDirectory}/backendsBuild" />
+    </exec>
+    <property name="backendsOutput" value="${buildDirectory}/backendsResult" />
+    <delete dir="${backendsOutput}" quiet="true"/>
+    <mkdir dir="${backendsOutput}"/>
+    <mkdir dir="${backendsOutput}/eclipse"/>
+    <copy todir="${backendsOutput}/eclipse">
+      <fileset dir="${buildDirectory}/backendsBuild/buildRepo"/>
+    </copy>
+  </target>
+
+  <target name="repack">
+    <property name="main" value="${buildDirectory}/mainResult/eclipse" />
+    <property name="backends" value="${buildDirectory}/backendsResult/eclipse" />
+    
+    <property name="plugins" value="${main}/plugins,${backends}/plugins" />
+    <property name="features" value="${main}/features,${backends}/features" />
+
+    <property name="output" value="${buildDirectory}/result/eclipse" />
+
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher" />
+      <arg value="-metadataRepository" />
+      <arg value="file:${output}" />
+      <arg value="-artifactRepository" />
+      <arg value="file:${output}" />
+      <arg value="-bundles" />
+      <arg value="${plugins}" />
+      <arg value="-features" />
+      <arg value="${features}" />
+      <arg value="-metadataRepositoryName" />
+      <arg value="ChromeDevTools Update Site" />
+      <arg value="-artifactRepositoryName" />
+      <arg value="ChromeDevTools Update Site Artifacts" />
+      <arg value="-publishArtifacts" />
+    </exec>
+
+    <exec executable="${pdeEclipseLocation}/eclipse" failonerror="true">
+      <arg value="-application" />
+      <arg value="org.eclipse.equinox.p2.publisher.CategoryPublisher" />
+      <arg value="-metadataRepository" />
+      <arg value="file:${output}" />
+      <arg value="-categoryDefinition" />
+      <arg value="file:${basedir}/repack/category.xml" />
+      <arg value="-categoryQualifier" />
+      <arg value="chrome_dev_tools_category_0_3_4" />
+    </exec>
+
+  </target>
+
+  <target name="buildLibs">
+    <property name="output" value="${buildDirectory}/result/libs" />
+
+    <delete dir="${output}" />
+    <mkdir dir="${output}" />
+
+    <mkdir dir="${buildDirectory}/lib_rebuild" />
+    <exec executable="./buildVersionExtractor.py" failonerror="true">
+      <arg value="${buildDirectory}/result/eclipse" />
+      <arg value="${buildDirectory}/lib_rebuild" />
+    </exec>
+
+    <!-- Imports current version numbers calcaulated by a previous task. -->
+    <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
+    
+    <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.jar">
+        <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk_${mainVersion}.${mainBuilderVersion}.jar" includes="org/**" />
+    </jar>
+    <tar destfile="${output}/org.chromium.sdk-lib-${mainVersion}.tar">
+        <fileset file="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.jar"/>
+        <fileset file="${sourceBaseLocation}/plugins/org.chromium.sdk/lib/json_simple/json_simple*.jar"/>
+    </tar>
+
+    <antcall target="iterateWipBackends">
+        <param name="callback" value="_repackBackend" />
+    </antcall>
+
+    <tar destfile="${output}/org.chromium.sdk-wipbackends-${mainVersion}-${backendVersion}.tar">
+        <fileset file="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.wipbackend.*.jar"/>
+    </tar>
+
+    <zip destfile="${output}/chromedevtools-${mainVersion}-wipbackends-${backendVersion}-site.zip" basedir="${buildDirectory}/result/eclipse"/>
+    
+  </target>
+
+  <target name="_repackBackend">
+    <jar destfile="${buildDirectory}/lib_rebuild/lib.org.chromium.sdk.wipbackend.${backendName}.jar">
+        <zipfileset src="${buildDirectory}/result/eclipse/plugins/org.chromium.sdk.wipbackend.${backendName}_${mainVersion}.${backendBuilderVersion}.jar" includes="org/**" />
+    </jar>
+  </target>
+
+  <target name="sdkJavadocs">
+    <property name="javadocOutput" value="${buildDirectory}/result/sdkJavadocs" />
+
+    <delete dir="${javadocOutput}" />
+    <mkdir dir="${javadocOutput}" />
+    <javadoc destdir="${javadocOutput}" Use="true" Splitindex="true">
+      <packageset dir="${sourceBaseLocation}/plugins/org.chromium.sdk/src" defaultexcludes="yes">
+        <include name="org/chromium/sdk"/>
+        <include name="org/chromium/sdk/util"/>
+      </packageset>
+      <packageset dir="${sourceBaseLocation}/plugins/org.chromium.sdk/src-wip" defaultexcludes="yes">
+        <include name="org/chromium/sdk/wip"/>
+      </packageset>
+    </javadoc>
+  </target>
+
+  <target name="clean">
+   <delete dir="${buildDirectory}"/>
+  </target>
+
+  <target name="uploadToDownloads">
+    <property file="${buildDirectory}/lib_rebuild/pluginVersion.properties" />
+
+    <!-- Check out http://support.googlecode.com/svn/trunk into directory code_google_com_support next to source directory. -->
+    <exec executable="python" failonerror="true">
+      <arg value="uploadToDownloads.py" />
+      <arg value="${buildDirectory}/result/libs" />
+      <arg value="${code.google.com.username}" />
+      <arg value="${mainVersion}" />
+      <arg value="${backendVersion}" />
+
+
+      <env key="PYTHONPATH" value="${PYTHONPATH}:../../code_google_com_support/scripts" />
+    </exec>
+
+  </target>
+
+</project>
