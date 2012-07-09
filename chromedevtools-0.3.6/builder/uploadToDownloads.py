@@ -17,7 +17,10 @@ backend_version = sys.argv[4]
 pwd = getpass.getpass(prompt="Google SVN password: ")
 
 def uploadFile(file, summary):
-    googlecode_upload.upload(file=file, project_name="chromedevtools", user_name=user_name, password=pwd, summary=summary)
+    (http_status, http_reason, file_url) = googlecode_upload.upload(file=file, project_name="chromedevtools", user_name=user_name, password=pwd, summary=summary)
+    if http_status != 201:
+        raise Exception("Failed to upload file %s: %d '%s'" % (file, http_status, http_reason))
+    print "Uploaded to %s" % file_url
 
 uploadFile("%s/org.chromium.sdk-wipbackends-%s-%s.tar" % (resultDir, main_version, backend_version), "ChromeDevTools SDK WIP backends v. %s/%s" % (main_version, backend_version))
 uploadFile("%s/org.chromium.sdk-lib-%s.tar" % (resultDir, main_version), "ChromeDevTools SDK library as tar archive v. %s" % main_version)
