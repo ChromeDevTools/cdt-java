@@ -6,13 +6,19 @@ package org.chromium.sdk.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Helper class that destructs unfinished objects. It is needed when Java GC is not enough.
  * It requires to be explicitly discharged if all went OK and destruction should be cancelled.
  * Using this class may be more convenient that try/finally in Java.
+ * <p>User may subclass this class to override exception logging in handleFinallyProblem
+ * methods.
  */
 public class DestructingGuard {
+  private static final Logger LOGGER = Logger.getLogger(DestructingGuard.class.getName());
+
   /**
    * Confirms that constructing has finished OKAY and no destruction is needed from now.
    */
@@ -29,7 +35,13 @@ public class DestructingGuard {
       return;
     }
     for (int i = destructables.size() - 1; i >= 0; i--) {
-      destructables.get(i).destruct();
+      try {
+        destructables.get(i).destruct();
+      } catch (RuntimeException e) {
+        handleFinallyProblem(e);
+      } catch (Error e) {
+        handleFinallyProblem(e);
+      }
     }
     discharged = true;
   }
@@ -39,6 +51,14 @@ public class DestructingGuard {
    */
   public void addValue(Destructable destructable) {
     this.destructables.add(destructable);
+  }
+
+  protected void handleFinallyProblem(RuntimeException e) {
+    LOGGER.log(Level.SEVERE, "Exception in finally handler", e);
+  }
+
+  protected void handleFinallyProblem(Error e) {
+    LOGGER.log(Level.SEVERE, "Exception in finally handler", e);
   }
 
   private List<Destructable> destructables = new ArrayList<Destructable>(1);
