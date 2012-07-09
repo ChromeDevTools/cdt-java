@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106352
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -99,11 +99,5 @@ public interface NodeValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue contentDocument();
-
-  /**
-   Shadow root list for given element host.
-   */
-  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
-  java.util.List<org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue> shadowRoots();
 
 }

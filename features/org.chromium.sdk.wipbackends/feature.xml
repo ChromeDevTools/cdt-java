@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.sdk.wipbackends"
       label="%featureName"
-      version="0.1.9.qualifier"
+      version="0.1.6.qualifier"
       provider-name="%providerName">
 
    <description url="http://code.google.com/p/chromedevtools/wiki/ChromeDevToolsSdk">
@@ -27,25 +27,25 @@
    </url>
 
    <requires>
-      <import feature="org.chromium.sdk" version="0.3.7"/>
+      <import feature="org.chromium.sdk" version="0.3.4"/>
    </requires>
 
    <plugin
+         id="org.chromium.sdk.wipbackend.wk97678"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.chromium.sdk.wipbackend.wk102439"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
          id="org.chromium.sdk.wipbackend.protocol_1_0"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="org.chromium.sdk.wipbackend.wk118685"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="org.chromium.sdk.wipbackend.wk120709"
          download-size="0"
          install-size="0"
          version="0.0.0"

@@ -20,9 +20,6 @@ public interface ObjectValueHandle extends JsonSubtype<ValueHandle> {
   SomeRef constructorFunction();
 
   @JsonOptionalField
-  SomeRef primitiveValue();
-
-  @JsonOptionalField
   SomeRef prototypeObject();
 
   @JsonSubtypeCasting

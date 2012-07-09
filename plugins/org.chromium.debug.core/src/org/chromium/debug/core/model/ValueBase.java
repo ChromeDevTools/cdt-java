@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.Variable.Real;
 import org.chromium.debug.core.model.Variable.Real.HostObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
@@ -127,8 +128,7 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
     @Override
     protected IVariable[] calculateVariables() {
       return StackFrame.wrapVariables(getEvaluateContext(), jsScope.getVariables(),
-          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), selfAsHostObject,
-          null);
+          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), selfAsHostObject);
     }
   }
 

@@ -10,13 +10,9 @@ import static org.chromium.debug.ui.DialogUtils.createOptional;
 import static org.chromium.debug.ui.DialogUtils.createProcessor;
 import static org.chromium.debug.ui.DialogUtils.handleErrors;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.DialogUtils;
 import org.chromium.debug.ui.DialogUtils.BranchVariableGetter;
@@ -42,6 +38,7 @@ import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.actions.ChooseVmControl;
 import org.chromium.debug.ui.liveedit.PushChangesWizard.FinisherDelegate;
+import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
 
 /**
@@ -74,8 +71,7 @@ class WizardLogicBuilder {
 
     // Wizard logic is described from the first page toward the last pages.
 
-    final PageImpl<PushChangesWizard.ChooseVmPageElements> chooseVmPage =
-        pageSet.getChooseVmPage();
+    final PageImpl<PushChangesWizard.ChooseVmPageElements> chooseVmPage = pageSet.getChooseVmPage();
 
     // A value corresponding to selected VMs on 'choose vm' page.
     final ValueSource<List<ScriptTargetMapping>> selectedVmInput =
@@ -100,75 +96,34 @@ class WizardLogicBuilder {
     };
     updater.addSource(scope, selectedVmInput);
 
-
-    final ValueProcessor<? extends List<Optional<PushChangesPlan>>> selectedChangePlansValue =
-        createProcessor(new Gettable<List<Optional<PushChangesPlan>>>() {
-      @Override
-      public List<Optional<PushChangesPlan>> getValue() {
-        List<ScriptTargetMapping> input = selectedVmInput.getValue();
-        List<Optional<PushChangesPlan>> result =
-            new ArrayList<DialogUtils.Optional<PushChangesPlan>>(input.size());
-        for (ScriptTargetMapping mapping : input) {
-          Optional<PushChangesPlan> optionalPlan;
-          try {
-            PushChangesPlan plan = PushChangesPlan.create(mapping);
-            optionalPlan = createOptional(plan);
-          } catch (RuntimeException e) {
-            // TODO: have more specific exception types to catch.
-            optionalPlan = createErrorOptional(new Message(
-                "Failed to get script source from a file. See log for details.",
-                MessagePriority.BLOCKING_PROBLEM));
-          }
-          result.add(optionalPlan);
-        }
-        return result;
-      }
-    });
-    updater.addSource(scope, selectedChangePlansValue);
-    updater.addConsumer(scope, selectedChangePlansValue);
-    updater.addDependency(selectedChangePlansValue, selectedVmInput);
-
-
     // A derived value of selected VMs list; the list is non-empty or the value is error.
-    final ValueProcessor<? extends Optional<List<PushChangesPlan>>> nonEmptySelectedPlansValue =
-        createProcessor(new Gettable<Optional<List<PushChangesPlan>>>() {
-      public Optional<List<PushChangesPlan>> getValue() {
-        List<Optional<PushChangesPlan>> planList = selectedChangePlansValue.getValue();
-        if (planList.isEmpty()) {
+    final ValueProcessor<? extends Optional<List<ScriptTargetMapping>>> selectedVmValue =
+        createProcessor(new Gettable<Optional<List<ScriptTargetMapping>>>() {
+      public Optional<List<ScriptTargetMapping>> getValue() {
+        List<ScriptTargetMapping> vmList = selectedVmInput.getValue();
+        if (vmList.isEmpty()) {
           return createErrorOptional(
               new Message("Choose at least one VM", MessagePriority.BLOCKING_INFO));
-        }
-        List<Message> errorMessages = new LinkedList<Message>();
-        List<PushChangesPlan> result = new ArrayList<PushChangesPlan>(planList.size());
-        for (Optional<PushChangesPlan> optionalPlan : planList) {
-          if (optionalPlan.isNormal()) {
-            result.add(optionalPlan.getNormal());
-          } else {
-            errorMessages.addAll(optionalPlan.errorMessages());
-          }
-        }
-        if (errorMessages.isEmpty()) {
-          return createOptional(result);
         } else {
-          return createErrorOptional(new HashSet<Message>(errorMessages));
+          return createOptional(vmList);
         }
       }
     });
-    updater.addSource(scope, nonEmptySelectedPlansValue);
-    updater.addConsumer(scope, nonEmptySelectedPlansValue);
-    updater.addDependency(nonEmptySelectedPlansValue, selectedChangePlansValue);
+    updater.addSource(scope, selectedVmValue);
+    updater.addConsumer(scope, selectedVmValue);
+    updater.addDependency(selectedVmValue, selectedVmInput);
 
 
     // A condition value for up-coming fork between 'single vm' and 'multiple vm' paths.
     Gettable<? extends Optional<? extends Boolean>> singleVmSelectedExpression = handleErrors(
         new NormalExpression<Boolean>() {
           @Calculate
-          public Boolean calculate(List<PushChangesPlan> selectedVm) {
+          public Boolean calculate(List<ScriptTargetMapping> selectedVm) {
             return selectedVm.size() == 1;
           }
           @DependencyGetter
-          public ValueSource<? extends Optional<List<PushChangesPlan>>> getSelectVmSource() {
-            return nonEmptySelectedPlansValue;
+          public ValueSource<? extends Optional<List<ScriptTargetMapping>>> getSelectVmSource() {
+            return selectedVmValue;
           }
         });
 
@@ -177,9 +132,9 @@ class WizardLogicBuilder {
         scope.addOptionalSwitch(singleVmSelectedExpression);
 
     final PreviewAndOptionPath singleVmPath =
-        createSingleVmPath(chooseVmPage, singleVmSelectedSwitch, nonEmptySelectedPlansValue);
+        createSingleVmPath(chooseVmPage, singleVmSelectedSwitch, selectedVmValue);
     final PreviewAndOptionPath multipleVmPath =
-        createMultipleVmPath(chooseVmPage, singleVmSelectedSwitch, nonEmptySelectedPlansValue);
+        createMultipleVmPath(chooseVmPage, singleVmSelectedSwitch, selectedVmValue);
 
     final PreviewAndOptionPath switchBlockItems = DialogUtils.mergeBranchVariables(
         PreviewAndOptionPath.class, singleVmSelectedSwitch, singleVmPath, multipleVmPath);
@@ -240,7 +195,7 @@ class WizardLogicBuilder {
    */
   private PreviewAndOptionPath createSingleVmPath(PageImpl<?> basePage,
       OptionalSwitcher<Boolean> switcher,
-      final ValueSource<? extends Optional<? extends List<PushChangesPlan>>> selectedVmValue) {
+      final ValueSource<? extends Optional<? extends List<ScriptTargetMapping>>> selectedVmValue) {
     // This path consists of 1 page
     final PageImpl<PushChangesWizard.V8PreviewPageElements> v8PreviewPage =
         pageSet.getV8PreviewPage();
@@ -252,20 +207,20 @@ class WizardLogicBuilder {
     Scope scope = switcher.addScope(Boolean.TRUE, scopeEnabler);
 
     // A value of the single vm, that must be always available within this scope.
-    final ValueProcessor<PushChangesPlan> singlePlanValue =
-        createProcessor(new Gettable<PushChangesPlan>() {
-      public PushChangesPlan getValue() {
+    final ValueProcessor<ScriptTargetMapping> singleVmValue =
+        createProcessor(new Gettable<ScriptTargetMapping>() {
+      public ScriptTargetMapping getValue() {
         // Value targets should be normal (by switcher condition).
         return selectedVmValue.getValue().getNormal().get(0);
       }
     });
-    updater.addConsumer(scope, singlePlanValue);
-    updater.addSource(scope, singlePlanValue);
-    updater.addDependency(singlePlanValue, selectedVmValue);
+    updater.addConsumer(scope, singleVmValue);
+    updater.addSource(scope, singleVmValue);
+    updater.addDependency(singleVmValue, selectedVmValue);
 
     // A complex asynchronous value source that feeds update preview data from V8.
     // The data is in raw format.
-    final PreviewLoader previewRawResultValue = new PreviewLoader(updater, singlePlanValue);
+    final PreviewLoader previewRawResultValue = new PreviewLoader(updater, singleVmValue);
     previewRawResultValue.registerSelf(scope);
 
     // previewRawResultValue is trigged only when page is actually visible to user.
@@ -282,16 +237,16 @@ class WizardLogicBuilder {
           new NormalExpression<LiveEditDiffViewer.Input>() {
             @Calculate
             public Optional<? extends LiveEditDiffViewer.Input> calculate(
-                PreviewLoader.Data previewRawResultParam) {
-              PushChangesPlan changesPlan = singlePlanValue.getValue();
-              ChangeDescription changeDescription = previewRawResultParam.getChangeDescription();
+                ChangeDescription previewRawResultParam) {
+              ScriptTargetMapping filePair = singleVmValue.getValue();
+              ChangeDescription changeDescription = previewRawResultParam;
               Optional<LiveEditDiffViewer.Input> result;
               if (changeDescription == null) {
                 result = createOptional(null);
               } else {
                 try {
                   LiveEditDiffViewer.Input viewerInput =
-                      PushResultParser.createViewerInput(changeDescription, changesPlan, true);
+                      PushResultParser.createViewerInput(changeDescription, filePair, true);
                   result = createOptional(viewerInput);
                 } catch (RuntimeException e) {
                   ChromiumDebugPlugin.log(e);
@@ -302,7 +257,7 @@ class WizardLogicBuilder {
               return result;
             }
             @DependencyGetter
-            public ValueSource<Optional<PreviewLoader.Data>>
+            public ValueSource<Optional<UpdatableScript.ChangeDescription>>
                 previewRawResultValueSource() {
               return previewRawResultValue;
             }
@@ -313,7 +268,7 @@ class WizardLogicBuilder {
     updater.addConsumer(scope, previewValue);
     updater.addSource(scope, previewValue);
     updater.addDependency(previewValue, previewRawResultValue);
-    updater.addDependency(previewValue, singlePlanValue);
+    updater.addDependency(previewValue, singleVmValue);
 
     // A simple consumer that sets preview data to the viewer.
     ValueConsumer v8PreviewInputSetter = new ValueConsumer() {
@@ -353,14 +308,14 @@ class WizardLogicBuilder {
             new Gettable<Optional<FinisherDelegate>>() {
           public Optional<FinisherDelegate> getValue() {
             FinisherDelegate finisher =
-                new PushChangesWizard.SingleVmFinisher(singlePlanValue.getValue());
+                new PushChangesWizard.SingleVmFinisher(singleVmValue.getValue());
             return createOptional(finisher);
           }
 
         }));
     updater.addSource(scope, wizardFinisher);
     updater.addConsumer(scope, wizardFinisher);
-    updater.addDependency(wizardFinisher, singlePlanValue);
+    updater.addDependency(wizardFinisher, singleVmValue);
 
     return new PreviewAndOptionPath() {
       public ValueSource<? extends Optional<FinisherDelegate>> getFinisherDelegateValue() {
@@ -379,7 +334,7 @@ class WizardLogicBuilder {
    */
   private PreviewAndOptionPath createMultipleVmPath(PageImpl<?> basePage,
       OptionalSwitcher<Boolean> switcher,
-      final ValueSource<? extends Optional<? extends List<PushChangesPlan>>> selectedVmValue) {
+      final ValueSource<? extends Optional<? extends List<ScriptTargetMapping>>> selectedVmValue) {
 
     PageImpl<PageElements> multipleVmStubPage = pageSet.getMultipleVmStubPage();
 
@@ -391,11 +346,11 @@ class WizardLogicBuilder {
     final ValueProcessor<Optional<? extends FinisherDelegate>> wizardFinisher =
         createProcessor(handleErrors(new NormalExpression<FinisherDelegate>() {
           @Calculate
-          public FinisherDelegate calculate(List<PushChangesPlan> selectedVm) {
+          public FinisherDelegate calculate(List<ScriptTargetMapping> selectedVm) {
             return new PushChangesWizard.MultipleVmFinisher(selectedVmValue.getValue().getNormal());
           }
           @DependencyGetter
-          public ValueSource<? extends Optional<? extends List<PushChangesPlan>>>
+          public ValueSource<? extends Optional<? extends List<ScriptTargetMapping>>>
               getSelectVmSource() {
             return selectedVmValue;
           }

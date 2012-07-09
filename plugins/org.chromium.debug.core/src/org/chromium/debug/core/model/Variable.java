@@ -4,15 +4,10 @@
 
 package org.chromium.debug.core.model;
 
-import java.util.AbstractList;
-import java.util.List;
-
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ExceptionData;
-import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsScope.WithScope;
@@ -112,54 +107,6 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   private static Variable forScope(EvaluateContext evaluateContext, String scopeName,
       ValueBase scopeValue) {
     return new Variable.Virtual(evaluateContext, scopeName, "<scope>", scopeValue);
-  }
-
-  public static Variable forFunctionScopes(EvaluateContext evaluateContext,
-      final JsFunction jsFunction, final FunctionScopeExtension functionScopeExtension) {
-    ValueBase value = new ValueBase.ValueWithLazyVariables(evaluateContext) {
-      @Override public String getReferenceTypeName() throws DebugException {
-        return "<function scope>";
-      }
-
-      @Override public boolean isAllocated() throws DebugException {
-        return true;
-      }
-
-      @Override public boolean hasVariables() throws DebugException {
-        return !functionScopeExtension.getScopes(jsFunction).isEmpty();
-      }
-
-      @Override protected IVariable[] calculateVariables() {
-        List<? extends JsScope> list = functionScopeExtension.getScopes(jsFunction);
-        // Put scopes in the opposite order: innermost first.
-        // Closure tends to be parameterized by the innermost variable at most.
-        List<? extends JsScope> reverseList = reverseList(list);
-        return StackFrame.wrapScopes(getEvaluateContext(), reverseList, null);
-      }
-
-      @Override public Value asRealValue() {
-        return null;
-      }
-
-      @Override public String getValueString() {
-        return "";
-      }
-
-      private <T> List<T> reverseList(final List<T> input) {
-        return new AbstractList<T>() {
-          @Override
-          public T get(int index) {
-            return input.get(input.size() - index - 1);
-          }
-          @Override
-          public int size() {
-            return input.size();
-          }
-        };
-      }
-    };
-
-    return forScope(evaluateContext, "<function scope>", value);
   }
 
   /**

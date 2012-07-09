@@ -26,7 +26,6 @@ public interface TabDebugEventListener {
    * Reports a closing event on the target tab. All following communications
    * with the associated tab are illegal. This call will be followed by
    * call to {@link DebugEventListener#disconnected()}.
-   * TODO: consider adding close reason here.
    */
   void closed();
 }

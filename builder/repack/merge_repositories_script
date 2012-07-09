@@ -33,5 +33,4 @@ $ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPub
 $ECLIPSE_CMD -application org.eclipse.equinox.p2.publisher.CategoryPublisher \
    -metadataRepository file:$DEST/repository \
    -categoryDefinition file:$CATEGORY_FILE
-   -categoryQualifier chrome_dev_tools_category_0_3_4
 

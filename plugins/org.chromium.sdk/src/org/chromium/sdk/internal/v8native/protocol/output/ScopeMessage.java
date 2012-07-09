@@ -11,15 +11,10 @@ import org.chromium.sdk.internal.v8native.DebuggerCommand;
  */
 public class ScopeMessage extends DebuggerMessage {
 
-  public ScopeMessage(int scopeNumber, Integer frameNumber, Long functionHandle) {
+  public ScopeMessage(int scopeNumber, int frameNumber) {
     super(DebuggerCommand.SCOPE.value);
     putArgument("number", scopeNumber);
-    if (frameNumber != null) {
-      putArgument("frameNumber", frameNumber);
-    }
-    if (functionHandle != null) {
-      putArgument("functionHandle", functionHandle);
-    }
+    putArgument("frameNumber", frameNumber);
     putArgument("inlineRefs", true);
   }
 

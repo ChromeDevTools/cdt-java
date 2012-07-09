@@ -179,9 +179,9 @@ public class ValueLoaderImpl extends ValueLoader {
   /**
    * Looks up data for scope on remote in form of scope object handle.
    */
-  public ObjectValueHandle loadScopeFields(int scopeNumber,
-      DebuggerMessageFactory.ScopeHostParameter host) throws MethodIsBlockingException {
-    DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, host);
+  public ObjectValueHandle loadScopeFields(int scopeNumber, int frameNumber)
+      throws MethodIsBlockingException {
+    DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, frameNumber);
 
     V8BlockingCallback<ObjectValueHandle> callback = new V8BlockingCallback<ObjectValueHandle>() {
       @Override

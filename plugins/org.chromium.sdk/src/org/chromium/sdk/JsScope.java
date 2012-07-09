@@ -21,7 +21,6 @@ public interface JsScope {
     CLOSURE,
     CATCH,
     UNKNOWN
-    // TODO: add "block" type (corresponds to block scope in JavaScript 1.7).
   }
 
   /**

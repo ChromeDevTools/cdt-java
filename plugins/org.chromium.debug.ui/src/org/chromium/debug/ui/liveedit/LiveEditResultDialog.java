@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.model.ConnectedTargetData;
-import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.TableUtils;
 import org.chromium.debug.ui.TableUtils.ColumnBasedLabelProvider;
@@ -80,7 +79,7 @@ public class LiveEditResultDialog extends Dialog {
   }
 
   public static SingleInput createTextInput(final String text,
-      final PushChangesPlan changesPlan) {
+      final ScriptTargetMapping filePair) {
     return new LiveEditResultDialog.SingleInput() {
       public <RES> RES accept(LiveEditResultDialog.InputVisitor<RES> visitor) {
         return acceptSingle(visitor);
@@ -89,7 +88,7 @@ public class LiveEditResultDialog extends Dialog {
         return visitor.visitErrorMessage(text);
       }
       public ScriptTargetMapping getFilePair() {
-        return changesPlan.getScriptTargetMapping();
+        return filePair;
       }
     };
   }

@@ -72,13 +72,8 @@ abstract class FieldConditionLogic {
     }
     JsonSubtypeConditionCustom customAnn = m.getAnnotation(JsonSubtypeConditionCustom.class);
     if (customAnn != null) {
-      Class<? extends JsonValueCondition<?>> condition = customAnn.condition();
-      // We do not know exact type of condition. But we also do not care about result type
-      // in 'constraint'. Compiler cannot catch the wildcard here, so we use an assumed type.
-      Class<? extends JsonValueCondition<Void>> assumedTypeCondition =
-          (Class<? extends JsonValueCondition<Void>>) customAnn.condition();
       final CustomConditionWrapper<?> constraint =
-          CustomConditionWrapper.create(assumedTypeCondition);
+          CustomConditionWrapper.create(customAnn.condition());
       results.add(new FieldConditionLogic(true) {
         @Override
         boolean checkValue(boolean hasValue, Object unparsedValue, QuickParser<?> parser)
@@ -158,8 +153,8 @@ abstract class FieldConditionLogic {
   }
 
   private static class CustomConditionWrapper<T> {
-    static <T> CustomConditionWrapper<T> create(
-        Class<? extends JsonValueCondition<T>> constraintClass) {
+    static <T, CL extends JsonValueCondition<T>> CustomConditionWrapper<T> create(
+        Class<CL> constraintClass) {
       return new CustomConditionWrapper<T>(constraintClass);
     }
 

@@ -89,7 +89,7 @@ public class ResourceManager {
       scriptSet.add(newScript);
       writeScriptSource(scriptSet.asCollection(), info.file);
     } catch (RuntimeException e) {
-      throw new RuntimeException("Failed to add script " + id, e);
+      throw new RuntimeException("Failed to add script " + id);
     }
   }
 

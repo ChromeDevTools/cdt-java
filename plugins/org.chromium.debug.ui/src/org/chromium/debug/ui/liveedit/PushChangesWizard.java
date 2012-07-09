@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.WizardUtils.LogicBasedWizard;
 import org.chromium.debug.ui.WizardUtils.PageElements;
@@ -18,6 +17,7 @@ import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.WizardUtils.WizardPageSet;
 import org.chromium.debug.ui.actions.ChooseVmControl;
+import org.chromium.debug.ui.actions.PushChangesAction;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.Input;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.SingleInput;
 import org.chromium.sdk.CallbackSemaphore;
@@ -192,13 +192,13 @@ public class PushChangesWizard {
    * A callback that gets called when user presses 'finish' and a single VM is selected.
    */
   static class SingleVmFinisher implements FinisherDelegate {
-    private final PushChangesPlan pushChangesPlan;
+    private final ScriptTargetMapping filePair;
 
-    public SingleVmFinisher(PushChangesPlan pushChangesPlan) {
-      this.pushChangesPlan = pushChangesPlan;
+    public SingleVmFinisher(ScriptTargetMapping filePair) {
+      this.filePair = filePair;
     }
     public Input run(IProgressMonitor monitor) {
-      return performSingleVmUpdate(pushChangesPlan, monitor);
+      return performSingleVmUpdate(filePair, monitor);
     }
   }
 
@@ -207,8 +207,8 @@ public class PushChangesWizard {
    * It performs update and opens result dialog window.
    */
   static class MultipleVmFinisher implements FinisherDelegate {
-    private final List<PushChangesPlan> targets;
-    public MultipleVmFinisher(List<PushChangesPlan> targets) {
+    private final List<ScriptTargetMapping> targets;
+    public MultipleVmFinisher(List<ScriptTargetMapping> targets) {
       this.targets = targets;
     }
 
@@ -219,9 +219,9 @@ public class PushChangesWizard {
       monitor.beginTask(null, targets.size());
       final List<LiveEditResultDialog.SingleInput> results =
           new ArrayList<LiveEditResultDialog.SingleInput>();
-      for (PushChangesPlan plan : targets) {
+      for (ScriptTargetMapping filePair : targets) {
         LiveEditResultDialog.SingleInput dialogInput =
-            performSingleVmUpdate(plan, new SubProgressMonitor(monitor, 1));
+            performSingleVmUpdate(filePair, new SubProgressMonitor(monitor, 1));
         results.add(dialogInput);
       }
       monitor.done();
@@ -245,19 +245,19 @@ public class PushChangesWizard {
    * Performs update to a VM and returns result in form of dialog window input.
    */
   private static LiveEditResultDialog.SingleInput performSingleVmUpdate(
-      final PushChangesPlan changesPlan, IProgressMonitor monitor) {
+      final ScriptTargetMapping filePair, IProgressMonitor monitor) {
     final LiveEditResultDialog.SingleInput[] input = { null };
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       public void failure(String message) {
         String text = NLS.bind("Failure: {0}", message);
-        input[0] = LiveEditResultDialog.createTextInput(text, changesPlan);
+        input[0] = LiveEditResultDialog.createTextInput(text, filePair);
       }
       public void success(Object report,
           final UpdatableScript.ChangeDescription changeDescription) {
         if (changeDescription == null) {
           input[0] = LiveEditResultDialog.createTextInput(
-              Messages.PushChangesWizard_EMPTY_CHANGE, changesPlan);
+              Messages.PushChangesWizard_EMPTY_CHANGE, filePair);
         } else {
           final String oldScriptName = changeDescription.getCreatedScriptName();
           final LiveEditResultDialog.OldScriptData oldScriptData;
@@ -265,7 +265,7 @@ public class PushChangesWizard {
             oldScriptData = null;
           } else {
             final LiveEditDiffViewer.Input previewInput =
-                PushResultParser.createViewerInput(changeDescription, changesPlan, false);
+                PushResultParser.createViewerInput(changeDescription, filePair, false);
             oldScriptData = new LiveEditResultDialog.OldScriptData() {
               public LiveEditDiffViewer.Input getScriptStructure() {
                 return previewInput;
@@ -292,7 +292,7 @@ public class PushChangesWizard {
               return visitor.visitSuccess(successResult);
             }
             public ScriptTargetMapping getFilePair() {
-              return changesPlan.getScriptTargetMapping();
+              return filePair;
             }
           };
         }
@@ -300,7 +300,7 @@ public class PushChangesWizard {
     };
 
     CallbackSemaphore syncCallback = new CallbackSemaphore();
-    RelayOk relayOk = changesPlan.execute(false, callback, syncCallback);
+    RelayOk relayOk = PushChangesAction.execute(filePair, callback, syncCallback, false);
     syncCallback.acquireDefault(relayOk);
 
     monitor.done();

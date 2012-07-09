@@ -30,7 +30,6 @@ public interface DebugEventListener {
   /**
    * Reports the debug connection has terminated and {@link JavascriptVm} has stopped operating.
    * This event is reported always, regardless of which reason causes termination.
-   * TODO: consider adding disconnect reason here.
    */
   void disconnected();
 

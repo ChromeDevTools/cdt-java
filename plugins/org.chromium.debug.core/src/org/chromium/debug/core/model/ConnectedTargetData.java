@@ -161,10 +161,6 @@ public class ConnectedTargetData {
     return sourcePositionMapBuilder;
   }
 
-  public SourceWrapSupport getSourceWrapSupport() {
-    return debugTargetImpl.getSourceWrapSupport();
-  }
-
   public DebugTargetImpl getDebugTarget() {
     return debugTargetImpl;
   }

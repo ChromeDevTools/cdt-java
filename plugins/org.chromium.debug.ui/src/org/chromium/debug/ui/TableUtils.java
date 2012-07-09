@@ -7,9 +7,7 @@ package org.chromium.debug.ui;
 import java.util.List;
 
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
@@ -59,12 +57,6 @@ public class TableUtils {
     public boolean isLabelProperty(Object element, String property) { return false; }
 
     public void removeListener(ILabelProviderListener listener) {}
-
-    public void setUpColumns(Table table) {
-      for (ColumnData<ROW, ?> column : columns) {
-        column.getLabelProvider().createColumn(table);
-      }
-    }
 
     public void dispose() {
       for (ColumnData<ROW, ?> column : columns) {
@@ -136,15 +128,4 @@ public class TableUtils {
     public void dispose() {}
   }
 
-  /**
-   * Content provider that simply splits object array into elements.
-   */
-  public static final IStructuredContentProvider OBJECT_ARRAY_CONTENT_PROVIDER =
-      new IStructuredContentProvider() {
-        public Object[] getElements(Object inputElement) {
-          return (Object[]) inputElement;
-        }
-        public void dispose() {}
-        public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
-      };
 }

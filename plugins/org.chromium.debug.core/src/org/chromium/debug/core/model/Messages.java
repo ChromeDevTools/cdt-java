@@ -47,16 +47,6 @@ public class Messages extends NLS {
 
   public static String DebugTargetImpl_Unknown;
 
-  public static String HardcodedSourceWrapProvider_DESCRIPTION;
-
-  public static String HardcodedSourceWrapProvider_WITH_DEFINED;
-
-  public static String HardcodedSourceWrapProvider_STANDARD;
-
-  public static String HardcodedSourceWrapProvider_STANDARD_2;
-
-  public static String HardcodedSourceWrapProvider_WITH_DEFINED_2;
-
   public static String JavascriptVmEmbedderFactory_TargetName0;
 
   public static String JavascriptVmEmbedderFactory_Terminated;

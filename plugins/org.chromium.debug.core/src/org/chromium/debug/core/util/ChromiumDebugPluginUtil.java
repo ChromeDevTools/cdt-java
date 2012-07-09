@@ -29,7 +29,6 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceStatus;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -266,14 +265,6 @@ public class ChromiumDebugPluginUtil {
         try {
           file.create(new ByteArrayInputStream("".getBytes()), false, null); //$NON-NLS-1$
         } catch (CoreException e) {
-          IStatus status = e.getStatus();
-          if (status instanceof IResourceStatus) {
-            if (status.getCode() == IResourceStatus.CASE_VARIANT_EXISTS) {
-              // File with different name case already exists.
-              // For our case it's the same as "file.exists()".
-              return null;
-            }
-          }
           throw new RuntimeException(e);
         }
         return file;

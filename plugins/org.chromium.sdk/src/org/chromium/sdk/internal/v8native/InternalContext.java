@@ -8,6 +8,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
+import org.chromium.sdk.internal.v8native.value.HandleManager;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueLoaderImpl;
 
@@ -37,7 +38,6 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    * way of making sure context will be valid via this API.
    * @throws ContextDismissedCheckedException if context is not valid anymore
    */
-  @Override
   RelayOk sendV8CommandAsync(DebuggerMessage message, boolean isImmediate,
       V8CommandProcessor.V8HandlerCallback commandCallback, SyncCallback syncCallback)
       throws ContextDismissedCheckedException;
@@ -51,15 +51,5 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
    */
   ValueLoaderImpl getValueLoader();
 
-  UserContext getUserContext();
-
-  /**
-   * An internal extension to {@link DebugContext} interface. This is an object that is
-   * passed to user (unlike the {@link InternalContext} which is a separate object).
-   */
-  interface UserContext extends DebugContext {
-    InternalContext getInternalContext();
-
-    ContextBuilder.ExpectingBacktraceStep createReloadBacktraceStep();
-  }
+  DebugContext getUserContext();
 }

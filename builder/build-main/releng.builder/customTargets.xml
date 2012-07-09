@@ -28,7 +28,7 @@
 	<!-- Replace values for mapsCheckoutTag as desired. -->
 	<!-- ===================================================================== -->
 	<target name="getMapFiles" depends="checkLocalMaps" unless="skipMaps">
-		<!-- svn javahl="true" username="${svn.username}" password="${svn.password}">
+                <!-- svn javahl="true" username="${svn.username}" password="${svn.password}">
 			<export srcurl="${mapsRepo}" destpath="${buildDirectory}/maps" force="true" />
 		</svn -->
 		<property name="mapsCheckoutTag" value="HEAD" />
@@ -92,15 +92,15 @@
 	<!-- Steps to do before generating the build scripts. -->
 	<!-- ===================================================================== -->
 	<target name="preGenerate">
-		<delete dir="${p2Repository}" quiet="true"/>
-		<delete includeEmptyDirs="true" quiet="true">
+                <delete dir="${p2Repository}" quiet="true"/>
+                <delete includeEmptyDirs="true" quiet="true">
 			<fileset dir="${buildDirectory}/plugins" includes="**/*"/>
-		</delete>
-		<delete includeEmptyDirs="true" quiet="true">
+                </delete>
+                <delete includeEmptyDirs="true" quiet="true">
 			<fileset dir="${buildDirectory}/features" includes="**/*"/>
-		</delete>
-		<mkdir dir="${buildDirectory}" />
-		<mkdir dir="${p2Repository}" />
+                </delete>
+                <mkdir dir="${buildDirectory}" />
+                <mkdir dir="${p2Repository}" />
 		<copy todir="${buildDirectory}/plugins">
 			<fileset dir="${sourceBaseLocation}/plugins">
 				<include name="org.chromium.debug/**" />
@@ -111,22 +111,6 @@
 				<include name="org.chromium.sdk.wip.eclipse/**" />
 			</fileset>
 		</copy>
-
-		<property name="sdkBuildDir" value="${buildDirectory}/sdk_builder" />
-		<property name="sdkPluginSource" value="${sourceBaseLocation}/plugins/org.chromium.sdk" />
-		<ant antfile="${sourceBaseLocation}/builder/sdkTargets.xml" target="compileParserGenerator">
-			 <property name="output" value="${sdkBuildDir}/generator_bin"/>
-			 <property name="sdkPluginSource" value="${sdkPluginSource}"/>
-			 <property name="protocol_source_path" value="${sdkPluginSource}/src-dynamic-impl/bridge/:${sdkPluginSource}/src-wip"/>
-			 <property name="root_source_file_name" value="AllProtocolParsersGenerator.java"/>
-		</ant>
-		<ant antfile="${sourceBaseLocation}/builder/sdkTargets.xml" target="generateJsonParser">
-			 <property name="mainClassName" value="org.chromium.sdk.internal.AllProtocolParsersGenerator"/>
-			 <property name="generatorCP" value="${sdkBuildDir}/generator_bin"/>
-			 <property name="sdkPluginSource" value="${sdkPluginSource}"/>
-			 <property name="outputDir" value="${buildDirectory}/plugins/org.chromium.sdk/src-static-impl/generated"/>
-		</ant>
- 
 		<copy todir="${buildDirectory}/features">
 			<fileset dir="${sourceBaseLocation}/features">
 				<include name="org.chromium.debug/**" />

@@ -6,23 +6,18 @@ package org.chromium.sdk.internal.wip;
 
 import static org.chromium.sdk.util.BasicUtil.getSafe;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsObjectProperty;
-import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsValue.Type;
@@ -37,9 +32,7 @@ import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
-import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
-import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.util.AsyncFutureRef;
@@ -521,10 +514,9 @@ class WipValueBuilder {
       return new FunctionValueImpl(valueData, valueLoader, nameBuilder);
     }
 
-    private class FunctionValueImpl extends ObjectTypeBase.JsObjectBase
-        implements JsFunction, FunctionScopeAccess {
-      private final AsyncFutureRef<Getter<FunctionDetailsValue>> loadedPositionRef =
-          new AsyncFutureRef<Getter<FunctionDetailsValue>>();
+    private class FunctionValueImpl extends ObjectTypeBase.JsObjectBase implements JsFunction {
+      private final AsyncFutureRef<Getter<LocationValue>> loadedPositionRef =
+          new AsyncFutureRef<Getter<LocationValue>>();
 
       FunctionValueImpl(RemoteObjectValue valueData,
           WipValueLoader valueLoader, QualifiedNameBuilder nameBuilder) {
@@ -541,15 +533,15 @@ class WipValueBuilder {
 
       @Override
       public Script getScript() throws MethodIsBlockingException {
-        FunctionDetailsValue functionDetails = getFunctionDetails();
+        LocationValue functionPosition = getLoadedPosition();
         WipScriptManager scriptManager = getRemoteValueMapping().getTabImpl().getScriptManager();
-        return scriptManager.getScript(functionDetails.location().scriptId());
+        return scriptManager.getScript(functionPosition.scriptId());
       }
 
       @Override
       public TextStreamPosition getOpenParenPosition()
           throws MethodIsBlockingException {
-        final LocationValue functionPosition = getFunctionDetails().location();
+        final LocationValue functionPosition = getLoadedPosition();
         return new TextStreamPosition() {
           @Override public int getOffset() {
             return WipBrowserImpl.throwUnsupported();
@@ -570,20 +562,7 @@ class WipValueBuilder {
         };
       }
 
-      @Override
-      public List<? extends JsScope> getScopes() {
-        List<ScopeValue> data = getFunctionDetails().scopeChain();
-        if (data == null) {
-          return Collections.emptyList();
-        }
-        List<JsScope> result = new ArrayList<JsScope>(data.size());
-        for (ScopeValue scopeValue : data) {
-          result.add(WipContextBuilder.createScope(scopeValue, getRemoteValueMapping()));
-        }
-        return result;
-      }
-
-      private FunctionDetailsValue getFunctionDetails() throws MethodIsBlockingException {
+      private LocationValue getLoadedPosition() throws MethodIsBlockingException {
         if (!loadedPositionRef.isInitialized()) {
           getRemoteValueMapping().loadFunctionLocationInFuture(getValueData().objectId(),
               loadedPositionRef);
@@ -592,19 +571,6 @@ class WipValueBuilder {
       }
     }
   }
-
-  private interface FunctionScopeAccess {
-    List<? extends JsScope> getScopes();
-  }
-
-  static final FunctionScopeExtension FUNCTION_SCOPE_EXTENSION = new FunctionScopeExtension() {
-    @Override
-    public List<? extends JsScope> getScopes(JsFunction function)
-        throws MethodIsBlockingException {
-      FunctionScopeAccess functionScopeAccess = (FunctionScopeAccess) function;
-      return functionScopeAccess.getScopes();
-    }
-  };
 
   private static abstract class VariableBase implements JsVariable {
     private final JsValue jsValue;

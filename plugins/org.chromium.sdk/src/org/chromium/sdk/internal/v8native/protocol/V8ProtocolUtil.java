@@ -104,10 +104,6 @@ public class V8ProtocolUtil {
     if (constructorFunction != null) {
       putMirror(objProps, constructorFunction, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
     }
-    SomeRef primitiveValue = handle.primitiveValue();
-    if (primitiveValue != null) {
-      putMirror(objProps, primitiveValue, PropertyNameGetter.PRIMITIVE_VALUE);
-    }
     return objProps;
   }
 
@@ -205,8 +201,6 @@ public class V8ProtocolUtil {
         new SimpleNameGetter("__proto__");
     static final PropertyNameGetter<SomeRef> CONSTRUCTOR_FUNCTION =
         new SimpleNameGetter("constructor");
-    static final PropertyNameGetter<SomeRef> PRIMITIVE_VALUE =
-        new SimpleNameGetter("primitive value");
 
     public static final PropertyNameGetter<PropertyObject> SUBPROPERTY = new SubpropertyNameGetter();
     static class SubpropertyNameGetter extends PropertyNameGetter<PropertyObject> {

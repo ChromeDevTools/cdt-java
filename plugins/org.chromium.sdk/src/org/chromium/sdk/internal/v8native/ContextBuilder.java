@@ -156,7 +156,7 @@ public class ContextBuilder {
      */
     private final Object sendContextCommandsMonitor = new Object();
     private volatile boolean isValid = true;
-    private UserContextImpl context = null;
+    private UserContext context = null;
 
     public boolean isValid() {
       return isValid;
@@ -171,7 +171,7 @@ public class ContextBuilder {
     }
 
     @Override
-    public UserContext getUserContext() {
+    public DebugContext getUserContext() {
       return context;
     }
 
@@ -191,7 +191,7 @@ public class ContextBuilder {
       }
     }
 
-    public UserContextImpl getContext() {
+    public UserContext getContext() {
       if (context == null) {
         throw new IllegalStateException();
       }
@@ -212,7 +212,7 @@ public class ContextBuilder {
       if (context != null) {
         throw new IllegalStateException();
       }
-      context = new UserContextImpl(contextData);
+      context = new UserContext(contextData);
     }
 
     @Override
@@ -228,15 +228,14 @@ public class ContextBuilder {
       }
     }
 
-    private RelayOk sendMessageAsyncAndInvalidate(DebuggerMessage message,
+    private void sendMessageAsyncAndInvalidate(DebuggerMessage message,
         V8CommandProcessor.V8HandlerCallback commandCallback, boolean isImmediate,
         SyncCallback syncCallback) {
       synchronized (sendContextCommandsMonitor) {
         assertValid();
-        RelayOk relayOk = debugSession.getV8CommandProcessor().sendV8CommandAsync(message,
-            isImmediate, commandCallback, syncCallback);
+        debugSession.getV8CommandProcessor().sendV8CommandAsync(message, isImmediate,
+            commandCallback, syncCallback);
         isValid = false;
-        return relayOk;
       }
     }
 
@@ -251,26 +250,22 @@ public class ContextBuilder {
     }
 
 
-    private class UserContextImpl implements UserContext {
+    private class UserContext implements DebugContext {
       private final DebugContextData data;
 
-      public UserContextImpl(DebugContextData contextData) {
+      public UserContext(DebugContextData contextData) {
         this.data = contextData;
       }
 
-      @Override
       public State getState() {
         assertValidForUser();
         return data.contextState;
       }
-
-      @Override
       public List<? extends CallFrame> getCallFrames() {
         assertValidForUser();
         return data.frames.getCallFrames();
       }
 
-      @Override
       public Collection<Breakpoint> getBreakpointsHit() {
         assertValidForUser();
         if (data.breakpointsHit == null) {
@@ -279,7 +274,6 @@ public class ContextBuilder {
         return data.breakpointsHit;
       }
 
-      @Override
       public ExceptionData getExceptionData() {
         assertValidForUser();
         return data.exceptionData;
@@ -293,7 +287,6 @@ public class ContextBuilder {
         return data.exceptionData;
       }
 
-      @Override
       public JsEvaluateContext getGlobalEvaluateContext() {
         return evaluateContext;
       }
@@ -301,15 +294,8 @@ public class ContextBuilder {
       /**
        * @throws IllegalStateException if context has already been continued
        */
-      @Override
       public void continueVm(StepAction stepAction, int stepCount,
           final ContinueCallback callback) {
-        continueVm(stepAction, stepCount, callback, null);
-      }
-
-      @Override
-      public RelayOk continueVm(StepAction stepAction, int stepCount,
-          final ContinueCallback callback, SyncCallback syncCallback) {
         if (stepAction == null) {
           throw new NullPointerException();
         }
@@ -319,7 +305,7 @@ public class ContextBuilder {
             = new V8CommandCallbackBase() {
           @Override
           public void success(SuccessCommandResponse successResponse) {
-            contextDismissed(UserContextImpl.this);
+            contextDismissed(UserContext.this);
 
             if (callback != null) {
               callback.success();
@@ -338,7 +324,7 @@ public class ContextBuilder {
           }
         };
 
-        return sendMessageAsyncAndInvalidate(message, commandCallback, true, syncCallback);
+        sendMessageAsyncAndInvalidate(message, commandCallback, true, null);
       }
 
       @Override
@@ -359,32 +345,13 @@ public class ContextBuilder {
         if (!sendNoMessageAndInvalidate()) {
           return false;
         }
-        contextDismissed(UserContextImpl.this);
+        contextDismissed(UserContext.this);
         getDebugSession().getDebugEventListener().resumed();
         return true;
       }
 
-      @Override public InternalContext getInternalContext() {
-        return PreContext.this;
-      }
-
       InternalContext getInternalContextForTests() {
         return PreContext.this;
-      }
-
-      @Override
-      public ExpectingBacktraceStep createReloadBacktraceStep() {
-        return new ExpectingBacktraceStep() {
-          @Override public InternalContext getInternalContext() {
-            return PreContext.this;
-          }
-
-          @Override
-          public DebugContext setFrames(List<FrameObject> jsonFrames) {
-            data.frames = new Frames(jsonFrames, PreContext.this);
-            return UserContextImpl.this;
-          }
-        };
       }
 
       private final JsEvaluateContext evaluateContext = new JsEvaluateContextImpl() {
@@ -446,12 +413,12 @@ public class ContextBuilder {
   /**
    * Must be called from Dispatch thread.
    */
-  private PreContext.UserContextImpl getCurrentUserContext() {
+  private PreContext.UserContext getCurrentUserContext() {
     // We can use currentStep as long as we are being operated from Dispatch thread.
-    if (currentStep instanceof PreContext.UserContextImpl == false) {
+    if (currentStep instanceof PreContext.UserContext == false) {
       return null;
     }
-    PreContext.UserContextImpl userContext = (PreContext.UserContextImpl) currentStep;
+    PreContext.UserContext userContext = (PreContext.UserContext) currentStep;
     return userContext;
   }
 
@@ -459,7 +426,7 @@ public class ContextBuilder {
    * Must be called from Dispatch thread.
    * @return current context instance or null if there's no active context at the moment
    */
-  PreContext.UserContextImpl getCurrentDebugContext() {
+  DebugContext getCurrentDebugContext() {
     return getCurrentUserContext();
   }
 
@@ -469,7 +436,7 @@ public class ContextBuilder {
    * @return ExpectingBacktraceStep or null if there is no active context currently
    */
   ExpectingBacktraceStep startRebuildCurrentContext() {
-    PreContext.UserContextImpl userContext = getCurrentUserContext();
+    PreContext.UserContext userContext = getCurrentUserContext();
     if (userContext == null) {
       return null;
     }
@@ -481,7 +448,7 @@ public class ContextBuilder {
   }
 
   public static InternalContext getInternalContextForTests(DebugContext debugContext) {
-    PreContext.UserContextImpl userContext = (PreContext.UserContextImpl) debugContext;
+    PreContext.UserContext userContext = (PreContext.UserContext) debugContext;
     return userContext.getInternalContextForTests();
   }
 }

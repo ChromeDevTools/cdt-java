@@ -17,7 +17,6 @@ public enum DebuggerCommand {
   FRAME("frame"),
   SCRIPTS("scripts"),
   CHANGELIVE("changelive"),
-  RESTARTFRAME("restartframe"),
   SOURCE("source"),
   SCOPE("scope"),
   SETBREAKPOINT("setbreakpoint"),

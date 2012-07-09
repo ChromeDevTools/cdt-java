@@ -49,8 +49,6 @@ public class V8DynamicParser {
           VersionBody.class,
           AfterCompileBody.class,
           ChangeLiveBody.class,
-          RestartFrameBody.class,
-          RestartFrameBody.ResultDescription.class,
           ListBreakpointsBody.class,
           ScriptCollectedBody.class,
           FlagsBody.class,

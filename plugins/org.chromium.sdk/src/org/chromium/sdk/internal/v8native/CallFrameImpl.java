@@ -10,35 +10,20 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.sdk.CallFrame;
-import org.chromium.sdk.DebugContext;
-import org.chromium.sdk.InvalidContextException;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
-import org.chromium.sdk.internal.v8native.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
-import org.chromium.sdk.internal.v8native.protocol.input.RestartFrameBody;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
-import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
-import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
-import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
-import org.chromium.sdk.internal.v8native.protocol.output.RestartFrameMessage;
 import org.chromium.sdk.internal.v8native.value.JsScopeImpl;
 import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
-import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
-import org.chromium.sdk.util.RelaySyncCallback;
 import org.json.simple.JSONObject;
 
 /**
@@ -207,7 +192,7 @@ public class CallFrameImpl implements CallFrame {
     List<ScopeRef> scopes = frameObject.scopes();
     List<JsScopeImpl<?>> result = new ArrayList<JsScopeImpl<?>>(scopes.size());
     for (ScopeRef scopeRef : scopes) {
-      result.add(JsScopeImpl.create(JsScopeImpl.Host.create(this), scopeRef));
+      result.add(JsScopeImpl.create(this, scopeRef));
     }
     return result;
   }
@@ -236,140 +221,6 @@ public class CallFrameImpl implements CallFrame {
         return -1;
       }
       return columnObj.intValue();
-    }
-  };
-
-  /**
-   * Implements restart frame operation as chain of VM calls. After the main 'restart' command
-   * it either calls 'step in' request or reloads backtrace. {@link RelaySyncCallback} is used
-   * to ensure final sync callback call guarantee.
-   */
-  public static final RestartFrameExtension RESTART_FRAME_EXTENSION = new RestartFrameExtension() {
-    @Override
-    public RelayOk restartFrame(CallFrame callFrame,
-        final GenericCallback<Boolean> callback, SyncCallback syncCallback) {
-      final CallFrameImpl frameImpl = (CallFrameImpl) callFrame;
-      final DebugSession debugSession = frameImpl.context.getDebugSession();
-
-      RelaySyncCallback relaySyncCallback = new RelaySyncCallback(syncCallback);
-
-      final RelaySyncCallback.Guard guard = relaySyncCallback.newGuard();
-
-      RestartFrameMessage message = new RestartFrameMessage(frameImpl.frameId);
-      V8CommandCallbackBase v8Callback = new V8CommandCallbackBase() {
-        @Override
-        public void success(SuccessCommandResponse successResponse) {
-          RelayOk relayOk =
-              handleRestartResponse(successResponse, debugSession, callback, guard.getRelay());
-          guard.discharge(relayOk);
-        }
-
-        @Override
-        public void failure(String message) {
-          if (callback != null) {
-            callback.failure(new Exception(message));
-          }
-        }
-      };
-
-      try {
-        return frameImpl.context.sendV8CommandAsync(message, false, v8Callback,
-            guard.asSyncCallback());
-      } catch (ContextDismissedCheckedException e) {
-        throw new InvalidContextException(e);
-      }
-    }
-
-    private RelayOk handleRestartResponse(SuccessCommandResponse successResponse,
-        DebugSession debugSession,
-        final GenericCallback<Boolean> callback, final RelaySyncCallback relaySyncCallback) {
-      RestartFrameBody body;
-      try {
-        body = successResponse.body().asRestartFrameBody();
-      } catch (JsonProtocolParseException e) {
-        throw new RuntimeException(e);
-      }
-
-      InternalContext.UserContext debugContext =
-          debugSession.getContextBuilder().getCurrentDebugContext();
-      if (debugContext == null) {
-        // We may have already issued 'continue' since the moment that change live command
-        // was sent so the context was dropped. Ignore this case.
-        return finishRestartSuccessfully(false, callback, relaySyncCallback);
-      }
-
-      RestartFrameBody.ResultDescription resultDescription = body.getResultDescription();
-
-      if (body.getResultDescription().stack_update_needs_step_in() == Boolean.TRUE) {
-        return stepIn(debugContext, callback, relaySyncCallback);
-      } else {
-        return reloadStack(debugContext, callback, relaySyncCallback);
-      }
-    }
-
-    private RelayOk stepIn(InternalContext.UserContext debugContext,
-        final GenericCallback<Boolean> callback, final RelaySyncCallback relaySyncCallback) {
-      final RelaySyncCallback.Guard guard = relaySyncCallback.newGuard();
-      DebugContext.ContinueCallback continueCallback = new DebugContext.ContinueCallback() {
-        @Override
-        public void success() {
-          RelayOk relayOk = finishRestartSuccessfully(true, callback, relaySyncCallback);
-          guard.discharge(relayOk);
-        }
-        @Override
-        public void failure(String errorMessage) {
-          if (callback != null) {
-            callback.failure(new Exception(errorMessage));
-          }
-        }
-      };
-      return debugContext.continueVm(DebugContext.StepAction.IN, 0,
-          continueCallback, guard.asSyncCallback());
-    }
-
-    private RelayOk reloadStack(InternalContext.UserContext debugContext,
-        final GenericCallback<Boolean> callback, final RelaySyncCallback relaySyncCallback) {
-      final RelaySyncCallback.Guard guard = relaySyncCallback.newGuard();
-      final ContextBuilder.ExpectingBacktraceStep backtraceStep =
-          debugContext.createReloadBacktraceStep();
-
-      V8CommandCallbackBase v8Callback = new V8CommandCallbackBase() {
-        @Override
-        public void success(SuccessCommandResponse successResponse) {
-          BacktraceProcessor.setFrames(successResponse, backtraceStep);
-          RelayOk relayOk = finishRestartSuccessfully(false, callback, relaySyncCallback);
-          guard.discharge(relayOk);
-        }
-
-        @Override
-        public void failure(String message) {
-          if (callback != null) {
-            callback.failure(new Exception(message));
-          }
-        }
-      };
-
-      DebuggerMessage message = DebuggerMessageFactory.backtrace(null, null, true);
-      try {
-        // Command is not immediate because we are supposed to be suspended.
-        return debugContext.getInternalContext().sendV8CommandAsync(message, false,
-            v8Callback, guard.asSyncCallback());
-      } catch (ContextDismissedCheckedException e) {
-        throw new InvalidContextException(e);
-      }
-    }
-
-    private RelayOk finishRestartSuccessfully(boolean vmResumed,
-        GenericCallback<Boolean> callback, RelaySyncCallback relaySyncCallback) {
-      if (callback != null) {
-        callback.success(vmResumed);
-      }
-      return relaySyncCallback.finish();
-    }
-
-    @Override
-    public boolean canRestartFrame(CallFrame callFrame) {
-      return callFrame.getScript() != null;
     }
   };
 

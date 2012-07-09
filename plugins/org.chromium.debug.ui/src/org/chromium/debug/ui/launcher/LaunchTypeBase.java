@@ -4,19 +4,15 @@
 
 package org.chromium.debug.ui.launcher;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
-import org.chromium.debug.core.model.IPredefinedSourceWrapProvider;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
-import org.chromium.debug.core.model.SourceWrapSupport;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.WorkspaceBridge;
 import org.chromium.debug.ui.PluginUtil;
@@ -57,8 +53,6 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
     boolean addNetworkConsole = config.getAttribute(LaunchParams.ADD_NETWORK_CONSOLE, false);
 
-    SourceWrapSupport sourceWrapSupport = createSourceWrapSupportFromConfig(config);
-
     JavascriptVmEmbedder.ConnectionToRemote remoteServer =
         createConnectionToRemote(host, port, launch, addNetworkConsole);
     try {
@@ -80,8 +74,7 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
         WorkspaceBridge.Factory bridgeFactory =
             new VProjectWorkspaceBridge.FactoryImpl(projectNameBase);
 
-        final DebugTargetImpl target =
-            new DebugTargetImpl(launch, bridgeFactory, sourceWrapSupport);
+        final DebugTargetImpl target = new DebugTargetImpl(launch, bridgeFactory);
 
         Destructable targetDestructor = new Destructable() {
           public void destruct() {
@@ -156,18 +149,6 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
     };
 
     return new ConnectionLoggerImpl(consoleRetransmitter, consoleController);
-  }
-
-  private static SourceWrapSupport createSourceWrapSupportFromConfig(ILaunchConfiguration config)
-      throws CoreException {
-    List<IPredefinedSourceWrapProvider.Entry> entries =
-        LaunchParams.PredefinedSourceWrapperIds.resolveEntries(config);
-    List<SourceWrapSupport.Wrapper> wrappers =
-        new ArrayList<SourceWrapSupport.Wrapper>(entries.size());
-    for (IPredefinedSourceWrapProvider.Entry en : entries) {
-      wrappers.add(en.getWrapper());
-    }
-    return new SourceWrapSupport(wrappers);
   }
 
   static final NamedConnectionLoggerFactory NO_CONNECTION_LOGGER_FACTORY =

@@ -78,8 +78,7 @@ public interface DebugContext {
   ExceptionData getExceptionData();
 
   /**
-   * @return a list of call frames for the current JavaScript suspended state (from the
-   * innermost (top) frame to the main (bottom) frame)
+   * @return a list of call frames for the current JavaScript suspended state
    * @throws MethodIsBlockingException if called from a callback because it may
    *         need to load necessary scripts
    */
@@ -101,12 +100,6 @@ public interface DebugContext {
    * @param stepCount steps to perform (not used if
    *        {@code stepAction == CONTINUE})
    * @param callback to invoke when the request result is ready
-   */
-  RelayOk continueVm(StepAction stepAction, int stepCount,
-      ContinueCallback callback, SyncCallback syncCallback);
-
-  /**
-   * @deprecated see {@link #continueVm(StepAction, int, ContinueCallback, SyncCallback)}
    */
   void continueVm(StepAction stepAction, int stepCount, ContinueCallback callback);
 

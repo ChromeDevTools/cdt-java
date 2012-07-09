@@ -1,7 +1,3 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 package org.chromium.debug.ui.launcher;
 
 import java.util.ArrayList;
@@ -12,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.debug.core.model.LaunchParams;
+import org.chromium.debug.core.model.LaunchParams.LookupMode;
 import org.chromium.debug.core.model.LaunchParams.ValueConverter;
 import org.chromium.debug.ui.PluginUtil;
-import org.chromium.debug.ui.launcher.LaunchTabGroup.Params;
 import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.eclipse.BackendRegistry;
 import org.eclipse.core.runtime.CoreException;
@@ -27,6 +23,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -68,9 +65,9 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
 
   @Override
   protected WipTabElements createDialogElements(Composite composite, final Runnable modifyListener,
-      PreferenceStore store) {
+      PreferenceStore store, Params params) {
     final TabElements basicElements =
-        createBasicTabElements(composite, modifyListener, store, getParams());
+        createBasicTabElements(composite, modifyListener, store, params);
 
     final BackendSelectorControl backendSelector =
         new BackendSelectorControl(composite, backendMap, modifyListener);
@@ -89,6 +86,9 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
       @Override public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
         return basicElements.getBreakpointRadioButtons();
       }
+      @Override public RadioButtonsLogic<LookupMode> getLookupMode() {
+        return basicElements.getLookupMode();
+      }
       @Override public BackendSelectorControl getBackendSelector() {
         return backendSelector;
       }
@@ -96,19 +96,18 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
   }
 
   @Override
-  protected List<? extends TabField<?, ?, ? super WipTabElements, Params>> getTabFields() {
+  protected List<? extends TabField<?, ?, ? super WipTabElements>> getTabFields() {
     return WIP_TAB_FIELDS;
   }
 
-  private static final List<? extends TabField<?, ?, ? super WipTabElements, Params>>
-      WIP_TAB_FIELDS;
+  private static final List<? extends TabField<?, ?, ? super WipTabElements>> WIP_TAB_FIELDS;
   static {
-    List<TabField<?, ?, ? super WipTabElements, Params>> list =
-        new ArrayList<TabField<?, ?, ? super WipTabElements, Params>>(5);
+    List<TabField<?, ?, ? super WipTabElements>> list =
+        new ArrayList<TabField<?, ?, ? super WipTabElements>>(5);
 
     list.addAll(BASIC_TAB_FIELDS);
 
-    list.add(new TabField<String, String, WipTabElements, Params>(
+    list.add(new TabField<String, String, WipTabElements>(
         LaunchParams.WIP_BACKEND_ID, TypedMethods.STRING,
         new FieldAccess<String, WipTabElements>() {
           @Override void setValue(String value, WipTabElements tabElements) {
@@ -118,12 +117,12 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
             return tabElements.getBackendSelector().getId();
           }
         },
-        new DefaultsProvider<String, Params>() {
+        new DefaultsProvider<String>() {
           @Override String getFallbackValue() {
             // TODO: support default value from eclipse variables.
             return null;
           }
-          @Override String getInitialConfigValue(Params context) {
+          @Override String getInitialConfigValue(ChromiumRemoteTab<?> dialog) {
             // TODO: support default value from eclipse variables.
             return null;
           }
@@ -134,7 +133,7 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
   }
 
   private static final Params PARAMS = new Params(HostChecker.LOCAL_ONLY,
-      Messages.ChromiumRemoteTab_URL, false);
+      LaunchParams.LookupMode.EXACT_MATCH, Messages.ChromiumRemoteTab_URL);
 
   /**
    * UI control elements that allows to choose {@link WipBackend}. It consists of a dialog group,
