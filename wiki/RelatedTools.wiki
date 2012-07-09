@@ -14,3 +14,10 @@ Notes:
   * {{{Run | Debug Configuration}}} menu item is available from {{{Debug}}} perspective. 
   * A standard Text Editor should be manually chosen when opening .html file ({{{Open With | Text Editor}}} in context menu).
   * The Text Editor doesn't create breakpoints, but a breakpoint can always be created from {{{Run | Toggle Breakpoint}}} menu.
+
+==Possible Topics (to be done later)==
+  * JSDT
+  * Aptana
+  * !ZendStudio
+  * Spket IDE
+  * VJET
