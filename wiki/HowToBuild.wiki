@@ -36,3 +36,56 @@ TBD.
 
 =Build with [WIP] backends=
 TBD.
+
+=Building release=
+Checkout sources from trunk or a branch -- should be a directory containing {{{plugins}}}, {{{features}}} and {{{builder}}} subdirectories.
+{{{
+cd builder
+}}}
+Update {{{build.properties}}} file (Eclipse directory, JDK directory). Output directory is {{{../../staging}}}
+
+==Build main plugins==
+(Everything except WIP backends)
+{{{
+ant buildMain
+}}}
+Result is in {{{../../staging/mainResult}}}
+
+==Build WIP backend plugins==
+{{{../../staging/mainResult}}} must contain main plugins.
+{{{
+ant buildBackends
+}}}
+Result is in {{{../../staging/backendsResult}}}
+
+==Combining plugins==
+Input must be in {{{../../staging/mainResult}}} and {{{../../staging/backendsResult}}}.
+{{{
+ant repack
+}}}
+Result is in {{{../../staging/result/eclipse}}}
+
+==Building archive files==
+{{{
+ant buildLibs
+}}}
+Result is in {{{../../staging/result/libs}}}
+
+==Building Javadocs==
+{{{
+ant sdkJavadocs
+}}}
+Result is in {{{../../staging/result/sdkJavadocs}}}
+
+=Release Checklist=
+  * Bump up [Versioning version] to odd _"release"_ number.
+  * Update license year numbers.
+  * Build plugins and libraries.
+  * Upload build to update repository.
+  * Upload archives to Downloads.
+  * Build and upload Javadocs (html and css needs {{{svn:mime-type}}} property).
+  * Prepare SVN tag for release.
+  * Write up Release notes.
+  * Send a message to mail group.
+  * Update first page.
+  * Bump up [Versioning version] to even _"development"_ number.
