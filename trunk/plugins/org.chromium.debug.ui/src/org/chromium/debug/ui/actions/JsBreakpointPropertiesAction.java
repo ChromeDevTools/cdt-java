@@ -4,6 +4,7 @@
 
 package org.chromium.debug.ui.actions;
 
+import org.chromium.debug.core.model.ChromiumExceptionBreakpoint;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.jface.action.IAction;
@@ -21,7 +22,19 @@ import org.eclipse.ui.dialogs.PropertyDialogAction;
 /**
  * Action to bring up the breakpoint properties dialog.
  */
-public class JsBreakpointPropertiesAction implements IObjectActionDelegate {
+public abstract class JsBreakpointPropertiesAction implements IObjectActionDelegate {
+
+  public static class Line extends JsBreakpointPropertiesAction {
+    @Override protected boolean isCorrectType(IBreakpoint breakpoint) {
+      return breakpoint instanceof ChromiumLineBreakpoint;
+    }
+  }
+
+  public static class Exception extends JsBreakpointPropertiesAction {
+    @Override protected boolean isCorrectType(IBreakpoint breakpoint) {
+      return breakpoint instanceof ChromiumExceptionBreakpoint;
+    }
+  }
 
   private Runnable currentRunnable;
   private IWorkbenchPartSite site = null;
@@ -39,6 +52,7 @@ public class JsBreakpointPropertiesAction implements IObjectActionDelegate {
     action.setEnabled(currentRunnable != null);
   }
 
+  protected abstract boolean isCorrectType(IBreakpoint breakpoint);
 
   private Runnable createRunnable(ISelection selection) {
     if (selection instanceof IStructuredSelection == false) {
@@ -49,10 +63,13 @@ public class JsBreakpointPropertiesAction implements IObjectActionDelegate {
       return null;
     }
     Object element = structuredSelection.getFirstElement();
-    if (element instanceof ChromiumLineBreakpoint == false) {
+    if (element instanceof IBreakpoint == false) {
       return null;
     }
-    final ChromiumLineBreakpoint breakpoint = (ChromiumLineBreakpoint) element;
+    final IBreakpoint breakpoint = (IBreakpoint) element;
+    if (!isCorrectType(breakpoint)) {
+      return null;
+    }
 
     return new Runnable() {
       public void run() {

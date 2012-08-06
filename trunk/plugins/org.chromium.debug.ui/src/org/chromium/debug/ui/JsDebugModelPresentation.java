@@ -5,11 +5,11 @@
 package org.chromium.debug.ui;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.ChromiumExceptionBreakpoint;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.Value;
 import org.chromium.debug.core.model.ValueBase;
 import org.chromium.debug.core.model.WorkspaceBridge.JsLabelProvider;
-import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.debug.ui.editors.JsEditor;
 import org.chromium.sdk.util.BasicUtil;
 import org.eclipse.core.resources.IFile;
@@ -21,6 +21,7 @@ import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.ui.IDebugModelPresentation;
 import org.eclipse.debug.ui.IValueDetailListener;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.PartInitException;
@@ -51,8 +52,24 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
       } catch (DebugException e) {
         ChromiumDebugPlugin.log(
             new Exception("Failed to read debug target label", e)); //$NON-NLS-1$
-        // fall through
       }
+      return null;
+    }
+    if (element instanceof IBreakpoint) {
+      IBreakpoint breakpoint = (IBreakpoint) element;
+      ChromiumExceptionBreakpoint exceptionBreakpoint =
+          ChromiumExceptionBreakpoint.tryCastBreakpoint(breakpoint);
+      if (exceptionBreakpoint != null) {
+        String caughtAddendum;
+        if (exceptionBreakpoint.getIncludeCaught()) {
+          caughtAddendum = Messages.JsDebugModelPresentation_CAUGHT_ADDENDUM;
+        } else {
+          caughtAddendum = ""; //$NON-NLS-1$
+        }
+        return NLS.bind(Messages.JsDebugModelPresentation_EXCEPTION_LABEL_CAUGHT_ADDENDUM,
+            caughtAddendum);
+      }
+      return null;
     }
     // use default label text
     return null;
@@ -62,7 +79,7 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
     ValueBase chromiumValue = ValueBase.cast(value);
     if (chromiumValue == null) {
       String detail = BasicUtil.getStacktraceString(
-          new Exception("Unexpected type of value: " + value));
+          new Exception("Unexpected type of value: " + value)); //$NON-NLS-1$
       listener.detailComputed(value, detail);
       return;
     }
@@ -112,7 +129,8 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
     try {
       return IDE.getEditorDescriptor(file).getId();
     } catch (PartInitException e) {
-      // TODO(peter.rybin): should it really be the default case? There might be no virtual project.
+      // TODO(peter.rybin): should it really be the default case?
+      // There might be no virtual project.
       return JsEditor.EDITOR_ID;
     }
   }
