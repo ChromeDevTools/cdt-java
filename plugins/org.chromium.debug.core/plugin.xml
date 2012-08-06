@@ -23,6 +23,11 @@
         name="JS Line Breakpoints"
         markerType="org.chromium.debug.core.LineBP"
         id="org.chromium.debug.core.lineBreakpoint"/>
+      <breakpoint
+        class="org.chromium.debug.core.model.ChromiumExceptionBreakpoint"
+        name="JS Exception Breakpoints"
+        markerType="org.chromium.debug.core.ExceptionBP"
+        id="org.chromium.debug.core.exceptionBreakpoint"/>
   </extension>
 
   <!-- "id" value is relative to PLUGIN_ID -->
@@ -31,6 +36,14 @@
       name="JS Line Breakpoint Marker"
       point="org.eclipse.core.resources.markers">
     <super type="org.eclipse.debug.core.lineBreakpointMarker"/>
+    <persistent value="true"/>
+  </extension>
+
+  <extension
+      id="ExceptionBP"
+      name="JS Exception Breakpoint Marker"
+      point="org.eclipse.core.resources.markers">
+    <super type="org.eclipse.debug.core.breakpointMarker"/>
     <persistent value="true"/>
   </extension>
 

@@ -248,10 +248,21 @@
             objectClass="org.chromium.debug.core.model.ChromiumLineBreakpoint"
             id="org.chromium.debug.core.model.ChromiumLineBreakpoint.object_actions">
         <action
-            label="Breakpoint Properties..."
-            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction"
+            label="%BreakpointProperties.action"
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction$Line"
             menubarPath="group.properties"
-            id="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction">
+            id="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction$Line">
+        </action>
+      </objectContribution>
+         
+      <objectContribution
+            objectClass="org.chromium.debug.core.model.ChromiumExceptionBreakpoint"
+            id="org.chromium.debug.core.model.ChromiumExceptionBreakpoint.object_actions">
+        <action
+            label="%BreakpointProperties.action"
+            class="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction$Exception"
+            menubarPath="group.properties"
+            id="org.chromium.debug.ui.actions.JsBreakpointPropertiesAction$Exception">
         </action>
       </objectContribution>
          
@@ -443,6 +454,21 @@
       </enabledWhen>
     </page>
     <page
+        name="%BreakpointProperties.name"
+        class="org.chromium.debug.ui.propertypages.JsExceptionBreakpointPage"
+        id="org.chromium.debug.ui.propertypages.ExceptionBreakpoints">
+      <enabledWhen>
+        <or>
+          <instanceof
+              value="org.chromium.debug.core.model.ChromiumExceptionBreakpoint">
+          </instanceof>
+          <adapt
+              type="org.chromium.debug.core.model.ChromiumExceptionBreakpoint">
+          </adapt>
+        </or>
+      </enabledWhen>
+    </page>
+    <page
         name="%BreakpointTechnicalInfo.name"
         class="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage"
         id="org.chromium.debug.ui.propertypages.BreakpointTechnicalInfoPage">
@@ -497,5 +523,21 @@
        type="org.eclipse.ui.IFileEditorInput"
        class="org.chromium.debug.ui.propertypages.FileEditorInputPropertyTester">
     </propertyTester>
+  </extension>
+
+  <extension point="org.eclipse.ui.actionSets">
+    <actionSet
+        description="%DebugActionSet.label"
+        id="org.chromium.debug.ui.actionSets"
+        label="%DebugActionSet.label"
+        visible="true">
+      <action
+        label="%AddExceptionBreakpoint.label"
+        icon="res/add v8-chrome exception breakpoint"
+        class="org.chromium.debug.ui.actions.AddExceptionBreakpointAction"
+        menubarPath="org.eclipse.ui.run/breakpointGroup"
+        id="org.chromium.debug.ui.actions.AddExceptionBreakpointAction">
+      </action>
+    </actionSet>
   </extension>
 </plugin>

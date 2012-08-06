@@ -35,6 +35,10 @@ public class Messages extends NLS {
 
   public static String JavascriptLineBreakpointPage_IgnoreCountErrorMessage;
 
+  public static String JsExceptionBreakpointPage_CAUGHT;
+
+  public static String JsExceptionBreakpointPage_UNCAUGHT;
+
   public static String JsLineBreakpointPage_LineNumberLabel;
 
   public static String JsLineBreakpointPage_ResourceLabel;

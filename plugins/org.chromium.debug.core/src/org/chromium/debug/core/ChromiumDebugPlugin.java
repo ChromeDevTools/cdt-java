@@ -40,6 +40,9 @@ public class ChromiumDebugPlugin extends Plugin {
   /** The JavaScript line breakpoint marker. */
   public static final String BP_MARKER = PLUGIN_ID + ".LineBP"; //$NON-NLS-1$
 
+  /** The JavaScript exception breakpoint marker. */
+  public static final String EXCEPTION_BP_MARKER = PLUGIN_ID + ".ExceptionBP"; //$NON-NLS-1$
+
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
 
