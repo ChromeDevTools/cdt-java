@@ -39,15 +39,12 @@ import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
 
 /**
  * The "Remote" tab for the Chromium JavaScript launch tab group.
@@ -234,9 +231,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     RadioButtonsLogic<Integer> getBreakpointRadioButtons();
   }
 
-  protected abstract List<? extends TabField<?, ?, ? super ELEMENTS, Params>> getTabFields();
-
-  static final List<? extends TabField<?, ?, ? super TabElements, Params>> BASIC_TAB_FIELDS;
+  static final TabFieldList<TabElements, Params> BASIC_TAB_FIELDS;
   static {
     List<TabField<?, ?, ? super TabElements, Params>> list =
         new ArrayList<ChromiumRemoteTab.TabField<?, ?, ? super TabElements, Params>>(4);
@@ -327,7 +322,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
         },
         ValueConverter.<String>getTrivial()));
 
-    BASIC_TAB_FIELDS = Collections.unmodifiableList(list);
+    BASIC_TAB_FIELDS = createFieldListImpl(list);
   }
 
   private static class SourceContainerChecker {
@@ -393,7 +388,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     }
 
     @Override
-    protected List<? extends TabField<?, ?, ? super TabElements, Params>> getTabFields() {
+    protected TabFieldList<? super TabElements, ? super Params> getTabFields() {
       return BASIC_TAB_FIELDS;
     }
 
@@ -414,7 +409,7 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     }
 
     @Override
-    protected List<? extends TabField<?, ?, ? super TabElements, Params>> getTabFields() {
+    protected TabFieldList<? super TabElements, ? super Params> getTabFields() {
       return BASIC_TAB_FIELDS;
     }
 

@@ -59,23 +59,17 @@ abstract class TabBase<ELEMENTS, PARAMS> extends AbstractLaunchConfigurationTab 
 
   @Override
   public void setDefaults(ILaunchConfigurationWorkingCopy configuration) {
-    for (TabField<?, ?, ?, PARAMS> field : getTabFields()) {
-      field.setDefault(configuration, getParams());
-    }
+    getTabFields().setDefaults(configuration, getParams());
   }
 
   @Override
   public void initializeFrom(ILaunchConfiguration configuration) {
-    for (TabField<?, ?, ? super ELEMENTS, ?> field : getTabFields()) {
-      field.initializeFrom(tabElements, configuration);
-    }
+    getTabFields().initializeFrom(tabElements, configuration);
   }
 
   @Override
   public void performApply(ILaunchConfigurationWorkingCopy configuration) {
-    for (TabField<?, ?, ? super ELEMENTS, ?> field : getTabFields()) {
-      field.saveToConfig(tabElements, configuration);
-    }
+    getTabFields().saveToConfig(tabElements, configuration);
   }
 
   @Override
@@ -127,7 +121,7 @@ abstract class TabBase<ELEMENTS, PARAMS> extends AbstractLaunchConfigurationTab 
     }
   }
 
-  protected abstract List<? extends TabField<?, ?, ? super ELEMENTS, PARAMS>> getTabFields();
+  protected abstract TabFieldList<? super ELEMENTS, ? super PARAMS> getTabFields();
 
   /**
    * A dialog window tab field description. It is a static description -- it has no reference to
@@ -391,5 +385,99 @@ abstract class TabBase<ELEMENTS, PARAMS> extends AbstractLaunchConfigurationTab 
       }
       button.addSelectionListener(selectionListener);
     }
+  }
+
+  /**
+   * Encapsulate tab field list together with a way of accessing them. This includes adapting
+   * type of dialog elements structure (<E>) to a type accepted by fields.
+   * @param <E> type of elements structure that provides getters to dialog elements
+   * @param <P> type of dialog window parameters
+   */
+  interface TabFieldList<E, P> {
+    void setDefaults(ILaunchConfigurationWorkingCopy configuration, P params);
+    void initializeFrom(E elements, ILaunchConfiguration configuration);
+    void saveToConfig(E elements, ILaunchConfigurationWorkingCopy configuration);
+  }
+
+  /**
+   * Create a plain implementation of {@link TabFieldList} over a list of tab fields.
+   */
+  static <E, P> TabFieldList<E, P> createFieldListImpl(
+      final List<? extends TabField<?, ?, ? super E, P>> tabFields) {
+    return new TabFieldList<E, P>() {
+      public void setDefaults(ILaunchConfigurationWorkingCopy configuration, P params) {
+        for (TabField<?, ?, ?, P> field : tabFields) {
+          field.setDefault(configuration, params);
+        }
+      }
+
+      @Override
+      public void initializeFrom(E elements, ILaunchConfiguration configuration) {
+        for (TabField<?, ?, ? super E, ?> field : tabFields) {
+          field.initializeFrom(elements, configuration);
+        }
+      }
+
+      @Override
+      public void saveToConfig(E elements, ILaunchConfigurationWorkingCopy configuration) {
+        for (TabField<?, ?, ? super E, ?> field : tabFields) {
+          field.saveToConfig(elements, configuration);
+        }
+      }
+    };
+  }
+
+  interface Adapter<F, T> {
+    T get(F from);
+  }
+
+  /**
+   * Creates {@link TabFieldList} implementation that adapts dialog elements type using the adapter
+   * to inner type of dialog elements that provided list of {@link TabFieldList} accept.
+   * @param list of tab fields that accepts alternative type of dialog elements structure
+   * @param elementsAdapter converts external dialog elements structure type to the inner type
+   */
+  static <E, INNER, P> TabFieldList<E, P> createFieldListAdapting(
+      final TabFieldList<? super INNER, ? super P> list, final Adapter<E, INNER> elementsAdapter) {
+    return new TabFieldList<E, P>() {
+      @Override public void setDefaults(ILaunchConfigurationWorkingCopy configuration, P params) {
+        list.setDefaults(configuration, params);
+      }
+      @Override public void initializeFrom(E elements, ILaunchConfiguration configuration) {
+        list.initializeFrom(elementsAdapter.get(elements), configuration);
+      }
+      @Override
+      public void saveToConfig(E elements, ILaunchConfigurationWorkingCopy configuration) {
+        list.saveToConfig(elementsAdapter.get(elements), configuration);
+      }
+    };
+  }
+
+  static <E, P> TabFieldList<E, P> createCompositeFieldList(
+      final List<? extends TabFieldList<? super E, ? super P>> listList) {
+    return new TabFieldList<E, P>() {
+      @Override
+      public void setDefaults(ILaunchConfigurationWorkingCopy configuration,
+          P params) {
+        for (TabFieldList<?, ? super P> list : listList) {
+          list.setDefaults(configuration, params);
+        }
+      }
+
+      @Override
+      public void initializeFrom(E elements, ILaunchConfiguration configuration) {
+        for (TabFieldList<? super E, ?> list : listList) {
+          list.initializeFrom(elements, configuration);
+        }
+      }
+
+      @Override
+      public void saveToConfig(E elements,
+          ILaunchConfigurationWorkingCopy configuration) {
+        for (TabFieldList<? super E, ?> list : listList) {
+          list.saveToConfig(elements, configuration);
+        }
+      }
+    };
   }
 }

@@ -19,10 +19,7 @@ import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.eclipse.BackendRegistry;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.jface.preference.BooleanFieldEditor;
-import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceStore;
-import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -46,8 +43,9 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
     }
   }
 
-  interface WipTabElements extends ChromiumRemoteTab.TabElements {
+  interface WipTabElements {
     BackendSelectorControl getBackendSelector();
+    ChromiumRemoteTab.TabElements getBase();
   }
 
   @Override
@@ -77,38 +75,26 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
     backendSelector.getMainControl().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
     return new WipTabElements() {
-      @Override public StringFieldEditor getHost() {
-        return basicElements.getHost();
-      }
-      @Override public IntegerFieldEditor getPort() {
-        return basicElements.getPort();
-      }
-      @Override public BooleanFieldEditor getAddNetworkConsole() {
-        return basicElements.getAddNetworkConsole();
-      }
-      @Override public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
-        return basicElements.getBreakpointRadioButtons();
-      }
       @Override public BackendSelectorControl getBackendSelector() {
         return backendSelector;
+      }
+      @Override
+      public TabElements getBase() {
+        return basicElements;
       }
     };
   }
 
   @Override
-  protected List<? extends TabField<?, ?, ? super WipTabElements, Params>> getTabFields() {
+  protected TabFieldList<? super WipTabElements, ? super Params> getTabFields() {
     return WIP_TAB_FIELDS;
   }
 
-  private static final List<? extends TabField<?, ?, ? super WipTabElements, Params>>
+  private static final TabFieldList<? super WipTabElements, ? super Params>
       WIP_TAB_FIELDS;
   static {
-    List<TabField<?, ?, ? super WipTabElements, Params>> list =
-        new ArrayList<TabField<?, ?, ? super WipTabElements, Params>>(5);
-
-    list.addAll(BASIC_TAB_FIELDS);
-
-    list.add(new TabField<String, String, WipTabElements, Params>(
+    TabField<String, String, WipTabElements, Params> backendChooser =
+        new TabField<String, String, WipTabElements, Params>(
         LaunchParams.WIP_BACKEND_ID, TypedMethods.STRING,
         new FieldAccess<String, WipTabElements>() {
           @Override void setValue(String value, WipTabElements tabElements) {
@@ -128,9 +114,20 @@ class WipRemoteTab extends ChromiumRemoteTab<WipRemoteTab.WipTabElements> {
             return null;
           }
         },
-        ValueConverter.<String>getTrivial()));
+        ValueConverter.<String>getTrivial());
 
-    WIP_TAB_FIELDS = Collections.unmodifiableList(list);
+    List<TabFieldList<? super WipTabElements, ? super Params>> list  =
+        new ArrayList<TabFieldList<? super WipTabElements, ? super Params>>(2);
+    list.add(createFieldListAdapting(BASIC_TAB_FIELDS,
+        new Adapter<WipTabElements, TabElements>() {
+          @Override
+          public TabElements get(WipTabElements from) {
+            return from.getBase();
+          }
+       }));
+    list.add(createFieldListImpl(Collections.singletonList(backendChooser)));
+
+    WIP_TAB_FIELDS = createCompositeFieldList(list);
   }
 
   private static final Params PARAMS = new Params(HostChecker.LOCAL_ONLY,

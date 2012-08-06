@@ -362,11 +362,11 @@ public class ScriptMappingTab extends TabBase<ScriptMappingTab.Elements, Params>
     return null;
   }
 
-  protected List<? extends TabField<?, ?, Elements, Params>> getTabFields() {
+  protected TabFieldList<Elements, Params> getTabFields() {
     return TAB_FIELDS;
   }
 
-  static final List<? extends TabField<?, ?, Elements, Params>> TAB_FIELDS;
+  static final TabFieldList<Elements, Params> TAB_FIELDS;
   static {
     List<TabField<?, ?, Elements, Params>> list =
         new ArrayList<ChromiumRemoteTab.TabField<?, ?, Elements, Params>>(4);
@@ -427,6 +427,6 @@ public class ScriptMappingTab extends TabBase<ScriptMappingTab.Elements, Params>
         },
         LaunchParams.PredefinedSourceWrapperIds.CONVERTER));
 
-    TAB_FIELDS = Collections.unmodifiableList(list);
+    TAB_FIELDS = createFieldListImpl(list);
   }
 }
