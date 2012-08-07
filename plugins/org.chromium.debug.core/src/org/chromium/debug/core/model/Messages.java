@@ -13,6 +13,8 @@ public class Messages extends NLS {
   private static final String BUNDLE_NAME =
       "org.chromium.debug.core.model.messages"; //$NON-NLS-1$
 
+  public static String ChromiumExceptionBreakpoint_MessageMarkerFormat;
+
   public static String ChromiumTabSelectionDialog_DialogTitle;
 
   public static String ChromiumTabSelectionDialog_IdColumnName;

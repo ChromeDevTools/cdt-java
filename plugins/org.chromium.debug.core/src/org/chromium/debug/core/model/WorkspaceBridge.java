@@ -112,11 +112,16 @@ public interface WorkspaceBridge {
     Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint uiBreakpoint);
 
     /**
-     * Registers hit breakpoints and returns their Eclipse counterpart objects.
+     * Returns Eclipse counterpart objects for breakpoints and resets their ignore count.
      * Consider splitting the operation into 2 independent operations.
      */
     Collection<? extends IBreakpoint> breakpointsHit(
         Collection<? extends Breakpoint> breakpointsHit);
+
+    /**
+     * Returns Eclipse representation of exception breakpoints.
+     */
+    Collection<? extends IBreakpoint> exceptionBreakpointHit(boolean isUncaught);
 
     void initBreakpointManagerListenerState(IBreakpointManager breakpointManager);
 

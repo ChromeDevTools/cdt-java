@@ -21,24 +21,22 @@ public class BreakpointMap {
   /**
    * A one-to-one map between SDK and UI breakpoints inside one debug target.
    */
-  public static class InTargetMap {
-    private final Map<Breakpoint, ChromiumLineBreakpoint> sdkToUiMap =
-        new HashMap<Breakpoint, ChromiumLineBreakpoint>();
-    private final Map<ChromiumLineBreakpoint, Breakpoint> uiToSdkMap =
-        new HashMap<ChromiumLineBreakpoint, Breakpoint>();
+  public static class InTargetMap<SDK, UI> {
+    private final Map<SDK, UI> sdkToUiMap = new HashMap<SDK, UI>();
+    private final Map<UI, SDK> uiToSdkMap = new HashMap<UI, SDK>();
 
     public InTargetMap() {
     }
 
-    public synchronized Breakpoint getSdkBreakpoint(ChromiumLineBreakpoint chromiumLineBreakpoint) {
-      return getSafe(uiToSdkMap, chromiumLineBreakpoint);
+    public synchronized SDK getSdkBreakpoint(UI uiBreakpoint) {
+      return getSafe(uiToSdkMap, uiBreakpoint);
     }
 
-    public synchronized ChromiumLineBreakpoint getUiBreakpoint(Breakpoint sdkBreakpoint) {
+    public synchronized UI getUiBreakpoint(SDK sdkBreakpoint) {
       return getSafe(sdkToUiMap, sdkBreakpoint);
     }
 
-    public synchronized void add(Breakpoint sdkBreakpoint, ChromiumLineBreakpoint uiBreakpoint) {
+    public synchronized void add(SDK sdkBreakpoint, UI uiBreakpoint) {
       Object conflict1 = uiToSdkMap.put(uiBreakpoint, sdkBreakpoint);
       Object conflict2 = sdkToUiMap.put(sdkBreakpoint, uiBreakpoint);
       if (conflict1 != null || conflict2 != null) {
@@ -46,8 +44,8 @@ public class BreakpointMap {
       }
     }
 
-    public synchronized void remove(ChromiumLineBreakpoint lineBreakpoint) {
-      Breakpoint sdkBreakpoint = removeSafe(uiToSdkMap, lineBreakpoint);
+    public synchronized void remove(UI uiBreakpoint) {
+      SDK sdkBreakpoint = removeSafe(uiToSdkMap, uiBreakpoint);
       if (sdkBreakpoint == null) {
         throw new RuntimeException();
       }

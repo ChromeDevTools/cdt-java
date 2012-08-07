@@ -34,7 +34,8 @@ public class ChromiumExceptionBreakpoint extends Breakpoint {
         setMarker(marker);
         marker.setAttribute(IBreakpoint.ENABLED, Boolean.TRUE);
         marker.setAttribute(IBreakpoint.ID, modelId);
-        marker.setAttribute(IMarker.MESSAGE, "Exception Breakpoint");
+        marker.setAttribute(IMarker.MESSAGE,
+            Messages.ChromiumExceptionBreakpoint_MessageMarkerFormat);
       }
     };
     run(getMarkerRule(resource), runnable);
@@ -54,7 +55,7 @@ public class ChromiumExceptionBreakpoint extends Breakpoint {
 
   @Override
   public String getModelIdentifier() {
-    return getMarker().getAttribute(IBreakpoint.ID, "");
+    return getMarker().getAttribute(IBreakpoint.ID, ""); //$NON-NLS-1$
   }
 
   public static ChromiumExceptionBreakpoint tryCastBreakpoint(IBreakpoint breakpoint) {
