@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.chromium.sdk.util.Destructable;
 import org.chromium.sdk.util.DestructingGuard;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -128,13 +129,15 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
   private final SourceWrapSupport sourceWrapSupport;
 
   private final ILaunch launch;
+  private final BreakpointSynchronizer.Direction presetSyncDirection;
   private volatile State currentState = new TargetInitializeState(this);
 
   public DebugTargetImpl(ILaunch launch, WorkspaceBridge.Factory workspaceBridgeFactory,
-      SourceWrapSupport sourceWrapSupport) {
+      SourceWrapSupport sourceWrapSupport, BreakpointSynchronizer.Direction presetSyncDirection) {
     this.launch = launch;
     this.workspaceBridgeFactory = workspaceBridgeFactory;
     this.sourceWrapSupport = sourceWrapSupport;
+    this.presetSyncDirection = presetSyncDirection;
   }
 
   public void fireTargetCreated() {
@@ -363,5 +366,9 @@ public class DebugTargetImpl extends DebugElementImpl implements IDebugTarget {
     if (debugPlugin != null) {
       debugPlugin.fireDebugEventSet(new DebugEvent[] { event });
     }
+  }
+
+  BreakpointSynchronizer.Direction getPresetSyncDirection() {
+    return presetSyncDirection;
   }
 }

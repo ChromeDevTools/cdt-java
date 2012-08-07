@@ -25,10 +25,10 @@ import org.eclipse.osgi.util.NLS;
  * user may already start his debug activity.
  */
 class LaunchInitializationProcedure {
-  static void startAsync(VProjectWorkspaceBridge workspaceBridge) {
-
+  static void startAsync(VProjectWorkspaceBridge workspaceBridge,
+      BreakpointSynchronizer.Direction presetDirection) {
     final LaunchInitializationProcedure procedure =
-        new LaunchInitializationProcedure(workspaceBridge);
+        new LaunchInitializationProcedure(workspaceBridge, presetDirection);
 
     ILaunch launch = workspaceBridge.getConnectedTargetData().getDebugTarget().getLaunch();
     final String jobName = NLS.bind(Messages.LaunchInitializationProcedure_JOB_NAME,
@@ -43,9 +43,12 @@ class LaunchInitializationProcedure {
   }
 
   private final VProjectWorkspaceBridge workspaceBridge;
+  private final BreakpointSynchronizer.Direction presetDirection;
 
-  private LaunchInitializationProcedure(VProjectWorkspaceBridge workspaceBridge) {
+  private LaunchInitializationProcedure(VProjectWorkspaceBridge workspaceBridge,
+      BreakpointSynchronizer.Direction presetDirection) {
     this.workspaceBridge = workspaceBridge;
+    this.presetDirection = presetDirection;
   }
 
   /**
@@ -109,13 +112,17 @@ class LaunchInitializationProcedure {
       ILaunchConfiguration launchConfiguration = debugTarget.getLaunch().getLaunchConfiguration();
 
       BreakpointSynchronizer.Direction direction;
-      try {
-        direction = LaunchParams.readBreakpointSyncDirection(launchConfiguration);
-      } catch (CoreException e) {
-        ChromiumDebugPlugin.log(
-            new Exception("Failed to read breakpoint synchronization direction " + //$NON-NLS-1$
-                "from launch configuration " + launchConfiguration.getName(), e)); //$NON-NLS-1$
-        direction = null;
+      if (presetDirection == null) {
+        try {
+          direction = LaunchParams.readBreakpointSyncDirection(launchConfiguration);
+        } catch (CoreException e) {
+          ChromiumDebugPlugin.log(
+              new Exception("Failed to read breakpoint synchronization direction " + //$NON-NLS-1$
+                  "from launch configuration " + launchConfiguration.getName(), e)); //$NON-NLS-1$
+          direction = null;
+        }
+      } else {
+        direction = presetDirection;
       }
 
       if (direction == null) {

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
+import org.chromium.debug.core.model.BreakpointSynchronizer.Direction;
 import org.chromium.debug.core.model.ConnectionLoggerImpl;
 import org.chromium.debug.core.model.ConsolePseudoProcess;
 import org.chromium.debug.core.model.DebugTargetImpl;
@@ -81,7 +82,7 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
             new VProjectWorkspaceBridge.FactoryImpl(projectNameBase);
 
         final DebugTargetImpl target =
-            new DebugTargetImpl(launch, bridgeFactory, sourceWrapSupport);
+            new DebugTargetImpl(launch, bridgeFactory, sourceWrapSupport, getPresetSyncDirection());
 
         Destructable targetDestructor = new Destructable() {
           public void destruct() {
@@ -115,6 +116,8 @@ public abstract class LaunchTypeBase implements ILaunchConfigurationDelegate {
 
   protected abstract JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(String host,
       int port, ILaunch launch, boolean addConsoleLogger) throws CoreException;
+
+  protected abstract Direction getPresetSyncDirection();
 
   private static void terminateTarget(DebugTargetImpl target) {
     try {

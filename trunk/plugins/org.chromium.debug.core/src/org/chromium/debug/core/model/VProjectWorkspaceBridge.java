@@ -100,7 +100,8 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
   }
 
   public void startInitialization() {
-    LaunchInitializationProcedure.startAsync(this);
+    LaunchInitializationProcedure.startAsync(this,
+        connectedTargetData.getDebugTarget().getPresetSyncDirection());
   }
 
   public void launchRemoved() {
