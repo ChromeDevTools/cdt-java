@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
-import org.chromium.debug.core.model.BreakpointMap.InTargetMap;
 import org.chromium.debug.core.model.BreakpointSynchronizer.Callback;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint.MutableProperty;
 import org.chromium.debug.core.model.VmResource.Metadata;
@@ -251,7 +250,7 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
     }
 
     @Override
-    public InTargetMap<Breakpoint, ChromiumLineBreakpoint> getLineBreakpointMap() {
+    public BreakpointInTargetMap<Breakpoint, ChromiumLineBreakpoint> getLineBreakpointMap() {
       return lineBreakpointHandler.getMap();
     }
 
@@ -701,11 +700,11 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
 
       abstract UI tryCastBreakpoint(IBreakpoint breakpoint);
 
-      protected InTargetMap<SDK, UI> getMap() {
+      protected BreakpointInTargetMap<SDK, UI> getMap() {
         return map;
       }
 
-      private final InTargetMap<SDK, UI> map = new BreakpointMap.InTargetMap<SDK, UI>();
+      private final BreakpointInTargetMap<SDK, UI> map = new BreakpointInTargetMap<SDK, UI>();
     }
   }
 
