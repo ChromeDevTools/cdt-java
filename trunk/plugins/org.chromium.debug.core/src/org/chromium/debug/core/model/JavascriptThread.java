@@ -286,22 +286,27 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
       }
 
       WorkspaceBridge workspaceRelations = getConnectedData().getWorkspaceRelations();
-      Collection<? extends Breakpoint> sdkBreakpointsHit = context.getBreakpointsHit();
-      Collection<? extends IBreakpoint> uiBreakpointsHit =
-          workspaceRelations.getBreakpointHandler().breakpointsHit(sdkBreakpointsHit);
 
-      suspendedState.setBreakpoints(uiBreakpointsHit);
-
+      Collection<? extends IBreakpoint> uiBreakpointsHit;
       SuspendReason suspendedReason;
-      if (context.getState() == org.chromium.sdk.DebugContext.State.EXCEPTION) {
+
+      if (context.getState() == DebugContext.State.EXCEPTION) {
+        uiBreakpointsHit =
+            workspaceRelations.getBreakpointHandler().exceptionBreakpointHit(
+                context.getExceptionData().isUncaught());
         suspendedReason = SuspendReason.BREAKPOINT;
       } else {
+        Collection<? extends Breakpoint> sdkBreakpointsHit = context.getBreakpointsHit();
+        uiBreakpointsHit =
+            workspaceRelations.getBreakpointHandler().breakpointsHit(sdkBreakpointsHit);
         if (sdkBreakpointsHit.isEmpty()) {
           suspendedReason = expectedSuspendReason;
         } else {
           suspendedReason = SuspendReason.BREAKPOINT;
         }
       }
+
+      suspendedState.setBreakpoints(uiBreakpointsHit);
 
       int suspendedDetail;
       if (suspendedReason == null) {

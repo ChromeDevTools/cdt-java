@@ -67,6 +67,7 @@ public interface DebugContext {
 
   /**
    * @return the JavaScript VM suspension state
+   * TODO: consider redesigning it with subtypes.
    */
   State getState();
 
