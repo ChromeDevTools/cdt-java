@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ChromiumSourceDirector;
 import org.chromium.debug.core.ScriptNameManipulator.ScriptNamePattern;
-import org.chromium.debug.core.model.BreakpointMap.InTargetMap;
 import org.chromium.debug.core.util.ChromiumDebugPluginUtil;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.BreakpointTypeExtension;
@@ -95,7 +94,7 @@ public class BreakpointSynchronizer {
         VmResourceRef vmResourceRef,
         CreateCallback createCallback, SyncCallback syncCallback) throws CoreException;
 
-    InTargetMap<Breakpoint, ChromiumLineBreakpoint> getLineBreakpointMap();
+    BreakpointInTargetMap<Breakpoint, ChromiumLineBreakpoint> getLineBreakpointMap();
 
     void registerExceptionBreakpoint(Collection<ChromiumExceptionBreakpoint> breakpoints);
 
@@ -281,10 +280,10 @@ public class BreakpointSynchronizer {
     private final Direction direction;
     private final List<ChromiumLineBreakpoint> missingUi = new ArrayList<ChromiumLineBreakpoint>();
     private final List<Breakpoint> missingSdk = new ArrayList<Breakpoint>();
-    private final InTargetMap<Breakpoint, ChromiumLineBreakpoint> breakpointMap;
+    private final BreakpointInTargetMap<Breakpoint, ChromiumLineBreakpoint> breakpointMap;
 
     BreakpointMerger(Direction direction,
-        InTargetMap<Breakpoint, ChromiumLineBreakpoint> breakpointMap) {
+        BreakpointInTargetMap<Breakpoint, ChromiumLineBreakpoint> breakpointMap) {
       this.direction = direction;
       this.breakpointMap = breakpointMap;
     }

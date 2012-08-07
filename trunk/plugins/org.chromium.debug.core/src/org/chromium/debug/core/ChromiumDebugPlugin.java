@@ -12,7 +12,6 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import org.chromium.debug.core.model.BreakpointMap;
 import org.chromium.debug.core.model.ChromiumBreakpointWBAFactory;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.chromium.debug.core.model.ConnectedTargetData;
@@ -46,8 +45,6 @@ public class ChromiumDebugPlugin extends Plugin {
   /** The shared instance. */
   private static ChromiumDebugPlugin plugin;
 
-  private final BreakpointMap breakpointMap = new BreakpointMap();
-
   private ChromiumBreakpointWBAFactory breakpointWorkbenchAdapterFactory;
 
   public ChromiumDebugPlugin() {
@@ -71,10 +68,6 @@ public class ChromiumDebugPlugin extends Plugin {
     IAdapterManager manager = Platform.getAdapterManager();
     manager.unregisterAdapters(breakpointWorkbenchAdapterFactory);
     super.stop(context);
-  }
-
-  public BreakpointMap getBreakpointMap() {
-    return breakpointMap;
   }
 
   /**
