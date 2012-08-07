@@ -144,36 +144,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
       addNetworkConsole.setPropertyChangeListener(propertyModifyListener);
     }
 
-    RadioButtonsLogic.Listener radioButtonsListener =
-        new RadioButtonsLogic.Listener() {
-          public void selectionChanged() {
-            modifyListener.run();
-          }
-        };
-
-    final RadioButtonsLogic<Integer> breakpointRadioButtons;
-    {
-      Group breakpointGroup = new Group(composite, 0);
-      breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-      breakpointGroup.setText(Messages.ChromiumRemoteTab_BREAKPOINT_GROUP);
-      breakpointGroup.setLayout(new GridLayout(1, false));
-
-      Map<Integer, Button> buttonMap = new LinkedHashMap<Integer, Button>(3);
-      for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
-        Button button = new Button(breakpointGroup, SWT.RADIO);
-        button.setFont(composite.getFont());
-        button.setText(option.getLabel());
-        GridData gd = new GridData();
-        button.setLayoutData(gd);
-        SWTFactory.setButtonDimensionHint(button);
-        int index = buttonMap.size();
-        buttonMap.put(index, button);
-      }
-
-      breakpointRadioButtons =
-          new RadioButtonsLogic<Integer>(buttonMap, radioButtonsListener);
-    }
-
     return new TabElements() {
       @Override public StringFieldEditor getHost() {
         return debugHost;
@@ -183,9 +153,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
       }
       @Override public BooleanFieldEditor getAddNetworkConsole() {
         return addNetworkConsole;
-      }
-      @Override public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
-        return breakpointRadioButtons;
       }
     };
   }
@@ -228,7 +195,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     StringFieldEditor getHost();
     IntegerFieldEditor getPort();
     BooleanFieldEditor getAddNetworkConsole();
-    RadioButtonsLogic<Integer> getBreakpointRadioButtons();
   }
 
   static final TabFieldList<TabElements, Params> BASIC_TAB_FIELDS;
@@ -298,30 +264,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
         },
         ValueConverter.<Boolean>getTrivial()));
 
-    list.add(new TabField<String, String, TabElements, Params>(
-        LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING,
-            new FieldAccess<String, TabElements>() {
-          @Override
-          void setValue(String value, TabElements tabElements) {
-            int breakpointOptionIndex = LaunchParams.findBreakpointOption(value);
-            tabElements.getBreakpointRadioButtons().select(breakpointOptionIndex);
-          }
-          @Override
-          String getValue(TabElements tabElements) {
-            int breakpointOption = tabElements.getBreakpointRadioButtons().getSelected();
-            return LaunchParams.BREAKPOINT_OPTIONS.get(breakpointOption).getDirectionStringValue();
-          }
-        },
-        new DefaultsProvider<String, Params>() {
-          @Override String getFallbackValue() {
-            return Direction.MERGE.toString();
-          }
-          @Override String getInitialConfigValue(Params context) {
-            return null;
-          }
-        },
-        ValueConverter.<String>getTrivial()));
-
     BASIC_TAB_FIELDS = createFieldListImpl(list);
   }
 
@@ -376,20 +318,116 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     }
   }
 
-  static class DevToolsProtocol extends ChromiumRemoteTab<TabElements> {
+  static abstract class DevToolsProtocolBase extends ChromiumRemoteTab<DevToolsElements> {
+    DevToolsProtocolBase(Params params) {
+      super(params);
+    }
+
+    @Override
+    protected DevToolsElements createDialogElements(Composite composite,
+        final Runnable modifyListener, PreferenceStore store) {
+      final TabElements basicElements =
+          createBasicTabElements(composite, modifyListener, store, getParams());
+
+      RadioButtonsLogic.Listener radioButtonsListener =
+          new RadioButtonsLogic.Listener() {
+            public void selectionChanged() {
+              modifyListener.run();
+            }
+          };
+
+      final RadioButtonsLogic<Integer> breakpointRadioButtons;
+      {
+        Group breakpointGroup = new Group(composite, 0);
+        breakpointGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        breakpointGroup.setText(Messages.ChromiumRemoteTab_BREAKPOINT_GROUP);
+        breakpointGroup.setLayout(new GridLayout(1, false));
+
+        Map<Integer, Button> buttonMap = new LinkedHashMap<Integer, Button>(3);
+        for (LaunchParams.BreakpointOption option : LaunchParams.BREAKPOINT_OPTIONS) {
+          Button button = new Button(breakpointGroup, SWT.RADIO);
+          button.setFont(composite.getFont());
+          button.setText(option.getLabel());
+          GridData gd = new GridData();
+          button.setLayoutData(gd);
+          SWTFactory.setButtonDimensionHint(button);
+          int index = buttonMap.size();
+          buttonMap.put(index, button);
+        }
+
+        breakpointRadioButtons =
+            new RadioButtonsLogic<Integer>(buttonMap, radioButtonsListener);
+      }
+
+      return new DevToolsElements() {
+        @Override
+        public RadioButtonsLogic<Integer> getBreakpointRadioButtons() {
+          return breakpointRadioButtons;
+        }
+
+        @Override
+        public TabElements getBase() {
+          return basicElements;
+        }
+      };
+    }
+
+    @Override
+    protected TabFieldList<? super DevToolsElements, ? super Params> getTabFields() {
+      return TAB_FIELD_LIST;
+    }
+
+    private static final TabFieldList<? super DevToolsElements, ? super Params> TAB_FIELD_LIST;
+    static {
+      TabField<String, String, DevToolsElements, Params> breakpointSyncField =
+          new TabField<String, String, DevToolsElements, Params>(
+          LaunchParams.BREAKPOINT_SYNC_DIRECTION, TypedMethods.STRING,
+              new FieldAccess<String, DevToolsElements>() {
+            @Override
+            void setValue(String value, DevToolsElements tabElements) {
+              int breakpointOptionIndex = LaunchParams.findBreakpointOption(value);
+              tabElements.getBreakpointRadioButtons().select(breakpointOptionIndex);
+            }
+            @Override
+            String getValue(DevToolsElements tabElements) {
+              int breakpointOption = tabElements.getBreakpointRadioButtons().getSelected();
+              return LaunchParams.BREAKPOINT_OPTIONS.get(breakpointOption)
+                  .getDirectionStringValue();
+            }
+          },
+          new DefaultsProvider<String, Params>() {
+            @Override String getFallbackValue() {
+              return Direction.MERGE.toString();
+            }
+            @Override String getInitialConfigValue(Params context) {
+              return null;
+            }
+          },
+          ValueConverter.<String>getTrivial());
+
+      List<TabFieldList<? super DevToolsElements, ? super Params>> subLists =
+          new ArrayList<TabBase.TabFieldList<? super DevToolsElements,? super Params>>(2);
+      subLists.add(createFieldListAdapting(BASIC_TAB_FIELDS,
+          new Adapter<DevToolsElements, TabElements>() {
+            @Override
+            public TabElements get(DevToolsElements from) {
+              return from.getBase();
+            }
+          }));
+      subLists.add(createFieldListImpl(Collections.singletonList(breakpointSyncField)));
+
+      TAB_FIELD_LIST = createCompositeFieldList(subLists);
+    }
+  }
+
+  interface DevToolsElements {
+    RadioButtonsLogic<Integer> getBreakpointRadioButtons();
+    TabElements getBase();
+  }
+
+  static class DevToolsProtocol extends DevToolsProtocolBase {
     public DevToolsProtocol() {
       super(PARAMS);
-    }
-
-    @Override
-    protected TabElements createDialogElements(Composite composite,
-        Runnable modifyListener, PreferenceStore store) {
-      return createBasicTabElements(composite, modifyListener, store, getParams());
-    }
-
-    @Override
-    protected TabFieldList<? super TabElements, ? super Params> getTabFields() {
-      return BASIC_TAB_FIELDS;
     }
 
     private static final Params PARAMS = new Params(
@@ -397,20 +435,9 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
         Messages.ChromiumRemoteTab_URL, false);
   }
 
-  static class Standalone extends ChromiumRemoteTab<TabElements> {
+  static class Standalone extends DevToolsProtocolBase {
     public Standalone() {
       super(PARAMS);
-    }
-
-    @Override
-    protected TabElements createDialogElements(Composite composite,
-        Runnable modifyListener, PreferenceStore store) {
-      return createBasicTabElements(composite, modifyListener, store, getParams());
-    }
-
-    @Override
-    protected TabFieldList<? super TabElements, ? super Params> getTabFields() {
-      return BASIC_TAB_FIELDS;
     }
 
     private static final Params PARAMS = new Params(null,

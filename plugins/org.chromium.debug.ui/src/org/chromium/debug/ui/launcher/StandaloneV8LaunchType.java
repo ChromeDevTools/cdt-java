@@ -2,6 +2,7 @@
 
 package org.chromium.debug.ui.launcher;
 
+import org.chromium.debug.core.model.BreakpointSynchronizer;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
@@ -23,5 +24,10 @@ public class StandaloneV8LaunchType extends LaunchTypeBase {
       consoleFactory = NO_CONNECTION_LOGGER_FACTORY;
     }
     return JavascriptVmEmbedderFactory.connectToStandalone(host, port, consoleFactory);
+  }
+
+  @Override
+  protected BreakpointSynchronizer.Direction getPresetSyncDirection() {
+    return null;
   }
 }

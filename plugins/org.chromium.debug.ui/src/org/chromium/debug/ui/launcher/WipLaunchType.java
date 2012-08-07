@@ -5,6 +5,7 @@
 package org.chromium.debug.ui.launcher;
 
 import org.chromium.debug.core.model.JavascriptVmEmbedder.ConnectionToRemote;
+import org.chromium.debug.core.model.BreakpointSynchronizer;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
 import org.chromium.debug.core.model.LaunchParams;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
@@ -54,5 +55,10 @@ public class WipLaunchType extends LaunchTypeBase {
 
     return JavascriptVmEmbedderFactory.connectToWipBrowser(host, port, backend, consoleFactory,
         consoleFactory, DialogBasedTabSelector.WIP_INSTANCE);
+  }
+
+  @Override
+  protected BreakpointSynchronizer.Direction getPresetSyncDirection() {
+    return BreakpointSynchronizer.Direction.RESET_REMOTE;
   }
 }

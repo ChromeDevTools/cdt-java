@@ -2,6 +2,13 @@
 
 package org.chromium.debug.ui.launcher;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+
+import org.chromium.debug.core.model.BreakpointSynchronizer;
 import org.chromium.debug.core.model.JavascriptVmEmbedder;
 import org.chromium.debug.core.model.JavascriptVmEmbedderFactory;
 import org.chromium.debug.core.model.NamedConnectionLoggerFactory;
@@ -18,12 +25,6 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.Launch;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-
 public class ChromiumLaunchType extends LaunchTypeBase {
   @Override
   protected JavascriptVmEmbedder.ConnectionToRemote createConnectionToRemote(String host, int port,
@@ -32,6 +33,11 @@ public class ChromiumLaunchType extends LaunchTypeBase {
         addConsoleLogger ? getLoggerFactory() : NO_CONNECTION_LOGGER_FACTORY;
     return JavascriptVmEmbedderFactory.connectToChromeDevTools(host, port, consoleFactory,
         DialogBasedTabSelector.INSTANCE);
+  }
+
+  @Override
+  protected BreakpointSynchronizer.Direction getPresetSyncDirection() {
+    return null;
   }
 
   private static NamedConnectionLoggerFactory loggerFactory = null;
