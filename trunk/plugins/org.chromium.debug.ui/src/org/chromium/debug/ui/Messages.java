@@ -23,7 +23,7 @@ public class Messages extends NLS {
 
   public static String ChromiumToggleBreakpointTargetFactory_TOGGLE_TARGET_NAME;
 
-  public static String JsDebugModelPresentation_CAUGHT_ADDENDUM;
+  public static String JsDebugModelPresentation_EXCEPTION_LABEL;
 
   public static String JsDebugModelPresentation_EXCEPTION_LABEL_CAUGHT_ADDENDUM;
 
