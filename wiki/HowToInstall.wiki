@@ -21,4 +21,4 @@ SDK is available from "Downloads" section as "!ChromeDevTools SDK library". This
 WIP backends are separately downloadable as "!ChromeDevTools SDK WIP backends".
 
 = For Contributors =
-You can check out sources and build the project yourself. See HowToBuild instructions.
+You can check out sources and build the project yourself. See HowToBuild and [Contribution] instructions.
