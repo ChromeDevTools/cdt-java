@@ -1,6 +1,9 @@
 #summary How to install Debugger.
 #labels Featured
 
+= Java Version =
+Minimum required version of Java VM is 1.6. Note that Eclipse will check this and will mostly _silently_ block Debugger plugins in case of wrong Java version.
+
 = Eclipse Debugger =
 
   * *Update site* is at http://chromedevtools.googlecode.com/svn/update/dev/. Note that Eclipse may take a chance updating other plugins at this occurrence. If this takes too long, it is recommended to temporary disable other update sites (use "Available Software Sites" preferences page).
