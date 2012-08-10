@@ -303,38 +303,6 @@ public class VProjectWorkspaceBridge implements WorkspaceBridge {
       }
     }
 
-    @Override
-    public void readBreakExceptionStateFromRemote() {
-      setBreakExceptionStateImpl(null);
-    }
-
-    @Override
-    public ExceptionCatchMode getBreakExceptionState() {
-      return breakExceptionMode;
-    }
-
-    @Override
-    public void setBreakExceptionState(ExceptionCatchMode catchMode) {
-      setBreakExceptionStateImpl(catchMode);
-    }
-
-    private void setBreakExceptionStateImpl(final ExceptionCatchMode catchMode) {
-      GenericCallback<ExceptionCatchMode> callback =
-          new GenericCallback<ExceptionCatchMode>() {
-            public void success(ExceptionCatchMode newValue) {
-              breakExceptionMode = newValue;
-            }
-            public void failure(Exception exception) {
-              ChromiumDebugPlugin.log(new Exception(
-                  "Failed to set 'break on exception' value", exception));
-            }
-          };
-      // TODO: root out the entire calling hierarchy up to UI actions.
-      if (false) {
-          javascriptVm.setBreakOnException(catchMode, callback, null);
-      }
-    }
-
     private class LineBreakpointHandler
         extends BreakpointMapperBase<Breakpoint, ChromiumLineBreakpoint> {
       private final EnablementMonitor enablementMonitor = new EnablementMonitor();

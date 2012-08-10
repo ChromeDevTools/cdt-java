@@ -62,11 +62,11 @@ public class JsDebugModelPresentation extends LabelProvider implements IDebugMod
       if (exceptionBreakpoint != null) {
         String caughtAddendum;
         if (exceptionBreakpoint.getIncludeCaught()) {
-          caughtAddendum = Messages.JsDebugModelPresentation_CAUGHT_ADDENDUM;
+          caughtAddendum = Messages.JsDebugModelPresentation_EXCEPTION_LABEL_CAUGHT_ADDENDUM;
         } else {
           caughtAddendum = ""; //$NON-NLS-1$
         }
-        return NLS.bind(Messages.JsDebugModelPresentation_EXCEPTION_LABEL_CAUGHT_ADDENDUM,
+        return NLS.bind(Messages.JsDebugModelPresentation_EXCEPTION_LABEL,
             caughtAddendum);
       }
       return null;

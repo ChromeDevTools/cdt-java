@@ -407,32 +407,6 @@
                menubarPath="org.chromium.debug.ui.actions.SynchronizeBreakpoints.MenuId/group0"
                id="org.chromium.debug.ui.actions.SynchronizeBreakpoints$Merge.forLaunch">
          </action>
-         <menu id="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId"
-               label="%ExceptionBreakpoints.menu.label"
-               path="launchGroup"
-         >
-            <separator
-                  name="group0">
-            </separator>
-         </menu>
-         <action
-               label="%ExceptionBreakpoints.All.label"
-               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$All"
-               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
-               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
-         </action>
-         <action
-               label="%ExceptionBreakpoints.Uncaught.label"
-               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught"
-               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
-               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Uncaught.forLaunch">
-         </action>
-         <action
-               label="%ExceptionBreakpoints.None.label"
-               class="org.chromium.debug.ui.actions.ExceptionBreakpoints$None"
-               menubarPath="org.chromium.debug.ui.actions.ExceptionBreakpoints.MenuId/group0"
-               id="org.chromium.debug.ui.actions.ExceptionBreakpoints$Caught.forLaunch">
-         </action>
       </objectContribution>
   </extension>
 

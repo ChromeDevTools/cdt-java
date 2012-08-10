@@ -124,10 +124,6 @@ public interface WorkspaceBridge {
     Collection<? extends IBreakpoint> exceptionBreakpointHit(boolean isUncaught);
 
     void initBreakpointManagerListenerState(IBreakpointManager breakpointManager);
-
-    void readBreakExceptionStateFromRemote();
-    JavascriptVm.ExceptionCatchMode getBreakExceptionState();
-    void setBreakExceptionState(JavascriptVm.ExceptionCatchMode catchMode);
   }
 
   /**

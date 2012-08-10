@@ -87,8 +87,8 @@ public class ConnectedTargetData {
     IBreakpointManager breakpointManager = DebugPlugin.getDefault().getBreakpointManager();
     breakpointManager.addBreakpointListener(debugTargetState.getBreakpointListner());
     breakpointManager.addBreakpointManagerListener(workspaceRelations.getBreakpointHandler());
-    workspaceRelations.getBreakpointHandler().initBreakpointManagerListenerState(breakpointManager);
-    workspaceRelations.getBreakpointHandler().readBreakExceptionStateFromRemote();
+    workspaceRelations.getBreakpointHandler().initBreakpointManagerListenerState(
+        breakpointManager);
 
     workspaceRelations.startInitialization();
   }
