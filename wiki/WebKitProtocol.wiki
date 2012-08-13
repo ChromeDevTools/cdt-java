@@ -2,7 +2,7 @@
 
 = !WebKit Remote Debugging Protocol =
 
-See [http://code.google.com/chrome/devtools/docs/remote-debugging.html].
+See [http://code.google.com/chrome/devtools/docs/remote-debugging].
 
 Blog posts:
   * [http://blog.chromium.org/2011/05/remote-debugging-with-chrome-developer.html Remote debugging with Chrome Developer Tools], The Chromium Blog, May 9th, 2011,
