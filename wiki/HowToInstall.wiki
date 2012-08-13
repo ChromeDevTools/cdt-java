@@ -2,7 +2,7 @@
 #labels Featured
 
 = Java Version =
-Minimum required version of Java VM is 1.6. Note that Eclipse will check this and will mostly _silently_ block Debugger plugins in case of wrong Java version.
+Minimum required version of Java VM is 1.6. Note that Eclipse checks this and will almost _silently_ block Debugger plugins should the version appear wrong.
 
 = Eclipse Debugger =
 
