@@ -11,6 +11,4 @@ See also HowToInstall and DebuggerTutorial.
 Main article: EclipseDebuggerFeatures.
 
 = Known issues =
-  * Duplicate scripts can be loaded from V8 for the same resource.
-  * Only V8-provided scripts are shown rather than actual resources loaded by the browser (the resources are not exposed through the V8 debugger protocol).
-  * Old Debugger version 0.1.4 has more strict requirements for Java version: JRE 6. Version 0.1.6 works with JRE 5.
+  * When running Eclipse on incorrect Java VM version (see release notes for details, 0.3.6 requires Java 1.6) debugger silently doesn't show up, notably from launch configuration dialog.
