@@ -1,7 +1,7 @@
 #summary WIP term explained
 
 = Introduction =
-WIP is a codename of [#WebKit_Remote_Debugging_Protocol WebKit Remote Debugging Protocol] Java implementation. This is the main Google Chrome/Chromium debug protocol and historically it succeeds ChromeDevToolsProtocol. It is natively used by in-browser Developer Tools.
+WIP is a codename of [WebKitProtocol WebKit Remote Debugging Protocol] Java implementation. This is the main Google Chrome/Chromium debug protocol and historically it succeeds ChromeDevToolsProtocol. It is natively used by in-browser Developer Tools.
 
 WIP stands for "!WebInspector Protocol" and is used within "Google Chrome Developer Tools for Java" project only, mostly for historical reasons.
 
@@ -29,9 +29,3 @@ Protocol is called '!WebKit Remote Debuggin Protocol'. You can be sure that you 
 {{{--remote-debugging-port=<port>}}}
 
 Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
-
-== !WebKit Remote Debugging Protocol ==
-See [http://code.google.com/chrome/devtools/docs/remote-debugging.html].
-Blog posts:
-  * [http://blog.chromium.org/2011/05/remote-debugging-with-chrome-developer.html Remote debugging with Chrome Developer Tools], The Chromium Blog, May 9th, 2011,
-  * [http://www.webkit.org/blog/1620/webkit-remote-debugging/ WebKit Remote Debugging], Surfin' Safari, May 9th, 2011.
