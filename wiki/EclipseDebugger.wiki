@@ -11,4 +11,4 @@ See also HowToInstall and DebuggerTutorial.
 Main article: EclipseDebuggerFeatures.
 
 = Known issues =
-  * When running Eclipse on incorrect Java VM version (see release notes for details, 0.3.6 requires Java 1.6) debugger silently doesn't show up, notably from launch configuration dialog.
+  * When running Eclipse on incorrect Java VM version (see release notes for details, 0.3.6 requires Java 1.6) debugger silently doesn't show up, notably at launch configuration dialog.
