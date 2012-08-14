@@ -1,6 +1,6 @@
 #summary WebKit Remote Debugging Protocol.
 ==Introduction==
-WebKit Remote Debugging Protocol is a Google Chrome/Chromium debug protocol. You will find its description at [http://developers.google.com/chrome-developer-tools/docs/remote-debugging].
+!WebKit Remote Debugging Protocol is a Google Chrome/Chromium debug protocol. You will find its description at [http://developers.google.com/chrome-developer-tools/docs/remote-debugging].
 
 This protocol is natively used by in-browser Developer Tools. Historically it succeeds ChromeDevToolsProtocol.
 
