@@ -3,7 +3,7 @@
 = !WebKit Remote Debugging Protocol =
 
 ==Introduction==
-This is a Google Chrome/Chromium debug protocol. You will find its description at [https://developers.google.com/chrome-developer-tools/docs/remote-debugging].
+This is a Google Chrome/Chromium debug protocol. You will find its description at [http://developers.google.com/chrome-developer-tools/docs/remote-debugging].
 
 This protocol is natively used by in-browser Developer Tools. Historically it succeeds ChromeDevToolsProtocol.
 
@@ -34,7 +34,7 @@ Compare with [ChromeDevToolsProtocol#Protocol_Name ChromeDevTools Protocol].
 
 
 ==References==
-Main page: [https://developers.google.com/chrome-developer-tools/docs/remote-debugging].
+Main page: [http://developers.google.com/chrome-developer-tools/docs/remote-debugging].
 
 Blog posts:
   * [http://blog.chromium.org/2011/05/remote-debugging-with-chrome-developer.html Remote debugging with Chrome Developer Tools], The Chromium Blog, May 9th, 2011,
