@@ -2,6 +2,8 @@
 
 The protocol is *deprecated* and its support is going to be *finished*. See [#Deprecation_And_Removal below].
 
+Google Chrome/Chromium browser is using [WebKitProtocol WebKit Remote Debugging Protocol], see [http://code.google.com/chrome/devtools/docs/remote-debugging the main site] for details.
+
 = Introduction =
 
 The existing [http://code.google.com/p/v8/wiki/DebuggerProtocol V8 Debugger Protocol] is not sufficient to provide Google Chrome, Chromium, or any other browser that supports the protocol, with the capability of remote debugging via TCP/IP sockets. The V8 Debugger protocol covers only !JavaScript debugging operations, and only within a single V8 virtual machine (VM). In reality, there can be one or more separate V8 VMs inside a Google Chrome instance, residing in different renderer processes. Also, retrieving URLs loaded in the browser tabs, inspecting or modifying the DOM tree are not covered by !JavaScript operations.
