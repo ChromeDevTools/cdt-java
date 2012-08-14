@@ -21,6 +21,8 @@ Several configuration types are supported for different protocols.
 
 [http://chromedevtools.googlecode.com/svn/wiki/rel034-debug-configurations-remote.png]
 
+(Note that failing to see these configuration types is very likely a sign of incorrect Java VM version).
+
 === !WebKit Protocol ===
 This is default Google Chrome/Chromium debug protocol: [WIP WebKit Remote Debugging Protocol].
 You should start browser with the following command-line:
