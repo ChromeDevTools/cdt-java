@@ -31,7 +31,7 @@ org.chromium.sdk.BrowserFactory.getInstance().create(...)
 Protocol is called '!ChromeDevTools Protocol'. The name is pretty overloaded though. You can be sure that you are using this protocol, if you are starting Google Chrome/Chromium with the following parameter:
 {{{--remote-shell-port=<port>}}}
 
-Compare with [WIP#Protocol_Name WebKit Remote Debugging Protocol].
+Compare with [WebKitProtocol WebKit Remote Debugging Protocol].
 
 == Protocol Message Structure ==
 
@@ -145,6 +145,6 @@ The following *result* codes are possible:
 <p></p>
 
 = Deprecation And Removal =
-The new debug protocol [WIP "WebKit Remote Debug Protocol"] is being developed to succeed !ChromeDevTools protocol. !ChromeDevTools protocol should be considered _deprecated_. Google Chrome/Chromium browser discontinued its support in 17.0.950.`*` version (between developer builds 111534 and 111559).
+The new debug protocol [WekKitProtocol "WebKit Remote Debug Protocol"] is being developed to succeed !ChromeDevTools protocol. !ChromeDevTools protocol should be considered _deprecated_. Google Chrome/Chromium browser discontinued its support in 17.0.950.`*` version (between developer builds 111534 and 111559).
 
 The [ChromeDevToolsSdk SDK] and EclipseDebugger are going to simultaneously support both protocols behind the single interface starting from [Release_0_3_0 0.3.0 version].
