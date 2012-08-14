@@ -2,7 +2,7 @@
 
 The protocol is *deprecated* and its support is going to be *finished*. See [#Deprecation_And_Removal below].
 
-Google Chrome/Chromium browser is using [WebKitProtocol WebKit Remote Debugging Protocol], see [http://code.google.com/chrome/devtools/docs/remote-debugging the main site] for details.
+Google Chrome/Chromium browser is using [WebKitProtocol WebKit Remote Debugging Protocol] instead, see [http://code.google.com/chrome/devtools/docs/remote-debugging the main site] for details.
 
 = Introduction =
 
