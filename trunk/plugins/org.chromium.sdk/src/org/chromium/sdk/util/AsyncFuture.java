@@ -161,7 +161,9 @@ public abstract class AsyncFuture<T> {
      */
     public void execute() throws MethodIsBlockingException {
       if (callback == null) {
-        // We haven't been started. Silently do not execute.
+        // We haven't been started. Probably because asynch operation happened to be started
+        // and completed in another thread. Silently do not execute.
+        return;
       }
       try {
         RES res = runSync();
