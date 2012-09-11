@@ -33,7 +33,7 @@ public class ChromiumJavascriptDecorator implements ILabelDecorator {
    */
   public static String getDecoratedText(String text, Object element) {
     if (PluginUtil.isChromiumDebugFile((IFile) element)) {
-      return PluginUtil.stripChromiumExtension(text);
+      return PluginUtil.stripChromiumExtension(text, false);
     }
     return text;
   }
