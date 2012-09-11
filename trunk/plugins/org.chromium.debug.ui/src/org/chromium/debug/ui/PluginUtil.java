@@ -74,9 +74,13 @@ public class PluginUtil {
    * Removes the ".chromium" extension from the fileName.
    *
    * @param fileName to remove the extension from
+   * @param check if true additionally check that fileName actually has ".chromium" extension
    * @return a file name without the ".chromium" extension
    */
-  public static String stripChromiumExtension(String fileName) {
+  public static String stripChromiumExtension(String fileName, boolean check) {
+    if (check && !fileName.endsWith(ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX)) {
+      return fileName;
+    }
     return fileName.substring(
         0, fileName.length() - ChromiumDebugPluginUtil.CHROMIUM_EXTENSION_SUFFIX.length());
   }

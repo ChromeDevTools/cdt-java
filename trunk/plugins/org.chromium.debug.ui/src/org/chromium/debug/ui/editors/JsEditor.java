@@ -38,6 +38,6 @@ public class JsEditor extends TextEditor {
 
   @Override
   protected void setPartName(String partName) {
-    super.setPartName(PluginUtil.stripChromiumExtension(partName));
+    super.setPartName(PluginUtil.stripChromiumExtension(partName, true));
   }
 }
