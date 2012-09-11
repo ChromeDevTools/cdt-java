@@ -8,16 +8,14 @@ import org.chromium.debug.core.model.ChromiumExceptionBreakpoint;
 import org.chromium.debug.core.model.ChromiumLineBreakpoint;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
-import org.eclipse.ui.dialogs.PropertyDialogAction;
+import org.eclipse.ui.dialogs.PreferencesUtil;
 
 /**
  * Action to bring up the breakpoint properties dialog.
@@ -78,23 +76,10 @@ public abstract class JsBreakpointPropertiesAction implements IObjectActionDeleg
     };
   }
 
-  protected static void runAction(final IBreakpoint breakpoint, IShellProvider shell) {
-    PropertyDialogAction action =
-      new PropertyDialogAction(shell,
-          new ISelectionProvider() {
-            public void addSelectionChangedListener(ISelectionChangedListener listener) {
-            }
+  protected static void runAction(IBreakpoint breakpoint, IShellProvider shell) {
+    PreferenceDialog propertyDialog = PreferencesUtil.createPropertyDialogOn(
+        shell.getShell(), breakpoint, (String) null, (String[]) null, null);
 
-            public ISelection getSelection() {
-              return new StructuredSelection(breakpoint);
-            }
-
-            public void removeSelectionChangedListener(ISelectionChangedListener listener) {
-            }
-
-            public void setSelection(ISelection selection) {
-            }
-          });
-    action.run();
+    propertyDialog.open();
   }
 }

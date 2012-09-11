@@ -33,18 +33,11 @@ public class JsBreakpointPropertiesRulerAction extends RulerBreakpointAction imp
   }
 
   public void update() {
-    breakpoint = null;
-    IBreakpoint activeBreakpoint = getBreakpoint();
-    if (activeBreakpoint != null &&
-        activeBreakpoint instanceof ChromiumLineBreakpoint) {
-      breakpoint = activeBreakpoint;
-    }
+    breakpoint = getBreakpoint();
     setEnabled(breakpoint != null);
   }
 
-
   public static class Delegate extends AbstractRulerActionDelegate {
-
     @Override
     protected IAction createAction(ITextEditor editor, IVerticalRulerInfo rulerInfo) {
       return new JsBreakpointPropertiesRulerAction(editor, rulerInfo);
