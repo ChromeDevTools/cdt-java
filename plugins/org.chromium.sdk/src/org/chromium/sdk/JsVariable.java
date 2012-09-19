@@ -35,7 +35,12 @@ public interface JsVariable {
   JsValue getValue() throws UnsupportedOperationException;
 
   /**
+   * Returns variable name. If the variable is an object property, in some implementations
+   * (namely V8 Standalone protocol) the numeric property name may be decorated
+   * with square brackets.
    * @return the name of this variable
+   * TODO: do not decorate property name with square brackets,
+   *       http://code.google.com/p/chromedevtools/issues/detail?id=77
    */
   String getName();
 

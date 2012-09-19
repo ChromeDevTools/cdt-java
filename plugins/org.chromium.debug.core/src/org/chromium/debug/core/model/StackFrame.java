@@ -220,23 +220,22 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
     public int compare(Variable var1, Variable var2) {
       return compareNameObjects(getNameObject(var1), getNameObject(var2));
     }
-    // Get property name as String or Integer.
+    // Get property name as String or Long.
     private Object getNameObject(Variable var) {
       String name = var.getName();
       int len = name.length();
       if (len >= 3 && name.charAt(0) == '[' && name.charAt(len-1) == ']') {
-        Integer i = Integer.valueOf(name.substring(1, len - 1));
-        return i;
+        return Long.valueOf(name.substring(1, len - 1));
       }
       return name;
     }
-    // Compare property name (either string or integer).
+    // Compare property name (either string or long).
     private int compareNameObjects(Object nameObj1, Object nameObj2) {
-      if (nameObj1 instanceof Integer) {
-        Integer i1 = (Integer) nameObj1;
-        if (nameObj2 instanceof Integer) {
-          Integer i2 = (Integer) nameObj2;
-          return i1.compareTo(i2);
+      if (nameObj1 instanceof Long) {
+        Long n1 = (Long) nameObj1;
+        if (nameObj2 instanceof Long) {
+          Long n2 = (Long) nameObj2;
+          return n1.compareTo(n2);
         } else {
           return COMPARE_INT_WITH_STRING;
         }
