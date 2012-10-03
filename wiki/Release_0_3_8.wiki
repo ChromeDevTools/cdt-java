@@ -1,0 +1,31 @@
+#summary upcoming release 0.3.8 notes
+
+=Google Chrome Developer Tools for Java. Release 0.3.8.=
+
+This release succeeds the [Release_0_3_6 release 0.3.6].
+
+==Overview==
+
+Features
+
+* exception breakpoints
+* launch configuration move
+* i74
+* ruler
+* i76
+
+
+
+==== Backend Set Version 0.1.10 ====
+|| id || Chrome version || New features ||
+|| Protocol 1.0 || 18.`*`.`*`.`*` || ||
+|| WK@118685 || 21.0.1180.`*` || function scope, primitive value ||
+|| WK@120709 ||22.0.1188.`*` || function scope, primitive value, restart frame ||
+
+==System Requirements==
+|| *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 and 4.2 is also tested. ||
+|| *Java:* || J2SE-1.6 or newer. ||
+
+Optional:
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
