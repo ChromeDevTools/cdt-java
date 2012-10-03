@@ -7,7 +7,7 @@
 <feature
       id="org.chromium.sdk.wip.source"
       label="%featureName"
-      version="0.1.9.qualifier"
+      version="0.1.10.qualifier"
       provider-name="%providerName">
 
    <description>
