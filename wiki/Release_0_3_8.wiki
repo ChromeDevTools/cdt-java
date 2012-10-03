@@ -1,6 +1,6 @@
 #summary upcoming release 0.3.8 notes
 
-=Google Chrome Developer Tools for Java. Uncoming Release 0.3.8.=
+=Google Chrome Developer Tools for Java. Upcoming Release 0.3.8.=
 
 This release succeeds the [Release_0_3_6 release 0.3.6].
 
