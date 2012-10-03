@@ -1,20 +1,21 @@
 #summary upcoming release 0.3.8 notes
 
-=Google Chrome Developer Tools for Java. Release 0.3.8.=
+=Google Chrome Developer Tools for Java. Uncoming Release 0.3.8.=
 
 This release succeeds the [Release_0_3_6 release 0.3.6].
 
 ==Overview==
+This release is a minor one. I makes a change to Debugger UI and also it fixes issues [http://code.google.com/p/chromedevtools/issues/detail?id=74 74]
+and 
+[http://code.google.com/p/chromedevtools/issues/detail?id=76 76].
 
-Features
+== Break on Exception ==
+The debugger feature that instructs JavaScript VM to pause on exception throwing event has got a new form. Previously it was controlled from the context menu on LaunchElement. Since this release a more traditional Eclipse approach is implemented.
 
-  * exception breakpoints
-  * launch configuration move
-  * i74
-  * ruler
-  * i76
+To enable breaking on exception, user should add a _JS Exception_ breakpoint: {{{Run|Add V8/Chrome JavaScript Exception Breakpoint}}} menu item. This breakpoint has a regular enable/disable semantics, additionally overridden by {{{Skip All Breakpoints}}} control and what's the most useful, its state is persisted by the workspace. This means that once you enabled break on exception, this will remain for the next debug sessions.
 
-
+== Slight Changes to Launch Configuration ==
+You might notice that {{{Breakpoint sync on launch}}} control disappeared from the launch configuration dialog. This is because such synchronization only makes sense for V8 Standalone configurations (where the control is left untouched).
 
 ==== Backend Set Version 0.1.10 ====
 || id || Chrome version || New features ||
