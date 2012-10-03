@@ -8,11 +8,11 @@ This release succeeds the [Release_0_3_6 release 0.3.6].
 
 Features
 
-* exception breakpoints
-* launch configuration move
-* i74
-* ruler
-* i76
+  * exception breakpoints
+  * launch configuration move
+  * i74
+  * ruler
+  * i76
 
 
 
