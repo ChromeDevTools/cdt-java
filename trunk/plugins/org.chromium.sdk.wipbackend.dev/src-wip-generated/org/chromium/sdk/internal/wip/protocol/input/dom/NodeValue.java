@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@108993
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -57,6 +57,12 @@ public interface NodeValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String documentURL();
+
+  /**
+   Base URL that <code>Document</code> or <code>FrameOwner</code> node uses for URL completion.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  String baseURL();
 
   /**
    <code>DocumentType</code>'s publicId.
