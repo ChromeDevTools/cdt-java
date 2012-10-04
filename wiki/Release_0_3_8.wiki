@@ -14,6 +14,8 @@ The debugger feature that instructs !JavaScript VM to pause on exception throwin
 
 To enable breaking on exception, user should add a _JS Exception_ breakpoint: {{{Run|Add V8/Chrome JavaScript Exception Breakpoint}}} menu item. This breakpoint has a regular enable/disable semantics, additionally overridden by {{{Skip All Breakpoints}}} control and what's the most useful, its state is persisted by the workspace. This means that once you enabled break on exception, this will remain for the next debug sessions.
 
+Note that while UI allows you to create many such breakpoints, you would hardly need more than one.
+
 == Slight Changes to Launch Configuration ==
 You might notice that {{{Breakpoint sync on launch}}} control disappeared from the launch configuration dialog. This is because such synchronization only makes sense for V8 Standalone configurations (where the control is left untouched).
 
