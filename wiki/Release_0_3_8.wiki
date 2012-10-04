@@ -5,7 +5,7 @@
 This release succeeds the [Release_0_3_6 release 0.3.6].
 
 ==Overview==
-This release is a minor one. I makes a change to Debugger UI and also it fixes issues [http://code.google.com/p/chromedevtools/issues/detail?id=74 74]
+This release is a minor one. I makes a change to Debugger UI and also it fixes bugs [http://code.google.com/p/chromedevtools/issues/detail?id=74 74]
 and 
 [http://code.google.com/p/chromedevtools/issues/detail?id=76 76].
 
