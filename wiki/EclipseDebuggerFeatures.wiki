@@ -34,7 +34,7 @@ A !JavaScript VM may be instructed to stop on each exception thrown. All excepti
   * _caught_ exceptions, which are to be caught by a {{{catch}}} clause somewhere in the script, and
   * _uncaught_ exceptions, which terminate script execution altogether and return the control to the calling application.
 
-Both types of exceptions are controlled from the _"Break on !JavaScript Exception"_ item in the [LaunchElement launch] context menu.
+Both types of exceptions are controlled by _JS Exception_ breakpoint. You can create one with {{{Run|Add V8/Chrome JavaScript Exception Breakpoint}}} menu command.
 
 ===Selecting Breakpoint Type===
 The Eclipse IDE can host several different debuggers. Such configurations often cause ambiguity when setting a breakpoint: which debugger should own the new breakpoint? Eclipse provides a UI for this case and it is now supported by !ChromeDevTools. You may explicitly choose a type of breakpoint you are about to set in the menu {{{Run->Breakpoint Types}}} (choose "Chrome/V8 breakpoints" in a submenu.)
