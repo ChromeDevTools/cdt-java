@@ -90,3 +90,4 @@ Result is in {{{../../staging/result/sdkJavadocs}}}
   * Update first page.
   * Bump up [Versioning version] to odd _"development"_ number.
   * Go over still open issues.
+  * Revise feature descriptions on wiki.
