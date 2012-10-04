@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@121014
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -91,6 +91,8 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketWillSendHandshakeRequestEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceOrientationData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideGeolocationData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CookieValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
@@ -109,10 +111,13 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.SearchResultValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.ExecutionContextCreatedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.ExecutionContextDescriptionValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData.class,
-    org.chromium.sdk.internal.wip.protocol.input.runtime.IsolatedContextCreatedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.InternalPropertyDescriptorValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.ObjectPreviewValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyPreviewValue.class,
     org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue.class,
   };
 }

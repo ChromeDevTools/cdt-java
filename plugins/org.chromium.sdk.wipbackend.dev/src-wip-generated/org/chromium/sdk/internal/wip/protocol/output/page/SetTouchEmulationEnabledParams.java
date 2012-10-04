@@ -1,8 +1,8 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106811
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
 
-package org.chromium.sdk.internal.wip.protocol.output.dom;
+package org.chromium.sdk.internal.wip.protocol.output.page;
 
 /**
 Toggles mouse event-based touch event emulation.
@@ -15,7 +15,7 @@ public class SetTouchEmulationEnabledParams extends org.chromium.sdk.internal.wi
     this.put("enabled", enabled);
   }
 
-  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.DOM + ".setTouchEmulationEnabled";
+  public static final String METHOD_NAME = org.chromium.sdk.internal.wip.protocol.BasicConstants.Domain.PAGE + ".setTouchEmulationEnabled";
 
   @Override protected String getRequestName() {
     return METHOD_NAME;
