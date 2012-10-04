@@ -89,3 +89,4 @@ Result is in {{{../../staging/result/sdkJavadocs}}}
   * Send a message to mail group.
   * Update first page.
   * Bump up [Versioning version] to odd _"development"_ number.
+  * Go over still open issues.
