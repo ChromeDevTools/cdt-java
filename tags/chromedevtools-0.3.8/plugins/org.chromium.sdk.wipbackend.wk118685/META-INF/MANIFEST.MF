@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Google Chrome Developer Tools SDK WIP backend WK118685
+Bundle-Vendor: The Chromium Authors
+Bundle-SymbolicName: org.chromium.sdk.wipbackend.wk118685;singleton:=true
+Bundle-Version: 0.3.8.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Require-Bundle: org.chromium.sdk;bundle-version="0.3.8"
+Export-Package: org.chromium.sdk.internal.wip.protocol
