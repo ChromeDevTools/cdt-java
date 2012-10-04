@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.chromium.sdk.wip.eclipse;singleton:=true
-Bundle-Version: 0.3.8.qualifier
+Bundle-Version: 0.3.9.qualifier
 Bundle-Vendor: %providerName
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.chromium.sdk;bundle-version="0.3.8"
+Require-Bundle: org.chromium.sdk;bundle-version="0.3.9"
 Import-Package: org.eclipse.core.runtime
 Export-Package: org.chromium.sdk.wip.eclipse
