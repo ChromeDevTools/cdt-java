@@ -6,19 +6,19 @@
 This release succeeds the [Release_0_3_6 release 0.3.6].
 
 ==Overview==
-This release is a minor one. I makes a change to Debugger UI and also it fixes bugs [http://code.google.com/p/chromedevtools/issues/detail?id=74 74]
+This release is a minor one. It makes a change to the Debugger UI and also fixes bugs [http://code.google.com/p/chromedevtools/issues/detail?id=74 74]
 and 
 [http://code.google.com/p/chromedevtools/issues/detail?id=76 76].
 
 == Break on Exception ==
-The debugger feature that instructs !JavaScript VM to pause on exception throwing event has got a new form. Previously it was controlled from the context menu on LaunchElement. Since this release a more traditional Eclipse approach is implemented.
+The debugger feature that instructs !JavaScript VM to pause on exception throwing event has got a new form. Previously, it was controlled from the context menu on LaunchElement. Since this release, a more traditional Eclipse approach is implemented.
 
-To enable breaking on exception, user should add a _JS Exception_ breakpoint: {{{Run|Add V8/Chrome JavaScript Exception Breakpoint}}} menu item. This breakpoint has a regular enable/disable semantics, additionally overridden by {{{Skip All Breakpoints}}} control and what's the most useful, its state is persisted by the workspace. This means that once you enabled break on exception, this will remain for the next debug sessions.
+To enable breaking on exception, the user should add a _JS Exception_ breakpoint: {{{Run|Add V8/Chrome JavaScript Exception Breakpoint}}} menu item. This breakpoint has regular enable/disable semantics, additionally overridden by the {{{Skip All Breakpoints}}} control and, what's most useful, its state is persisted by the workspace. This means that once you have enabled break on exception, this will hold for the following debug sessions.
 
-Note that while UI allows you to create many such breakpoints, you would hardly need more than one.
+Even though the UI allows you to create multiple breakpoints of this kind, you should hardly need more than one.
 
 == Slight Changes to Launch Configuration ==
-You might notice that {{{Breakpoint sync on launch}}} control disappeared from the launch configuration dialog. This is because such synchronization only makes sense for V8 Standalone configurations (where the control is left untouched).
+You might notice that the {{{Breakpoint sync on launch}}} control has disappeared from the launch configuration dialog. This is due to such synchronization only making sense for V8 Standalone configurations (where this control is left untouched).
 
 ==WIP Backends==
 [WIP] backends haven't been changed in this release.
@@ -31,8 +31,8 @@ You might notice that {{{Breakpoint sync on launch}}} control disappeared from t
 
 ==System Requirements==
 || *Eclipse configuration:*  ||Eclipse Platform or any richer configuration (e.g. Eclipse Java IDE). ||
-|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 and 4.2 is also tested. ||
+|| *Eclipse version:* ||  Eclipse 3.5 minimum, Eclipse 3.6 and 4.2 were also tested. ||
 || *Java:* || J2SE-1.6 or newer. ||
 
 Optional:
-|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or newer<br>(corresponds to Eclipse 3.6).||
+|| *JSDT version:*<br>(feature _!JavaScript Development Tools_) || 1.2.0 or later<br>(corresponds to Eclipse 3.6).||
