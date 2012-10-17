@@ -95,7 +95,9 @@ public interface WipMetamodel {
 
   @JsonType interface StandaloneType {
     String id();
-    String description();
+
+    @JsonOptionalField String description();
+
     String type();
 
     @JsonOptionalField Boolean hidden();
@@ -132,6 +134,8 @@ public interface WipMetamodel {
     @JsonField(jsonLiteralName="enum")
     @JsonOptionalField
     List<String> getEnum();
+
+    @JsonOptionalField Boolean hidden();
   }
 
   @JsonType interface ArrayItemType {
