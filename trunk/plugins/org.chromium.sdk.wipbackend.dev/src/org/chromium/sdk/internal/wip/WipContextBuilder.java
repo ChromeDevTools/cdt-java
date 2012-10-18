@@ -48,6 +48,7 @@ import org.chromium.sdk.internal.wip.protocol.input.debugger.RestartFrameData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ResumedEventData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.InternalPropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParams;
@@ -630,8 +631,9 @@ class WipContextBuilder {
       WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>> processor =
           new WipValueLoader.LoadPostprocessor<Getter<ScopeVariables>>() {
         @Override
-        public Getter<ScopeVariables> process(
-            List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
+        public Getter<ScopeVariables> process(List<? extends PropertyDescriptorValue> propertyList,
+            List<? extends InternalPropertyDescriptorValue> internalPropertyList,
+            int currentCacheState) {
           final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
 
           WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
