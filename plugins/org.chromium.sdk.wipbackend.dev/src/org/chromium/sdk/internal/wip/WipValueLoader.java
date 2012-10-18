@@ -25,6 +25,7 @@ import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValu
 import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
+import org.chromium.sdk.internal.wip.protocol.input.runtime.InternalPropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.output.debugger.GetFunctionDetailsParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.GetPropertiesParams;
@@ -131,7 +132,9 @@ public abstract class WipValueLoader implements RemoteValueMapping {
    * scopes.
    */
   interface LoadPostprocessor<RES> {
-    RES process(List<? extends PropertyDescriptorValue> propertyList, int currentCacheState);
+    RES process(List<? extends PropertyDescriptorValue> propertyList,
+        List<? extends InternalPropertyDescriptorValue> internalPropertyList,
+        int currentCacheState);
     RES getEmptyResult();
     RES forException(Exception exception);
   }
@@ -146,8 +149,9 @@ public abstract class WipValueLoader implements RemoteValueMapping {
     }
 
     @Override
-    public Getter<ObjectProperties> process(
-        List<? extends PropertyDescriptorValue> propertyList, final int currentCacheState) {
+    public Getter<ObjectProperties> process(List<? extends PropertyDescriptorValue> propertyList,
+        List<? extends InternalPropertyDescriptorValue> internalPropertyList,
+        final int currentCacheState) {
       final List<JsObjectProperty> properties =
           new ArrayList<JsObjectProperty>(propertyList.size());
       final List<JsVariable> internalProperties = new ArrayList<JsVariable>(2);
@@ -165,6 +169,19 @@ public abstract class WipValueLoader implements RemoteValueMapping {
           internalProperties.add(property);
         } else {
           properties.add(property);
+        }
+      }
+
+      if (internalPropertyList != null) {
+        for (InternalPropertyDescriptorValue propertyDescriptor : internalPropertyList) {
+          String name = propertyDescriptor.name();
+
+          ValueNameBuilder valueNameBuilder =
+              WipExpressionBuilder.createValueOfPropertyNameBuilder(name, propertyNameBuilder);
+
+          JsVariable variable =
+              valueBuilder.createVariable(propertyDescriptor.value(), valueNameBuilder);
+          internalProperties.add(variable);
         }
       }
 
@@ -254,7 +271,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
           @Override
           public RES visitData(GetPropertiesData data) {
             // TODO: check exception.
-            return propertyPostprocessor.process(data.result(), currentCacheState);
+            return propertyPostprocessor.process(data.result(), data.internalProperties(),
+                currentCacheState);
           }
 
           @Override
@@ -364,5 +382,5 @@ public abstract class WipValueLoader implements RemoteValueMapping {
 
   // List is too short to use HashSet.
   private static final Collection<String> INTERNAL_PROPERTY_NAME =
-      Arrays.asList("__proto__", "constructor");
+      Arrays.asList("__proto__");
 }

@@ -16,6 +16,10 @@ import org.chromium.sdk.internal.protocolparser.JsonType;
 public interface ObjectValueHandle extends JsonSubtype<ValueHandle> {
   @JsonSubtypeCondition
   List<PropertyObject> properties();
+
+  @JsonOptionalField
+  List<PropertyObject> internalProperties();
+
   SomeRef protoObject();
   SomeRef constructorFunction();
 

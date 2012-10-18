@@ -93,6 +93,7 @@ public class V8ProtocolUtil {
 
     return objProps;
   }
+
   public static List<? extends PropertyReference> extractObjectInternalProperties(
       ObjectValueHandle handle) {
     List<PropertyReference> objProps = new ArrayList<PropertyReference>(3);
@@ -100,13 +101,12 @@ public class V8ProtocolUtil {
     if (protoObject != null) {
       putMirror(objProps, protoObject, PropertyNameGetter.PROTO_OBJECT);
     }
-    SomeRef constructorFunction = handle.constructorFunction();
-    if (constructorFunction != null) {
-      putMirror(objProps, constructorFunction, PropertyNameGetter.CONSTRUCTOR_FUNCTION);
-    }
-    SomeRef primitiveValue = handle.primitiveValue();
-    if (primitiveValue != null) {
-      putMirror(objProps, primitiveValue, PropertyNameGetter.PRIMITIVE_VALUE);
+    List<PropertyObject> props = handle.internalProperties();
+    if (props != null) {
+      for (int i = 0; i < props.size(); i++) {
+        PropertyObject prop = props.get(i);
+        putMirror(objProps, prop, PropertyNameGetter.PRIMITIVE_VALUE);
+      }
     }
     return objProps;
   }
@@ -203,12 +203,10 @@ public class V8ProtocolUtil {
     public static final PropertyNameGetter<SomeRef> THIS = new SimpleNameGetter("this");
     static final PropertyNameGetter<SomeRef> PROTO_OBJECT =
         new SimpleNameGetter("__proto__");
-    static final PropertyNameGetter<SomeRef> CONSTRUCTOR_FUNCTION =
-        new SimpleNameGetter("constructor");
-    static final PropertyNameGetter<SomeRef> PRIMITIVE_VALUE =
-        new SimpleNameGetter("primitive value");
+    static final PropertyNameGetter<PropertyObject> PRIMITIVE_VALUE = new SubpropertyNameGetter();
 
-    public static final PropertyNameGetter<PropertyObject> SUBPROPERTY = new SubpropertyNameGetter();
+    public static final PropertyNameGetter<PropertyObject> SUBPROPERTY =
+        new SubpropertyNameGetter();
     static class SubpropertyNameGetter extends PropertyNameGetter<PropertyObject> {
       @Override
       Object getName(PropertyObject ref) {
