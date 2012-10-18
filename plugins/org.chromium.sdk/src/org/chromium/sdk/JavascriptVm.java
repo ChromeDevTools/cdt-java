@@ -82,9 +82,9 @@ public interface JavascriptVm {
   /**
    * Sets a breakpoint with the specified parameters.
    * @param target of the breakpoint
-   * @param line in the script or function (1-based). If none, use
+   * @param line in the script or function (0-based). If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
-   * @param column of the target start within the line (1-based). If none, use
+   * @param column of the target start within the line (0-based). If none, use
    *        {@link Breakpoint#EMPTY_VALUE}
    * @param enabled whether the breakpoint is enabled initially
    * @param condition nullable string with breakpoint condition
