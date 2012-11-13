@@ -1,10 +1,12 @@
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.internal.shellprotocol.ConnectionFactory;
+import org.chromium.sdk.internal.standalonev8.StandaloneVmImpl;
+import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.Handshaker;
 
 public class BrowserFactoryImplTestGate {
-  public static Browser create(BrowserFactoryImpl browserFactoryImpl, ConnectionFactory connectionFactory) {
-    return browserFactoryImpl.create(connectionFactory);
+  public static StandaloneVmImpl createStandalone(Connection connection,
+      Handshaker.StandaloneV8 handshaker) {
+    return BrowserFactoryImpl.INSTANCE.createStandalone(connection, handshaker);
   }
 }

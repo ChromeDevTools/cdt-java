@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.chromium.sdk.Breakpoint;
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ConnectionLogger;
@@ -29,8 +27,6 @@ import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
-import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.internal.wip.WipBackendImpl;
 import org.chromium.sdk.wip.WipBackend;
 import org.chromium.sdk.wip.WipBackendFactory;
 import org.chromium.sdk.wip.WipBrowser;
@@ -238,7 +234,7 @@ public class Main {
 
       String host;
       int port;
-      ProtocolType protocolType = ProtocolType.SHELL;
+      ProtocolType protocolType = ProtocolType.DEBUGGING;
     }
 
     CommandLineArgsImpl result = new CommandLineArgsImpl();
@@ -259,34 +255,8 @@ public class Main {
     return result;
   }
 
+  // TODO: drop this enum as we now have only one protocol.
   private enum ProtocolType {
-    // Old protocol enabled by --remote-shell-port parameter
-    SHELL {
-      @Override
-      public JavascriptVm connect(InetSocketAddress address,
-          StateManager stateManager, Factory connectionLoggerFactory)
-          throws SmokeException, IOException {
-
-        Browser browser = BrowserFactory.getInstance().create(address, connectionLoggerFactory);
-
-        Browser.TabFetcher tabFetcher;
-        try {
-          tabFetcher = browser.createTabFetcher();
-        } catch (UnsupportedVersionException e) {
-          throw new SmokeException(e);
-        }
-        List<? extends Browser.TabConnector> tabs = tabFetcher.getTabs();
-        if (tabs.isEmpty()) {
-          throw new SmokeException("No tabs");
-        }
-        Browser.TabConnector firstTab = tabs.get(0);
-        String url = firstTab.getUrl();
-        if (url == null || !url.endsWith(TAB_URL_SUFFIX)) {
-          throw new SmokeException("Unexpected URL: " + url);
-        }
-        return firstTab.attach(stateManager.getTabListener());
-      }
-    },
     // WIP (new) protocol enabled by --remote-debugging-port parameter
     DEBUGGING {
       @Override

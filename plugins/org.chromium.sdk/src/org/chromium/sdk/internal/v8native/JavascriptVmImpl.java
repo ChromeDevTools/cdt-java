@@ -105,7 +105,7 @@ public abstract class JavascriptVmImpl implements JavascriptVm {
     return CallFrameImpl.RESTART_FRAME_EXTENSION;
   }
 
-  protected abstract DebugSession getDebugSession();
+  public abstract DebugSession getDebugSession();
 
   // TODO(peter.rybin): This message will be obsolete in JavaSE-1.6.
   public static IOException newIOException(String message, Throwable cause) {

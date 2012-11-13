@@ -14,6 +14,7 @@ import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
 import org.chromium.sdk.internal.shellprotocol.ConnectionFactory;
 import org.chromium.sdk.internal.shellprotocol.SocketConnectionFactory;
 import org.chromium.sdk.internal.standalonev8.StandaloneVmImpl;
+import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.SocketConnection;
 
@@ -22,6 +23,8 @@ import org.chromium.sdk.internal.transport.SocketConnection;
  * TODO: rename it somehow. It's not only a browser factory.
  */
 public class BrowserFactoryImpl extends BrowserFactory {
+
+  public static final BrowserFactoryImpl INSTANCE = new BrowserFactoryImpl();
 
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 
@@ -41,9 +44,14 @@ public class BrowserFactoryImpl extends BrowserFactory {
   @Override
   public StandaloneVm createStandalone(SocketAddress socketAddress,
       ConnectionLogger connectionLogger) {
-    Handshaker.StandaloneV8 handshaker = new Handshaker.StandaloneV8();
+    Handshaker.StandaloneV8 handshaker = new Handshaker.StandaloneV8Impl();
     SocketConnection connection =
         new SocketConnection(socketAddress, getTimeout(), connectionLogger, handshaker);
+    return createStandalone(connection, handshaker);
+  }
+
+  // Debug entry (no logger by definition)
+  StandaloneVmImpl createStandalone(Connection connection, Handshaker.StandaloneV8 handshaker) {
     return new StandaloneVmImpl(connection, handshaker);
   }
 

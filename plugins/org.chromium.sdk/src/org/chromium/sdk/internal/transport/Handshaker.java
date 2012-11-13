@@ -73,15 +73,20 @@ public interface Handshaker {
   };
 
   /**
-   * Stateful handshaker implementation for Standalone V8 protocol.
+   * Stateful handshaker for Standalone V8 protocol.
    */
-  class StandaloneV8 implements Handshaker {
-    public interface RemoteInfo {
+  interface StandaloneV8 extends Handshaker {
+    interface RemoteInfo {
       String getProtocolVersion();
       String getV8VmVersion();
       String getEmbeddingHostName();
     }
 
+    Future<RemoteInfo> getRemoteInfo();
+  }
+
+  class StandaloneV8Impl implements StandaloneV8 {
+    @Override
     public Future<RemoteInfo> getRemoteInfo() {
       return runnableFuture;
     }
@@ -91,6 +96,7 @@ public interface Handshaker {
 
     private LineReader input = null;
 
+    @Override
     public void perform(LineReader input, OutputStream output) throws IOException {
       this.input = input;
       runnableFuture.run();
@@ -107,6 +113,7 @@ public interface Handshaker {
     }
 
     class HandshakeTaks implements Callable<RemoteInfo> {
+      @Override
       public RemoteInfo call() throws IOException {
         final Message message;
         try {
@@ -126,13 +133,13 @@ public interface Handshaker {
           throw new IOException("Absent V8 VM version");
         }
         RemoteInfo remoteInfo = new RemoteInfo() {
-          public String getProtocolVersion() {
+          @Override public String getProtocolVersion() {
             return protocolVersion;
           }
-          public String getV8VmVersion() {
+          @Override public String getV8VmVersion() {
             return vmVersion;
           }
-          public String getEmbeddingHostName() {
+          @Override public String getEmbeddingHostName() {
             return message.getHeader("Embedding-Host", null);
           }
         };

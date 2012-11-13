@@ -14,7 +14,6 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
   BreakpointImplTest.class,
-  V8DebuggerToolHandlerTest.class
 })
 public class V8Tests {
 }

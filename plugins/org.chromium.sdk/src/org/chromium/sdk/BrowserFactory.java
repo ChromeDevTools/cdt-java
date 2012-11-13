@@ -13,9 +13,6 @@ import org.chromium.sdk.internal.BrowserFactoryImpl;
  * A factory for Browser instances.
  */
 public abstract class BrowserFactory {
-
-  private static BrowserFactory instance;
-
   /**
    * Gets a {@link BrowserFactory} instance. This method should be overridden by
    * implementations that want to construct other implementations of
@@ -24,10 +21,7 @@ public abstract class BrowserFactory {
    * @return a BrowserFactory singleton instance
    */
   public static BrowserFactory getInstance() {
-    if (instance == null) {
-      instance = new BrowserFactoryImpl();
-    }
-    return instance;
+    return BrowserFactoryImpl.INSTANCE;
   }
 
   /**

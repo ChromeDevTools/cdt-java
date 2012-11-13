@@ -8,6 +8,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 /**
  * A fake Connection that allows specifying a message responder (aka ChromeStub).
@@ -58,5 +62,37 @@ public class FakeConnection implements Connection {
   public void start() throws IOException {
     isRunning = true;
   }
+
+  public static final Handshaker.StandaloneV8 HANDSHAKER = new Handshaker.StandaloneV8() {
+    @Override
+    public void perform(LineReader input, OutputStream output) throws IOException {
+    }
+
+    @Override
+    public Future<RemoteInfo> getRemoteInfo() {
+      return remoteInfoFuture;
+    }
+
+    private final FutureTask<RemoteInfo> remoteInfoFuture;
+    {
+      remoteInfoFuture = new FutureTask<RemoteInfo>(new Callable<RemoteInfo>() {
+        @Override
+        public RemoteInfo call() throws Exception {
+          return new RemoteInfo() {
+            @Override public String getProtocolVersion() {
+              return "1";
+            }
+            @Override public String getV8VmVersion() {
+              return "3.12.1 test fixture";
+            }
+            @Override public String getEmbeddingHostName() {
+              return "junit test fixture";
+            }
+          };
+        }
+      });
+      remoteInfoFuture.run();
+    }
+  };
 
 }
