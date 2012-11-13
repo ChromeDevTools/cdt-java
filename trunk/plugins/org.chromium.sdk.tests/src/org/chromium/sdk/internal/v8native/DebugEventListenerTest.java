@@ -28,8 +28,8 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
 
   @Test
   public void testDetach() throws Exception {
-    assertTrue(browserTab.detach());
-    assertFalse(browserTab.isAttached());
+    assertTrue(javascriptVm.detach());
+    assertFalse(javascriptVm.isAttached());
     assertTrue(this.isDisconnected);
   }
 
@@ -40,7 +40,7 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     {
       final CountDownLatch latch = new CountDownLatch(1);
       Breakpoint.Target target = new Breakpoint.Target.ScriptName("file:///C:/1.js");
-      browserTab.setBreakpoint(target, 18, 3, true, null,
+      javascriptVm.setBreakpoint(target, 18, 3, true, null,
           new BreakpointCallback() {
 
             public void failure(String errorMessage) {
@@ -83,32 +83,6 @@ public class DebugEventListenerTest extends AbstractAttachedTest<FakeConnection>
     assertTrue(breakpointsHit.isEmpty());
 
     resume();
-  }
-
-  @Test(timeout = 3000)
-  public void testClosed() throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-    closedCallback = new Runnable() {
-      public void run() {
-        latch.countDown();
-      }
-    };
-    messageResponder.tabClosed();
-    latch.await();
-    assertNull(this.newTabUrl);
-  }
-
-  @Test(timeout = 3000)
-  public void testNavigated() throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-    navigatedCallback = new Runnable() {
-      public void run() {
-        latch.countDown();
-      }
-    };
-    messageResponder.tabNavigated("newUrl");
-    latch.await();
-    assertEquals("newUrl", this.newTabUrl);
   }
 
   @Override

@@ -13,18 +13,15 @@ import static org.junit.Assert.assertNull;
 import java.util.Collection;
 import java.util.SortedMap;
 
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.internal.BrowserFactoryImpl;
+import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.internal.BrowserFactoryImplTestGate;
 import org.chromium.sdk.internal.browserfixture.FixtureChromeStub;
 import org.chromium.sdk.internal.browserfixture.StubListener;
 import org.chromium.sdk.internal.transport.ChromeStub;
-import org.chromium.sdk.internal.transport.FakeConnectionFactory;
+import org.chromium.sdk.internal.transport.FakeConnection;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
 import org.chromium.sdk.internal.v8native.ContextBuilder;
 import org.chromium.sdk.internal.v8native.InternalContext;
@@ -51,10 +48,9 @@ public class JsArrayImplTest {
   @Before
   public void setUpBefore() throws Exception {
     this.messageResponder = new FixtureChromeStub();
-    Browser browser = BrowserFactoryImplTestGate.create(
-        (BrowserFactoryImpl) BrowserFactory.getInstance(),
-        new FakeConnectionFactory(messageResponder));
-    BrowserTab browserTab = browser.createTabFetcher().getTabs().get(0).attach(listener);
+    StandaloneVm standaloneVm = BrowserFactoryImplTestGate.createStandalone(
+        new FakeConnection(messageResponder), FakeConnection.HANDSHAKER);
+    standaloneVm.attach(listener);
 
     listener.expectSuspendedEvent();
     messageResponder.sendSuspendedEvent();

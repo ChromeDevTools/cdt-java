@@ -17,10 +17,9 @@ import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.UnsupportedVersionException;
 import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.transport.Connection;
+import org.chromium.sdk.internal.transport.Connection.NetListener;
 import org.chromium.sdk.internal.transport.Handshaker;
 import org.chromium.sdk.internal.transport.Message;
-import org.chromium.sdk.internal.transport.SocketConnection;
-import org.chromium.sdk.internal.transport.Connection.NetListener;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.DebugSessionManager;
 import org.chromium.sdk.internal.v8native.JavascriptVmImpl;
@@ -51,7 +50,7 @@ public class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
     }
   };
 
-  private final SocketConnection connection;
+  private final Connection connection;
   private final Handshaker.StandaloneV8 handshaker;
 
   private final DebugSession debugSession;
@@ -64,7 +63,7 @@ public class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
 
   private final Object disconnectMonitor = new Object();
 
-  public StandaloneVmImpl(SocketConnection connection, Handshaker.StandaloneV8 handshaker) {
+  public StandaloneVmImpl(Connection connection, Handshaker.StandaloneV8 handshaker) {
     this.connection = connection;
     this.handshaker = handshaker;
     V8CommandOutputImpl v8CommandOutput = new V8CommandOutputImpl(connection);
@@ -177,7 +176,7 @@ public class StandaloneVmImpl extends JavascriptVmImpl implements StandaloneVm {
   }
 
   @Override
-  protected DebugSession getDebugSession() {
+  public DebugSession getDebugSession() {
     return debugSession;
   }
 

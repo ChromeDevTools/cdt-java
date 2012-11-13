@@ -63,7 +63,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
       final CountDownLatch latch = new CountDownLatch(1);
 
       // The "create" part
-      browserTab.setBreakpoint(new Breakpoint.Target.ScriptName("1"), 4, 1, true, "false",
+      javascriptVm.setBreakpoint(new Breakpoint.Target.ScriptName("1"), 4, 1, true, "false",
           new BreakpointCallback() {
             public void failure(String errorMessage) {
               resultMessage[0] = errorMessage;
@@ -115,7 +115,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
   public void testClear() throws Exception {
     BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"),
         10, true, null,
-        new TestBreakpointManager(browserTab.getDebugSession()));
+        new TestBreakpointManager(javascriptVm.getDebugSession()));
     final CountDownLatch latch = new CountDownLatch(1);
     final String[] resultMessage = new String[1];
     final Breakpoint[] resultBreakpoint = new Breakpoint[1];
@@ -145,7 +145,7 @@ public class BreakpointImplTest extends AbstractAttachedTest<FakeConnection> {
     int ignoreCount = 3;
     boolean enabled = true;
     BreakpointImpl bp = new BreakpointImpl(1, new Breakpoint.Target.ScriptName("abc.js"), 10,
-        enabled, condition, new TestBreakpointManager(browserTab.getDebugSession()));
+        enabled, condition, new TestBreakpointManager(javascriptVm.getDebugSession()));
 
     bp.setCondition(condition);
     bp.flush(null, null);

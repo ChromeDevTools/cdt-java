@@ -9,8 +9,6 @@ import static org.junit.Assert.assertNull;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
-import org.chromium.sdk.Browser.TabFetcher;
-import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.ContinueCallback;
 import org.chromium.sdk.DebugContext.StepAction;
@@ -18,12 +16,10 @@ import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.TabDebugEventListener;
 import org.chromium.sdk.UnsupportedVersionException;
-import org.chromium.sdk.internal.BrowserFactoryImpl;
 import org.chromium.sdk.internal.BrowserFactoryImplTestGate;
-import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
-import org.chromium.sdk.internal.shellprotocol.BrowserTabImpl;
+import org.chromium.sdk.internal.standalonev8.StandaloneVmImpl;
 import org.chromium.sdk.internal.transport.Connection;
-import org.chromium.sdk.internal.transport.FakeConnectionFactory;
+import org.chromium.sdk.internal.transport.FakeConnection;
 import org.junit.After;
 import org.junit.Before;
 
@@ -35,9 +31,7 @@ public abstract class AbstractAttachedTest<T extends Connection>
 
   protected FixtureChromeStub messageResponder;
 
-  protected BrowserImpl browser;
-
-  protected BrowserTabImpl browserTab;
+  protected StandaloneVmImpl javascriptVm;
 
   protected DebugContext suspendContext;
 
@@ -71,12 +65,9 @@ public abstract class AbstractAttachedTest<T extends Connection>
   }
 
   protected void attachToBrowserTab() throws IOException, UnsupportedVersionException {
-    FakeConnectionFactory connectionFactory = new FakeConnectionFactory(connection);
-    browser = (BrowserImpl) BrowserFactoryImplTestGate.create(
-        (BrowserFactoryImpl) BrowserFactory.getInstance(), connectionFactory);
-    TabFetcher tabFetcher = browser.createTabFetcher();
-    browserTab = (BrowserTabImpl) tabFetcher.getTabs().get(0).attach(this);
-    tabFetcher.dismiss();
+    javascriptVm = BrowserFactoryImplTestGate.createStandalone(
+        new FakeConnection(messageResponder), FakeConnection.HANDSHAKER);
+    javascriptVm.attach(this);
   }
 
   protected abstract T createConnection();

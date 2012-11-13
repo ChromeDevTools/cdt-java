@@ -4,8 +4,6 @@
 
 package org.chromium.sdk.internal;
 
-import org.chromium.sdk.internal.browserfixture.BrowserImplTest;
-import org.chromium.sdk.internal.tools.devtools.DevToolsServiceHandlerTest;
 import org.chromium.sdk.internal.tools.v8.V8Tests;
 import org.chromium.sdk.internal.v8native.DebugContextImplTest;
 import org.chromium.sdk.internal.v8native.DebugEventListenerTest;
@@ -21,13 +19,11 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
-  BrowserImplTest.class,
   DebugContextImplTest.class,
   DebugEventListenerTest.class,
   JsArrayImplTest.class,
   JsObjectImplTest.class,
   ScriptsTest.class,
-  V8Tests.class,
-  DevToolsServiceHandlerTest.class})
+  V8Tests.class})
 public class AllTests {
 }

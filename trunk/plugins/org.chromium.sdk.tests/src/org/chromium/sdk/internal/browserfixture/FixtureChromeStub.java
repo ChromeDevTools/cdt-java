@@ -10,6 +10,7 @@ import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonObject;
 import static org.chromium.sdk.tests.internal.JsonBuilderUtil.jsonProperty;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,6 @@ import org.chromium.sdk.internal.protocolparser.JsonParserRoot;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonType;
-import org.chromium.sdk.internal.shellprotocol.tools.ToolName;
-import org.chromium.sdk.internal.shellprotocol.tools.protocol.DevToolsServiceCommand;
-import org.chromium.sdk.internal.shellprotocol.tools.protocol.output.MessageFactory;
-import org.chromium.sdk.internal.shellprotocol.tools.v8debugger.DebuggerToolCommand;
 import org.chromium.sdk.internal.transport.ChromeStub;
 import org.chromium.sdk.internal.transport.Connection.NetListener;
 import org.chromium.sdk.internal.transport.Message;
@@ -58,12 +55,11 @@ public class FixtureChromeStub implements ChromeStub {
   private static final Map<Long, Integer> scriptIdToScriptRefMap = new HashMap<Long, Integer>();
 
   private static final V8ContextFilter contextFilter = new V8ContextFilter() {
+    @Override
     public boolean isContextOurs(ContextHandle contextHandle) {
       return true;
     }
   };
-
-  private static final String secondTabId = "2";
 
   private static final Map<Long, String> refToObjectMap;
   private static final Map<Long, String> refToFullVersionMap;
@@ -265,20 +261,20 @@ public class FixtureChromeStub implements ChromeStub {
     return seqCounter++;
   }
 
+  @Override
   public Message respondTo(Message requestMessage) {
     // needs request_seq and command at the end
-    JSONObject content;
+    JSONObject data;
     try {
-      content = JsonUtil.jsonObjectFromJson(requestMessage.getContent());
+      data = JsonUtil.jsonObjectFromJson(requestMessage.getContent());
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }
-    String protocolCommand = JsonUtil.getAsString(content, V8Protocol.KEY_COMMAND);
     String response = null;
     boolean success = true;
-    if (DebuggerToolCommand.DEBUGGER_COMMAND.commandName.equals(protocolCommand)) {
+    // TODO: remove the block, that was introduced to preserve indentation.
+    {
       JSONObject responseMessage = new JSONObject();
-      JSONObject data = JsonUtil.getAsJSON(content, "data");
       Map<String, Object> nameToJsonValue = new HashMap<String, Object>();
       Long seq = JsonUtil.getAsLong(data, V8Protocol.KEY_SEQ);
       String debuggerCommandString = JsonUtil.getAsString(data, V8Protocol.KEY_COMMAND);
@@ -373,34 +369,17 @@ public class FixtureChromeStub implements ChromeStub {
         responseMessage.put("message", "An error occurred");
       }
       response = responseMessage.toJSONString();
-      response = createDebuggerCommandResponse(response);
-    } else if (DebuggerToolCommand.ATTACH.commandName.equals(protocolCommand)) {
-      response = "{\"command\":\"attach\",\"result\":0}";
-    } else if (DebuggerToolCommand.DETACH.commandName.equals(protocolCommand)) {
-      response = "{\"command\":\"detach\",\"result\":0}";
-    } else if (DevToolsServiceCommand.LIST_TABS.commandName.equals(protocolCommand)) {
-      response =
-          "{\"command\":\"list_tabs\",\"data\":[[" + secondTabId + ",\"file:///C:/1.html\"],[4,\"file:///C:/1.html\"]],\"result\":0}";
-    } else if (DevToolsServiceCommand.VERSION.commandName.equals(protocolCommand)) {
-      response = "{\"command\":\"version\",\"data\":\"0.1\",\"result\":0}";
     }
-    if (response == null) {
-      // Unhandled request
-      return null;
-    }
-    return MessageFactory.createMessage(
-        requestMessage.getTool(),
-        requestMessage.getDestination(),
-        response);
+    return new Message(Collections.<String, String>emptyMap(), response);
   }
 
+  @Override
   public void sendSuspendedEvent() {
     String response = "{\"seq\":" + nextSeq() + ",\"type\":\"event\",\"event\":\"break\","
         + "\"body\":{\"invocationText\":\"wasteCpu();\",\"sourceLine\":25,\"sourceColumn\":4,"
         + "\"sourceLineText\":\"    debugger;\",\"script\":{\"id\":11,\"name\":\"samples/test.js\","
         + "\"lineOffset\":0,\"columnOffset\":0,\"lineCount\":36}}}";
-    response = createDebuggerCommandResponse(response);
-    Message message = MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, secondTabId, response);
+    Message message = new Message(Collections.<String, String>emptyMap(), response);
     listener.messageReceived(message);
   }
 
@@ -439,10 +418,6 @@ public class FixtureChromeStub implements ChromeStub {
       }
     }
     return scripts;
-  }
-
-  private String createDebuggerCommandResponse(String response) {
-    return "{\"command\":\"debugger_command\",\"result\":0,\"data\":" + response + "}";
   }
 
   private void constructBacktrace(JSONObject response, JSONObject responseBody) {
@@ -619,7 +594,7 @@ public class FixtureChromeStub implements ChromeStub {
     body.put("breakpoints", bps);
     // TODO: add other data if needed
     eventObject.put("body", body);
-    sendEvent(createMessage(createDebuggerCommandResponse(eventObject.toJSONString())));
+    sendEvent(createMessage(eventObject.toJSONString()));
   }
 
   public void sendAfterCompile() {
@@ -644,11 +619,11 @@ public class FixtureChromeStub implements ChromeStub {
         jsonProperty("refs", constructScriptRefsJson())
         );
 
-    sendEvent(createMessage(createDebuggerCommandResponse(afterCompileObject.toJSONString())));
+    sendEvent(createMessage(afterCompileObject.toJSONString()));
   }
 
   private Message createMessage(String content) {
-    return MessageFactory.createMessage(ToolName.V8_DEBUGGER.value, "2", content);
+    return new Message(Collections.<String, String>emptyMap(), content);
   }
 
   private static class FakeBreakpoint extends BreakpointImpl {
@@ -657,17 +632,9 @@ public class FixtureChromeStub implements ChromeStub {
     }
   }
 
+  @Override
   public void setNetListener(NetListener listener) {
     this.listener = listener;
-  }
-
-  public void tabClosed() {
-    sendEvent(createMessage("{\"command\":\"closed\",\"result\":0}"));
-  }
-
-  public void tabNavigated(String newUrl) {
-    sendEvent(
-        createMessage("{\"command\":\"navigated\",\"result\":0,\"data\":\"" + newUrl + "\"}"));
   }
 
   @JsonType(subtypesChosenManually=true)

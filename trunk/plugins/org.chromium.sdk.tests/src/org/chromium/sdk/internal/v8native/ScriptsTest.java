@@ -50,7 +50,7 @@ public class ScriptsTest extends AbstractAttachedTest<FakeConnection> {
   @SuppressWarnings("unchecked")
   private Collection<Script> getScripts() throws MethodIsBlockingException {
     final Collection<Script>[] loadedScripts = new Collection[1];
-    browserTab.getScripts(new ScriptsCallback() {
+    javascriptVm.getScripts(new ScriptsCallback() {
       public void success(Collection<Script> scripts) {
         loadedScripts[0] = scripts;
       }
