@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@106352
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.input.network;
 
@@ -10,7 +10,7 @@ package org.chromium.sdk.internal.wip.protocol.input.network;
 @org.chromium.sdk.internal.protocolparser.JsonType
 public interface CachedResourceValue {
   /**
-   Resource URL.
+   Resource URL. This is the url of the original network request.
    */
   String url();
 

@@ -424,7 +424,7 @@ class WipContextBuilder {
         protected WipParamsWithResponse<EvaluateOnCallFrameData> createRequestParams(
             String expression, WipValueLoader destinationValueLoader) {
           return new EvaluateOnCallFrameParams(id, expression,
-              destinationValueLoader.getObjectGroupId(), false, null, false);
+              destinationValueLoader.getObjectGroupId(), false, null, false, null);
         }
 
         @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateOnCallFrameData data) {
@@ -801,7 +801,7 @@ class WipContextBuilder {
         WipValueLoader destinationValueLoader) {
       boolean doNotPauseOnExceptions = true;
       return new EvaluateParams(expression, destinationValueLoader.getObjectGroupId(),
-          false, doNotPauseOnExceptions, null, false);
+          false, doNotPauseOnExceptions, null, false, null);
     }
 
     @Override protected RemoteObjectValue getRemoteObjectValue(EvaluateData data) {

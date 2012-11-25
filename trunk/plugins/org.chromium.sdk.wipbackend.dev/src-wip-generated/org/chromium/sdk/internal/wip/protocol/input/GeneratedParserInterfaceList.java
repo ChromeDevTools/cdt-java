@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -93,6 +93,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceOrientationData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideGeolocationData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanShowFPSCounterData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CookieValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
@@ -100,6 +101,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.Resources.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.GetCompositingBordersVisibleData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetCookiesData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceContentData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData.class,
