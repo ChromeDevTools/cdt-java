@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -208,6 +208,9 @@ public interface WipGeneratedParserRoot {
   org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideGeolocationData parsePageCanOverrideGeolocationData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.page.CanShowFPSCounterData parsePageCanShowFPSCounterData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData parsePageDomContentEventFiredEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
@@ -215,6 +218,9 @@ public interface WipGeneratedParserRoot {
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData parsePageFrameNavigatedEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.page.GetCompositingBordersVisibleData parsePageGetCompositingBordersVisibleData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.GetCookiesData parsePageGetCookiesData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;

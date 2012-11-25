@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@107567
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -53,5 +53,11 @@ public interface PropertyDescriptorValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   Boolean wasThrown();
+
+  /**
+   True if the property is owned for the object.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  Boolean isOwn();
 
 }

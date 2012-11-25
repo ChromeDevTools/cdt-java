@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@102140
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -96,6 +96,7 @@ public interface ConsoleMessageValue {
     DIR,
     DIRXML,
     TRACE,
+    CLEAR,
     STARTGROUP,
     STARTGROUPCOLLAPSED,
     ENDGROUP,

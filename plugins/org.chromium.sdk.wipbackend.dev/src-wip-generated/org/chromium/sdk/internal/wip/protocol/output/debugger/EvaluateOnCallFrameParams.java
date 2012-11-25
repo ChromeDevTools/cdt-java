@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@114632
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
 
 package org.chromium.sdk.internal.wip.protocol.output.debugger;
 
@@ -15,8 +15,9 @@ public class EvaluateOnCallFrameParams extends org.chromium.sdk.internal.wip.pro
    @param includeCommandLineAPIOpt Specifies whether command line API should be available to the evaluated expression, defaults to false.
    @param doNotPauseOnExceptionsAndMuteConsoleOpt Specifies whether evaluation should stop on exceptions and mute console. Overrides setPauseOnException state.
    @param returnByValueOpt Whether the result is expected to be a JSON object that should be sent by value.
+   @param generatePreviewOpt Whether preview should be generated for the result.
    */
-  public EvaluateOnCallFrameParams(String/*See org.chromium.sdk.internal.wip.protocol.common.debugger.CallFrameIdTypedef*/ callFrameId, String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsAndMuteConsoleOpt, Boolean returnByValueOpt) {
+  public EvaluateOnCallFrameParams(String/*See org.chromium.sdk.internal.wip.protocol.common.debugger.CallFrameIdTypedef*/ callFrameId, String expression, String objectGroupOpt, Boolean includeCommandLineAPIOpt, Boolean doNotPauseOnExceptionsAndMuteConsoleOpt, Boolean returnByValueOpt, Boolean generatePreviewOpt) {
     this.put("callFrameId", callFrameId);
     this.put("expression", expression);
     if (objectGroupOpt != null) {
@@ -30,6 +31,9 @@ public class EvaluateOnCallFrameParams extends org.chromium.sdk.internal.wip.pro
     }
     if (returnByValueOpt != null) {
       this.put("returnByValue", returnByValueOpt);
+    }
+    if (generatePreviewOpt != null) {
+      this.put("generatePreview", generatePreviewOpt);
     }
   }
 
