@@ -414,7 +414,11 @@ class Generator {
             writer.append("\t/**\n " + description + "\n */\n");
           }
 
-          writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType\n");
+          writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType");
+          if (properties == null) {
+            writer.append("(allowsOtherProperties=true)");
+          }
+          writer.append("\n");
           writer.append("\tpublic interface " + className.getLastComponent() +" {\n");
 
           InputClassScope classScope = new InputClassScope(className);
@@ -645,7 +649,11 @@ class Generator {
         writer.append("\t/**\n " + description + "\n */\n");
       }
 
-      writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType\n");
+      writer.append("\t@org.chromium.sdk.internal.protocolparser.JsonType");
+      if (parameters == null) {
+        writer.append("(allowsOtherProperties=true)");
+      }
+      writer.append("\n");
       writer.append("\tpublic interface " + className +" {\n");
 
       InputClassScope classScope = new InputClassScope(new NamePath(className,
