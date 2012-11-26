@@ -419,7 +419,12 @@ class Generator {
             writer.append("(allowsOtherProperties=true)");
           }
           writer.append("\n");
-          writer.append("\tpublic interface " + className.getLastComponent() +" {\n");
+          writer.append("\tpublic interface " + className.getLastComponent());
+          if (properties == null) {
+            writer.append(" extends org.chromium.sdk.internal.protocolparser.JsonObjectBased");
+          }
+          writer.append(" {\n");
+
 
           InputClassScope classScope = new InputClassScope(className);
 
@@ -654,7 +659,11 @@ class Generator {
         writer.append("(allowsOtherProperties=true)");
       }
       writer.append("\n");
-      writer.append("\tpublic interface " + className +" {\n");
+      writer.append("\tpublic interface " + className);
+      if (parameters == null) {
+        writer.append(" extends org.chromium.sdk.internal.protocolparser.JsonObjectBased");
+      }
+      writer.append(" {\n");
 
       InputClassScope classScope = new InputClassScope(new NamePath(className,
           new NamePath(ClassNameScheme.Input.getPackageName(domain.domain()))));
