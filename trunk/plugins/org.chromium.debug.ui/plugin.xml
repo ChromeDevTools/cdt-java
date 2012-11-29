@@ -29,16 +29,6 @@
 
   <extension point="org.eclipse.debug.core.launchConfigurationTypes">
     <launchConfigurationType
-        id="org.chromium.debug.ui.LaunchType$Chromium"
-        delegate="org.chromium.debug.ui.launcher.ChromiumLaunchType"
-        modes="debug"
-        name="%chromiumLaunchName"
-        delegateName="Debug Chromium JavaScript"
-        delegateDescription="JavaScript debugger for Chromium"
-        sourceLocatorId="org.chromium.debug.core.ChromiumSourceDirector"
-        sourcePathComputerId="org.chromium.debug.core.ChromiumSourceComputer">
-    </launchConfigurationType>
-    <launchConfigurationType
         id="org.chromium.debug.ui.LaunchType$Wip"
         delegate="org.chromium.debug.ui.launcher.WipLaunchType"
         modes="debug"
@@ -67,11 +57,6 @@
 
   <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
     <launchConfigurationTypeImage
-        id="org.chromium.debug.ui.LaunchConfigTypeImage$Chromium"
-        configTypeID="org.chromium.debug.ui.LaunchType$Chromium"
-        icon="res/chromium_16.png">
-    </launchConfigurationTypeImage>
-    <launchConfigurationTypeImage
         id="org.chromium.debug.ui.LaunchConfigTypeImage$Wip"
         configTypeID="org.chromium.debug.ui.LaunchType$Wip"
         icon="res/chromium_16.png">
@@ -89,11 +74,6 @@
   </extension>
 
   <extension point="org.eclipse.debug.ui.launchConfigurationTabGroups">
-    <launchConfigurationTabGroup
-        type="org.chromium.debug.ui.LaunchType$Chromium"
-        class="org.chromium.debug.ui.launcher.LaunchTabGroup$Chromium"
-        id="org.chromium.debug.ui.LaunchTabGroup$Chromium">
-    </launchConfigurationTabGroup>
     <launchConfigurationTabGroup
         type="org.chromium.debug.ui.LaunchType$Wip"
         class="org.chromium.debug.ui.launcher.LaunchTabGroup$Wip"
