@@ -425,16 +425,6 @@ public abstract class ChromiumRemoteTab<ELEMENTS> extends TabBase<ELEMENTS, Para
     TabElements getBase();
   }
 
-  static class DevToolsProtocol extends DevToolsProtocolBase {
-    public DevToolsProtocol() {
-      super(PARAMS);
-    }
-
-    private static final Params PARAMS = new Params(
-        ChromiumRemoteTab.HostChecker.LOCAL_ONLY,
-        Messages.ChromiumRemoteTab_URL, false);
-  }
-
   static class Standalone extends DevToolsProtocolBase {
     public Standalone() {
       super(PARAMS);

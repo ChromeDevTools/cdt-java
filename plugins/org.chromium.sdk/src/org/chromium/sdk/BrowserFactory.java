@@ -11,6 +11,7 @@ import org.chromium.sdk.internal.BrowserFactoryImpl;
 
 /**
  * A factory for Browser instances.
+ * TODO: reflect that it only creates standalone client, no browser.
  */
 public abstract class BrowserFactory {
   /**
@@ -23,19 +24,6 @@ public abstract class BrowserFactory {
   public static BrowserFactory getInstance() {
     return BrowserFactoryImpl.INSTANCE;
   }
-
-  /**
-   * Returns a Browser implementor instance that talks to a browser listening at
-   * {@code socketAddress}. Note that you shouldn't try to create several instances
-   * of Browser connecting to the same {@code socketAddress}.
-   *
-   * @param socketAddress the browser is listening on
-   * @param connectionLoggerFactory provides facility for listening to network
-   *        traffic; may be null
-   * @return a Browser instance for the {@code socketAddress}
-   */
-  public abstract Browser create(SocketAddress socketAddress,
-      ConnectionLogger.Factory connectionLoggerFactory);
 
   /**
    * Constructs StandaloneVm instance that talks to a V8 JavaScript VM via

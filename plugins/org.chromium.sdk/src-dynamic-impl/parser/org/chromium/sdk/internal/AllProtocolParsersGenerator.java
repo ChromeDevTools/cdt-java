@@ -5,7 +5,6 @@
 package org.chromium.sdk.internal;
 
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditParserGenerator;
-import org.chromium.sdk.internal.shellprotocol.tools.protocol.input.ToolsProtocolParserGenerator;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ParserGenerator;
 
 /**
@@ -14,7 +13,6 @@ import org.chromium.sdk.internal.v8native.protocol.input.V8ParserGenerator;
 public class AllProtocolParsersGenerator {
   public static void main(String[] args) {
     LiveEditParserGenerator.main(args);
-    ToolsProtocolParserGenerator.main(args);
     V8ParserGenerator.main(args);
   }
 }

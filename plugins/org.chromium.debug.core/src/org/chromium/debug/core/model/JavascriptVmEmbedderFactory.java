@@ -12,19 +12,13 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ScriptNameManipulator;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
-import org.chromium.sdk.Browser;
-import org.chromium.sdk.Browser.TabConnector;
-import org.chromium.sdk.Browser.TabFetcher;
 import org.chromium.sdk.BrowserFactory;
-import org.chromium.sdk.BrowserTab;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
@@ -40,16 +34,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 
 public class JavascriptVmEmbedderFactory {
-  public static JavascriptVmEmbedder.ConnectionToRemote connectToChromeDevTools(String host,
-      int port, NamedConnectionLoggerFactory connectionLoggerFactory,
-      final TabSelector tabSelector) throws CoreException {
-
-    SocketAddress address = new InetSocketAddress(host, port);
-    final Browser browser = browserCache.getOrCreateBrowser(address, connectionLoggerFactory);
-
-    return connect(browser, tabSelector);
-  }
-
   public static JavascriptVmEmbedder.ConnectionToRemote connectToWipBrowser(String host, int port,
       WipBackend backend,
       final NamedConnectionLoggerFactory browserLoggerFactory,
@@ -73,39 +57,6 @@ public class JavascriptVmEmbedderFactory {
         WipBrowserFactory.INSTANCE.createBrowser(address, factory);
 
     return connectWip(browser, backend, tabSelector);
-  }
-
-  private static JavascriptVmEmbedder.ConnectionToRemote connect(Browser browser,
-      final TabSelector tabSelector) throws CoreException {
-
-    final TabFetcher tabFetcher;
-    try {
-      tabFetcher = browser.createTabFetcher();
-    } catch (UnsupportedVersionException e) {
-      throw newCoreException(e);
-    } catch (IOException e) {
-      throw newCoreException(e);
-    }
-
-    return new JavascriptVmEmbedder.ConnectionToRemote() {
-      public JavascriptVmEmbedder.VmConnector selectVm() throws CoreException {
-        Browser.TabConnector targetTabConnector;
-        try {
-          targetTabConnector = tabSelector.selectTab(tabFetcher);
-        } catch (IOException e) {
-          throw newCoreException("Failed to get tabs for debugging", e);
-        }
-        if (targetTabConnector == null) {
-          return null;
-        }
-
-        return new EmbeddingTabConnectorImpl(targetTabConnector);
-      }
-
-      public void disposeConnection() {
-        tabFetcher.dismiss();
-      }
-    };
   }
 
   private static JavascriptVmEmbedder.ConnectionToRemote connectWip(final WipBrowser browser,
@@ -199,38 +150,6 @@ public class JavascriptVmEmbedderFactory {
             JavaScriptRegExpSupport.encodeLiteral(pathString) + "/?($|\\?)");
       }
     };
-  }
-
-  private static class EmbeddingTabConnectorImpl
-      extends EmbeddingTabConnectorBase<Browser.TabConnector> {
-    EmbeddingTabConnectorImpl(TabConnector targetTabConnector) {
-      super(targetTabConnector);
-    }
-
-    @Override
-    protected JavascriptVmEmbedder attach(TabDebugEventListener tabDebugEventListener)
-        throws CoreException {
-      final BrowserTab browserTab;
-      try {
-        browserTab = getTabConnector().attach(tabDebugEventListener);
-      } catch (IOException e) {
-        throw newCoreException("Failed to connect to browser tab", e);
-      }
-      return new EmbedderBase() {
-        public JavascriptVm getJavascriptVm() {
-          return browserTab;
-        }
-
-        public String getTargetName() {
-          return Messages.DebugTargetImpl_TargetName;
-        }
-
-
-        public String getThreadName() {
-          return browserTab.getUrl();
-        }
-      };
-    }
   }
 
   private static class WipEmbeddingTabConnector
@@ -359,44 +278,6 @@ public class JavascriptVmEmbedderFactory {
     return new CoreException(
         new Status(Status.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
             "Failed to connect to the remote browser", e));
-  }
-
-  private static final BrowserCache browserCache = new BrowserCache();
-  /**
-   * Cache of browser instances.
-   */
-  private static class BrowserCache {
-
-    /**
-     * Tries to return already created instance of Browser connected to {@code address}
-     * or create new instance.
-     * However, it creates a new instance each time that {@code ConnectionLogger} is not null
-     * (because you cannot add connection logger to existing connection).
-     * @throws CoreException if browser can't be created because of conflict with connectionLogger
-     */
-    synchronized Browser getOrCreateBrowser(final SocketAddress address,
-        final NamedConnectionLoggerFactory connectionLoggerFactory) throws CoreException {
-      Browser result = address2Browser.get(address);
-      if (result == null) {
-
-        ConnectionLogger.Factory wrappedFactory = new ConnectionLogger.Factory() {
-          public ConnectionLogger newConnectionLogger() {
-            return connectionLoggerFactory.createLogger(address.toString());
-          }
-        };
-        result = createBrowserImpl(address, wrappedFactory);
-
-        address2Browser.put(address, result);
-      }
-      return result;
-    }
-    private Browser createBrowserImpl(SocketAddress address,
-        ConnectionLogger.Factory connectionLoggerFactory) {
-      return BrowserFactory.getInstance().create(address, connectionLoggerFactory);
-    }
-
-    private final Map<SocketAddress, Browser> address2Browser =
-        new HashMap<SocketAddress, Browser>();
   }
 
   private static class StringBasedFileName implements ScriptNameManipulator.FilePath {

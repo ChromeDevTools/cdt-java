@@ -6,13 +6,9 @@ package org.chromium.sdk.internal;
 
 import java.net.SocketAddress;
 
-import org.chromium.sdk.Browser;
 import org.chromium.sdk.BrowserFactory;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.StandaloneVm;
-import org.chromium.sdk.internal.shellprotocol.BrowserImpl;
-import org.chromium.sdk.internal.shellprotocol.ConnectionFactory;
-import org.chromium.sdk.internal.shellprotocol.SocketConnectionFactory;
 import org.chromium.sdk.internal.standalonev8.StandaloneVmImpl;
 import org.chromium.sdk.internal.transport.Connection;
 import org.chromium.sdk.internal.transport.Handshaker;
@@ -27,19 +23,6 @@ public class BrowserFactoryImpl extends BrowserFactory {
   public static final BrowserFactoryImpl INSTANCE = new BrowserFactoryImpl();
 
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
-
-  @Override
-  public Browser create(SocketAddress socketAddress,
-      ConnectionLogger.Factory connectionLoggerFactory) {
-    SocketConnectionFactory socketConnectionFactory = new SocketConnectionFactory(socketAddress,
-        getTimeout(), connectionLoggerFactory, Handshaker.CHROMIUM);
-    return new BrowserImpl(socketConnectionFactory);
-  }
-
-  // Debug entry (no logger by definition)
-  Browser create(ConnectionFactory connectionFactory) {
-    return new BrowserImpl(connectionFactory);
-  }
 
   @Override
   public StandaloneVm createStandalone(SocketAddress socketAddress,
