@@ -4,6 +4,9 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.internal.v8native.V8Helper;
@@ -12,6 +15,9 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.RefWithDisplayData;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.value.LoadableString.Factory;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
 
 /**
  * A representation of a datum (value) in the remote JavaScript VM. The class must be immutable.
@@ -48,13 +54,17 @@ public abstract class ValueMirror {
   }
 
   /**
-   * Constructs a {@link ValueMirror} given a V8 debugger object specification if it's possible.
+   * Tries to construct the full {@link ValueMirror} from V8 debugger display data (preview)
+   * if it's possible.
    */
-  public static ValueMirror create(final RefWithDisplayData refWithDisplayData,
-      Factory loadableStringFactory) {
-    Long ref = refWithDisplayData.ref();
+  public static ValueMirror createIfSure(final RefWithDisplayData refWithDisplayData) {
+    long ref = refWithDisplayData.ref();
     final Type type = V8Helper.calculateType(refWithDisplayData.type(),
         refWithDisplayData.className(), false);
+
+    if (!TYPES_WITH_ACCURATE_DISPLAY.contains(type)) {
+      return null;
+    }
 
     return new ValueMirror(ref) {
       @Override
@@ -75,7 +85,12 @@ public abstract class ValueMirror {
         if (valueObj == null) {
           valueStr = refWithDisplayData.type(); // e.g. "undefined"
         } else {
-          valueStr = valueObj.toString();
+          // Works poorly for strings, but we do not allow strings here.
+          valueStr = JSONValue.toJSONString(valueObj);
+          if (type == Type.TYPE_NUMBER && valueStr.lastIndexOf('E') != -1) {
+            // Make accurate rendering of what V8 does.
+            valueStr = valueStr.toLowerCase();
+          }
         }
         return new LoadableString.Immutable(valueStr);
       }
@@ -92,6 +107,15 @@ public abstract class ValueMirror {
     };
   }
 
+  /**
+   * Lists types that we can accept in 'display data' form (preview property format).
+   * Object types are not here because we cannot get either proper class name or
+   * string representation. String isn't here because it may be truncated and we
+   * have no clue about it (well, we can check that it ends like truncated string
+   * ends, but it's not too robust).
+   */
+  private static final Set<Type> TYPES_WITH_ACCURATE_DISPLAY =
+      EnumSet.of(Type.TYPE_NUMBER, Type.TYPE_BOOLEAN, Type.TYPE_NULL, Type.TYPE_UNDEFINED);
 
   /**
    * Constructs a ValueMirror given a V8 debugger object specification.
