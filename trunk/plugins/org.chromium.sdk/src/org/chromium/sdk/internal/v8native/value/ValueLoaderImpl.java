@@ -103,9 +103,11 @@ public class ValueLoaderImpl extends ValueLoader {
     }
   }
 
-  public ValueMirror addDataToMap(RefWithDisplayData refWithDisplayData) {
-    ValueMirror mirror = ValueMirror.create(refWithDisplayData, getLoadableStringFactory());
-    return putValueMirrorIntoMapRecursive(mirror);
+  public void addDisplayDataToMap(RefWithDisplayData refWithDisplayData) {
+    ValueMirror mirror = ValueMirror.createIfSure(refWithDisplayData);
+    if (mirror != null) {
+      mergeValueMirrorIntoMap(mirror.getRef(), mirror);
+    }
   }
 
   public ValueMirror addDataToMap(ValueHandle valueHandle) {
@@ -230,13 +232,14 @@ public class ValueLoaderImpl extends ValueLoader {
     for (int i = 0; i < propertyRefs.size(); i++) {
       PropertyReference property = propertyRefs.get(i);
       DataWithRef dataWithRef = property.getValueObject();
-      Long ref = dataWithRef.ref();
-      RefWithDisplayData dataWithDisplayData = dataWithRef.getWithDisplayData();
-      ValueMirror mirror;
-      if (dataWithDisplayData == null) {
-        mirror = getSafe(refToMirror, ref);
-      } else {
-        mirror = ValueMirror.create(dataWithDisplayData, loadableStringFactory);
+      long ref = dataWithRef.ref();
+
+      ValueMirror mirror = getSafe(refToMirror, ref);
+      if (mirror == null) {
+        RefWithDisplayData dataWithDisplayData = dataWithRef.getWithDisplayData();
+        if (dataWithDisplayData != null) {
+          mirror = ValueMirror.createIfSure(dataWithDisplayData);
+        }
       }
       if (mirror == null) {
         // We don't have the data (enough) right now. We are requesting them from server.

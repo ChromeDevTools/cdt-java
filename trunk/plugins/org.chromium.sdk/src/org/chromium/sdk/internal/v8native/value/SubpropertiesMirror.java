@@ -83,7 +83,7 @@ public abstract class SubpropertiesMirror {
       for (DataWithRef dataWithRef : refs) {
         RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
         if (refWithDisplayData != null) {
-          valueLoader.addDataToMap(refWithDisplayData);
+          valueLoader.addDisplayDataToMap(refWithDisplayData);
         }
       }
     }
@@ -123,7 +123,7 @@ public abstract class SubpropertiesMirror {
         DataWithRef dataWithRef = ref.getValueObject();
         RefWithDisplayData refWithDisplayData = dataWithRef.getWithDisplayData();
         if (refWithDisplayData != null) {
-          valueLoader.addDataToMap(refWithDisplayData);
+          valueLoader.addDisplayDataToMap(refWithDisplayData);
         }
       }
     }
