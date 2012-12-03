@@ -28,6 +28,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.BreakpointImpl.FunctionTarget;
 import org.chromium.sdk.internal.v8native.protocol.input.BreakpointBody;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponseBody;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody;
 import org.chromium.sdk.internal.v8native.protocol.input.FlagsBody.FlagInfo;
 import org.chromium.sdk.internal.v8native.protocol.input.ListBreakpointsBody;
@@ -101,7 +102,7 @@ public class BreakpointManager {
             }
           }
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             if (callback != null) {
               callback.failure(message);
             }
@@ -133,7 +134,7 @@ public class BreakpointManager {
             }
           }
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             if (callback != null) {
               callback.failure(message);
             }
@@ -157,7 +158,7 @@ public class BreakpointManager {
             }
           }
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             if (callback != null) {
               callback.failure(message);
             }
@@ -174,7 +175,7 @@ public class BreakpointManager {
       SyncCallback syncCallback) {
     V8CommandCallbackBase v8Callback = new V8CommandCallbackBase() {
       @Override
-      public void failure(String message) {
+      public void failure(String message, ErrorDetails errorDetails) {
         callback.failure(new Exception(message));
       }
       @Override
@@ -337,7 +338,7 @@ public class BreakpointManager {
           }
           callback.success(result);
         }
-        @Override public void failure(String message) {
+        @Override public void failure(String message, ErrorDetails errorDetails) {
           callback.failure(new Exception(message));
         }
       };

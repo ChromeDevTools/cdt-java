@@ -28,4 +28,19 @@ public interface FailedCommandResponse extends JsonSubtype<CommandResponse> {
 
   @JsonOptionalField
   String command();
+
+  @JsonField(jsonLiteralName="error_details")
+  @JsonOptionalField
+  ErrorDetails errorDetails();
+
+  @JsonType
+  interface ErrorDetails {
+    Type type();
+    
+    // Add subtype cast methods here.
+
+    enum Type {
+      // Add error types here.
+    }
+  }
 }

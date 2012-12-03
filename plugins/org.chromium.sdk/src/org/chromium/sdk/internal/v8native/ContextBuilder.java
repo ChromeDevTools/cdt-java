@@ -19,6 +19,7 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.V8CommandProcessor.V8HandlerCallback;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
@@ -327,7 +328,7 @@ public class ContextBuilder {
             getDebugSession().getDebugEventListener().resumed();
           }
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             synchronized (sendContextCommandsMonitor) {
               // resurrected
               isValid = true;

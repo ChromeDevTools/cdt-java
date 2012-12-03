@@ -16,6 +16,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
@@ -71,7 +72,7 @@ public class V8Helper {
         true,
         new V8CommandCallbackBase() {
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             if (callback != null) {
               callback.failure(message);
             }
