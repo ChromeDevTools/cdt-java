@@ -13,6 +13,7 @@ import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.V8Helper.ScriptLoadCallback;
 import org.chromium.sdk.internal.v8native.protocol.input.ChangeLiveBody;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
@@ -100,7 +101,7 @@ public class ScriptImpl extends ScriptBase<Long> {
       }
 
       @Override
-      public void failure(String message) {
+      public void failure(String message, ErrorDetails errorDetails) {
         callback.failure(message);
       }
     };

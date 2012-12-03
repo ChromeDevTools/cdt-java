@@ -28,6 +28,7 @@ import org.chromium.sdk.internal.v8native.V8BlockingCallback;
 import org.chromium.sdk.internal.v8native.V8CommandCallbackBase;
 import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.V8ProtocolParserAccess;
@@ -385,7 +386,7 @@ public class ValueLoaderImpl extends ValueLoader {
         callback.success(handleList.get(0));
       }
       @Override
-      public void failure(String message) {
+      public void failure(String message, FailedCommandResponse.ErrorDetails errorDetails) {
         callback.failure(new Exception(message));
       }
     };

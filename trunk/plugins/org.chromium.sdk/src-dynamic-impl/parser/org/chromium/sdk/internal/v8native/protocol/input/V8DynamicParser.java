@@ -37,6 +37,7 @@ public class V8DynamicParser {
           EventNotification.class,
           SuccessCommandResponse.class,
           FailedCommandResponse.class,
+          FailedCommandResponse.ErrorDetails.class,
           CommandResponse.class,
           BreakEventBody.class,
           EventNotificationBody.class,

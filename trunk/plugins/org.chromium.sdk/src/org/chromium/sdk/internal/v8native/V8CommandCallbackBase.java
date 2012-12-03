@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.v8native;
 
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 
 /**
@@ -14,15 +15,21 @@ import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 public abstract class V8CommandCallbackBase implements V8CommandProcessor.V8HandlerCallback {
   public abstract void success(SuccessCommandResponse successResponse);
 
-  public abstract void failure(String message);
+  public abstract void failure(String message, FailedCommandResponse.ErrorDetails errorDetails);
 
+  @Override
   public void messageReceived(CommandResponse response) {
     SuccessCommandResponse successResponse = response.asSuccess();
     if (successResponse == null) {
-      this.failure("Remote error: " + response.asFailure().message());
-      return;
+      FailedCommandResponse failure = response.asFailure();
+      failure("Remote error: " + failure.message(), failure.errorDetails());
     } else {
       success(successResponse);
     }
+  }
+
+  @Override
+  final public void failure(String message) {
+    failure(message, null);
   }
 }

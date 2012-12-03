@@ -16,6 +16,7 @@ import org.chromium.sdk.internal.v8native.V8Helper;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.AfterCompileBody;
 import org.chromium.sdk.internal.v8native.protocol.input.EventNotification;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
@@ -64,7 +65,7 @@ public class AfterCompileProcessor extends V8EventProcessor {
           }
 
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             // The script is now missing.
           }
         },

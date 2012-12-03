@@ -21,6 +21,7 @@ import org.chromium.sdk.Version;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.CommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.output.ContextlessDebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
@@ -150,7 +151,7 @@ public class DebugSession {
   public void suspend(final SuspendCallback suspendCallback) {
     V8CommandProcessor.V8HandlerCallback v8Callback = new V8CommandCallbackBase() {
       @Override
-      public void failure(String message) {
+      public void failure(String message, ErrorDetails errorDetails) {
         if (suspendCallback != null) {
           suspendCallback.failure(new Exception(message));
         }

@@ -15,6 +15,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
@@ -60,7 +61,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
             callback.success(variable);
           }
           @Override
-          public void failure(String message) {
+          public void failure(String message, ErrorDetails errorDetails) {
             callback.failure(message);
           }
         };

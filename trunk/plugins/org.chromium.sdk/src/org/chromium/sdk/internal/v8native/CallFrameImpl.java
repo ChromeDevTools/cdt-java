@@ -24,6 +24,7 @@ import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.processor.BacktraceProcessor;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.FrameObject;
 import org.chromium.sdk.internal.v8native.protocol.input.RestartFrameBody;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
@@ -265,7 +266,7 @@ public class CallFrameImpl implements CallFrame {
         }
 
         @Override
-        public void failure(String message) {
+        public void failure(String message, ErrorDetails errorDetails) {
           if (callback != null) {
             callback.failure(new Exception(message));
           }
@@ -342,7 +343,7 @@ public class CallFrameImpl implements CallFrame {
         }
 
         @Override
-        public void failure(String message) {
+        public void failure(String message, ErrorDetails errorDetails) {
           if (callback != null) {
             callback.failure(new Exception(message));
           }

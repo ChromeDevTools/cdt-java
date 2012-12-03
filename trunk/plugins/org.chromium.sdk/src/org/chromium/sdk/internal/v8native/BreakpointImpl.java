@@ -11,6 +11,7 @@ import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.ScriptRegExpBreakpointTarget;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse.ErrorDetails;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.BreakpointInfo;
 import org.chromium.sdk.internal.v8native.protocol.output.ChangeBreakpointMessage;
@@ -132,7 +133,7 @@ public class BreakpointImpl implements Breakpoint {
         }
 
         @Override
-        public void failure(String message) {
+        public void failure(String message, ErrorDetails errorDetails) {
           callback.failure(new Exception(message));
         }
       };
