@@ -10,9 +10,7 @@ Minimum required version of Java VM is 1.6. Note that Eclipse checks this and wi
 
   * *Update site in zip archive* is available on "Downloads" page.
 
-Install "Chromium !JavaScript Remote Debugger" feature. If you have JSDT installed in your Eclipse, additional feature "Chromium !JavaScript Debugger Bridge to JSDT" is also recommended.
-
-If you want to use [WIP WebKit Remote Debugging protocol] support (WIP), install "!ChromeDevTools SDK WIP Backends". This feature contains new protocol experimental implementation and is separately updating -- new backends may appear more often than the new project releases.
+Install "Chromium !JavaScript Remote Debugger" and "!ChromeDevTools SDK WIP Backends" features. If you have JSDT installed in your Eclipse, additional feature "Chromium !JavaScript Debugger Bridge to JSDT" is also recommended.
 
 = SDK library alone =
 
