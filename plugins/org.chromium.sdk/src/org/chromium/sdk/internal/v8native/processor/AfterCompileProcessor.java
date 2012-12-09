@@ -56,12 +56,9 @@ public class AfterCompileProcessor extends V8EventProcessor {
             if (body.size() == 0) {
               return; // The script did not arrive (bad id?)
             }
-            Script newScript = debugSession.getScriptManager().addScript(
+            debugSession.getScriptManager().addScript(
                 body.get(0),
                 successResponse.refs());
-            if (newScript != null) {
-              getDebugSession().getSessionManager().getDebugEventListener().scriptLoaded(newScript);
-            }
           }
 
           @Override
