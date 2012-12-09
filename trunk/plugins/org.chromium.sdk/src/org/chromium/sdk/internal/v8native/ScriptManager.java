@@ -60,22 +60,24 @@ public class ScriptManager {
    * @return the new script, or {@code null} if the response does not contain
    *         a valid script JSON
    */
-  public synchronized Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
-
+  public Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
     ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
 
-    if (theScript == null) {
-      Descriptor<Long> desc = createDescriptor(scriptBody, refs, contextFilter);
-      if (desc == null) {
-        return null;
+    synchronized (this) {
+      if (theScript == null) {
+        Descriptor<Long> desc = createDescriptor(scriptBody, refs, contextFilter);
+        if (desc == null) {
+          return null;
+        }
+        theScript = new ScriptImpl(desc, debugSession);
+        idToScript.put(desc.id, theScript);
       }
-      theScript = new ScriptImpl(desc, debugSession);
-      idToScript.put(desc.id, theScript);
-    }
-    if (scriptBody.source() != null) {
-      setSourceCode(scriptBody, theScript);
+      if (scriptBody.source() != null) {
+        setSourceCode(scriptBody, theScript);
+      }
     }
 
+    debugSession.getSessionManager().getDebugEventListener().scriptLoaded(theScript);
     return theScript;
   }
 
