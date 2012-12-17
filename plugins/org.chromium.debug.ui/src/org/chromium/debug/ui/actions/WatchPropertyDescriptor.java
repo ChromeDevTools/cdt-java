@@ -55,18 +55,15 @@ public abstract class WatchPropertyDescriptor extends VariableBasedAction {
 
     final JsVariable jsVariable = realVariable.getJsVariable();
 
-    final Variable.Real.HostObject hostObject = realVariable.getHostObject();
-
-    if (hostObject == null) {
+    final String qualifiedName = realVariable.createHolderWatchExpression();
+    if (qualifiedName == null) {
       return null;
     }
 
     return new Runnable() {
       @Override
       public void run() {
-        String subExpression = hostObject.getExpression();
-
-        String expression = "Object.getOwnPropertyDescriptor(" + subExpression + ", \"" +
+        String expression = "Object.getOwnPropertyDescriptor(" + qualifiedName + ", \"" +
             jsVariable.getName() + "\")";
 
         IExpressionManager expressionManager = DebugPlugin.getDefault().getExpressionManager();

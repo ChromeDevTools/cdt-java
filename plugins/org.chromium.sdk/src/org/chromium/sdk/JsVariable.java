@@ -61,6 +61,7 @@ public interface JsVariable {
       throws UnsupportedOperationException;
 
   /**
+   * @deprecated
    * @return the fully qualified name of this variable relative to the context
    *         of its call frame
    */
