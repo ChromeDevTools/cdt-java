@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
-import org.chromium.debug.core.model.Variable.Real.HostObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -17,6 +16,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
+import org.json.simple.JSONObject;
 
 /**
  * A base implementation of all Chromium values. This class merely adds new interface,
@@ -49,12 +49,6 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
   public abstract Value asRealValue();
 
   public abstract String getValueString();
-
-  /**
-   * Represents a value as {@link HostObject}. This will be passed to value subproperties.
-   */
-  interface ValueAsHostObject extends Variable.Real.HostObject {
-  }
 
   /**
    * A base implementation of Value that lazily calculates its inner variables.
@@ -100,13 +94,13 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
    */
   static class ScopeValue extends ValueBase.ValueWithLazyVariables {
     private final JsScope jsScope;
-    private final ValueBase.ValueAsHostObject selfAsHostObject;
+    private final ExpressionTracker.Node expressionNode;
 
     ScopeValue(EvaluateContext evaluateContext, JsScope jsScope,
-        ValueBase.ValueAsHostObject selfAsHostObject) {
+        ExpressionTracker.Node expressionNode) {
       super(evaluateContext);
       this.jsScope = jsScope;
-      this.selfAsHostObject = selfAsHostObject;
+      this.expressionNode = expressionNode;
     }
     @Override public String getReferenceTypeName() throws DebugException {
       return "#Scope";
@@ -127,8 +121,8 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
     @Override
     protected IVariable[] calculateVariables() {
       return StackFrame.wrapVariables(getEvaluateContext(), jsScope.getVariables(),
-          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), selfAsHostObject,
-          null);
+          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), null,
+          expressionNode);
     }
   }
 

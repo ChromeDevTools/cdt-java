@@ -27,24 +27,24 @@ import org.eclipse.debug.ui.IValueDetailListener;
 public class Value extends ValueBase.ValueWithLazyVariables {
 
   public static Value create(EvaluateContext evaluateContext, JsValue value,
-      ValueBase.ValueAsHostObject hostObject) {
+      ExpressionTracker.Node expressionNode) {
     if (JsValue.Type.TYPE_ARRAY == value.getType()) {
-      return new ArrayValue(evaluateContext, (JsArray) value, hostObject);
+      return new ArrayValue(evaluateContext, (JsArray) value, expressionNode);
     }
-    return new Value(evaluateContext, value, hostObject);
+    return new Value(evaluateContext, value, expressionNode);
   }
 
   private final JsValue value;
 
-  private final ValueBase.ValueAsHostObject hostObject;
+  private final ExpressionTracker.Node expressionNode;
 
   private final DetailBuilder detailBuilder = new DetailBuilder();
 
   protected Value(EvaluateContext evaluateContext, JsValue value,
-      ValueBase.ValueAsHostObject hostObject) {
+      ExpressionTracker.Node expressionNode) {
     super(evaluateContext);
     this.value = value;
-    this.hostObject = hostObject;
+    this.expressionNode = expressionNode;
   }
 
   public String getReferenceTypeName() throws DebugException {
@@ -72,7 +72,7 @@ public class Value extends ValueBase.ValueWithLazyVariables {
     List<Variable> functionScopes = calculateFunctionScopesVariable(asObject);
     return StackFrame.wrapVariables(getEvaluateContext(),
         asObject.getProperties(), Collections.<String>emptySet(),
-        asObject.getInternalProperties(), hostObject, functionScopes);
+        asObject.getInternalProperties(), functionScopes, expressionNode);
   }
 
   /**
@@ -129,8 +129,8 @@ public class Value extends ValueBase.ValueWithLazyVariables {
     return this.value.isTruncated() || detailBuilder.getCurrentDetailWrapper().isTruncated();
   }
 
-  protected ValueBase.ValueAsHostObject getHostObject() {
-    return hostObject;
+  protected ExpressionTracker.Node getExpressionTrackerNode() {
+    return expressionNode;
   }
 
   public void reloadBiggerValue(final ReloadValueCallback callback) {

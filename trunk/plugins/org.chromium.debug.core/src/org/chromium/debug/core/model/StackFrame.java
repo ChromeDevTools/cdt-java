@@ -61,7 +61,7 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
     if (variables == null) {
       try {
         variables = wrapScopes(getEvaluateContext(), stackFrame.getVariableScopes(),
-            stackFrame.getReceiverVariable());
+            stackFrame.getReceiverVariable(), ExpressionTracker.STACK_FRAME_FACTORY);
       } catch (RuntimeException e) {
         // We shouldn't throw RuntimeException from here, because calling
         // ElementContentProvider#update will forget to call update.done().
@@ -75,21 +75,25 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
   static IVariable[] wrapVariables(
       EvaluateContext evaluateContext, Collection<? extends JsVariable> jsVars,
       Set<? extends String> propertyNameBlackList,
-      Collection <? extends JsVariable> jsInternalProperties, Variable.Real.HostObject hostObject,
-      Collection<? extends Variable> additional) {
+      Collection <? extends JsVariable> jsInternalProperties,
+      Collection<? extends Variable> additional, ExpressionTracker.Node expressionNode) {
     List<Variable> vars = new ArrayList<Variable>(jsVars.size());
     for (JsVariable jsVar : jsVars) {
       if (propertyNameBlackList.contains(jsVar.getName())) {
         continue;
       }
-      vars.add(Variable.forRealValue(evaluateContext, jsVar, false, hostObject));
+      ExpressionTracker.Node expressionTrackerNode =
+          expressionNode.createVariableNode(jsVar, false);
+      vars.add(Variable.forRealValue(evaluateContext, jsVar, false, expressionTrackerNode));
     }
     // Sort all regular properties by name.
     Collections.sort(vars, VARIABLE_COMPARATOR);
     // Always put internal properties in the end.
     if (jsInternalProperties != null) {
       for (JsVariable jsMetaVar : jsInternalProperties) {
-        vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true, hostObject));
+        ExpressionTracker.Node expressionTrackerNode =
+            expressionNode.createVariableNode(jsMetaVar, true);
+        vars.add(Variable.forRealValue(evaluateContext, jsMetaVar, true, expressionTrackerNode));
       }
     }
     if (additional != null) {
@@ -99,30 +103,29 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
   }
 
   static IVariable[] wrapScopes(EvaluateContext evaluateContext, List<? extends JsScope> jsScopes,
-      JsVariable receiverVariable) {
+      JsVariable receiverVariable, ExpressionTracker.ScopeAndVariableFactory trackerNodeFactory) {
     List<Variable> vars = new ArrayList<Variable>();
 
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
         if (receiverVariable != null) {
-          vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false, null));
+          ExpressionTracker.Node expressionTrackerNode =
+              trackerNodeFactory.createVariableNode(receiverVariable, false);
+          vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false,
+              expressionTrackerNode));
           receiverVariable = null;
         }
-        // Probably there is no better expression for referring the global object in JS.
-        ValueBase.ValueAsHostObject hostObject = new ValueBase.ValueAsHostObject() {
-          @Override
-          public String getExpression() {
-            return "((function(){return this;})())";
-          }
-        };
-        vars.add(Variable.forScope(evaluateContext, scope, hostObject));
+        ExpressionTracker.Node scopeValueNode = trackerNodeFactory.createScopeNode();
+        vars.add(Variable.forScope(evaluateContext, scope, scopeValueNode));
       } else if (scope.asWithScope() != null) {
         JsScope.WithScope withScope = scope.asWithScope();
-        vars.add(Variable.forWithScope(evaluateContext, withScope));
+        vars.add(Variable.forWithScope(evaluateContext, withScope,
+            trackerNodeFactory.createScopeNode()));
       } else {
         int startPos = vars.size();
         for (JsVariable var : scope.getVariables()) {
-          vars.add(Variable.forRealValue(evaluateContext, var, false, null));
+          vars.add(Variable.forRealValue(evaluateContext, var, false,
+              trackerNodeFactory.createVariableNode(var,  false)));
         }
         int endPos = vars.size();
         List<Variable> sublist = vars.subList(startPos, endPos);
@@ -130,7 +133,8 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
       }
     }
     if (receiverVariable != null) {
-      vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false, null));
+      vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false,
+          trackerNodeFactory.createVariableNode(receiverVariable, false)));
     }
 
     IVariable[] result = new IVariable[vars.size()];

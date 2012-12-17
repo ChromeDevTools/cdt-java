@@ -38,7 +38,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    * message as a {@link Value}.
    */
   public static Variable forRealValue(EvaluateContext evaluateContext, JsVariable jsVariable,
-      boolean isInternalProperty, Real.HostObject hostObject) {
+      boolean isInternalProperty, ExpressionTracker.Node trackerNode) {
     ValueBase value;
     if (jsVariable.isReadable()) {
       JsValue jsValue = jsVariable.getValue();
@@ -50,24 +50,23 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
         } else {
           // This is blocking. Consider making this call async and the entire method async
           // to parallel if for several properties.
-          value = calculateAccessorPropertyBlocking(objectProperty, evaluateContext);
+          value = calculateAccessorPropertyBlocking(objectProperty, evaluateContext, trackerNode);
           if (value == null) {
             value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable object property");
           }
         }
       } else {
-        SelfAsHostObject selfAsHostObject = new SelfAsHostObject(jsVariable);
-        value = Value.create(evaluateContext, jsValue, selfAsHostObject);
+        value = Value.create(evaluateContext, jsValue, trackerNode);
       }
     } else {
       value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable variable");
     }
 
-    return new Real(evaluateContext, jsVariable, value, isInternalProperty, hostObject);
+    return new Real(evaluateContext, jsVariable, value, isInternalProperty, trackerNode);
   }
 
   private static ValueBase calculateAccessorPropertyBlocking(final JsObjectProperty property,
-      final EvaluateContext evaluateContext) {
+      final EvaluateContext evaluateContext, final ExpressionTracker.Node expressionTrackerNode) {
     if (property.getGetterAsFunction() == null) {
       return new ValueBase.ErrorMessageValue(evaluateContext, "Property has undefined getter");
     }
@@ -75,7 +74,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       ValueBase result = null;
       @Override public void success(JsVariable variable) {
         result = Value.create(evaluateContext, variable.getValue(),
-            new SelfAsHostObject(property));
+            expressionTrackerNode);
       }
       @Override public void failure(String errorMessage) {
         result = new ValueBase.ErrorMessageValue(evaluateContext,
@@ -93,25 +92,25 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       ExceptionData exceptionData) {
     Value value = Value.create(evaluateContext, exceptionData.getExceptionValue(), null);
     return new Variable.Virtual(evaluateContext, "<exception>", JAVASCRIPT_REFERENCE_TYPE_NAME,
-        value);
+        value, null);
   }
 
   public static Variable forScope(EvaluateContext evaluateContext, JsScope scope,
-      ValueBase.ValueAsHostObject selfAsHostObject) {
-    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope, selfAsHostObject);
+      ExpressionTracker.Node expressionNode) {
     String scopeVariableName = "<" + scope.getType() + ">";
-    return forScope(evaluateContext, scopeVariableName, scopeValue);
+    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope, expressionNode);
+    return forScopeImpl(evaluateContext, scopeVariableName, scopeValue);
   }
 
   public static Variable forWithScope(EvaluateContext evaluateContext,
-      WithScope withScope) {
-    Value value = Value.create(evaluateContext, withScope.getWithArgument(), null);
-    return forScope(evaluateContext, "<with>", value);
+      WithScope withScope, ExpressionTracker.Node expressionNode) {
+    Value value = Value.create(evaluateContext, withScope.getWithArgument(), expressionNode);
+    return forScopeImpl(evaluateContext, "<with>", value);
   }
 
-  private static Variable forScope(EvaluateContext evaluateContext, String scopeName,
+  private static Variable forScopeImpl(EvaluateContext evaluateContext, String scopeName,
       ValueBase scopeValue) {
-    return new Variable.Virtual(evaluateContext, scopeName, "<scope>", scopeValue);
+    return new Variable.Virtual(evaluateContext, scopeName, "<scope>", scopeValue, null);
   }
 
   public static Variable forFunctionScopes(EvaluateContext evaluateContext,
@@ -134,7 +133,8 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
         // Put scopes in the opposite order: innermost first.
         // Closure tends to be parameterized by the innermost variable at most.
         List<? extends JsScope> reverseList = reverseList(list);
-        return StackFrame.wrapScopes(getEvaluateContext(), reverseList, null);
+        return StackFrame.wrapScopes(getEvaluateContext(), reverseList, null,
+            ExpressionTracker.FUNCTION_SCOPE_FACTORY);
       }
 
       @Override public Value asRealValue() {
@@ -159,7 +159,16 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       }
     };
 
-    return forScope(evaluateContext, "<function scope>", value);
+    return forScopeImpl(evaluateContext, "<function scope>", value);
+  }
+
+  public static Variable forEvaluateExpression(EvaluateContext evaluateContext, JsValue jsValue,
+      String expression) {
+    ExpressionTracker.Node expressionTrackerNode =
+        ExpressionTracker.createExpressionNode(expression);
+    ValueBase value = Value.create(evaluateContext, jsValue, expressionTrackerNode);
+    return new Variable.Virtual(evaluateContext, expression, JAVASCRIPT_REFERENCE_TYPE_NAME, value,
+        expressionTrackerNode.calculateQualifiedName());
   }
 
   /**
@@ -167,7 +176,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    */
   public static class Real extends Variable {
     private final JsVariable jsVariable;
-    private final HostObject hostObject;
+    private final ExpressionTracker.Node expressionTrackerNode;
 
     /**
      * Specifies whether this variable is internal property (__proto__ etc).
@@ -175,12 +184,12 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
      */
     private final boolean isInternalProperty;
 
-    Real(EvaluateContext evaluateContext, JsVariable jsVariable,
-        ValueBase value, boolean isInternalProperty, HostObject hostObject) {
+    Real(EvaluateContext evaluateContext, JsVariable jsVariable, ValueBase value,
+        boolean isInternalProperty, ExpressionTracker.Node expressionTrackerNode) {
       super(evaluateContext, value);
       this.jsVariable = jsVariable;
       this.isInternalProperty = isInternalProperty;
-      this.hostObject = hostObject;
+      this.expressionTrackerNode = expressionTrackerNode;
     }
 
     @Override public String getName() {
@@ -189,29 +198,17 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     @Override public String getReferenceTypeName() {
       return JAVASCRIPT_REFERENCE_TYPE_NAME;
     }
-    @Override protected String createWatchExpression() {
-      return jsVariable.getFullyQualifiedName();
-    }
     @Override public Real asRealVariable() {
       return this;
     }
     public JsVariable getJsVariable() {
       return jsVariable;
     }
-    public HostObject getHostObject() {
-      return hostObject;
+    @Override public String createWatchExpression() {
+      return expressionTrackerNode.calculateQualifiedName();
     }
-
-    /**
-     * If variable is a property of some object, it need an access to this object. This is used
-     * to build an expression for getting property descriptor.
-     */
-    public interface HostObject {
-      /**
-       * @return a JavaScript descriptor that return a value of that object -- the same that
-       *     {@link JsVariable#getFullyQualifiedName()} returns
-       */
-      String getExpression();
+    public String createHolderWatchExpression() {
+      return expressionTrackerNode.calculateParentQualifiedName();
     }
   }
 
@@ -221,12 +218,14 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   private static class Virtual extends Variable {
     private final String name;
     private final String referenceTypeName;
+    private final String watchExpression;
 
     Virtual(EvaluateContext evaluateContext, String name, String referenceTypeName,
-        ValueBase value) {
+        ValueBase value, String watchExpression) {
       super(evaluateContext, value);
       this.name = name;
       this.referenceTypeName = referenceTypeName;
+      this.watchExpression = watchExpression;
     }
 
     @Override public String getName() {
@@ -239,24 +238,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       return null;
     }
     @Override protected String createWatchExpression() {
-      return null;
-    }
-  }
-
-  /**
-   * Implements ValueAsHostObject based on JsVariable. This goes to the
-   * corresponding Value instance.
-   */
-  private static class SelfAsHostObject implements ValueBase.ValueAsHostObject {
-    private final JsVariable jsVariable;
-
-    SelfAsHostObject(JsVariable jsVariable) {
-      this.jsVariable = jsVariable;
-    }
-
-    @Override
-    public String getExpression() {
-      return jsVariable.getFullyQualifiedName();
+      return watchExpression;
     }
   }
 

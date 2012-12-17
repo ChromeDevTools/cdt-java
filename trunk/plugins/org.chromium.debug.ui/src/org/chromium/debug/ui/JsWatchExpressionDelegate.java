@@ -144,7 +144,8 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
         expression, null,
         new JsEvaluateContext.EvaluateCallback() {
           public void success(JsVariable variable) {
-            final Variable var = Variable.forRealValue(evaluateContext, variable, false, null);
+            Variable var =
+                Variable.forEvaluateExpression(evaluateContext, variable.getValue(), expression);
             listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
           }
 
