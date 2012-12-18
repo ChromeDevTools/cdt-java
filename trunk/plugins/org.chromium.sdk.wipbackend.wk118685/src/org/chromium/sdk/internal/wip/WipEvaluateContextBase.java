@@ -4,10 +4,12 @@
 
 package org.chromium.sdk.internal.wip;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -15,11 +17,15 @@ import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.JsEvaluateContextBase;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
+import org.chromium.sdk.internal.wip.WipValueBuilder.JsValueBase;
+import org.chromium.sdk.internal.wip.WipValueBuilder.SerializableValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.output.WipParamsWithResponse;
+import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
 import org.chromium.sdk.wip.EvaluateToMappingExtension;
+import org.json.simple.JSONValue;
 
 /**
  * Basic implementation of the abstract {@link JsEvaluateContextBase}. Class leaves unimplemented
@@ -37,7 +43,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
 
   @Override
   public RelayOk evaluateAsync(final String expression,
-      Map<String, String> additionalContext, final EvaluateCallback callback,
+      Map<String, ? extends JsValue> additionalContext, EvaluateCallback callback,
       SyncCallback syncCallback) {
 
     WipExpressionBuilder.ValueNameBuilder valueNameBuilder =
@@ -47,15 +53,38 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
         callback, syncCallback);
   }
 
+  @Override
+  public PrimitiveValueFactory getValueFactory() {
+    return PRIMITIVE_VALUE_FACTORY;
+  }
+
   RelayOk evaluateAsync(String expression, ValueNameBuilder valueNameBuidler,
-      Map<String, String> additionalContext, final EvaluateCallback callback,
+      Map<String, ? extends JsValue> additionalContext, EvaluateCallback callback,
       SyncCallback syncCallback) {
     return evaluateAsync(expression, valueNameBuidler, additionalContext, valueLoader,
         callback, syncCallback);
   }
 
   private RelayOk evaluateAsync(String expression, final ValueNameBuilder valueNameBuidler,
-      Map<String, String> additionalContext, WipValueLoader destinationValueLoaderParam,
+      Map<String, ? extends JsValue> additionalContext, WipValueLoader destinationValueLoaderParam,
+      final EvaluateCallback callback, SyncCallback syncCallback) {
+    Map<String, JsValueBase> internalAdditionalContext;
+    if (additionalContext == null) {
+      internalAdditionalContext = null;
+    } else {
+      internalAdditionalContext = new LinkedHashMap<String, JsValueBase>(additionalContext.size());
+      for (Map.Entry<String, ? extends JsValue> en : additionalContext.entrySet()) {
+        JsValueBase jsValueBase = JsValueBase.cast(en.getValue());
+        internalAdditionalContext.put(en.getKey(), jsValueBase);
+      }
+    }
+    return evaluateAsyncImpl(expression, valueNameBuidler, internalAdditionalContext,
+        destinationValueLoaderParam, callback, syncCallback);
+  }
+
+  RelayOk evaluateAsyncImpl(String expression, final ValueNameBuilder valueNameBuidler,
+      Map<String, ? extends SerializableValue> additionalContext,
+      WipValueLoader destinationValueLoaderParam,
       final EvaluateCallback callback, SyncCallback syncCallback) {
     if (destinationValueLoaderParam == null) {
       destinationValueLoaderParam = valueLoader;
@@ -142,7 +171,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       new EvaluateToMappingExtension() {
     @Override
     public void evaluateSync(JsEvaluateContext evaluateContext,
-        String expression, Map<String, String> additionalContext,
+        String expression, Map<String, ? extends JsValue> additionalContext,
         RemoteValueMapping targetMapping, EvaluateCallback evaluateCallback)
         throws MethodIsBlockingException {
       CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
@@ -153,13 +182,109 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
 
     @Override
     public RelayOk evaluateAsync(JsEvaluateContext evaluateContext,
-        String expression, Map<String, String> additionalContext,
+        String expression, Map<String, ? extends JsValue> additionalContext,
         RemoteValueMapping targetMapping, EvaluateCallback evaluateCallback,
         SyncCallback syncCallback) {
       WipEvaluateContextBase<?> contextImpl =
           WipEvaluateContextBase.castArgument(evaluateContext);
       return contextImpl.evaluateAsync(expression, additionalContext,
           evaluateCallback, syncCallback);
+    }
+  };
+
+  private static final PrimitiveValueFactory PRIMITIVE_VALUE_FACTORY =
+      new PrimitiveValueFactory() {
+    @Override
+    public JsValueBase getUndefined() {
+      return new JsValueBaseImpl(JsValue.Type.TYPE_UNDEFINED) {
+        @Override public String getValueString() {
+          return "undefined";
+        }
+        @Override public CallArgumentParam createCallArgumentParam() {
+          return new CallArgumentParam(false, null, null);
+        }
+      };
+    }
+
+    @Override
+    public JsValueBase getNull() {
+      return new JsValueBaseImpl(JsValue.Type.TYPE_NULL) {
+        @Override public String getValueString() {
+          return "null";
+        }
+        @Override public CallArgumentParam createCallArgumentParam() {
+          return new CallArgumentParam(true, null, null);
+        }
+      };
+    }
+
+    @Override
+    public JsValueBase createString(String value) {
+      return new SimpleValue(JsValue.Type.TYPE_STRING, value);
+    }
+
+    @Override
+    public JsValueBase createNumber(double value) {
+      return new SimpleValue(JsValue.Type.TYPE_NUMBER, value);
+    }
+
+    @Override
+    public JsValueBase createNumber(long value) {
+      return new SimpleValue(JsValue.Type.TYPE_NUMBER, value);
+    }
+
+    @Override
+    public JsValueBase createNumber(final String stringRepresentation) {
+      return new JsValueBaseImpl(JsValue.Type.TYPE_STRING) {
+        @Override public String getValueString() {
+          return stringRepresentation;
+        }
+        @Override public CallArgumentParam createCallArgumentParam() {
+          return new CallArgumentParam(true, JSONValue.parse(stringRepresentation), null);
+        }
+      };
+    }
+
+    @Override
+    public JsValueBase createBoolean(boolean value) {
+      return new SimpleValue(JsValue.Type.TYPE_BOOLEAN, value);
+    }
+
+    abstract class JsValueBaseImpl extends JsValueBase {
+      private final Type type;
+      JsValueBaseImpl(Type type) {
+        this.type = type;
+      }
+      @Override public Type getType() {
+        return type;
+      }
+      @Override public JsObject asObject() {
+        return null;
+      }
+      @Override public boolean isTruncated() {
+        return false;
+      }
+      @Override public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
+          SyncCallback syncCallback) {
+        throw new UnsupportedOperationException();
+      }
+      @Override public String getRefId() {
+        return null;
+      }
+    }
+
+    class SimpleValue extends JsValueBaseImpl {
+      private final Object value;
+      SimpleValue(Type type, Object value) {
+        super(type);
+        this.value = value;
+      }
+      @Override public String getValueString() {
+        return value.toString();
+      }
+      @Override public CallArgumentParam createCallArgumentParam() {
+        return new CallArgumentParam(true, value, null);
+      }
     }
   };
 }

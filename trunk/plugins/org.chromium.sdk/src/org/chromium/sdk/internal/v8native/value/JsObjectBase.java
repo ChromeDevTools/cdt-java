@@ -16,6 +16,7 @@ import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
@@ -86,10 +87,6 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
     return valueLoader;
   }
 
-  public static int parseRefId(String value) {
-    return Integer.parseInt(value);
-  }
-
   @Override
   public JsObjectBase<D> asObject() {
     return this;
@@ -103,6 +100,12 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   @Override
   public String getClassName() {
     return className;
+  }
+
+  @Override
+  public EvaluateMessage.Value getJsonParam(InternalContext hostInternalContext) {
+    valueLoader.getInternalContext().checkContextIsCompatible(hostInternalContext);
+    return EvaluateMessage.Value.createForId(ref);
   }
 
   @Override

@@ -62,4 +62,10 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
 
     ContextBuilder.ExpectingBacktraceStep createReloadBacktraceStep();
   }
+
+  /**
+   * Checks that this context and hostInternalContext are compatible (represent the same
+   * debugger state) and have the same ref id maps.
+   */
+  void checkContextIsCompatible(InternalContext hostInternalContext);
 }

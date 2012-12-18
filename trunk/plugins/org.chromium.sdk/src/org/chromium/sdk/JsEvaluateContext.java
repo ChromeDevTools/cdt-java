@@ -36,13 +36,13 @@ public interface JsEvaluateContext {
    * The method will block until the evaluation result is available.
    *
    * @param expression to evaluate
-   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   * @param additionalContext a name-to-value map that adds new values to an expression
    *     scope; may be null
    * @param evaluateCallback to report the evaluation result to
    * @throws MethodIsBlockingException if called from a callback because it blocks
    *         until remote VM returns result
    */
-  void evaluateSync(String expression, Map<String, String> additionalContext,
+  void evaluateSync(String expression, Map<String, ? extends JsValue> additionalContext,
       EvaluateCallback evaluateCallback) throws MethodIsBlockingException;
 
   /**
@@ -54,11 +54,30 @@ public interface JsEvaluateContext {
    * The method doesn't block.
    *
    * @param expression to evaluate
-   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   * @param additionalContext a name-to-value map that adds new values to an expression
    *     scope; may be null
    * @param evaluateCallback to report the evaluation result to
    * @param syncCallback to report the end of any processing
    */
-  RelayOk evaluateAsync(String expression, Map<String, String> additionalContext,
+  RelayOk evaluateAsync(String expression, Map<String, ? extends JsValue> additionalContext,
       EvaluateCallback evaluateCallback, SyncCallback syncCallback);
+
+  /**
+   * @return factory that locally creates {@link JsValue} instances for primitive values.
+   */
+  PrimitiveValueFactory getValueFactory();
+
+  /**
+   * Locally creates primitive values. They can be used is such methods
+   * as {@link JsEvaluateContext#evaluateAsync}
+   */
+  interface PrimitiveValueFactory {
+    JsValue createString(String value);
+    JsValue createBoolean(boolean value);
+    JsValue createNumber(String stringRepresentation);
+    JsValue createNumber(long value);
+    JsValue createNumber(double value);
+    JsValue getUndefined();
+    JsValue getNull();
+  }
 }

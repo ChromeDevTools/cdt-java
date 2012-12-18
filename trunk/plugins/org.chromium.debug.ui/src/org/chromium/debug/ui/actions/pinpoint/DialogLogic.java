@@ -646,7 +646,7 @@ class DialogLogic {
         }
       };
       previewContext.globalEvaluateContext.evaluateAsync(expression,
-          Collections.singletonMap(paramJsName, previewContext.jsObject.getRefId()),
+          Collections.singletonMap(paramJsName, previewContext.jsObject),
           evaluateCallback, null);
     }
 

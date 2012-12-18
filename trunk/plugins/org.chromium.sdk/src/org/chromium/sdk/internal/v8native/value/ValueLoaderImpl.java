@@ -38,6 +38,7 @@ import org.chromium.sdk.internal.v8native.protocol.input.data.SomeHandle;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
+import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -456,6 +457,12 @@ public class ValueLoaderImpl extends ValueLoader {
               }
             }, syncCallback);
           }
+        }
+
+        @Override
+        public EvaluateMessage.Value getProtocolDescription(InternalContext hostInternalContext) {
+          hostInternalContext.checkContextIsCompatible(context);
+          return EvaluateMessage.Value.createForId(handleId);
         }
 
         private void replaceValue(ValueHandle handle, LoadedValue newValue) {

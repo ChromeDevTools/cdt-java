@@ -25,6 +25,12 @@ public class JsDataTypeUtil {
    */
   public static final String CLASSNAME_ARRAY = "Array";
 
+  public static final String JSON_NULL_TYPE = "null";
+  public static final String JSON_UNDEFINED_TYPE = "undefined";
+  public static final String JSON_BOOLEAN_TYPE = "boolean";
+  public static final String JSON_NUMBER_TYPE = "number";
+  public static final String JSON_STRING_TYPE = "string";
+
   /**
    * Class name of a Date object (TYPE_DATE).
    */
@@ -32,12 +38,12 @@ public class JsDataTypeUtil {
 
   static {
     put("object", Type.TYPE_OBJECT);
-    put("number", Type.TYPE_NUMBER);
-    put("string", Type.TYPE_STRING);
+    put(JSON_NUMBER_TYPE, Type.TYPE_NUMBER);
+    put(JSON_STRING_TYPE, Type.TYPE_STRING);
     put("function", Type.TYPE_FUNCTION);
-    put("boolean", Type.TYPE_BOOLEAN);
-    put("undefined", Type.TYPE_UNDEFINED);
-    put("null", Type.TYPE_NULL);
+    put(JSON_BOOLEAN_TYPE, Type.TYPE_BOOLEAN);
+    put(JSON_UNDEFINED_TYPE, Type.TYPE_UNDEFINED);
+    put(JSON_NULL_TYPE, Type.TYPE_NULL);
     put("error", Type.TYPE_ERROR);
     put("array", Type.TYPE_ARRAY);
     put("date", Type.TYPE_DATE);

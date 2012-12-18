@@ -16,6 +16,7 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipRelayRunner.ProcessException;
 import org.chromium.sdk.internal.wip.WipRelayRunner.Step;
+import org.chromium.sdk.internal.wip.WipValueBuilder.SerializableValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.CallFunctionOnData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.EvaluateData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
@@ -49,7 +50,7 @@ public class EvaluateHack {
    * @param evaluateCommandHandler provides a particular request type
    */
   public RelayOk evaluateAsync(String expression, ValueNameBuilder valueNameBuidler,
-      Map<String, String> additionalContext,
+      Map<String, ? extends SerializableValue> additionalContext,
       WipValueLoader destinationValueLoader, EvaluateCommandHandler<?> evaluateCommandHandler,
       final JsEvaluateContext.EvaluateCallback callback, SyncCallback syncCallback) {
 
@@ -117,14 +118,14 @@ public class EvaluateHack {
   private class EvaluateSession {
     private final String userExpression;
     private final ValueNameBuilder valueNameBuidler;
-    private final Map<String, String> additionalContext;
+    private final Map<String, ? extends SerializableValue> additionalContext;
     private final WipValueLoader destinationValueLoader;
     private final EvaluateCommandHandler<?> evaluateCommandHandler;
 
     private final String dataId = "d" + uniqueIdCounter.incrementAndGet();
 
     EvaluateSession(String expression, ValueNameBuilder valueNameBuidler,
-        Map<String, String> additionalContext,
+        Map<String, ? extends SerializableValue> additionalContext,
         WipValueLoader destinationValueLoader, EvaluateCommandHandler<?> evaluateCommandHandler) {
       this.userExpression = expression;
       this.valueNameBuidler = valueNameBuidler;
@@ -166,25 +167,33 @@ public class EvaluateHack {
       StringBuilder assigmentBuilder = new StringBuilder();
       StringBuilder parametersBuilder = new StringBuilder();
 
-      boolean isFirst = true;
       String thisObjectId = null;
-      final List<String> additionalObjectIds = new ArrayList<String>(0);
+      final List<CallArgumentParam> additionalObjectIds = new ArrayList<CallArgumentParam>(0);
       String tempObjectRef = GLOBAL_VARIABLE_NAME + ".data." + dataId + ".";
-      for (Map.Entry<String, String> entry : additionalContext.entrySet()) {
+      for (Map.Entry<String, ? extends SerializableValue> entry : additionalContext.entrySet()) {
+        SerializableValue jsValueBase = entry.getValue();
         String commandParamName;
-        if (isFirst) {
+        if (thisObjectId == null && jsValueBase.getRefId() != null) {
           commandParamName = "this";
-          thisObjectId = entry.getValue();
-          isFirst = false;
+          thisObjectId = jsValueBase.getRefId();
         } else {
           commandParamName = "p" + additionalObjectIds.size();
-          additionalObjectIds.add(entry.getValue());
+          CallArgumentParam callArgumentParam = jsValueBase.createCallArgumentParam();
+          if (callArgumentParam == null) {
+            throw new IllegalArgumentException("Cannot serialize additional context property " +
+                entry.getKey());
+          }
+          additionalObjectIds.add(callArgumentParam);
           if (parametersBuilder.length() != 0) {
             parametersBuilder.append(", ");
           }
           parametersBuilder.append(commandParamName);
         }
         assigmentBuilder.append(tempObjectRef + entry.getKey() + " = " + commandParamName + ";\n");
+      }
+      if (thisObjectId == null) {
+        // TODO: remove this limitation in protocol.
+        throw new IllegalArgumentException("At least one additional parameter must be an object");
       }
 
       final String functionText = "function(" + parametersBuilder + ") { " +
@@ -200,10 +209,7 @@ public class EvaluateHack {
           if (additionalObjectIds.isEmpty()) {
             arguments = null;
           } else {
-            arguments = new ArrayList<CallArgumentParam>(additionalObjectIds.size());
-            for (String objectId : additionalObjectIds) {
-              arguments.add(new CallArgumentParam(false, null, objectId));
-            }
+            arguments = additionalObjectIds;
           }
           return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, true);
         }
