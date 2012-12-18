@@ -15,11 +15,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -35,6 +35,7 @@ import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
+import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.util.AsyncFutureRef;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
@@ -49,6 +50,41 @@ class WipValueBuilder {
 
   WipValueBuilder(WipValueLoader valueLoader) {
     this.valueLoader = valueLoader;
+  }
+
+  /**
+   * Value that can serialize itself for sending back to server.
+   */
+  interface SerializableValue {
+    CallArgumentParam createCallArgumentParam();
+    /**
+     * Ref id is directly used in {@link EvaluateHack} because sometimes protocol requires
+     * it for CallFunctionOn.
+     * @return ref id or null
+     */
+    String getRefId();
+
+    class Util {
+      public static SerializableValue wrapRefId(final String refId) {
+        return new SerializableValue() {
+          @Override public CallArgumentParam createCallArgumentParam() {
+            return new CallArgumentParam(false, null, refId);
+          }
+          @Override public String getRefId() {
+            return refId;
+          }
+        };
+      }
+    }
+  }
+
+  static abstract class JsValueBase implements JsValue, SerializableValue {
+    static JsValueBase cast(JsValue value) {
+      if (false == value instanceof JsValueBase) {
+        throw new IllegalArgumentException("Incorrect argument type " + value.getClass());
+      }
+      return (JsValueBase) value;
+    }
   }
 
   public JsObjectProperty createObjectProperty(final PropertyDescriptorValue propertyDescriptor,
@@ -98,9 +134,9 @@ class WipValueBuilder {
           throw new RuntimeException("Getter is not a function");
         }
 
-        Map<String, String> context = new HashMap<String, String>(2);
-        context.put(GETTER_VAR_NAME, getterFunction.getRefId());
-        context.put(OBJECT_VAR_NAME, hostObjectRefId);
+        Map<String, SerializableValue> context = new HashMap<String, SerializableValue>(2);
+        context.put(GETTER_VAR_NAME, (SerializableValue) getterFunction);
+        context.put(OBJECT_VAR_NAME, SerializableValue.Util.wrapRefId(hostObjectRefId));
         final QualifiedNameBuilder pseudoPropertyNameBuilder =
             createPseudoPropertyNameBuilder(qualifiedNameBuilder, "value");
         ValueNameBuilder valueNameBuilder = new ValueNameBuilder() {
@@ -115,8 +151,8 @@ class WipValueBuilder {
           }
         };
 
-        return evaluateContext.evaluateAsync(EVALUATE_EXPRESSION, valueNameBuilder,
-            context, callback, syncCallback);
+        return evaluateContext.evaluateAsyncImpl(EVALUATE_EXPRESSION, valueNameBuilder,
+            context, valueLoader, callback, syncCallback);
       }
       private static final String GETTER_VAR_NAME = "gttr";
       private static final String OBJECT_VAR_NAME = "obj";
@@ -203,8 +239,9 @@ class WipValueBuilder {
     @Override
     JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
         QualifiedNameBuilder qualifiedNameBuilder) {
+      final Object value = valueData.value();
       final String valueString = getValueString(valueData);
-      return new JsValue() {
+      return new JsValueBase() {
         @Override public Type getType() {
           return jsValueType;
         }
@@ -217,9 +254,22 @@ class WipValueBuilder {
         @Override public boolean isTruncated() {
           return false;
         }
+        @Override public String getRefId() {
+          return null;
+        }
         @Override public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
             SyncCallback syncCallback) {
           throw new UnsupportedOperationException();
+        }
+        @Override
+        public CallArgumentParam createCallArgumentParam() {
+          if (jsValueType == JsValue.Type.TYPE_NULL) {
+            return new CallArgumentParam(true, null, null);
+          } else if (jsValueType == JsValue.Type.TYPE_UNDEFINED) {
+            return new CallArgumentParam(false, null, null);
+          } else {
+            return new CallArgumentParam(true, value, null);
+          }
         }
       };
     }
@@ -279,7 +329,7 @@ class WipValueBuilder {
     abstract JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
         QualifiedNameBuilder qualifiedNameBuilder);
 
-    abstract class JsObjectBase implements JsObject {
+    abstract class JsObjectBase extends JsValueBase implements JsObject {
       private final RemoteObjectValue valueData;
       private final WipValueLoader valueLoader;
       private final QualifiedNameBuilder nameBuilder;
@@ -353,6 +403,11 @@ class WipValueBuilder {
 
       protected RemoteObjectValue getValueData() {
         return valueData;
+      }
+
+      @Override
+      public CallArgumentParam createCallArgumentParam() {
+        return new CallArgumentParam(false, null, valueData.objectId());
       }
 
       protected ObjectProperties getLoadedProperties() throws MethodIsBlockingException {

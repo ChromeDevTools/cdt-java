@@ -229,6 +229,14 @@ public class ContextBuilder {
       }
     }
 
+    @Override
+    public void checkContextIsCompatible(InternalContext hostInternalContext) {
+      if (this != hostInternalContext) {
+        throw new IllegalArgumentException(
+            "Value is from the incompatible (probably obsolete) context");
+      }
+    }
+
     private RelayOk sendMessageAsyncAndInvalidate(DebuggerMessage message,
         V8CommandProcessor.V8HandlerCallback commandCallback, boolean isImmediate,
         SyncCallback syncCallback) {

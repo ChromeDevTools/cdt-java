@@ -26,7 +26,7 @@ public class DebuggerMessageFactory {
   }
 
   public static DebuggerMessage evaluate(String expression, Integer frame, Boolean global,
-      Boolean disableBreak, List<Map.Entry<String, Integer>> additionalContext) {
+      Boolean disableBreak, List<Map.Entry<String, EvaluateMessage.Value>> additionalContext) {
     return new EvaluateMessage(expression, frame, global, disableBreak, additionalContext);
   }
 

@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
@@ -30,7 +31,7 @@ public interface EvaluateToMappingExtension {
    * The method will block until the evaluation result is available.
    *
    * @param expression to evaluate
-   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   * @param additionalContext a name-to-value map that adds new values to an expression
    *     scope; may be null
    * @param targetMapping mapping the result must belong to
    * @param evaluateCallback to report the evaluation result to
@@ -38,7 +39,7 @@ public interface EvaluateToMappingExtension {
    *         until remote VM returns result
    */
   void evaluateSync(JsEvaluateContext evaluateContext, String expression,
-      Map<String, String> additionalContext, RemoteValueMapping targetMapping,
+      Map<String, ? extends JsValue> additionalContext, RemoteValueMapping targetMapping,
       EvaluateCallback evaluateCallback) throws MethodIsBlockingException;
 
   /**
@@ -50,13 +51,13 @@ public interface EvaluateToMappingExtension {
    * The method doesn't block.
    *
    * @param expression to evaluate
-   * @param additionalContext a name-to-object-ref-id map that adds new values to an expression
+   * @param additionalContext a name-to-value map that adds new values to an expression
    *     scope; may be null
    * @param targetMapping mapping the result must belong to
    * @param evaluateCallback to report the evaluation result to
    * @param syncCallback to report the end of any processing
    */
   RelayOk evaluateAsync(JsEvaluateContext evaluateContext, String expression,
-      Map<String, String> additionalContext, RemoteValueMapping targetMapping,
+      Map<String, ? extends JsValue> additionalContext, RemoteValueMapping targetMapping,
       EvaluateCallback evaluateCallback, SyncCallback syncCallback);
 }

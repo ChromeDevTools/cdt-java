@@ -6,7 +6,9 @@ package org.chromium.sdk.internal.v8native.value;
 
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.v8native.InternalContext;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.RelaySyncCallback;
 
@@ -25,7 +27,7 @@ public interface LoadableString {
     LoadableString create(ValueHandle handle);
 
     Factory IMMUTABLE = new Factory() {
-      public LoadableString create(ValueHandle handle) {
+      @Override public LoadableString create(ValueHandle handle) {
         return new Immutable(handle.text());
       }
     };
@@ -46,6 +48,8 @@ public interface LoadableString {
    * but again not necessarily full.
    */
   RelayOk reloadBigger(GenericCallback<Void> callback, SyncCallback syncCallback);
+
+  EvaluateMessage.Value getProtocolDescription(InternalContext hostInternalContext);
 
   /**
    * A trivial implementation of {@link LoadableString} that never actually loads anything.
@@ -69,6 +73,11 @@ public interface LoadableString {
         callback.success(null);
       }
       return RelaySyncCallback.finish(syncCallback);
+    }
+
+    @Override
+    public EvaluateMessage.Value getProtocolDescription(InternalContext hostInternalContext) {
+      return EvaluateMessage.Value.createForValue(value);
     }
   }
 }

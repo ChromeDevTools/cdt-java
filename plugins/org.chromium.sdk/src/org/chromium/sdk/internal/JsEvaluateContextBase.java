@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -18,7 +19,7 @@ import org.chromium.sdk.util.MethodIsBlockingException;
  */
 public abstract class JsEvaluateContextBase implements JsEvaluateContext {
   @Override
-  public void evaluateSync(String expression, Map<String, String> additionalContext,
+  public void evaluateSync(String expression, Map<String, ? extends JsValue> additionalContext,
       EvaluateCallback evaluateCallback)
       throws MethodIsBlockingException {
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
@@ -31,6 +32,7 @@ public abstract class JsEvaluateContextBase implements JsEvaluateContext {
   }
 
   @Override
-  public abstract RelayOk evaluateAsync(String expression, Map<String, String> additionalContext,
+  public abstract RelayOk evaluateAsync(String expression,
+      Map<String, ? extends JsValue> additionalContext,
       EvaluateCallback callback, SyncCallback syncCallback);
 }

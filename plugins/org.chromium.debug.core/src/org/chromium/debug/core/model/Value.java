@@ -246,19 +246,14 @@ public class Value extends ValueBase.ValueWithLazyVariables {
         jsValueDetailIsBuilt(getJsValue(), listener);
         return;
       }
-      String objectRefId = jsObject.getRefId();
-      if (objectRefId == null) {
-        stringDetailIsBuilt("", listener);
-        return;
-      }
 
       if (getSuspendedState().isDismissed()) {
         stringDetailIsBuilt("", listener);
         return;
       }
 
-      Map<String, String> additionalContext =
-          Collections.singletonMap(TO_STRING_ARGUMENT, objectRefId);
+      Map<String, ? extends JsValue> additionalContext =
+          Collections.singletonMap(TO_STRING_ARGUMENT, jsObject);
 
       JsEvaluateContext.EvaluateCallback evaluateCallback =
           new JsEvaluateContext.EvaluateCallback() {
