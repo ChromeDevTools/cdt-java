@@ -202,7 +202,7 @@ public class EvaluateHack {
           } else {
             arguments = new ArrayList<CallArgumentParam>(additionalObjectIds.size());
             for (String objectId : additionalObjectIds) {
-              arguments.add(new CallArgumentParam(null, objectId));
+              arguments.add(new CallArgumentParam(false, null, objectId));
             }
           }
           return new CallFunctionOnParams(thisObjectIdFinal, functionText, arguments, true);

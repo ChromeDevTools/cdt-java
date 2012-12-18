@@ -748,59 +748,132 @@ class Generator {
         super(writer, ClassNameScheme.Output.getPackageName(domain.domain()), shortClassName);
       }
 
-      <P> void generateCommandParamsBody(List<P> parameters, PropertyLikeAccess<P> access,
+      <P> void generateCommandParamsBody(List<P> parameters, final PropertyLikeAccess<P> access,
           String commandName) throws IOException {
-        if (parameters != null) {
-          boolean hasDoc = false;
-          for (P param : parameters) {
-            if (access.forTypedObject().getDescription(param) != null) {
-              hasDoc = true;
-              break;
-            }
+        // A helper type that represents either actual (logical) parameter or
+        // a helper has_ parameter for nullable-and-optional values.
+        abstract class ParamData {
+          final String name;
+          final String description;
+          ParamData(String name, String description) {
+            this.name = name;
+            this.description = description;
           }
-          if (hasDoc) {
-            getWriter().write("  /**\n");
-            for (P param : parameters) {
-              String propertyDescription = access.forTypedObject().getDescription(param);
-              if (propertyDescription != null) {
-                getWriter().write("   @param " + getParamName(param, access) + " " +
-                    propertyDescription + "\n");
-              }
-            }
-            getWriter().write("   */\n");
+          abstract String getJavaTypeText();
+          abstract void writeSetCode(Writer writer) throws IOException;
+        }
+
+        class LogicalParamData extends ParamData {
+          final QualifiedTypeData qualifiedTypeData;
+          final String logicalName;
+          LogicalParamData(String name, String description, QualifiedTypeData qualifiedTypeData,
+              String logicalName) {
+            super(name, description);
+            this.qualifiedTypeData = qualifiedTypeData;
+            this.logicalName = logicalName;
+          }
+          @Override String getJavaTypeText() {
+            return qualifiedTypeData.getJavaType().getText();
+          }
+          @Override
+          void writeSetCode(Writer writer) throws IOException {
+            writer.append("    this.put(\"" + logicalName + "\", " + name + ");\n");
           }
         }
+
+        class OptionalLogicalParamData extends LogicalParamData {
+          final String condition;
+          OptionalLogicalParamData(String name, String description,
+              QualifiedTypeData qualifiedTypeData, String logicalName,
+              String condition) {
+            super(name, description, qualifiedTypeData, logicalName);
+            this.condition = condition;
+          }
+          @Override
+          void writeSetCode(Writer writer) throws IOException {
+            writer.append("    if (" + condition + ") {\n  ");
+            super.writeSetCode(writer);
+            writer.append("    }\n");
+          }
+        }
+
+
+        // Resolve parameter types and generate helper parameters.
+        List<ParamData> physicalParameters;
+        if (parameters == null) {
+          physicalParameters = Collections.emptyList();
+        } else {
+          physicalParameters = new ArrayList<ParamData>(parameters.size());
+          for (final P param : parameters) {
+            String logicalName = access.getName(param);
+            String description = access.forTypedObject().getDescription(param);
+            ClassScope.MemberScope memberScope = newMemberScope(logicalName);
+            final QualifiedTypeData paramTypeData =
+                memberScope.resolveType(param, access.forTypedObject());
+            if (paramTypeData.isNullable() && paramTypeData.isOptional()) {
+              String paramName = logicalName;
+              final String helperParamName = "has" + capitalizeFirstChar(paramName);
+              ParamData mainParamData = new OptionalLogicalParamData(paramName, description,
+                  paramTypeData, logicalName, helperParamName);
+              String helperDescription =
+                  "whether '" + paramName + "' actually contains value (possibly null)";
+              ParamData helperParamData = new ParamData(helperParamName, helperDescription) {
+                @Override String getJavaTypeText() {
+                  return "boolean";
+                }
+                @Override
+                void writeSetCode(Writer writer) {
+                }
+              };
+              physicalParameters.add(helperParamData);
+              physicalParameters.add(mainParamData);
+            } else {
+              ParamData data;
+              if (paramTypeData.isOptional()) {
+                String paramName = logicalName + "Opt";
+                data = new OptionalLogicalParamData(paramName, description, paramTypeData,
+                    logicalName, paramName + " != null");
+              } else {
+                data = new LogicalParamData(logicalName, description, paramTypeData, logicalName);
+              }
+              physicalParameters.add(data);
+            }
+          }
+        }
+
+        // Generate code.
+        boolean hasDoc = false;
+        for (ParamData paramData : physicalParameters) {
+          if (paramData.description != null) {
+            hasDoc = true;
+            break;
+          }
+        }
+        if (hasDoc) {
+          getWriter().append("  /**\n");
+          for (ParamData paramData : physicalParameters) {
+            if (paramData.description != null) {
+              getWriter().append("   @param " + paramData.name + " " +
+                  paramData.description + "\n");
+            }
+          }
+          getWriter().append("   */\n");
+        }
+
         getWriter().write("  public " + getShortClassName() +"(");
         {
           boolean needComa = false;
-          if (parameters != null) {
-            for (P param : parameters) {
-              if (needComa) {
-                getWriter().write(", ");
-              }
-              String paramName = getParamName(param, access);
-              ClassScope.MemberScope memberScope = newMemberScope(paramName);
-              QualifiedTypeData paramTypeData =
-                  memberScope.resolveType(param, access.forTypedObject());
-              getWriter().write(paramTypeData.getJavaType().getText() + " " + paramName);
-              needComa = true;
+          for (ParamData paramData : physicalParameters) {
+            if (needComa) {
+              getWriter().append(", ");
             }
+            getWriter().append(paramData.getJavaTypeText() + " " + paramData.name);
+            needComa = true;
           }
         }
         getWriter().write(") {\n");
-        if (parameters != null) {
-          for (P param : parameters) {
-            boolean isOptional = access.forTypedObject().getOptional(param) == Boolean.TRUE;
-            String paramName = getParamName(param, access);
-            if (isOptional) {
-              getWriter().write("    if (" + paramName + " != null) {\n  ");
-            }
-            getWriter().write("    this.put(\"" + access.getName(param) + "\", " + paramName +
-                ");\n");
-            if (isOptional) {
-              getWriter().write("    }\n");
-            }
-          }
+        for (ParamData paramData : physicalParameters) {
+          paramData.writeSetCode(getWriter());
         }
         getWriter().write("  }\n");
         getWriter().write("\n");
@@ -1168,14 +1241,6 @@ class Generator {
     ClassNameScheme INPUT_TYPEDEF = new ClassNameScheme.Input("Typedef");
 
     ClassNameScheme COMMON_TYPEDEF = new ClassNameScheme.Common("Typedef");
-  }
-
-  private static <P> String getParamName(P param, PropertyLikeAccess<P> access) {
-    String paramName = access.getName(param);
-    if (access.forTypedObject().getOptional(param) == Boolean.TRUE) {
-      paramName = paramName + "Opt";
-    }
-    return paramName;
   }
 
   /**

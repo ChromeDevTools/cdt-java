@@ -9,12 +9,13 @@ Represents function call argument. Either remote object id <code>objectId</code>
  */
 public class CallArgumentParam extends org.json.simple.JSONObject {
   /**
-   @param valueOpt Primitive value.
+   @param hasValue whether 'value' actually contains value (possibly null)
+   @param value Primitive value.
    @param objectIdOpt Remote object handle.
    */
-  public CallArgumentParam(Object valueOpt, String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectIdOpt) {
-    if (valueOpt != null) {
-      this.put("value", valueOpt);
+  public CallArgumentParam(boolean hasValue, Object value, String/*See org.chromium.sdk.internal.wip.protocol.common.runtime.RemoteObjectIdTypedef*/ objectIdOpt) {
+    if (hasValue) {
+      this.put("value", value);
     }
     if (objectIdOpt != null) {
       this.put("objectId", objectIdOpt);
