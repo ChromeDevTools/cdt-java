@@ -24,11 +24,10 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
    * This constructor implies lazy resolution of object properties.
    *
    * @param context this array belongs in
-   * @param variableFqn the fully qualified name of the variable holding this array
    * @param valueState the mirror corresponding to this array
    */
-  JsArrayImpl(ValueLoader valueLoader, String variableFqn, ValueMirror valueState) {
-    super(valueLoader, variableFqn, valueState);
+  JsArrayImpl(ValueLoader valueLoader, ValueMirror valueState) {
+    super(valueLoader, valueState);
   }
 
   @Override

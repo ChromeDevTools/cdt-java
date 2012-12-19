@@ -13,7 +13,6 @@ import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipRelayRunner.ProcessException;
 import org.chromium.sdk.internal.wip.WipRelayRunner.Step;
 import org.chromium.sdk.internal.wip.WipValueBuilder.SerializableValue;
@@ -49,14 +48,14 @@ public class EvaluateHack {
    * @param destinationValueLoader value loader that corresponds to the destination group
    * @param evaluateCommandHandler provides a particular request type
    */
-  public RelayOk evaluateAsync(String expression, ValueNameBuilder valueNameBuidler,
+  public RelayOk evaluateAsync(String expression, String name,
       Map<String, ? extends SerializableValue> additionalContext,
       WipValueLoader destinationValueLoader, EvaluateCommandHandler<?> evaluateCommandHandler,
       final JsEvaluateContext.EvaluateCallback callback, SyncCallback syncCallback) {
 
     RelaySyncCallback relaySyncCallback = new RelaySyncCallback(syncCallback);
 
-    final EvaluateSession evaluateSession = new EvaluateSession(expression, valueNameBuidler,
+    final EvaluateSession evaluateSession = new EvaluateSession(expression, name,
         additionalContext, destinationValueLoader, evaluateCommandHandler);
 
     final RelaySyncCallback.Guard guard = relaySyncCallback.newGuard();
@@ -90,7 +89,7 @@ public class EvaluateHack {
         WipValueLoader destinationValueLoader);
 
     JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
-        ValueNameBuilder valueNameBuidler);
+        String name);
 
     /**
      * Return the same exception or wraps it with a more high-level error details.
@@ -117,18 +116,18 @@ public class EvaluateHack {
    */
   private class EvaluateSession {
     private final String userExpression;
-    private final ValueNameBuilder valueNameBuidler;
+    private final String name;
     private final Map<String, ? extends SerializableValue> additionalContext;
     private final WipValueLoader destinationValueLoader;
     private final EvaluateCommandHandler<?> evaluateCommandHandler;
 
     private final String dataId = "d" + uniqueIdCounter.incrementAndGet();
 
-    EvaluateSession(String expression, ValueNameBuilder valueNameBuidler,
+    EvaluateSession(String expression, String name,
         Map<String, ? extends SerializableValue> additionalContext,
         WipValueLoader destinationValueLoader, EvaluateCommandHandler<?> evaluateCommandHandler) {
       this.userExpression = expression;
-      this.valueNameBuidler = valueNameBuidler;
+      this.name = name;
       this.additionalContext = additionalContext;
       this.destinationValueLoader = destinationValueLoader;
       this.evaluateCommandHandler = evaluateCommandHandler;
@@ -248,7 +247,7 @@ public class EvaluateHack {
         @Override
         public Step<JsVariable> processResponse(EVAL_DATA response) {
           JsVariable jsVariable =
-              commandHandler.processResult(response, destinationValueLoader, valueNameBuidler);
+              commandHandler.processResult(response, destinationValueLoader, name);
 
           clearTempObjectAsync();
 

@@ -26,8 +26,8 @@ public class JsFunctionImpl extends JsObjectBase<JsObjectBase.BasicPropertyData>
     implements JsFunction {
   private volatile TextStreamPosition openParenPosition = null;
 
-  JsFunctionImpl(ValueLoader valueLoader, String parentFqn, ValueMirror valueState) {
-    super(valueLoader, parentFqn, valueState);
+  JsFunctionImpl(ValueLoader valueLoader, ValueMirror valueState) {
+    super(valueLoader, valueState);
   }
 
   @Override

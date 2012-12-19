@@ -35,11 +35,6 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   private final ValueLoader valueLoader;
 
   /**
-   * Fully qualified name of variable holding this object.
-   */
-  private final String variableFqn;
-
-  /**
    * Property data in form of {@link AsyncFuture} for property load operation
    * that several threads may access simultaneously. The future gets reinitialized
    * on the next access after cache state was updated.
@@ -54,12 +49,11 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
    * @param variableFqn the fully qualified name of the variable holding this object
    * @param valueState the value data from the JS VM
    */
-  JsObjectBase(ValueLoader valueLoader, String variableFqn, ValueMirror mirror) {
+  JsObjectBase(ValueLoader valueLoader, ValueMirror mirror) {
     super(mirror);
     this.valueLoader = valueLoader;
     this.ref = mirror.getRef();
     this.className = mirror.getClassName();
-    this.variableFqn = variableFqn;
   }
 
   @Override
@@ -279,33 +273,15 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
     for (int i = 0; i < mirrorProperties.size(); i++) {
       ValueMirror mirror = mirrorProperties.get(i);
       Object varName = propertyRefs.get(i).getName();
-      String fqn = getFullyQualifiedName(varName);
-      if (fqn == null) {
-        continue;
-      }
       String decoratedName = JsVariableImpl.NameDecorator.decorateVarName(varName);
-      result.add(new JsVariableImpl(valueLoader, mirror, varName, decoratedName, fqn));
+      result.add(new JsVariableImpl(valueLoader, mirror, varName, decoratedName));
     }
     return result;
   }
 
-  private String getFullyQualifiedName(Object propName) {
-    if (variableFqn == null) {
-      return null;
-    }
-    if (propName instanceof String) {
-      String propNameStr = (String) propName;
-      if (propNameStr.startsWith(".")) {
-        // ".arguments" is not legal
-        return null;
-      }
-    }
-    return variableFqn + JsVariableImpl.NameDecorator.buildAccessSuffix(propName);
-  }
-
   public static class Impl extends JsObjectBase<BasicPropertyData> {
-    Impl(ValueLoader valueLoader, String variableFqn, ValueMirror valueState) {
-      super(valueLoader, variableFqn, valueState);
+    Impl(ValueLoader valueLoader, ValueMirror valueState) {
+      super(valueLoader, valueState);
     }
 
     @Override
