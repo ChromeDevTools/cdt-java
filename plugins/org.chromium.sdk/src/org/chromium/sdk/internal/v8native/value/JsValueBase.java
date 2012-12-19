@@ -109,10 +109,6 @@ public abstract class JsValueBase implements JsValue {
         break;
       case TYPE_STRING:
         return getLoadableString().getProtocolDescription(hostInternalContext);
-      case TYPE_DATE:
-      case TYPE_REGEXP:
-        // TODO: fix it. Consider making RegExp and Date an object.
-        throw new RuntimeException("Date and RegExp are not supported");
       default:
         throw new RuntimeException("Unsupported type " + getType());
       }

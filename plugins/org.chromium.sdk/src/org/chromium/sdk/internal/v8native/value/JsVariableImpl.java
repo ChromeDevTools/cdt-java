@@ -62,6 +62,8 @@ public class JsVariableImpl implements JsVariable {
         return new JsFunctionImpl(valueLoader, qualifiedName, valueData);
       case TYPE_ERROR:
       case TYPE_OBJECT:
+      case TYPE_DATE:
+      case TYPE_REGEXP:
         return new JsObjectBase.Impl(valueLoader, qualifiedName, valueData);
       case TYPE_ARRAY:
         return new JsArrayImpl(valueLoader, qualifiedName, valueData);
