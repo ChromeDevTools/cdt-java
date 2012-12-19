@@ -31,10 +31,6 @@ import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.ObjectPropertyNameBuilder;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.QualifiedNameBuilder;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue;
@@ -95,17 +91,14 @@ class WipValueBuilder {
   }
 
   public JsObjectProperty createObjectProperty(final PropertyDescriptorValue propertyDescriptor,
-      final String hostObjectRefId, ValueNameBuilder nameBuilder) {
-    final QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-    JsValue jsValue = wrap(propertyDescriptor.value(), qualifiedNameBuilder);
+      final String hostObjectRefId, String name) {
+    JsValue jsValue = wrap(propertyDescriptor.value());
 
-    final JsValue getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(),
-        qualifiedNameBuilder, "getter");
+    final JsValue getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(), "getter");
 
-    final JsValue setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(),
-        qualifiedNameBuilder, "setter");
+    final JsValue setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(), "setter");
 
-    return new ObjectPropertyBase(jsValue, nameBuilder) {
+    return new ObjectPropertyBase(jsValue, name) {
       @Override public boolean isWritable() {
         return propertyDescriptor.writable();
       }
@@ -144,21 +137,8 @@ class WipValueBuilder {
         Map<String, SerializableValue> context = new HashMap<String, SerializableValue>(2);
         context.put(GETTER_VAR_NAME, (SerializableValue) getterFunction);
         context.put(OBJECT_VAR_NAME, SerializableValue.Util.wrapRefId(hostObjectRefId));
-        final QualifiedNameBuilder pseudoPropertyNameBuilder =
-            createPseudoPropertyNameBuilder(qualifiedNameBuilder, "value");
-        ValueNameBuilder valueNameBuilder = new ValueNameBuilder() {
-          @Override
-          public String getShortName() {
-            return "value";
-          }
 
-          @Override
-          public QualifiedNameBuilder getQualifiedNameBuilder() {
-            return pseudoPropertyNameBuilder;
-          }
-        };
-
-        return evaluateContext.evaluateAsyncImpl(EVALUATE_EXPRESSION, valueNameBuilder,
+        return evaluateContext.evaluateAsyncImpl(EVALUATE_EXPRESSION, "value",
             context, valueLoader, callback, syncCallback);
       }
       private static final String GETTER_VAR_NAME = "gttr";
@@ -168,54 +148,24 @@ class WipValueBuilder {
     };
   }
 
-  private static QualifiedNameBuilder createPseudoPropertyNameBuilder(
-      final QualifiedNameBuilder propertyValueNameBuilder, final String symbolicName) {
-    return new QualifiedNameBuilder() {
-      @Override public boolean needsParentheses() {
-        return false;
-      }
-
-      @Override
-      public void append(StringBuilder output) {
-        propertyValueNameBuilder.append(output);
-        output.append("::[[").append(symbolicName).append("]]");
-      }
-    };
+  private JsValue wrapPropertyDescriptorFunction(RemoteObjectValue value, String symbolicName) {
+    return wrap(value);
   }
 
-  private JsValue wrapPropertyDescriptorFunction(RemoteObjectValue value,
-      QualifiedNameBuilder propertyValueNameBuilder, String symbolicName) {
-    if (value == null) {
-      return null;
-    }
-
-    QualifiedNameBuilder qualifiedNameBuilder =
-        createPseudoPropertyNameBuilder(propertyValueNameBuilder, symbolicName);
-
-    return wrap(value, qualifiedNameBuilder);
+  public JsVariable createVariable(RemoteObjectValue valueData, String name) {
+    JsValue jsValue = wrap(valueData);
+    return createVariable(jsValue, name);
   }
 
-  public JsVariable createVariable(RemoteObjectValue valueData, ValueNameBuilder nameBuilder) {
-    QualifiedNameBuilder qualifiedNameBuilder;
-    if (nameBuilder == null) {
-      qualifiedNameBuilder = null;
-    } else {
-      qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-    }
-    JsValue jsValue = wrap(valueData, qualifiedNameBuilder);
-    return createVariable(jsValue, nameBuilder);
-  }
-
-  public JsValue wrap(RemoteObjectValue valueData, QualifiedNameBuilder nameBuilder) {
+  public JsValue wrap(RemoteObjectValue valueData) {
     if (valueData == null) {
       return null;
     }
-    return getValueType(valueData).build(valueData, valueLoader, nameBuilder);
+    return getValueType(valueData).build(valueData, valueLoader);
   }
 
-  public static JsVariable createVariable(JsValue jsValue,
-      ValueNameBuilder nameBuilder) {
-    return new VariableImpl(jsValue, nameBuilder);
+  public static JsVariable createVariable(JsValue jsValue, String name) {
+    return new VariableImpl(jsValue, name);
   }
 
   private static ValueType getValueType(RemoteObjectValue valueData) {
@@ -230,8 +180,7 @@ class WipValueBuilder {
   }
 
   private static abstract class ValueType {
-    abstract JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder qualifiedNameBuilder);
+    abstract JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader);
   }
 
   private static abstract class PrimitiveType extends ValueType {
@@ -244,8 +193,7 @@ class WipValueBuilder {
     protected abstract String getValueString(RemoteObjectValue valueData);
 
     @Override
-    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder qualifiedNameBuilder) {
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader) {
       final Object value = valueData.value();
       final String valueString = getValueString(valueData);
       return new JsValueBase() {
@@ -327,27 +275,22 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder qualifiedNameBuilder) {
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader) {
       // TODO: Implement caching here.
-      return buildNewInstance(valueData, valueLoader, qualifiedNameBuilder);
+      return buildNewInstance(valueData, valueLoader);
     }
 
-    abstract JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder qualifiedNameBuilder);
+    abstract JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader);
 
     abstract class JsObjectBase extends JsValueBase implements JsObject {
       private final RemoteObjectValue valueData;
       private final WipValueLoader valueLoader;
-      private final QualifiedNameBuilder nameBuilder;
       private final AsyncFutureRef<Getter<ObjectProperties>> loadedPropertiesRef =
           new AsyncFutureRef<Getter<ObjectProperties>>();
 
-      JsObjectBase(RemoteObjectValue valueData, WipValueLoader valueLoader,
-          QualifiedNameBuilder nameBuilder) {
+      JsObjectBase(RemoteObjectValue valueData, WipValueLoader valueLoader) {
         this.valueData = valueData;
         this.valueLoader = valueLoader;
-        this.nameBuilder = nameBuilder;
       }
 
       @Override
@@ -433,13 +376,7 @@ class WipValueBuilder {
 
       private void doLoadProperties(boolean reload, int currentCacheState)
           throws MethodIsBlockingException {
-        PropertyNameBuilder innerNameBuilder;
-        if (nameBuilder == null) {
-          innerNameBuilder = null;
-        } else {
-          innerNameBuilder = new ObjectPropertyNameBuilder(nameBuilder);
-        }
-        valueLoader.loadJsObjectPropertiesInFuture(valueData.objectId(), innerNameBuilder,
+        valueLoader.loadJsObjectPropertiesInFuture(valueData.objectId(),
             reload, currentCacheState, loadedPropertiesRef);
       }
     }
@@ -451,9 +388,8 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder qualifiedNameBuilder) {
-      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader, qualifiedNameBuilder) {
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader) {
+      return new ObjectTypeBase.JsObjectBase(valueData, valueLoader) {
         @Override public JsArray asArray() {
           return null;
         }
@@ -471,18 +407,16 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder nameBuilder) {
-      return new Array(valueData, valueLoader, nameBuilder);
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader) {
+      return new Array(valueData, valueLoader);
     }
 
     private class Array extends JsObjectBase implements JsArray {
       private final AtomicReference<ArrayProperties> arrayPropertiesRef =
           new AtomicReference<ArrayProperties>(null);
 
-      Array(RemoteObjectValue valueData, WipValueLoader valueLoader,
-          QualifiedNameBuilder nameBuilder) {
-        super(valueData, valueLoader, nameBuilder);
+      Array(RemoteObjectValue valueData, WipValueLoader valueLoader) {
+        super(valueData, valueLoader);
       }
 
       @Override
@@ -571,9 +505,8 @@ class WipValueBuilder {
     }
 
     @Override
-    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder nameBuilder) {
-      return new FunctionValueImpl(valueData, valueLoader, nameBuilder);
+    JsValue buildNewInstance(RemoteObjectValue valueData, WipValueLoader valueLoader) {
+      return new FunctionValueImpl(valueData, valueLoader);
     }
 
     private class FunctionValueImpl extends ObjectTypeBase.JsObjectBase
@@ -581,9 +514,8 @@ class WipValueBuilder {
       private final AsyncFutureRef<Getter<FunctionDetailsValue>> loadedPositionRef =
           new AsyncFutureRef<Getter<FunctionDetailsValue>>();
 
-      FunctionValueImpl(RemoteObjectValue valueData,
-          WipValueLoader valueLoader, QualifiedNameBuilder nameBuilder) {
-        super(valueData, valueLoader, nameBuilder);
+      FunctionValueImpl(RemoteObjectValue valueData, WipValueLoader valueLoader) {
+        super(valueData, valueLoader);
       }
 
       @Override public JsArray asArray() {
@@ -663,12 +595,11 @@ class WipValueBuilder {
 
   private static abstract class VariableBase implements JsVariable {
     private final JsValue jsValue;
-    private final ValueNameBuilder nameBuilder;
-    private volatile String qualifiedName = null;
+    private final String name;
 
-    VariableBase(JsValue jsValue, ValueNameBuilder nameBuilder) {
+    VariableBase(JsValue jsValue, String name) {
       this.jsValue = jsValue;
-      this.nameBuilder = nameBuilder;
+      this.name = name;
     }
 
     @Override
@@ -683,7 +614,7 @@ class WipValueBuilder {
 
     @Override
     public String getName() {
-      return nameBuilder.getShortName();
+      return name;
     }
 
     @Override
@@ -696,27 +627,11 @@ class WipValueBuilder {
         throws UnsupportedOperationException {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public String getFullyQualifiedName() {
-      String result = qualifiedName;
-      if (result == null) {
-        QualifiedNameBuilder qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
-        if (qualifiedNameBuilder == null) {
-          return null;
-        }
-        StringBuilder builder = new StringBuilder();
-        qualifiedNameBuilder.append(builder);
-        result = builder.toString();
-        qualifiedName = result;
-      }
-      return result;
-    }
   }
 
   private static class VariableImpl extends VariableBase {
-    VariableImpl(JsValue jsValue, ValueNameBuilder nameBuilder) {
-      super(jsValue, nameBuilder);
+    VariableImpl(JsValue jsValue, String name) {
+      super(jsValue, name);
     }
 
     @Override public JsObjectProperty asObjectProperty() {
@@ -726,8 +641,8 @@ class WipValueBuilder {
 
   private static abstract class ObjectPropertyBase
       extends VariableBase implements JsObjectProperty {
-    ObjectPropertyBase(JsValue jsValue, ValueNameBuilder nameBuilder) {
-      super(jsValue, nameBuilder);
+    ObjectPropertyBase(JsValue jsValue, String name) {
+      super(jsValue, name);
     }
 
     @Override public JsObjectProperty asObjectProperty() {
@@ -737,8 +652,7 @@ class WipValueBuilder {
 
   private static class ObjectType extends ValueType {
     @Override
-    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader,
-        QualifiedNameBuilder nameBuilder) {
+    JsValue build(RemoteObjectValue valueData, WipValueLoader valueLoader) {
       ValueType secondLevelValueType =
           getSafe(PROTOCOL_SUBTYPE_TO_VALUE_TYPE, valueData.subtype());
 
@@ -747,7 +661,7 @@ class WipValueBuilder {
         secondLevelValueType = DEFAULT_VALUE_TYPE;
       }
 
-      return secondLevelValueType.build(valueData, valueLoader, nameBuilder);
+      return secondLevelValueType.build(valueData, valueLoader);
     }
 
     private static final Map<RemoteObjectValue.Subtype, ValueType> PROTOCOL_SUBTYPE_TO_VALUE_TYPE;

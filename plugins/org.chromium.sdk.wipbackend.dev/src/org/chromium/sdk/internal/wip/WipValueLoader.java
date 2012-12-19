@@ -19,11 +19,8 @@ import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.PropertyNameBuilder;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.GetFunctionDetailsData;
-import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.GetPropertiesData;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.InternalPropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
@@ -72,10 +69,10 @@ public abstract class WipValueLoader implements RemoteValueMapping {
    * @param futureRef future reference that will hold result of load operation
    */
   void loadJsObjectPropertiesInFuture(final String objectId,
-      PropertyNameBuilder innerNameBuilder, boolean reload, int currentCacheState,
+      boolean reload, int currentCacheState,
       AsyncFutureRef<Getter<ObjectProperties>> futureRef) throws MethodIsBlockingException {
     ObjectPropertyProcessor propertyProcessor =
-        new ObjectPropertyProcessor(innerNameBuilder, objectId);
+        new ObjectPropertyProcessor(objectId);
     loadPropertiesInFuture(objectId, propertyProcessor, reload, currentCacheState, futureRef);
   }
 
@@ -140,11 +137,9 @@ public abstract class WipValueLoader implements RemoteValueMapping {
   }
 
   private class ObjectPropertyProcessor implements LoadPostprocessor<Getter<ObjectProperties>> {
-    private final PropertyNameBuilder propertyNameBuilder;
     private final String objectId;
 
-    ObjectPropertyProcessor(PropertyNameBuilder propertyNameBuilder, String objectId) {
-      this.propertyNameBuilder = propertyNameBuilder;
+    ObjectPropertyProcessor(String objectId) {
       this.objectId = objectId;
     }
 
@@ -160,11 +155,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
         String name = propertyDescriptor.name();
         boolean isInternal = INTERNAL_PROPERTY_NAME.contains(name);
 
-        ValueNameBuilder valueNameBuilder =
-            WipExpressionBuilder.createValueOfPropertyNameBuilder(name, propertyNameBuilder);
-
         JsObjectProperty property = valueBuilder.createObjectProperty(propertyDescriptor,
-            objectId, valueNameBuilder);
+            objectId, name);
         if (isInternal) {
           internalProperties.add(property);
         } else {
@@ -176,11 +168,8 @@ public abstract class WipValueLoader implements RemoteValueMapping {
         for (InternalPropertyDescriptorValue propertyDescriptor : internalPropertyList) {
           String name = propertyDescriptor.name();
 
-          ValueNameBuilder valueNameBuilder =
-              WipExpressionBuilder.createValueOfPropertyNameBuilder(name, propertyNameBuilder);
-
           JsVariable variable =
-              valueBuilder.createVariable(propertyDescriptor.value(), valueNameBuilder);
+              valueBuilder.createVariable(propertyDescriptor.value(), name);
           internalProperties.add(variable);
         }
       }

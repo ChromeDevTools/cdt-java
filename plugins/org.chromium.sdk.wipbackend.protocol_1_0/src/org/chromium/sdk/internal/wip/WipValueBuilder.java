@@ -663,7 +663,6 @@ class WipValueBuilder {
       throw new UnsupportedOperationException();
     }
 
-    @Override
     public String getFullyQualifiedName() {
       String result = qualifiedName;
       if (result == null) {

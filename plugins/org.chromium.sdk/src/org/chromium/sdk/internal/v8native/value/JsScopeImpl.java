@@ -230,7 +230,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
         throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
-      JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror, "<with object>");
+      JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror);
       return new DeferredData(jsValue, cacheState);
     }
 

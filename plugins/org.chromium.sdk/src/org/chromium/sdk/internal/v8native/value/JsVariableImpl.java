@@ -14,9 +14,6 @@ import org.chromium.sdk.JsVariable;
  */
 public class JsVariableImpl implements JsVariable {
 
-  /** The fully qualified name of this variable. */
-  private final String qualifiedName;
-
   /** The lazily constructed value of this variable. */
   private final JsValueBase value;
 
@@ -34,7 +31,7 @@ public class JsVariableImpl implements JsVariable {
    * @param valueData value data for this variable
    */
   public JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, String name) {
-    this(valueLoader, valueData, name, name, name);
+    this(valueLoader, valueData, name, name);
   }
 
   /**
@@ -43,30 +40,27 @@ public class JsVariableImpl implements JsVariable {
    *
    * @param valueLoader that owns this variable
    * @param valueData for this variable
-   * @param qualifiedName the fully qualified name of this variable
    */
   JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, Object rawName,
-      String decoratedName, String qualifiedName) {
+      String decoratedName) {
     this.rawName = rawName;
     this.decoratedName = decoratedName;
-    this.qualifiedName = qualifiedName;
 
-    this.value = createValue(valueLoader, valueData, qualifiedName);
+    this.value = createValue(valueLoader, valueData);
   }
 
-  public static JsValueBase createValue(ValueLoader valueLoader, ValueMirror valueData,
-      String qualifiedName) {
+  public static JsValueBase createValue(ValueLoader valueLoader, ValueMirror valueData) {
     Type type = valueData.getType();
     switch (type) {
       case TYPE_FUNCTION:
-        return new JsFunctionImpl(valueLoader, qualifiedName, valueData);
+        return new JsFunctionImpl(valueLoader, valueData);
       case TYPE_ERROR:
       case TYPE_OBJECT:
       case TYPE_DATE:
       case TYPE_REGEXP:
-        return new JsObjectBase.Impl(valueLoader, qualifiedName, valueData);
+        return new JsObjectBase.Impl(valueLoader, valueData);
       case TYPE_ARRAY:
-        return new JsArrayImpl(valueLoader, qualifiedName, valueData);
+        return new JsArrayImpl(valueLoader, valueData);
       default:
         return new JsValueBase.Impl(valueData);
     }
@@ -130,26 +124,12 @@ public class JsVariableImpl implements JsVariable {
         .toString();
   }
 
-  @Override
-  public String getFullyQualifiedName() {
-    return qualifiedName != null
-        ? qualifiedName
-        : getName();
-  }
-
   static class NameDecorator {
     static String decorateVarName(Object rawName) {
       if (rawName instanceof Number) {
         return OPEN_BRACKET + rawName + CLOSE_BRACKET;
       } else {
         return rawName.toString();
-      }
-    }
-    static String buildAccessSuffix(Object rawName) {
-      if (rawName instanceof Number) {
-        return OPEN_BRACKET + rawName + CLOSE_BRACKET;
-      } else {
-        return "." + rawName;
       }
     }
     private static final String OPEN_BRACKET = "[";

@@ -37,7 +37,6 @@ import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
-import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.protocol.WipParserAccess;
 import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse;
@@ -152,7 +151,7 @@ class WipContextBuilder {
           throw new RuntimeException("Failed to parse exception data", e);
         }
         JsValue exceptionValue =
-            valueLoader.getValueBuilder().wrap(exceptionRemoteObject, null);
+            valueLoader.getValueBuilder().wrap(exceptionRemoteObject);
         exceptionData = new ExceptionDataImpl(exceptionValue);
       } else {
         exceptionData = null;
@@ -412,10 +411,8 @@ class WipContextBuilder {
         return evaluateContext;
       }
 
-      private JsVariable createSimpleNameVariable(final String name,
-          RemoteObjectValue thisObjectData) {
-        ValueNameBuilder valueNameBuidler = WipExpressionBuilder.createRootName(name, false);
-        return valueLoader.getValueBuilder().createVariable(thisObjectData, valueNameBuidler);
+      private JsVariable createSimpleNameVariable(String name, RemoteObjectValue thisObjectData) {
+        return valueLoader.getValueBuilder().createVariable(thisObjectData, name);
       }
 
       private final WipEvaluateContextBase<?> evaluateContext =
@@ -640,14 +637,11 @@ class WipContextBuilder {
           for (PropertyDescriptorValue property : propertyList) {
             final String name = property.name();
 
-            ValueNameBuilder valueNameBuilder =
-                WipExpressionBuilder.createRootName(name, false);
-
             JsVariable variable;
             if (objectId == null) {
-              variable = valueBuilder.createVariable(property.value(), valueNameBuilder);
+              variable = valueBuilder.createVariable(property.value(), name);
             } else {
-              variable = valueBuilder.createObjectProperty(property, objectId, valueNameBuilder);
+              variable = valueBuilder.createObjectProperty(property, objectId, name);
             }
             properties.add(variable);
           }
@@ -680,7 +674,7 @@ class WipContextBuilder {
     private final JsValue jsValue;
 
     WithScopeImpl(ScopeValue scopeData, WipValueLoader valueLoader) {
-      jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), null);
+      jsValue = valueLoader.getValueBuilder().wrap(scopeData.object());
     }
 
     @Override
@@ -710,7 +704,7 @@ class WipContextBuilder {
 
   static JsVariable wrapExceptionValue(RemoteObjectValue valueData,
       WipValueBuilder valueBuilder) {
-    JsValue exceptionValue = valueBuilder.wrap(valueData, null);
+    JsValue exceptionValue = valueBuilder.wrap(valueData);
 
     final JsVariable property =
         WipValueBuilder.createVariable(exceptionValue, EVALUATE_EXCEPTION_INNER_NAME);
@@ -826,17 +820,9 @@ class WipContextBuilder {
     assert WIP_TO_SDK_SCOPE_TYPE.size() == ScopeValue.Type.values().length;
   }
 
-  private static final ValueNameBuilder EXCEPTION_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("exception");
+  private static final String EVALUATE_EXCEPTION_INNER_NAME = "<exception>";
 
-  private static final ValueNameBuilder WITH_OBJECT_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<with object>");
-
-  private static final ValueNameBuilder EVALUATE_EXCEPTION_INNER_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<exception>");
-
-  private static final ValueNameBuilder EVALUATE_EXCEPTION_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<thrown exception>");
+  private static final String EVALUATE_EXCEPTION_NAME = "<thrown exception>";
 
   private static class ScopeVariables {
     final List<JsVariable> variables;

@@ -61,13 +61,6 @@ public interface JsVariable {
       throws UnsupportedOperationException;
 
   /**
-   * @deprecated
-   * @return the fully qualified name of this variable relative to the context
-   *         of its call frame
-   */
-  String getFullyQualifiedName();
-
-  /**
    * Returns object property data if variable is an object property and its descriptor
    * is available.
    */
