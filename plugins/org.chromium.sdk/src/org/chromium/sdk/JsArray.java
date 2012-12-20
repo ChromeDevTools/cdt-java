@@ -18,7 +18,7 @@ public interface JsArray extends JsObject {
    *         0 iff the array is empty
    * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  int length() throws MethodIsBlockingException;
+  long getLength() throws MethodIsBlockingException;
 
   /**
    * @param index in the array
@@ -26,7 +26,7 @@ public interface JsArray extends JsObject {
    *         is no value at the specified index in the array
    * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  JsVariable get(int index) throws MethodIsBlockingException;
+  JsVariable get(long index) throws MethodIsBlockingException;
 
   /**
    * @return a map whose keys are array indices and values are {@code
@@ -35,5 +35,5 @@ public interface JsArray extends JsObject {
    *         order.
    * @throws MethodIsBlockingException because it may need to load value from remote
    */
-  SortedMap<Integer, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException;
+  SortedMap<Long, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException;
 }

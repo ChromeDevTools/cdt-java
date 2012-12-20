@@ -128,13 +128,13 @@ public class JsValueStringifier {
 
   private StringBuilder renderArray(JsArray value, int maxLength, StringBuilder output) {
     output.append('[');
-    SortedMap<Integer, ? extends JsVariable> indexToElement = value.toSparseArray();
+    SortedMap<Long, ? extends JsVariable> indexToElement = value.toSparseArray();
     boolean isFirst = true;
     int maxLengthWithoutLastBracket = maxLength - 1;
     StringBuilder elementBuilder = new StringBuilder();
     int entriesWritten = 0;
-    for (Map.Entry<Integer, ? extends JsVariable> entry : indexToElement.entrySet()) {
-      Integer index = entry.getKey();
+    for (Map.Entry<Long, ? extends JsVariable> entry : indexToElement.entrySet()) {
+      Long index = entry.getKey();
       JsVariable var = entry.getValue();
       if (!isFirst) {
         output.append(',');

@@ -20,20 +20,6 @@ public class JsVariableImpl implements JsVariable {
   /** Variable name. */
   private final Object rawName;
 
-  /** Variable name. */
-  private final String decoratedName;
-
-  /**
-   * Constructs a variable contained in the given context with the given
-   * value mirror.
-   *
-   * @param valueLoader that owns this variable
-   * @param valueData value data for this variable
-   */
-  public JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, String name) {
-    this(valueLoader, valueData, name, name);
-  }
-
   /**
    * Constructs a variable contained in the given context with the given
    * value mirror.
@@ -41,11 +27,8 @@ public class JsVariableImpl implements JsVariable {
    * @param valueLoader that owns this variable
    * @param valueData for this variable
    */
-  JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, Object rawName,
-      String decoratedName) {
+  public JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
     this.rawName = rawName;
-    this.decoratedName = decoratedName;
-
     this.value = createValue(valueLoader, valueData);
   }
 
@@ -78,11 +61,7 @@ public class JsVariableImpl implements JsVariable {
 
   @Override
   public String getName() {
-    return decoratedName;
-  }
-
-  public String getRawName() {
-    return this.rawName.toString();
+    return rawName.toString();
   }
 
   Object getRawNameAsObject() {
@@ -122,17 +101,5 @@ public class JsVariableImpl implements JsVariable {
         .append(getValue())
         .append(']')
         .toString();
-  }
-
-  static class NameDecorator {
-    static String decorateVarName(Object rawName) {
-      if (rawName instanceof Number) {
-        return OPEN_BRACKET + rawName + CLOSE_BRACKET;
-      } else {
-        return rawName.toString();
-      }
-    }
-    private static final String OPEN_BRACKET = "[";
-    private static final String CLOSE_BRACKET = "]";
   }
 }

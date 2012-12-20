@@ -273,8 +273,7 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
     for (int i = 0; i < mirrorProperties.size(); i++) {
       ValueMirror mirror = mirrorProperties.get(i);
       Object varName = propertyRefs.get(i).getName();
-      String decoratedName = JsVariableImpl.NameDecorator.decorateVarName(varName);
-      result.add(new JsVariableImpl(valueLoader, mirror, varName, decoratedName));
+      result.add(new JsVariableImpl(valueLoader, mirror, varName));
     }
     return result;
   }

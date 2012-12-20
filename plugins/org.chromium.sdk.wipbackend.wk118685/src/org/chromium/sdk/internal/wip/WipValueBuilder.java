@@ -44,6 +44,7 @@ import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorVa
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.JavaScriptExpressionBuilder;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
@@ -496,19 +497,19 @@ class WipValueBuilder {
       }
 
       @Override
-      public int length() throws MethodIsBlockingException {
+      public long getLength() throws MethodIsBlockingException {
         return getArrayProperties().getLength();
       }
 
       @Override
-      public JsVariable get(int index) throws MethodIsBlockingException {
-        return getArrayProperties().getSparseArrayMap().get(index);
+      public JsVariable get(long index) throws MethodIsBlockingException {
+        return getSafe(getArrayProperties().getSparseArrayMap(), index);
       }
 
       @Override
-      public SortedMap<Integer, ? extends JsVariable> toSparseArray()
+      public SortedMap<Long, ? extends JsVariable> toSparseArray()
           throws MethodIsBlockingException {
-        return getArrayProperties().getSparseArrayMap();
+        return getArrayProperties().getPublicSparseArrayMap();
       }
 
       private ArrayProperties getArrayProperties() throws MethodIsBlockingException {
@@ -525,20 +526,20 @@ class WipValueBuilder {
 
       private ArrayProperties buildArrayProperties() throws MethodIsBlockingException {
         ObjectProperties loadedProperties = getLoadedProperties();
-        final TreeMap<Integer, JsVariable> map = new TreeMap<Integer, JsVariable>();
+        final TreeMap<Long, JsVariable> map = new TreeMap<Long, JsVariable>();
         JsValue lengthValue = null;
         for (JsVariable variable : loadedProperties.properties()) {
           String name = variable.getName();
-          if (WipExpressionBuilder.ALL_DIGITS.matcher(name).matches()) {
-            Integer number = Integer.valueOf(name);
-            map.put(number, variable);
+          Long index = JavaScriptExpressionBuilder.parsePropertyNameAsArrayIndex(name);
+          if (index != null) {
+            map.put(index, variable);
           } else if ("length".equals(name)) {
             lengthValue = variable.getValue();
           }
         }
-        int length;
+        long length;
         try {
-          length = Integer.parseInt(lengthValue.getValueString());
+          length = Long.parseLong(lengthValue.getValueString());
         } catch (NumberFormatException e) {
           length = -1;
         }
@@ -547,20 +548,28 @@ class WipValueBuilder {
     }
 
     private static class ArrayProperties {
-      final int length;
-      final SortedMap<Integer, ? extends JsVariable> sparseArrayMap;
+      final long length;
+      final SortedMap<Long, ? extends JsVariable> sparseArrayMap;
+      final SortedMap<Long, ? extends JsVariable> publicSparseArrayMap;
 
-      ArrayProperties(int length,
-          SortedMap<Integer, ? extends JsVariable> sparseArrayMap) {
+      ArrayProperties(long length,
+          SortedMap<Long, ? extends JsVariable> sparseArrayMap) {
         this.length = length;
         this.sparseArrayMap = sparseArrayMap;
+        // We make public map synchronized, because unmodifiable map has its internal state.
+        this.publicSparseArrayMap = Collections.synchronizedSortedMap(
+            Collections.unmodifiableSortedMap(sparseArrayMap));
       }
-      public int getLength() {
+      long getLength() {
         return length;
       }
 
-      public SortedMap<Integer, ? extends JsVariable> getSparseArrayMap() {
+      SortedMap<Long, ? extends JsVariable> getSparseArrayMap() {
         return sparseArrayMap;
+      }
+
+      SortedMap<Long, ? extends JsVariable> getPublicSparseArrayMap() {
+        return publicSparseArrayMap;
       }
     }
   }
