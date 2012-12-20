@@ -18,7 +18,7 @@ import org.chromium.sdk.util.JavaScriptExpressionBuilder.VariableAccess;
  * keeps reference to its parent node, plus it tracks some additional data about expression
  * (for example that no expression is possible for this particular variable).
  */
-class ExpressionTracker {
+public class ExpressionTracker {
   /**
    * Corresponds to pair variable/value.
    */
@@ -72,10 +72,22 @@ class ExpressionTracker {
     }
   };
 
-  static Node createExpressionNode(String expression) {
+  public static Node createExpressionNode(String expression) {
     return new ExpressionNodeImpl(expression);
   }
 
+
+  static final Node NO_EXPRESSION_NODE = new Node() {
+    @Override public String calculateQualifiedName() {
+      return null;
+    }
+    @Override public String calculateParentQualifiedName() {
+      return null;
+    }
+    @Override public Node createVariableNode(JsVariable jsVariable, boolean isInternal) {
+      return NO_EXPRESSION_NODE;
+    }
+  };
 
   private static class ExpressionNodeImpl implements Node, VariableAccess {
     private final String expression;
@@ -160,16 +172,4 @@ class ExpressionTracker {
     }
     return new DefaultNodeImpl(jsVariable, parentNode, nameComponenetBuilder);
   }
-
-  private static final Node NO_EXPRESSION_NODE = new Node() {
-    @Override public String calculateQualifiedName() {
-      return null;
-    }
-    @Override public String calculateParentQualifiedName() {
-      return null;
-    }
-    @Override public Node createVariableNode(JsVariable jsVariable, boolean isInternal) {
-      return NO_EXPRESSION_NODE;
-    }
-  };
 }

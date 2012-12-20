@@ -90,7 +90,8 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
 
   public static Variable forException(EvaluateContext evaluateContext,
       ExceptionData exceptionData) {
-    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue(), null);
+    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue(),
+        ExpressionTracker.NO_EXPRESSION_NODE);
     return new Variable.Virtual(evaluateContext, "<exception>", JAVASCRIPT_REFERENCE_TYPE_NAME,
         value, null);
   }
