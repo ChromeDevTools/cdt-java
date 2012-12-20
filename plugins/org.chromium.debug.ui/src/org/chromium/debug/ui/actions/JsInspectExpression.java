@@ -5,6 +5,7 @@
 package org.chromium.debug.ui.actions;
 
 import org.chromium.debug.core.model.EvaluateContext;
+import org.chromium.debug.core.model.ExpressionTracker;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.Value;
 import org.chromium.sdk.JsVariable;
@@ -66,9 +67,11 @@ public class JsInspectExpression extends PlatformObject
   }
 
   public IValue getValue() {
-    return variable != null
-        ? Value.create(evaluateContext, variable.getValue(), null)
-        : null;
+    if (variable == null) {
+      return null;
+    }
+    return Value.create(evaluateContext, variable.getValue(),
+        ExpressionTracker.createExpressionNode(expression));
   }
 
   public ILaunch getLaunch() {
