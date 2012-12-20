@@ -11,7 +11,6 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.RemoteValueMapping;
 import org.chromium.sdk.SyncCallback;
@@ -45,7 +44,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       Map<String, ? extends JsValue> additionalContext, EvaluateCallback callback,
       SyncCallback syncCallback) {
 
-    return evaluateAsync(expression, expression, additionalContext, valueLoader,
+    return evaluateAsync(expression, additionalContext, valueLoader,
         callback, syncCallback);
   }
 
@@ -54,14 +53,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     return PRIMITIVE_VALUE_FACTORY;
   }
 
-  RelayOk evaluateAsync(String expression, String name,
-      Map<String, ? extends JsValue> additionalContext, EvaluateCallback callback,
-      SyncCallback syncCallback) {
-    return evaluateAsync(expression, name, additionalContext, valueLoader,
-        callback, syncCallback);
-  }
-
-  private RelayOk evaluateAsync(String expression, final String name,
+  private RelayOk evaluateAsync(String expression,
       Map<String, ? extends JsValue> additionalContext, WipValueLoader destinationValueLoaderParam,
       final EvaluateCallback callback, SyncCallback syncCallback) {
     Map<String, JsValueBase> internalAdditionalContext;
@@ -74,11 +66,11 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
         internalAdditionalContext.put(en.getKey(), jsValueBase);
       }
     }
-    return evaluateAsyncImpl(expression, name, internalAdditionalContext,
+    return evaluateAsyncImpl(expression, internalAdditionalContext,
         destinationValueLoaderParam, callback, syncCallback);
   }
 
-  RelayOk evaluateAsyncImpl(String expression, final String name,
+  RelayOk evaluateAsyncImpl(String expression,
       Map<String, ? extends SerializableValue> additionalContext,
       WipValueLoader destinationValueLoaderParam,
       final EvaluateCallback callback, SyncCallback syncCallback) {
@@ -89,7 +81,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     if (additionalContext != null && !additionalContext.isEmpty()) {
       WipContextBuilder contextBuilder = valueLoader.getTabImpl().getContextBuilder();
       EvaluateHack evaluateHack = contextBuilder.getEvaluateHack();
-      return evaluateHack.evaluateAsync(expression, name, additionalContext,
+      return evaluateHack.evaluateAsync(expression, additionalContext,
           destinationValueLoader, evaluateHackHelper, callback, syncCallback);
     }
 
@@ -102,8 +94,8 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       commandCallback = new GenericCallback<DATA>() {
         @Override
         public void success(DATA data) {
-          JsVariable variable = processResponse(data, destinationValueLoader, name);
-          callback.success(variable);
+          ResultOrException valueOrException = processResponse(data, destinationValueLoader);
+          callback.success(valueOrException);
         }
         @Override
         public void failure(Exception exception) {
@@ -115,16 +107,37 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     return commandProcessor.send(params, commandCallback, syncCallback);
   }
 
-  private JsVariable processResponse(DATA data, WipValueLoader destinationValueLoader,
-      String name) {
+  private ResultOrException processResponse(DATA data, WipValueLoader destinationValueLoader) {
     RemoteObjectValue valueData = getRemoteObjectValue(data);
 
     WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
 
+    final JsValue jsValue = valueBuilder.wrap(valueData);
+
     if (getWasThrown(data) == Boolean.TRUE) {
-      return WipContextBuilder.wrapExceptionValue(valueData, valueBuilder);
+      return new ResultOrException() {
+        @Override public JsValue getResult() {
+          return null;
+        }
+        @Override public JsValue getException() {
+          return jsValue;
+        }
+        @Override public <R> R accept(Visitor<R> visitor) {
+          return visitor.visitException(jsValue);
+        }
+      };
     } else {
-      return valueBuilder.createVariable(valueData, name);
+      return new ResultOrException() {
+        @Override public JsValue getResult() {
+          return jsValue;
+        }
+        @Override public JsValue getException() {
+          return null;
+        }
+        @Override public <R> R accept(Visitor<R> visitor) {
+          return visitor.visitResult(jsValue);
+        }
+      };
     }
   }
 
@@ -137,9 +150,8 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     }
 
     @Override
-    public JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
-        String name) {
-      return processResponse(response, destinationValueLoader, name);
+    public ResultOrException processResult(DATA response, WipValueLoader destinationValueLoader) {
+      return processResponse(response, destinationValueLoader);
     }
 
     @Override

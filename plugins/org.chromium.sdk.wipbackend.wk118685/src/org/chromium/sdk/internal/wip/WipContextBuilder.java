@@ -24,9 +24,7 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
-import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
@@ -616,89 +614,6 @@ class WipContextBuilder {
     }
   }
 
-  static JsVariable wrapExceptionValue(RemoteObjectValue valueData,
-      WipValueBuilder valueBuilder) {
-    JsValue exceptionValue = valueBuilder.wrap(valueData, null);
-
-    final JsVariable property =
-        WipValueBuilder.createVariable(exceptionValue, EVALUATE_EXCEPTION_INNER_NAME);
-
-    JsObject wrapperValue = new JsObject() {
-      @Override
-      public RelayOk reloadHeavyValue(ReloadBiggerCallback callback,
-          SyncCallback syncCallback) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public boolean isTruncated() {
-        return false;
-      }
-
-      @Override
-      public String getValueString() {
-        return "<abnormal return>";
-      }
-
-      @Override
-      public Type getType() {
-        return Type.TYPE_OBJECT;
-      }
-
-      @Override
-      public JsObject asObject() {
-        return this;
-      }
-
-      @Override
-      public String getRefId() {
-        return null;
-      }
-
-      @Override
-      public RemoteValueMapping getRemoteValueMapping() {
-        return null;
-      }
-
-      @Override
-      public JsVariable getProperty(String name) {
-        if (name.equals(property.getName())) {
-          return property;
-        }
-        return null;
-      }
-
-      @Override
-      public Collection<? extends JsVariable> getProperties()
-          throws MethodIsBlockingException {
-        return Collections.singletonList(property);
-      }
-
-      @Override
-      public Collection<? extends JsVariable> getInternalProperties()
-          throws MethodIsBlockingException {
-        return Collections.emptyList();
-      }
-
-      @Override
-      public String getClassName() {
-        return null;
-      }
-
-      @Override
-      public JsFunction asFunction() {
-        return null;
-      }
-
-      @Override
-      public JsArray asArray() {
-        return null;
-      }
-    };
-
-    return WipValueBuilder.createVariable(wrapperValue, EVALUATE_EXCEPTION_NAME);
-  }
-
   static final class GlobalEvaluateContext extends WipEvaluateContextBase<EvaluateData> {
 
     GlobalEvaluateContext(WipValueLoader valueLoader) {
@@ -733,18 +648,6 @@ class WipContextBuilder {
 
     assert WIP_TO_SDK_SCOPE_TYPE.size() == ScopeValue.Type.values().length;
   }
-
-  private static final ValueNameBuilder EXCEPTION_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("exception");
-
-  private static final ValueNameBuilder WITH_OBJECT_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<with object>");
-
-  private static final ValueNameBuilder EVALUATE_EXCEPTION_INNER_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<exception>");
-
-  private static final ValueNameBuilder EVALUATE_EXCEPTION_NAME =
-      WipExpressionBuilder.createRootNameNoDerived("<thrown exception>");
 
   private static class ScopeVariables {
     final List<JsVariable> variables;

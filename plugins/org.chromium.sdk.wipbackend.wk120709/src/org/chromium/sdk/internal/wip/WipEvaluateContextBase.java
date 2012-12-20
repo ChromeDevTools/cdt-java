@@ -106,8 +106,9 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
       commandCallback = new GenericCallback<DATA>() {
         @Override
         public void success(DATA data) {
-          JsVariable variable = processResponse(data, destinationValueLoader, valueNameBuidler);
-          callback.success(variable);
+          ResultOrException resultOrException =
+              processResponse(data, destinationValueLoader, valueNameBuidler);
+          callback.success(resultOrException);
         }
         @Override
         public void failure(Exception exception) {
@@ -119,16 +120,38 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     return commandProcessor.send(params, commandCallback, syncCallback);
   }
 
-  private JsVariable processResponse(DATA data, WipValueLoader destinationValueLoader,
+  private ResultOrException processResponse(DATA data, WipValueLoader destinationValueLoader,
       ValueNameBuilder valueNameBuidler) {
     RemoteObjectValue valueData = getRemoteObjectValue(data);
 
     WipValueBuilder valueBuilder = destinationValueLoader.getValueBuilder();
 
+    final JsValue value = valueBuilder.wrap(valueData, valueNameBuidler.getQualifiedNameBuilder());
+
     if (getWasThrown(data) == Boolean.TRUE) {
-      return WipContextBuilder.wrapExceptionValue(valueData, valueBuilder);
+      return new ResultOrException() {
+            @Override public JsValue getResult() {
+              return null;
+            }
+            @Override public JsValue getException() {
+              return value;
+            }
+            @Override public <R> R accept(Visitor<R> visitor) {
+              return visitor.visitException(value);
+            }
+          };
     } else {
-      return valueBuilder.createVariable(valueData, valueNameBuidler);
+      return new ResultOrException() {
+            @Override public JsValue getResult() {
+              return value;
+            }
+            @Override public JsValue getException() {
+              return null;
+            }
+            @Override public <R> R accept(Visitor<R> visitor) {
+              return visitor.visitResult(value);
+            }
+          };
     }
   }
 
@@ -141,7 +164,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
     }
 
     @Override
-    public JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
+    public ResultOrException processResult(DATA response, WipValueLoader destinationValueLoader,
         ValueNameBuilder valueNameBuidler) {
       return processResponse(response, destinationValueLoader, valueNameBuidler);
     }

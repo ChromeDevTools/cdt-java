@@ -12,6 +12,7 @@ import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
@@ -71,13 +72,22 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
       return new ValueBase.ErrorMessageValue(evaluateContext, "Property has undefined getter");
     }
     class Callback implements JsEvaluateContext.EvaluateCallback {
-      ValueBase result = null;
-      @Override public void success(JsVariable variable) {
-        result = Value.create(evaluateContext, variable.getValue(),
-            expressionTrackerNode);
+      ValueBase valueBase = null;
+
+      @Override
+      public void success(ResultOrException result) {
+        valueBase = result.accept(new ResultOrException.Visitor<ValueBase>() {
+          @Override public ValueBase visitResult(JsValue value) {
+            return Value.create(evaluateContext, value, expressionTrackerNode);
+          }
+          @Override public ValueBase visitException(JsValue exception) {
+            return new ValueBase.ErrorMessageValue(evaluateContext, "Evaluate failure", exception);
+          }
+        });
       }
+
       @Override public void failure(String errorMessage) {
-        result = new ValueBase.ErrorMessageValue(evaluateContext,
+        valueBase = new ValueBase.ErrorMessageValue(evaluateContext,
             "Failed to evaluate property value: " + errorMessage);
       }
     }
@@ -85,12 +95,12 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     CallbackSemaphore callbackSemaphore = new CallbackSemaphore();
     RelayOk relayOk = property.evaluateGet(callback, callbackSemaphore);
     callbackSemaphore.acquireDefault(relayOk);
-    return callback.result;
+    return callback.valueBase;
   }
 
   public static Variable forException(EvaluateContext evaluateContext,
-      ExceptionData exceptionData) {
-    Value value = Value.create(evaluateContext, exceptionData.getExceptionValue(),
+      JsValue exceptionValue) {
+    Value value = Value.create(evaluateContext, exceptionValue,
         ExpressionTracker.NO_EXPRESSION_NODE);
     return new Variable.Virtual(evaluateContext, "<exception>", JAVASCRIPT_REFERENCE_TYPE_NAME,
         value, null);

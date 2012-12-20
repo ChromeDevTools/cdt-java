@@ -19,12 +19,23 @@ public interface JsEvaluateContext {
 
   /**
    * A callback for the "evaluate" request.
-   * TODO: support thrown JavaScript exception here. Currently they are passed as pseudoobject.
+   * TODO: handle compile exception separately.
    */
   interface EvaluateCallback {
-    void success(JsVariable variable);
+    void success(ResultOrException result);
 
     void failure(String errorMessage);
+  }
+
+  interface ResultOrException {
+    JsValue getResult();
+    JsValue getException();
+
+    <R> R accept(Visitor<R> visitor);
+    interface Visitor<R> {
+      R visitResult(JsValue value);
+      R visitException(JsValue exception);
+    }
   }
 
   /**

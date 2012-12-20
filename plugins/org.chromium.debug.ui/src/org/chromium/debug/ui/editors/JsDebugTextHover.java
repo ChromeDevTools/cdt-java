@@ -7,7 +7,8 @@ package org.chromium.debug.ui.editors;
 import org.chromium.debug.core.model.EvaluateContext;
 import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
+import org.chromium.sdk.JsValue;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.jface.text.IDocument;
@@ -39,11 +40,19 @@ public class JsDebugTextHover implements ITextHover {
       return null;
     }
 
-    final JsVariable[] result = new JsVariable[1];
+    final JsValue[] result = new JsValue[1];
     evaluateContext.getJsEvaluateContext().evaluateSync(expression, null,
         new JsEvaluateContext.EvaluateCallback() {
-          public void success(JsVariable var) {
-            result[0] = var;
+          @Override
+          public void success(ResultOrException valueOrException) {
+            result[0] = valueOrException.accept(new ResultOrException.Visitor<JsValue>() {
+                  @Override public JsValue visitResult(JsValue value) {
+                    return value;
+                  }
+                  @Override public JsValue visitException(JsValue exception) {
+                    return null;
+                  }
+                });
           }
           public void failure(String errorMessage) {
           }
@@ -52,7 +61,7 @@ public class JsDebugTextHover implements ITextHover {
       return null;
     }
 
-    return STRINGIFIER.render(result[0].getValue());
+    return STRINGIFIER.render(result[0]);
   }
 
   public IRegion getHoverRegion(ITextViewer textViewer, int offset) {

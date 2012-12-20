@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.wip.WipExpressionBuilder.ValueNameBuilder;
@@ -89,7 +89,7 @@ public class EvaluateHack {
     WipParamsWithResponse<DATA> createRequest(String patchedUserExpression,
         WipValueLoader destinationValueLoader);
 
-    JsVariable processResult(DATA response, WipValueLoader destinationValueLoader,
+    ResultOrException processResult(DATA response, WipValueLoader destinationValueLoader,
         ValueNameBuilder valueNameBuidler);
 
     /**
@@ -135,14 +135,14 @@ public class EvaluateHack {
     }
 
     RelayOk run(final JsEvaluateContext.EvaluateCallback callback, RelaySyncCallback relay) {
-      WipRelayRunner.Step<JsVariable> step = createFillDataObjectStep();
+      WipRelayRunner.Step<ResultOrException> step = createFillDataObjectStep();
 
-      GenericCallback<JsVariable> innerCallback;
+      GenericCallback<ResultOrException> innerCallback;
       if (callback == null) {
         innerCallback = null;
       } else {
-        innerCallback = new GenericCallback<JsVariable>() {
-          @Override public void success(JsVariable value) {
+        innerCallback = new GenericCallback<ResultOrException>() {
+          @Override public void success(ResultOrException value) {
             callback.success(value);
           }
           @Override public void failure(Exception exception) {
@@ -159,7 +159,7 @@ public class EvaluateHack {
      * Sends request that create a temporary object and fills it with user values.
      * User values are passed as 1. 'this', 2. additional arguments to the function.
      */
-    private WipRelayRunner.Step<JsVariable> createFillDataObjectStep() {
+    private WipRelayRunner.Step<ResultOrException> createFillDataObjectStep() {
       if (additionalContext.isEmpty()) {
         throw new IllegalArgumentException("Empty context");
       }
@@ -202,7 +202,7 @@ public class EvaluateHack {
 
       final String thisObjectIdFinal = thisObjectId;
 
-      return new WipRelayRunner.SendStepWithResponse<CallFunctionOnData, JsVariable>() {
+      return new WipRelayRunner.SendStepWithResponse<CallFunctionOnData, ResultOrException>() {
         @Override
         public WipParamsWithResponse<CallFunctionOnData> getParams() {
           List<CallArgumentParam> arguments;
@@ -215,7 +215,7 @@ public class EvaluateHack {
         }
 
         @Override
-        public Step<JsVariable> processResponse(CallFunctionOnData response) {
+        public Step<ResultOrException> processResponse(CallFunctionOnData response) {
           if (response.wasThrown() == Boolean.TRUE) {
             return createHandleErrorStep(response.result());
           }
@@ -229,9 +229,9 @@ public class EvaluateHack {
       };
     }
 
-    private <EVAL_DATA> WipRelayRunner.Step<JsVariable> createEvaluateStep(
+    private <EVAL_DATA> WipRelayRunner.Step<ResultOrException> createEvaluateStep(
         final EvaluateCommandHandler<EVAL_DATA> commandHandler) {
-      return new WipRelayRunner.SendStepWithResponse<EVAL_DATA, JsVariable>() {
+      return new WipRelayRunner.SendStepWithResponse<EVAL_DATA, ResultOrException>() {
         @Override
         public WipParamsWithResponse<EVAL_DATA> getParams() {
           String script = "with (" + GLOBAL_VARIABLE_NAME + ".data." + dataId +
@@ -245,13 +245,13 @@ public class EvaluateHack {
         }
 
         @Override
-        public Step<JsVariable> processResponse(EVAL_DATA response) {
-          JsVariable jsVariable =
+        public Step<ResultOrException> processResponse(EVAL_DATA response) {
+          ResultOrException resultOrException =
               commandHandler.processResult(response, destinationValueLoader, valueNameBuidler);
 
           clearTempObjectAsync();
 
-          return WipRelayRunner.createFinalStep(jsVariable);
+          return WipRelayRunner.createFinalStep(resultOrException);
         }
 
         @Override
@@ -278,8 +278,8 @@ public class EvaluateHack {
      * The additional step is needed because the exception message is only available from
      * its 'message' pseudo-property (a getter).
      */
-    private Step<JsVariable> createHandleErrorStep(final RemoteObjectValue remoteObjectValue) {
-      return new WipRelayRunner.SendStepWithResponse<CallFunctionOnData, JsVariable>() {
+    private Step<ResultOrException> createHandleErrorStep(final RemoteObjectValue remoteObjectValue) {
+      return new WipRelayRunner.SendStepWithResponse<CallFunctionOnData, ResultOrException>() {
         @Override
         public WipParamsWithResponse<CallFunctionOnData> getParams() {
           String functionText = "function() { return String(this.message); }";
@@ -287,7 +287,7 @@ public class EvaluateHack {
         }
 
         @Override
-        public Step<JsVariable> processResponse(CallFunctionOnData response)
+        public Step<ResultOrException> processResponse(CallFunctionOnData response)
             throws ProcessException {
           throw new ProcessException("Helper script failed on remote: " +
               response.result().value());

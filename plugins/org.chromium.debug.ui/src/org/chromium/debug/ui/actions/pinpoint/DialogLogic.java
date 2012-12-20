@@ -35,6 +35,7 @@ import org.chromium.debug.ui.DialogUtils.ValueSource;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
@@ -584,8 +585,29 @@ class DialogLogic {
             Messages.LogicImpl_WARNING_SEEMS_A_PROBLEM;
 
         @Override
-        public void success(JsVariable variable) {
-          String stringValue = variable.getValue().getValueString();
+        public void success(ResultOrException result) {
+          result.accept(new ResultOrException.Visitor<Void>() {
+            @Override
+            public Void visitResult(JsValue value) {
+              handleSuccess(value);
+              return null;
+            }
+
+            @Override
+            public Void visitException(JsValue exception) {
+              handleFailure(exception.getValueString());
+              return null;
+            }
+          });
+        }
+
+        @Override
+        public void failure(String errorMessage) {
+          handleFailure(errorMessage);
+        }
+
+        private void handleSuccess(JsValue jsValue) {
+          String stringValue = jsValue.getValueString();
           String value;
           String warning;
           if (freePropertyCode.equals(stringValue)) {
@@ -602,8 +624,7 @@ class DialogLogic {
           callback.done(value, warning);
         }
 
-        @Override
-        public void failure(String errorMessage) {
+        private void handleFailure(String errorMessage) {
           callback.done(Messages.LogicImpl_PROBLEM_ON_REMOTE + errorMessage, warningMessage);
         }
       };
@@ -636,12 +657,18 @@ class DialogLogic {
       String expression = builder.toString();
       EvaluateCallback evaluateCallback = new EvaluateCallback() {
         @Override
-        public void success(JsVariable variable) {
-          callback.done(null);
+        public void success(ResultOrException result) {
+          String errorMessage = result.accept(new ResultOrException.Visitor<String>() {
+            @Override public String visitResult(JsValue value) {
+              return null;
+            }
+            @Override public String visitException(JsValue exception) {
+              return exception.getValueString();
+            }
+          });
+          callback.done(errorMessage);
         }
-
-        @Override
-        public void failure(String errorMessage) {
+        @Override public void failure(String errorMessage) {
           callback.done(errorMessage);
         }
       };

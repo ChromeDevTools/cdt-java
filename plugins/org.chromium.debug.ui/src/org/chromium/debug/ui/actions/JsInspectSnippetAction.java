@@ -9,7 +9,8 @@ import org.chromium.debug.ui.ChromiumDebugUIPlugin;
 import org.chromium.debug.ui.PluginUtil;
 import org.chromium.debug.ui.editors.JavascriptUtil;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
+import org.chromium.sdk.JsValue;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.model.IExpression;
 import org.eclipse.debug.ui.DebugPopup;
@@ -110,28 +111,39 @@ public class JsInspectSnippetAction implements IEditorActionDelegate {
       this.selectedText = selectedText;
     }
 
-    public void success(JsVariable var) {
+    @Override
+    public void success(ResultOrException result) {
       if (ChromiumDebugUIPlugin.getDefault() == null) {
         return;
       }
-      if (var != null) {
-        if (ChromiumDebugUIPlugin.getDisplay().isDisposed()) {
-          return;
-        }
-        displayResult(var, null);
+      if (ChromiumDebugUIPlugin.getDisplay().isDisposed()) {
+        return;
       }
+      result.accept(new ResultOrException.Visitor<Void>() {
+        @Override
+        public Void visitResult(JsValue value) {
+          displayResult(value, null);
+          return null;
+        }
+        @Override
+        public Void visitException(JsValue exception) {
+          displayResult(null, exception.getValueString());
+          return null;
+        }
+      });
     }
 
     public void failure(String errorMessage) {
       displayResult(null, errorMessage);
     }
 
-    private void displayResult(final JsVariable var, String errorMessage) {
+    private void displayResult(final JsValue value, String errorMessage) {
       final StyledText styledText = getStyledText(editorPart);
       if (styledText == null) {
         return; // TODO(apavlov): fix this when adding inspected variables
       } else {
-        final IExpression expression = new JsInspectExpression(evaluateContext, selectedText, var, errorMessage);
+        final IExpression expression = new JsInspectExpression(evaluateContext, selectedText,
+            value, errorMessage);
         ChromiumDebugUIPlugin.getDisplay().asyncExec(new Runnable() {
           public void run() {
             showPopup(styledText, expression);

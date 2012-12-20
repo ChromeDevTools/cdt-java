@@ -8,6 +8,8 @@ import org.chromium.debug.core.model.EvaluateContext;
 import org.chromium.debug.core.model.ExpressionTracker;
 import org.chromium.debug.core.model.VProjectWorkspaceBridge;
 import org.chromium.debug.core.model.Value;
+import org.chromium.debug.core.model.ValueBase;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.debug.core.DebugEvent;
@@ -27,17 +29,17 @@ public class JsInspectExpression extends PlatformObject
 
   private final EvaluateContext evaluateContext;
 
-  private final JsVariable variable;
+  private final JsValue value;
 
   private final String errorMessage;
 
   private final String expression;
 
-  public JsInspectExpression(EvaluateContext evaluateContext, String expression, JsVariable variable,
+  public JsInspectExpression(EvaluateContext evaluateContext, String expression, JsValue value,
       String errorMessage) {
     this.evaluateContext = evaluateContext;
     this.expression = expression;
-    this.variable = variable;
+    this.value = value;
     this.errorMessage = errorMessage;
   }
 
@@ -67,11 +69,9 @@ public class JsInspectExpression extends PlatformObject
   }
 
   public IValue getValue() {
-    if (variable == null) {
-      return null;
-    }
-    return Value.create(evaluateContext, variable.getValue(),
-        ExpressionTracker.createExpressionNode(expression));
+    return value != null
+        ? Value.create(evaluateContext, value, ExpressionTracker.createExpressionNode(expression))
+        : null;
   }
 
   public ILaunch getLaunch() {

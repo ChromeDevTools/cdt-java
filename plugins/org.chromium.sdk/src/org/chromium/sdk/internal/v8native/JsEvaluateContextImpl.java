@@ -60,13 +60,43 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
             }
             InternalContext internalContext = getInternalContext();
             ValueMirror mirror = internalContext.getValueLoader().addDataToMap(body);
-            JsVariable variable = new JsVariableImpl(internalContext.getValueLoader(),
-                mirror, expression);
-            callback.success(variable);
+            final JsValue value =
+                JsVariableImpl.createValue(internalContext.getValueLoader(), mirror);
+            ResultOrException result = new ResultOrException() {
+              @Override public JsValue getResult() {
+                return value;
+              }
+              @Override public JsValue getException() {
+                return null;
+              }
+              @Override public <R> R accept(Visitor<R> visitor) {
+                return visitor.visitResult(value);
+              }
+            };
+            callback.success(result);
           }
           @Override
           public void failure(String message, ErrorDetails errorDetails) {
-            callback.failure(message);
+            // We are not fully correct here.
+            // All that we actually receive from the other side is a string message.
+            // It might be message of exception or it could be diagnostic of any other
+            // kind of error.
+            // We incorrectly create string value out of this message and return
+            // it as an exception.
+            // TODO: Return actual exception value when protocol supports it.
+            final JsValue pseudoException = getValueFactory().createString(message);
+            ResultOrException result = new ResultOrException() {
+              @Override public JsValue getResult() {
+                return null;
+              }
+              @Override public JsValue getException() {
+                return pseudoException;
+              }
+              @Override public <R> R accept(Visitor<R> visitor) {
+                return visitor.visitException(pseudoException);
+              }
+            };
+            callback.success(result);
           }
         };
 
