@@ -4,7 +4,8 @@
 
 package org.chromium.sdk.internal.v8native.value;
 
-import java.util.Collection;
+import static org.chromium.sdk.util.BasicUtil.getSafe;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.SortedMap;
@@ -13,6 +14,7 @@ import java.util.TreeMap;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.util.JavaScriptExpressionBuilder;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
@@ -31,39 +33,27 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
   }
 
   @Override
-  public JsVariable get(int index) throws MethodIsBlockingException {
-    return getPropertyData(true).ensureElementsMap().get(index);
+  public JsVariable get(long index) throws MethodIsBlockingException {
+    return getSafe(getPropertyData(true).ensureElementsMap(), index);
   }
 
   @Override
-  public SortedMap<Integer, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException {
+  public SortedMap<Long, ? extends JsVariable> toSparseArray() throws MethodIsBlockingException {
     return getPropertyData(true).ensureElementsMap();
   }
 
   @Override
-  public int length() throws MethodIsBlockingException {
-    // TODO(peter.rybin) optimize it: either read "length" from remote or count PropertyReference
-    // rather than JsVariableImpl
-    int lastIndex = -1;
-    Collection<JsVariableImpl> properties = getProperties();
-    // TODO(peter.rybin): rename propRefs
-    for (JsVariableImpl prop : properties) {
-      Object name = prop.getRawNameAsObject();
-      if (name instanceof Number == false) {
-        continue;
-      }
-      Number index = (Number) name;
-      int intIndex = index.intValue();
-      if (intIndex > lastIndex) {
-        lastIndex = intIndex;
-      }
+  public long getLength() throws MethodIsBlockingException {
+    SortedMap<Long, ?> map = getPropertyData(true).ensureElementsMap();
+    if (map.isEmpty()) {
+      return 0;
     }
-    return lastIndex + 1;
+    return map.lastKey() + 1;
   }
 
   @Override
   public String toString() {
-    SortedMap<Integer, ? extends JsVariable> elements;
+    SortedMap<?, ? extends JsVariable> elements;
     try {
       elements = toSparseArray();
     } catch (MethodIsBlockingException e) {
@@ -71,7 +61,7 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
     }
     StringBuilder result = new StringBuilder();
     result.append("[JsArray: length=").append(elements.size());
-    for (Map.Entry<Integer, ? extends JsVariable> entry : elements.entrySet()) {
+    for (Map.Entry<?, ? extends JsVariable> entry : elements.entrySet()) {
       result.append(',').append(entry.getKey()).append('=').append(entry.getValue());
     }
     result.append(']');
@@ -109,7 +99,7 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
     /**
      * An indexed sparse array of elements. Keys are indices, values are elements.
      */
-    private SortedMap<Integer, JsVariableImpl> indexToElementMap = null;
+    private SortedMap<Long, JsVariableImpl> indexToElementMap = null;
 
     ArrayPropertyData(BasicPropertyData basicPropertyData) {
       this.basicPropertyData = basicPropertyData;
@@ -119,17 +109,26 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
       return basicPropertyData;
     }
 
-    private synchronized SortedMap<Integer, JsVariableImpl> ensureElementsMap() {
+    private synchronized SortedMap<Long, JsVariableImpl> ensureElementsMap() {
       if (indexToElementMap == null) {
-        SortedMap<Integer, JsVariableImpl> map = new TreeMap<Integer, JsVariableImpl>();
+        SortedMap<Long, JsVariableImpl> map = new TreeMap<Long, JsVariableImpl>();
 
         for (JsVariableImpl prop : basicPropertyData.getPropertyList()) {
           Object name = prop.getRawNameAsObject();
-          if (name instanceof Number == false) {
-            continue;
+          Long key;
+          if (name instanceof Long) {
+            Long index = (Long) name;
+            if (!JavaScriptExpressionBuilder.checkArrayIndexValue(index)) {
+              continue;
+            }
+            key = index;
+          } else {
+            key = JavaScriptExpressionBuilder.parsePropertyNameAsArrayIndex(name.toString());
+            if (key == null) {
+              continue;
+            }
           }
-          Number index = (Number) name;
-          map.put(index.intValue(), prop);
+          map.put(key, prop);
         }
         // We make map synchronized for such methods as entrySet, that are not thread-safe.
         indexToElementMap =

@@ -103,6 +103,32 @@ public class JavaScriptExpressionBuilder {
     }
   };
 
+  public static Long parsePropertyNameAsArrayIndex(String propertyName) {
+    // Make cheap checks first.
+    if (propertyName.length() > 10) {
+      return null;
+    }
+    if (!ALL_DIGITS_PATTERN.matcher(propertyName).matches()) {
+      return null;
+    }
+    Long index;
+    try {
+      // Long.valueOf is probably the most expensive check, because it throws exception
+      // that is heavy.
+      index = Long.valueOf(propertyName);
+    } catch (NumberFormatException e) {
+      return null;
+    }
+    if (!checkArrayIndexValue(index)) {
+      return null;
+    }
+    return index;
+  }
+
+  public static boolean checkArrayIndexValue(long l) {
+    return l >= 0L && l <= 0xfffffffeL;
+  }
+
   private static void buildParentRef(StringBuilder output, VariableAccess variableAccess) {
     ExpressionComponentFormatter objectNameBuilder = variableAccess.getVariableFormatter();
     if (objectNameBuilder.needsParentheses()) {
@@ -126,4 +152,6 @@ public class JavaScriptExpressionBuilder {
    */
   public static final Collection<String> SEMI_INTERNAL_PROPERTY_NAMES =
       Collections.singleton("__proto__");
+
+  private static final Pattern ALL_DIGITS_PATTERN = Pattern.compile("\\d+");
 }
