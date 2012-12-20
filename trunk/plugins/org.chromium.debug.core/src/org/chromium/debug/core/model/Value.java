@@ -13,6 +13,7 @@ import org.chromium.debug.core.util.JsValueStringifier;
 import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsArray;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
@@ -257,9 +258,22 @@ public class Value extends ValueBase.ValueWithLazyVariables {
 
       JsEvaluateContext.EvaluateCallback evaluateCallback =
           new JsEvaluateContext.EvaluateCallback() {
-        public void success(JsVariable variable) {
-          jsValueDetailIsBuilt(variable.getValue(), listener);
+        @Override
+        public void success(ResultOrException result) {
+          result.accept(new ResultOrException.Visitor<Void>() {
+            @Override
+            public Void visitResult(JsValue value) {
+              jsValueDetailIsBuilt(value, listener);
+              return null;
+            }
+            @Override
+            public Void visitException(JsValue exception) {
+              stringDetailIsBuilt(exception.getValueString(), listener);
+              return null;
+            }
+          });
         }
+        @Override
         public void failure(String errorMessage) {
           stringDetailIsBuilt(errorMessage, listener);
         }

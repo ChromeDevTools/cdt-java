@@ -124,7 +124,8 @@ public class JavascriptThread extends DebugElementImpl.WithConnected
       super(evaluateContext);
       this.exceptionData = exceptionData;
 
-      Variable variable = Variable.forException(evaluateContext, exceptionData);
+      Variable variable =
+          Variable.forException(evaluateContext, exceptionData.getExceptionValue());
       variables = new IVariable[] { variable };
     }
 

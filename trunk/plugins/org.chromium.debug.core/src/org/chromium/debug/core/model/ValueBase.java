@@ -127,14 +127,27 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
   }
 
   /**
-   * Wraps string error message as a Value. The value has no inner variables.
+   * Wraps string error message as a Value. It may have optional inner variable 'exception' that
+   * wraps exception value.
    */
-  static class ErrorMessageValue extends ValueBase {
+  public static class ErrorMessageValue extends ValueBase {
     private final String message;
+    private final IVariable[] innerVariables;
 
     ErrorMessageValue(EvaluateContext evaluateContext, String message) {
+      this(evaluateContext, message, null);
+    }
+
+    public ErrorMessageValue(EvaluateContext evaluateContext, String message,
+        JsValue exceptionValue) {
       super(evaluateContext);
       this.message = message;
+      if (exceptionValue == null) {
+        innerVariables = Value.EMPTY_VARIABLES;
+      } else {
+        innerVariables =
+            new IVariable[] { Variable.forException(evaluateContext, exceptionValue) };
+      }
     }
     @Override public String getReferenceTypeName() throws DebugException {
       return REFERENCE_TYPE_NAME;
@@ -146,10 +159,10 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
       return true;
     }
     @Override public IVariable[] getVariables() throws DebugException {
-      return Value.EMPTY_VARIABLES;
+      return innerVariables;
     }
     @Override public boolean hasVariables() throws DebugException {
-      return false;
+      return innerVariables.length > 0;
     }
     @Override public Value asRealValue() {
       return null;

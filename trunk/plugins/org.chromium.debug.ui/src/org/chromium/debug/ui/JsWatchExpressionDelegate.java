@@ -7,9 +7,12 @@ package org.chromium.debug.ui;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.DebugElementImpl;
 import org.chromium.debug.core.model.EvaluateContext;
-import org.chromium.debug.core.model.Variable;
+import org.chromium.debug.core.model.ExpressionTracker;
+import org.chromium.debug.core.model.Value;
+import org.chromium.debug.core.model.ValueBase;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
+import org.chromium.sdk.JsValue;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IDebugElement;
@@ -26,45 +29,27 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
   private static final String[] EMPTY_STRINGS = new String[0];
 
   private static final class GoodWatchExpressionResult implements IWatchExpressionResult {
-
-    private final Variable variable;
-
     private final String expression;
+    private final ValueBase value;
 
-    private IValue value;
-
-    private DebugException exception;
-
-    private GoodWatchExpressionResult(Variable variable, String expression) {
-      this.variable = variable;
+    GoodWatchExpressionResult(ValueBase value, String expression) {
+      this.value = value;
       this.expression = expression;
     }
-
-    public String[] getErrorMessages() {
-      return exception == null
-          ? EMPTY_STRINGS
-          : new String[] { exception.getStatus().getMessage() };
+    @Override public String[] getErrorMessages() {
+      return EMPTY_STRINGS;
     }
-
-    public DebugException getException() {
-      getValue();
-      return exception;
+    @Override public DebugException getException() {
+      return null;
     }
-
-    public String getExpressionText() {
+    @Override public String getExpressionText() {
       return expression;
     }
-
-    public synchronized IValue getValue() {
-      if (value == null && exception == null) {
-        value = variable.getValue();
-      }
+    @Override public IValue getValue() {
       return value;
     }
-
-    public boolean hasErrors() {
-      getValue();
-      return exception != null;
+    @Override public boolean hasErrors() {
+      return false;
     }
   }
 
@@ -143,12 +128,23 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
     evaluateContext.getJsEvaluateContext().evaluateAsync(
         expression, null,
         new JsEvaluateContext.EvaluateCallback() {
-          public void success(JsVariable variable) {
-            Variable var =
-                Variable.forEvaluateExpression(evaluateContext, variable.getValue(), expression);
-            listener.watchEvaluationFinished(new GoodWatchExpressionResult(var, expression));
+          @Override
+          public void success(ResultOrException result) {
+            ValueBase valueBase = result.accept(new ResultOrException.Visitor<ValueBase>() {
+              @Override public ValueBase visitResult(JsValue value) {
+                return Value.create(evaluateContext, value,
+                    ExpressionTracker.createExpressionNode(expression));
+              }
+              @Override
+              public ValueBase visitException(JsValue exception) {
+                return new ValueBase.ErrorMessageValue(evaluateContext, "<abnormal return>",
+                    exception);
+              }
+            });
+            listener.watchEvaluationFinished(new GoodWatchExpressionResult(valueBase, expression));
           }
 
+          @Override
           public void failure(String message) {
             listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
                 createErrorStatus(message == null

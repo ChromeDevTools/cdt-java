@@ -139,7 +139,7 @@ class WipValueBuilder {
         context.put(GETTER_VAR_NAME, (SerializableValue) getterFunction);
         context.put(OBJECT_VAR_NAME, SerializableValue.Util.wrapRefId(hostObjectRefId));
 
-        return evaluateContext.evaluateAsyncImpl(EVALUATE_EXPRESSION, "value",
+        return evaluateContext.evaluateAsyncImpl(EVALUATE_EXPRESSION,
             context, valueLoader, callback, syncCallback);
       }
       private static final String GETTER_VAR_NAME = "gttr";
