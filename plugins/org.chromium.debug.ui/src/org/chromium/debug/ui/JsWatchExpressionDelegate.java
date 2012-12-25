@@ -145,7 +145,8 @@ public class JsWatchExpressionDelegate implements IWatchExpressionDelegate {
           }
 
           @Override
-          public void failure(String message) {
+          public void failure(Exception cause) {
+            String message = cause.getMessage();
             listener.watchEvaluationFinished(new BadWatchExpressionResult(new DebugException(
                 createErrorStatus(message == null
                     ? Messages.JsWatchExpressionDelegate_ErrorEvaluatingExpression

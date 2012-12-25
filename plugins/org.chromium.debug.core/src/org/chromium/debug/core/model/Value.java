@@ -274,8 +274,8 @@ public class Value extends ValueBase.ValueWithLazyVariables {
           });
         }
         @Override
-        public void failure(String errorMessage) {
-          stringDetailIsBuilt(errorMessage, listener);
+        public void failure(Exception cause) {
+          stringDetailIsBuilt(cause.getMessage(), listener);
         }
       };
 

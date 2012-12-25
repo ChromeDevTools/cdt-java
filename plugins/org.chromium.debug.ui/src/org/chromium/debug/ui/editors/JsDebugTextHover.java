@@ -54,7 +54,7 @@ public class JsDebugTextHover implements ITextHover {
                   }
                 });
           }
-          public void failure(String errorMessage) {
+          public void failure(Exception cause) {
           }
         });
     if (result[0] == null) {

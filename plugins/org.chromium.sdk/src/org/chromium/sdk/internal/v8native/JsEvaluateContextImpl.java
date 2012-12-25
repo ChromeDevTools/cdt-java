@@ -113,7 +113,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
     } catch (ContextDismissedCheckedException e) {
       maybeRethrowContextException(e);
       // or
-      callback.failure(e.getMessage());
+      callback.failure(e);
       return RelaySyncCallback.finish(syncCallback);
     }
   }

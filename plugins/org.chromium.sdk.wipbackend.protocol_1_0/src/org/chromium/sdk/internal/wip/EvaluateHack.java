@@ -71,7 +71,7 @@ public class EvaluateHack {
           @Override
           public void failure(Exception exception) {
             if (callback != null) {
-              callback.failure(exception.getMessage());
+              callback.failure(exception);
             }
           }
         };
@@ -146,7 +146,7 @@ public class EvaluateHack {
             callback.success(value);
           }
           @Override public void failure(Exception exception) {
-            callback.failure(exception.getMessage());
+            callback.failure(exception);
           }
         };
       }

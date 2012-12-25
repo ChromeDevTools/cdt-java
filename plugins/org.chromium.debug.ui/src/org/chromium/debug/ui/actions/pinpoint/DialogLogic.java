@@ -602,8 +602,8 @@ class DialogLogic {
         }
 
         @Override
-        public void failure(String errorMessage) {
-          handleFailure(errorMessage);
+        public void failure(Exception cause) {
+          handleFailure(cause.getMessage());
         }
 
         private void handleSuccess(JsValue jsValue) {
@@ -668,8 +668,8 @@ class DialogLogic {
           });
           callback.done(errorMessage);
         }
-        @Override public void failure(String errorMessage) {
-          callback.done(errorMessage);
+        @Override public void failure(Exception cause) {
+          callback.done(cause.getMessage());
         }
       };
       previewContext.globalEvaluateContext.evaluateAsync(expression,

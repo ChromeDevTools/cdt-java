@@ -86,9 +86,9 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
         });
       }
 
-      @Override public void failure(String errorMessage) {
+      @Override public void failure(Exception cause) {
         valueBase = new ValueBase.ErrorMessageValue(evaluateContext,
-            "Failed to evaluate property value: " + errorMessage);
+            "Failed to evaluate property value: " + cause.getMessage());
       }
     }
     Callback callback = new Callback();
