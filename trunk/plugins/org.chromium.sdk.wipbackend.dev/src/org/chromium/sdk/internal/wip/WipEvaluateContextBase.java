@@ -99,7 +99,7 @@ abstract class WipEvaluateContextBase<DATA> extends JsEvaluateContextBase {
         }
         @Override
         public void failure(Exception exception) {
-          callback.failure(exception.getMessage());
+          callback.failure(exception);
         }
       };
     }

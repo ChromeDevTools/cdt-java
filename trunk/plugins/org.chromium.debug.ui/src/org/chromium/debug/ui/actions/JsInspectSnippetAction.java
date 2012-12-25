@@ -133,8 +133,8 @@ public class JsInspectSnippetAction implements IEditorActionDelegate {
       });
     }
 
-    public void failure(String errorMessage) {
-      displayResult(null, errorMessage);
+    public void failure(Exception cause) {
+      displayResult(null, cause.getMessage());
     }
 
     private void displayResult(final JsValue value, String errorMessage) {

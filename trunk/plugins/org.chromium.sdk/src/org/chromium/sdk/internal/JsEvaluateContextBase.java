@@ -27,7 +27,7 @@ public abstract class JsEvaluateContextBase implements JsEvaluateContext {
         evaluateAsync(expression, additionalContext, evaluateCallback, callbackSemaphore);
     boolean res = callbackSemaphore.tryAcquireDefault(relayOk);
     if (!res) {
-      evaluateCallback.failure("Timeout");
+      evaluateCallback.failure(new Exception("Timeout"));
     }
   }
 

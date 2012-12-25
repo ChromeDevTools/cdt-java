@@ -24,7 +24,7 @@ public interface JsEvaluateContext {
   interface EvaluateCallback {
     void success(ResultOrException result);
 
-    void failure(String errorMessage);
+    void failure(Exception cause);
   }
 
   interface ResultOrException {
