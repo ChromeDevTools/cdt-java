@@ -78,6 +78,7 @@ ant sdkJavadocs
 Result is in {{{../../staging/result/sdkJavadocs}}}
 
 =Release Checklist=
+  * Validate MethodIsBlockingException consistency.
   * Bump up [Versioning version] to even _"release"_ number.
   * Update license year numbers.
   * Build plugins and libraries.
