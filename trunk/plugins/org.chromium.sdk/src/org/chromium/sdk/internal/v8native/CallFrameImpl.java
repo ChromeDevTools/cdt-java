@@ -33,7 +33,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.RestartFrameMessage;
 import org.chromium.sdk.internal.v8native.value.JsScopeImpl;
-import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
+import org.chromium.sdk.internal.v8native.value.JsVariableBase;
 import org.chromium.sdk.internal.v8native.value.PropertyReference;
 import org.chromium.sdk.internal.v8native.value.ValueLoader;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
@@ -167,7 +167,7 @@ public class CallFrameImpl implements CallFrame {
           valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
       // This name should be string. We are making it string as a fall-back strategy.
       String varNameStr = ref.getName().toString();
-      result = new JsVariableImpl.Impl(valueLoader, mirror, varNameStr);
+      result = new JsVariableBase.Impl(valueLoader, mirror, varNameStr);
     }
     if (result != null) {
       receiverVariableRef.compareAndSet(null, result);

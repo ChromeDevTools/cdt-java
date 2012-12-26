@@ -16,9 +16,8 @@ import org.chromium.sdk.SyncCallback;
 
 /**
  * A generic implementation of the JsVariable interface.
- * TODO(TBR-robot): rename into JsVariableBase
  */
-public abstract class JsVariableImpl implements JsVariable {
+public abstract class JsVariableBase implements JsVariable {
 
   /** The lazily constructed value of this variable. */
   private final JsValueBase value;
@@ -33,7 +32,7 @@ public abstract class JsVariableImpl implements JsVariable {
    * @param valueLoader that owns this variable
    * @param valueData for this variable
    */
-  public JsVariableImpl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+  public JsVariableBase(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
     this.rawName = rawName;
     this.value = createValue(valueLoader, valueData);
   }
@@ -107,7 +106,7 @@ public abstract class JsVariableImpl implements JsVariable {
   /**
    * A non-abstract class that implements JsVariable.
    */
-  public static class Impl extends JsVariableImpl {
+  public static class Impl extends JsVariableBase {
     public Impl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
       super(valueLoader, valueData, rawName);
     }
@@ -118,10 +117,11 @@ public abstract class JsVariableImpl implements JsVariable {
   }
 
   /**
-   * An extension to {@JsVariableImpl} that additional provides {@link JsObjectProperty} interface.
+   * An extension to {@link JsVariableBase} that additional provides {@link JsObjectProperty}
+   * interface.
    * TODO: properly support getters, setters etc. once supported by protocol.
    */
-  static class Property extends JsVariableImpl implements JsObjectProperty {
+  static class Property extends JsVariableBase implements JsObjectProperty {
     public Property(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
       super(valueLoader, valueData, rawName);
     }

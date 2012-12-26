@@ -184,7 +184,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
       for (int i = 0; i < propertyMirrors.size(); i++) {
         // This name should be string. We are making it string as a fall-back strategy.
         String varNameStr = propertyRefs.get(i).getName().toString();
-        properties.add(new JsVariableImpl.Impl(valueLoader, propertyMirrors.get(i), varNameStr));
+        properties.add(new JsVariableBase.Impl(valueLoader, propertyMirrors.get(i), varNameStr));
       }
       return properties;
     }
@@ -230,7 +230,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
         throws MethodIsBlockingException {
       ObjectValueHandle scopeObject = loadScopeObject(valueLoader);
       ValueMirror mirror = valueLoader.addDataToMap(scopeObject.getSuper());
-      JsValue jsValue = JsVariableImpl.createValue(valueLoader, mirror);
+      JsValue jsValue = JsVariableBase.createValue(valueLoader, mirror);
       return new DeferredData(jsValue, cacheState);
     }
 

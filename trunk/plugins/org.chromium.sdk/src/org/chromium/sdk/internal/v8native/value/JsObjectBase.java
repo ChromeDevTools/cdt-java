@@ -57,12 +57,12 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   @Override
-  public Collection<JsVariableImpl.Property> getProperties() throws MethodIsBlockingException {
+  public Collection<JsVariableBase.Property> getProperties() throws MethodIsBlockingException {
     return getBasicPropertyData(true).getPropertyList();
   }
 
   @Override
-  public Collection<JsVariableImpl.Impl> getInternalProperties() throws MethodIsBlockingException {
+  public Collection<JsVariableBase.Impl> getInternalProperties() throws MethodIsBlockingException {
     return getBasicPropertyData(true).getIntenalPropertyList();
   }
 
@@ -170,9 +170,9 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
         SubpropertiesMirror subpropertiesMirror =
             getRemoteValueMapping().getOrLoadSubproperties(ref);
 
-        List<JsVariableImpl.Property> properties =
+        List<JsVariableBase.Property> properties =
             wrapProperties(subpropertiesMirror.getProperties(), PropertyMirrorParser.PROPERTY);
-        List<JsVariableImpl.Impl> internalProperties = wrapProperties(
+        List<JsVariableBase.Impl> internalProperties = wrapProperties(
             subpropertiesMirror.getInternalProperties(), PropertyMirrorParser.VARIABLE);
 
         BasicPropertyData data = new BasicPropertyData(currentCacheState, properties,
@@ -219,15 +219,15 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   protected static class BasicPropertyData {
     private final int cacheState;
 
-    private final List<JsVariableImpl.Property> propertyList;
-    private final List<JsVariableImpl.Impl> intenalPropertyList;
+    private final List<JsVariableBase.Property> propertyList;
+    private final List<JsVariableBase.Impl> intenalPropertyList;
     private final SubpropertiesMirror subpropertiesMirror;
 
-    private volatile Map<String, JsVariableImpl> propertyMap = null;
+    private volatile Map<String, JsVariableBase> propertyMap = null;
 
     BasicPropertyData(int cacheState,
-        List<JsVariableImpl.Property> propertyList,
-        List<JsVariableImpl.Impl> intenalPropertyList, SubpropertiesMirror subpropertiesMirror) {
+        List<JsVariableBase.Property> propertyList,
+        List<JsVariableBase.Impl> intenalPropertyList, SubpropertiesMirror subpropertiesMirror) {
       this.cacheState = cacheState;
       this.propertyList = propertyList;
       this.intenalPropertyList = intenalPropertyList;
@@ -238,11 +238,11 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       return cacheState;
     }
 
-    List<JsVariableImpl.Property> getPropertyList() {
+    List<JsVariableBase.Property> getPropertyList() {
       return propertyList;
     }
 
-    List<JsVariableImpl.Impl> getIntenalPropertyList() {
+    List<JsVariableBase.Impl> getIntenalPropertyList() {
       return intenalPropertyList;
     }
 
@@ -250,13 +250,13 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       return subpropertiesMirror;
     }
 
-    Map<String, JsVariableImpl> getPropertyMap() {
+    Map<String, JsVariableBase> getPropertyMap() {
       // Method is not synchronized -- it's OK if we initialize volatile propertyMap field
       // several times.
       if (propertyMap == null) {
-        Map<String, JsVariableImpl> map =
-            new HashMap<String, JsVariableImpl>(propertyList.size() * 2, 0.75f);
-        for (JsVariableImpl prop : propertyList) {
+        Map<String, JsVariableBase> map =
+            new HashMap<String, JsVariableBase>(propertyList.size() * 2, 0.75f);
+        for (JsVariableBase prop : propertyList) {
           map.put(prop.getName(), prop);
         }
         // Make make synchronized for such not thread-safe methods as entrySet.
@@ -287,22 +287,22 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   private static abstract class PropertyMirrorParser<V> {
     abstract V parse(ValueLoader valueLoader, ValueMirror valueData, Object rawName);
 
-    static final PropertyMirrorParser<JsVariableImpl.Impl> VARIABLE =
-        new PropertyMirrorParser<JsVariableImpl.Impl>() {
+    static final PropertyMirrorParser<JsVariableBase.Impl> VARIABLE =
+        new PropertyMirrorParser<JsVariableBase.Impl>() {
           @Override
-          JsVariableImpl.Impl parse(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-            return new JsVariableImpl.Impl(valueLoader, valueData, rawName);
+          JsVariableBase.Impl parse(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+            return new JsVariableBase.Impl(valueLoader, valueData, rawName);
           }
         };
 
     // This parser is expected to parse getter, setter and other JavaScript property properties.
     // TODO: implement getter, setter etc. once supported by protocol.
-    static final PropertyMirrorParser<JsVariableImpl.Property> PROPERTY =
-        new PropertyMirrorParser<JsVariableImpl.Property>() {
+    static final PropertyMirrorParser<JsVariableBase.Property> PROPERTY =
+        new PropertyMirrorParser<JsVariableBase.Property>() {
           @Override
-          JsVariableImpl.Property parse(ValueLoader valueLoader, ValueMirror valueData,
+          JsVariableBase.Property parse(ValueLoader valueLoader, ValueMirror valueData,
               Object rawName) {
-            return new JsVariableImpl.Property(valueLoader, valueData, rawName);
+            return new JsVariableBase.Property(valueLoader, valueData, rawName);
           }
         };
   }

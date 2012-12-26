@@ -23,7 +23,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.internal.v8native.value.JsValueBase;
-import org.chromium.sdk.internal.v8native.value.JsVariableImpl;
+import org.chromium.sdk.internal.v8native.value.JsVariableBase;
 import org.chromium.sdk.internal.v8native.value.ValueMirror;
 import org.chromium.sdk.util.RelaySyncCallback;
 import org.json.simple.JSONValue;
@@ -61,7 +61,7 @@ abstract class JsEvaluateContextImpl extends JsEvaluateContextBase {
             InternalContext internalContext = getInternalContext();
             ValueMirror mirror = internalContext.getValueLoader().addDataToMap(body);
             final JsValue value =
-                JsVariableImpl.createValue(internalContext.getValueLoader(), mirror);
+                JsVariableBase.createValue(internalContext.getValueLoader(), mirror);
             ResultOrException result = new ResultOrException() {
               @Override public JsValue getResult() {
                 return value;
