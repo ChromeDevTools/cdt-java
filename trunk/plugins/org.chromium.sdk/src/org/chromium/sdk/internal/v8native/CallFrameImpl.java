@@ -167,7 +167,7 @@ public class CallFrameImpl implements CallFrame {
           valueLoader.getOrLoadValueFromRefs(Collections.singletonList(ref)).get(0);
       // This name should be string. We are making it string as a fall-back strategy.
       String varNameStr = ref.getName().toString();
-      result = new JsVariableImpl(valueLoader, mirror, varNameStr);
+      result = new JsVariableImpl.Impl(valueLoader, mirror, varNameStr);
     }
     if (result != null) {
       receiverVariableRef.compareAndSet(null, result);

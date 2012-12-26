@@ -184,7 +184,7 @@ public abstract class JsScopeImpl<D> implements JsScope {
       for (int i = 0; i < propertyMirrors.size(); i++) {
         // This name should be string. We are making it string as a fall-back strategy.
         String varNameStr = propertyRefs.get(i).getName().toString();
-        properties.add(new JsVariableImpl(valueLoader, propertyMirrors.get(i), varNameStr));
+        properties.add(new JsVariableImpl.Impl(valueLoader, propertyMirrors.get(i), varNameStr));
       }
       return properties;
     }

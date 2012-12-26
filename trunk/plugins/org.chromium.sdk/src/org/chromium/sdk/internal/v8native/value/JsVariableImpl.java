@@ -5,14 +5,20 @@
 package org.chromium.sdk.internal.v8native.value;
 
 
+import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
+import org.chromium.sdk.JsFunction;
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.SyncCallback;
 
 /**
  * A generic implementation of the JsVariable interface.
+ * TODO(TBR-robot): rename into JsVariableBase
  */
-public class JsVariableImpl implements JsVariable {
+public abstract class JsVariableImpl implements JsVariable {
 
   /** The lazily constructed value of this variable. */
   private final JsValueBase value;
@@ -88,11 +94,6 @@ public class JsVariableImpl implements JsVariable {
   }
 
   @Override
-  public JsObjectProperty asObjectProperty() {
-    return null;
-  }
-
-  @Override
   public String toString() {
     return new StringBuilder()
         .append("[JsVariable: name=")
@@ -101,5 +102,52 @@ public class JsVariableImpl implements JsVariable {
         .append(getValue())
         .append(']')
         .toString();
+  }
+
+  /**
+   * A non-abstract class that implements JsVariable.
+   */
+  public static class Impl extends JsVariableImpl {
+    public Impl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(valueLoader, valueData, rawName);
+    }
+
+    @Override public JsObjectProperty asObjectProperty() {
+      return null;
+    }
+  }
+
+  /**
+   * An extension to {@JsVariableImpl} that additional provides {@link JsObjectProperty} interface.
+   * TODO: properly support getters, setters etc. once supported by protocol.
+   */
+  static class Property extends JsVariableImpl implements JsObjectProperty {
+    public Property(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(valueLoader, valueData, rawName);
+    }
+    @Override public JsObjectProperty asObjectProperty() {
+      return this;
+    }
+    @Override public boolean isWritable() {
+      return true;
+    }
+    @Override public JsValue getGetter() {
+      return null;
+    }
+    @Override public JsFunction getGetterAsFunction() {
+      return null;
+    }
+    @Override public JsValue getSetter() {
+      return null;
+    }
+    @Override public boolean isConfigurable() {
+      return true;
+    }
+    @Override public boolean isEnumerable() {
+      return true;
+    }
+    @Override public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
+      throw new RuntimeException();
+    }
   }
 }
