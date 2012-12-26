@@ -99,7 +99,7 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
     /**
      * An indexed sparse array of elements. Keys are indices, values are elements.
      */
-    private SortedMap<Long, JsVariableImpl> indexToElementMap = null;
+    private SortedMap<Long, JsVariableBase> indexToElementMap = null;
 
     ArrayPropertyData(BasicPropertyData basicPropertyData) {
       this.basicPropertyData = basicPropertyData;
@@ -109,11 +109,11 @@ class JsArrayImpl extends JsObjectBase<JsArrayImpl.ArrayPropertyData> implements
       return basicPropertyData;
     }
 
-    private synchronized SortedMap<Long, JsVariableImpl> ensureElementsMap() {
+    private synchronized SortedMap<Long, JsVariableBase> ensureElementsMap() {
       if (indexToElementMap == null) {
-        SortedMap<Long, JsVariableImpl> map = new TreeMap<Long, JsVariableImpl>();
+        SortedMap<Long, JsVariableBase> map = new TreeMap<Long, JsVariableBase>();
 
-        for (JsVariableImpl prop : basicPropertyData.getPropertyList()) {
+        for (JsVariableBase prop : basicPropertyData.getPropertyList()) {
           Object name = prop.getRawNameAsObject();
           Long key;
           if (name instanceof Long) {
