@@ -57,12 +57,12 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   }
 
   @Override
-  public Collection<JsVariableImpl> getProperties() throws MethodIsBlockingException {
+  public Collection<JsVariableImpl.Property> getProperties() throws MethodIsBlockingException {
     return getBasicPropertyData(true).getPropertyList();
   }
 
   @Override
-  public Collection<JsVariableImpl> getInternalProperties() throws MethodIsBlockingException {
+  public Collection<JsVariableImpl.Impl> getInternalProperties() throws MethodIsBlockingException {
     return getBasicPropertyData(true).getIntenalPropertyList();
   }
 
@@ -170,21 +170,22 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
         SubpropertiesMirror subpropertiesMirror =
             getRemoteValueMapping().getOrLoadSubproperties(ref);
 
-        List<JsVariableImpl> properties = wrapProperties(subpropertiesMirror.getProperties());
-        List<JsVariableImpl> internalProperties =
-            wrapProperties(subpropertiesMirror.getInternalProperties());
+        List<JsVariableImpl.Property> properties =
+            wrapProperties(subpropertiesMirror.getProperties(), PropertyMirrorParser.PROPERTY);
+        List<JsVariableImpl.Impl> internalProperties = wrapProperties(
+            subpropertiesMirror.getInternalProperties(), PropertyMirrorParser.VARIABLE);
 
         BasicPropertyData data = new BasicPropertyData(currentCacheState, properties,
             internalProperties, subpropertiesMirror);
         return wrapBasicData(data);
       }
 
-      private List<JsVariableImpl> wrapProperties(List<? extends PropertyReference> propertyRefs)
-          throws MethodIsBlockingException {
+      private <V> List<V> wrapProperties(List<? extends PropertyReference> propertyRefs,
+          PropertyMirrorParser<V> parser) throws MethodIsBlockingException {
         List<ValueMirror> subMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
-        List<JsVariableImpl> wrappedProperties = createPropertiesFromMirror(subMirrors,
-            propertyRefs);
+        List<V> wrappedProperties = createPropertiesFromMirror(subMirrors,
+            propertyRefs, parser);
         return Collections.unmodifiableList(wrappedProperties);
       }
     };
@@ -218,15 +219,15 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   protected static class BasicPropertyData {
     private final int cacheState;
 
-    private final List<JsVariableImpl> propertyList;
-    private final List<JsVariableImpl> intenalPropertyList;
+    private final List<JsVariableImpl.Property> propertyList;
+    private final List<JsVariableImpl.Impl> intenalPropertyList;
     private final SubpropertiesMirror subpropertiesMirror;
 
     private volatile Map<String, JsVariableImpl> propertyMap = null;
 
     BasicPropertyData(int cacheState,
-        List<JsVariableImpl> propertyList,
-        List<JsVariableImpl> intenalPropertyList, SubpropertiesMirror subpropertiesMirror) {
+        List<JsVariableImpl.Property> propertyList,
+        List<JsVariableImpl.Impl> intenalPropertyList, SubpropertiesMirror subpropertiesMirror) {
       this.cacheState = cacheState;
       this.propertyList = propertyList;
       this.intenalPropertyList = intenalPropertyList;
@@ -237,11 +238,11 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
       return cacheState;
     }
 
-    List<JsVariableImpl> getPropertyList() {
+    List<JsVariableImpl.Property> getPropertyList() {
       return propertyList;
     }
 
-    List<JsVariableImpl> getIntenalPropertyList() {
+    List<JsVariableImpl.Impl> getIntenalPropertyList() {
       return intenalPropertyList;
     }
 
@@ -265,17 +266,45 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
     }
   }
 
-  private List<JsVariableImpl> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
-      List<? extends PropertyReference> propertyRefs) {
+  private <V> List<V> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
+      List<? extends PropertyReference> propertyRefs, PropertyMirrorParser<V> parser) {
     // TODO(peter.rybin) Maybe assert that context is valid here
 
-    List<JsVariableImpl> result = new ArrayList<JsVariableImpl>(mirrorProperties.size());
+    List<V> result = new ArrayList<V>(mirrorProperties.size());
     for (int i = 0; i < mirrorProperties.size(); i++) {
       ValueMirror mirror = mirrorProperties.get(i);
       Object varName = propertyRefs.get(i).getName();
-      result.add(new JsVariableImpl(valueLoader, mirror, varName));
+      result.add(parser.parse(valueLoader, mirror, varName));
     }
     return result;
+  }
+
+  /**
+   * A helper class that helps parameterize some methods with either variable or property.
+   * Functionally it contains factory method, that creates either this or that.
+   * @param <V> variable or property type
+   */
+  private static abstract class PropertyMirrorParser<V> {
+    abstract V parse(ValueLoader valueLoader, ValueMirror valueData, Object rawName);
+
+    static final PropertyMirrorParser<JsVariableImpl.Impl> VARIABLE =
+        new PropertyMirrorParser<JsVariableImpl.Impl>() {
+          @Override
+          JsVariableImpl.Impl parse(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+            return new JsVariableImpl.Impl(valueLoader, valueData, rawName);
+          }
+        };
+
+    // This parser is expected to parse getter, setter and other JavaScript property properties.
+    // TODO: implement getter, setter etc. once supported by protocol.
+    static final PropertyMirrorParser<JsVariableImpl.Property> PROPERTY =
+        new PropertyMirrorParser<JsVariableImpl.Property>() {
+          @Override
+          JsVariableImpl.Property parse(ValueLoader valueLoader, ValueMirror valueData,
+              Object rawName) {
+            return new JsVariableImpl.Property(valueLoader, valueData, rawName);
+          }
+        };
   }
 
   public static class Impl extends JsObjectBase<BasicPropertyData> {
