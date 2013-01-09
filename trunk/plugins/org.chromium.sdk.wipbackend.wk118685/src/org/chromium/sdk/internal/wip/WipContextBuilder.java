@@ -480,34 +480,40 @@ class WipContextBuilder {
     if (type == null) {
       type = JsScope.Type.UNKNOWN;
     }
-    if (type == JsScope.Type.WITH) {
-      return new WithScopeImpl(scopeData, valueLoader);
+    if (type == JsScope.Type.WITH || type == JsScope.Type.GLOBAL) {
+      return new ObjectScopeImpl(scopeData, type, valueLoader);
     } else {
-      return new ScopeImpl(scopeData, type, valueLoader);
+      return new DeclarativeScopeImpl(scopeData, type, valueLoader);
     }
   }
 
-  private static class ScopeImpl implements JsScope {
+  private static class DeclarativeScopeImpl implements JsScope.Declarative {
     private final AsyncFutureRef<Getter<ScopeVariables>> propertiesRef =
         new AsyncFutureRef<Getter<ScopeVariables>>();
     private final String objectId;
     private final Type type;
     private final WipValueLoader valueLoader;
 
-    public ScopeImpl(ScopeValue scopeData, Type type, WipValueLoader valueLoader) {
+    public DeclarativeScopeImpl(ScopeValue scopeData, Type type, WipValueLoader valueLoader) {
       this.type = type;
       this.objectId = scopeData.object().objectId();
       this.valueLoader = valueLoader;
     }
 
-    @Override
-    public Type getType() {
+    @Override public Type getType() {
       return type;
     }
 
-    @Override
-    public WithScope asWithScope() {
+    @Override public Declarative asDeclarativeScope() {
+      return this;
+    }
+
+    @Override public ObjectBased asObjectBased() {
       return null;
+    }
+
+    @Override public <R> R accept(Visitor<R> visitor) {
+      return visitor.visitDeclarative(this);
     }
 
     @Override
@@ -582,35 +588,38 @@ class WipContextBuilder {
     }
   }
 
-  private static class WithScopeImpl implements JsScope.WithScope {
+  private static class ObjectScopeImpl implements JsScope.ObjectBased {
     private final JsValue jsValue;
+    private final JsScope.Type type;
 
-    WithScopeImpl(ScopeValue scopeData, WipValueLoader valueLoader) {
+    ObjectScopeImpl(ScopeValue scopeData, JsScope.Type type, WipValueLoader valueLoader) {
       jsValue = valueLoader.getValueBuilder().wrap(scopeData.object(), null);
+      this.type = type;
     }
 
-    @Override
-    public Type getType() {
-      return Type.WITH;
+    @Override public Type getType() {
+      return type;
     }
 
-    @Override
-    public WithScope asWithScope() {
+    @Override public Declarative asDeclarativeScope() {
+      return null;
+    }
+
+    @Override public ObjectBased asObjectBased() {
       return this;
     }
 
-    @Override
-    public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
-      JsObject asObject = jsValue.asObject();
-      if (asObject == null) {
-        return Collections.emptyList();
-      }
-      return new ArrayList<JsVariable>(asObject.getProperties());
+    @Override public <R> R accept(Visitor<R> visitor) {
+      return visitor.visitObject(this);
     }
 
     @Override
-    public JsValue getWithArgument() {
-      return jsValue;
+    public JsObject getScopeObject() throws MethodIsBlockingException {
+      JsObject jsObject = jsValue.asObject();
+      if (jsObject == null) {
+        throw new RuntimeException("Received scope object value is not an object");
+      }
+      return jsObject;
     }
   }
 

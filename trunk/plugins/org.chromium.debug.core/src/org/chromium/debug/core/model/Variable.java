@@ -9,14 +9,12 @@ import java.util.List;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallbackSemaphore;
-import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsScope;
-import org.chromium.sdk.JsScope.WithScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -106,17 +104,11 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
         value, null);
   }
 
-  public static Variable forScope(EvaluateContext evaluateContext, JsScope scope,
-      ExpressionTracker.Node expressionNode) {
+  public static Variable forObjectScope(EvaluateContext evaluateContext,
+      JsScope.ObjectBased scope, ExpressionTracker.Node expressionNode) {
     String scopeVariableName = "<" + scope.getType() + ">";
-    ValueBase scopeValue = new ValueBase.ScopeValue(evaluateContext, scope, expressionNode);
-    return forScopeImpl(evaluateContext, scopeVariableName, scopeValue);
-  }
-
-  public static Variable forWithScope(EvaluateContext evaluateContext,
-      WithScope withScope, ExpressionTracker.Node expressionNode) {
-    Value value = Value.create(evaluateContext, withScope.getWithArgument(), expressionNode);
-    return forScopeImpl(evaluateContext, "<with>", value);
+    Value value = Value.create(evaluateContext, scope.getScopeObject(), expressionNode);
+    return forScopeImpl(evaluateContext, scopeVariableName, value);
   }
 
   private static Variable forScopeImpl(EvaluateContext evaluateContext, String scopeName,

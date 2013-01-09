@@ -90,43 +90,6 @@ public abstract class ValueBase extends DebugElementImpl.WithEvaluate implements
   }
 
   /**
-   * Wraps {@link JsScope} as a Value. Scope's variables are inner variables of the Value.
-   */
-  static class ScopeValue extends ValueBase.ValueWithLazyVariables {
-    private final JsScope jsScope;
-    private final ExpressionTracker.Node expressionNode;
-
-    ScopeValue(EvaluateContext evaluateContext, JsScope jsScope,
-        ExpressionTracker.Node expressionNode) {
-      super(evaluateContext);
-      this.jsScope = jsScope;
-      this.expressionNode = expressionNode;
-    }
-    @Override public String getReferenceTypeName() throws DebugException {
-      return "#Scope";
-    }
-    @Override public String getValueString() {
-      return null;
-    }
-    @Override public boolean isAllocated() throws DebugException {
-      return true;
-    }
-    @Override public boolean hasVariables() throws DebugException {
-      return true;
-    }
-    @Override public Value asRealValue() {
-      return null;
-    }
-
-    @Override
-    protected IVariable[] calculateVariables() {
-      return StackFrame.wrapVariables(getEvaluateContext(), jsScope.getVariables(),
-          Collections.<String>emptySet(), Collections.<JsVariable>emptyList(), null,
-          expressionNode);
-    }
-  }
-
-  /**
    * Wraps string error message as a Value. It may have optional inner variable 'exception' that
    * wraps exception value.
    */
