@@ -9,8 +9,8 @@ import java.util.List;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
 /**
- * An object that represents a scope in JavaScript.
- * TODO: consider adding object getter for both with and global scopes.
+ * An object that represents a scope in JavaScript. It could be either declarative or object
+ * scope.
  */
 public interface JsScope {
 
@@ -30,24 +30,43 @@ public interface JsScope {
   Type getType();
 
   /**
+   * @return optional subtype when type is a native JavaScript scope and null otherwise
+   */
+  Declarative asDeclarativeScope();
+
+  /**
    * @return optional subtype when type is {@link Type#WITH} and null otherwise
    */
-  WithScope asWithScope();
+  ObjectBased asObjectBased();
+
+  <R> R accept(Visitor<R> visitor);
+
+  interface Visitor<R> {
+    R visitDeclarative(Declarative declarativeScope);
+    R visitObject(ObjectBased objectScope);
+  }
 
   /**
-   * @return the variables known in this scope, in lexicographical order
-   * @throws MethodIsBlockingException because it may need to load value from remote
+   * Mirrors <i>declarative</i> scope. It's all scopes except 'with' and 'global'. This scope
+   * has a well-defined set of variables.
    */
-  List<? extends JsVariable> getVariables() throws MethodIsBlockingException;
+  interface Declarative extends JsScope {
+    /**
+     * @return the variables known in this scope, in lexicographical order
+     * @throws MethodIsBlockingException because it may need to load value from remote
+     */
+    List<? extends JsVariable> getVariables() throws MethodIsBlockingException;
+  }
 
   /**
-   * Subtype that exposes the value of the 'with' statement expression (the value might be
-   * already converted by ToObject).
+   * Mirrors <i>object</i> scope, i.e. the one built above a JavaScript object. It's either
+   * 'with' or 'global' scope. Such scope contains all properties of the object, including
+   * indirect ones from the prototype chain.
    */
-  interface WithScope extends JsScope {
+  interface ObjectBased extends JsScope {
     /**
      * @throws MethodIsBlockingException because it may need to load value from remote
      */
-    JsValue getWithArgument() throws MethodIsBlockingException;
+    JsObject getScopeObject() throws MethodIsBlockingException;
   }
 }

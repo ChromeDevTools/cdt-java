@@ -17,6 +17,8 @@ import org.chromium.debug.core.sourcemap.SourcePositionMap;
 import org.chromium.debug.core.sourcemap.SourcePositionMap.TranslateDirection;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsScope.Declarative;
+import org.chromium.sdk.JsScope.ObjectBased;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RestartFrameExtension;
 import org.chromium.sdk.Script;
@@ -102,9 +104,36 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
     return vars.toArray(new IVariable[vars.size()]);
   }
 
-  static IVariable[] wrapScopes(EvaluateContext evaluateContext, List<? extends JsScope> jsScopes,
-      JsVariable receiverVariable, ExpressionTracker.ScopeAndVariableFactory trackerNodeFactory) {
-    List<Variable> vars = new ArrayList<Variable>();
+  static IVariable[] wrapScopes(final EvaluateContext evaluateContext,
+      List<? extends JsScope> jsScopes, JsVariable receiverVariable,
+      final ExpressionTracker.ScopeAndVariableFactory trackerNodeFactory) {
+    final List<Variable> vars = new ArrayList<Variable>();
+
+    JsScope.Visitor<Void> scopeVisitor = new JsScope.Visitor<Void>() {
+      @Override
+      public Void visitDeclarative(Declarative declarativeScope) {
+        int startPos = vars.size();
+        for (JsVariable var : declarativeScope.getVariables()) {
+          vars.add(Variable.forRealValue(evaluateContext, var, false,
+              trackerNodeFactory.createVariableNode(var,  false)));
+        }
+        // TODO: consider not sorting them once V8 native protocol returns locals ordered.
+        final boolean sortVariables = true;
+        if (sortVariables) {
+          int endPos = vars.size();
+          List<Variable> sublist = vars.subList(startPos, endPos);
+          Collections.sort(sublist, VARIABLE_COMPARATOR);
+        }
+        return null;
+      }
+
+      @Override
+      public Void visitObject(ObjectBased objectScope) {
+        vars.add(Variable.forObjectScope(evaluateContext, objectScope,
+            trackerNodeFactory.createScopeNode()));
+        return null;
+      }
+    };
 
     for (JsScope scope : jsScopes) {
       if (scope.getType() == JsScope.Type.GLOBAL) {
@@ -115,22 +144,8 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
               expressionTrackerNode));
           receiverVariable = null;
         }
-        ExpressionTracker.Node scopeValueNode = trackerNodeFactory.createScopeNode();
-        vars.add(Variable.forScope(evaluateContext, scope, scopeValueNode));
-      } else if (scope.asWithScope() != null) {
-        JsScope.WithScope withScope = scope.asWithScope();
-        vars.add(Variable.forWithScope(evaluateContext, withScope,
-            trackerNodeFactory.createScopeNode()));
-      } else {
-        int startPos = vars.size();
-        for (JsVariable var : scope.getVariables()) {
-          vars.add(Variable.forRealValue(evaluateContext, var, false,
-              trackerNodeFactory.createVariableNode(var,  false)));
-        }
-        int endPos = vars.size();
-        List<Variable> sublist = vars.subList(startPos, endPos);
-        Collections.sort(sublist, VARIABLE_COMPARATOR);
       }
+      scope.accept(scopeVisitor);
     }
     if (receiverVariable != null) {
       vars.add(Variable.forRealValue(evaluateContext, receiverVariable, false,
