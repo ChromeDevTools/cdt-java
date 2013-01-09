@@ -125,7 +125,12 @@ public class WipBackendImpl extends WipBackendBase {
 
   private String readHttpResponseContent(InetSocketAddress socketAddress, String resource,
       LoggerFactory loggerFactory) throws IOException {
-    ConnectionLogger browserConnectionLogger = loggerFactory.newBrowserConnectionLogger();
+    ConnectionLogger browserConnectionLogger;
+    if (loggerFactory == null) {
+      browserConnectionLogger = null;
+    } else {
+      browserConnectionLogger = loggerFactory.newBrowserConnectionLogger();
+    }
     final SocketWrapper socketWrapper = new SocketWrapper(
         socketAddress, DEFAULT_CONNECTION_TIMEOUT_MS, browserConnectionLogger,
         HandshakeUtil.ASCII_CHARSET);
