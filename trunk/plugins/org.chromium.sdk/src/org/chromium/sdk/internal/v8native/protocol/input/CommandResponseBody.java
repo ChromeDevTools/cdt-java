@@ -53,4 +53,7 @@ public interface CommandResponseBody {
 
   @JsonSubtypeCasting
   FlagsBody asFlagsBody() throws JsonProtocolParseException;
+
+  @JsonSubtypeCasting
+  SetVariableValueBody asSetVariableValueBody() throws JsonProtocolParseException;
 }

@@ -56,6 +56,7 @@ public class V8DynamicParser {
           ScriptCollectedBody.class,
           FlagsBody.class,
           FlagsBody.FlagInfo.class,
+          SetVariableValueBody.class,
 
           SomeHandle.class,
           ScriptHandle.class,

@@ -5,6 +5,7 @@
 package org.chromium.sdk.internal.v8native;
 
 import org.chromium.sdk.DebugContext;
+import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
@@ -61,6 +62,8 @@ public interface InternalContext extends V8CommandSender<DebuggerMessage,
     InternalContext getInternalContext();
 
     ContextBuilder.ExpectingBacktraceStep createReloadBacktraceStep();
+
+    @Override JsEvaluateContextImpl getGlobalEvaluateContext();
   }
 
   /**

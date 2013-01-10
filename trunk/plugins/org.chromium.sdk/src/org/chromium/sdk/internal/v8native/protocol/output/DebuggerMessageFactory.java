@@ -63,34 +63,6 @@ public class DebuggerMessageFactory {
     return new SuspendMessage();
   }
 
-  /**
-   * A generic 'scope' message parameter that refers to the scope host.
-   * It is either a stack frame or a function.
-   */
-  public static abstract class ScopeHostParameter {
-    abstract DebuggerMessage create(int scopeNumber);
-
-    public static ScopeHostParameter forFrame(final int frameNumber) {
-      return new ScopeHostParameter() {
-        @Override DebuggerMessage create(int scopeNumber) {
-          return new ScopeMessage(scopeNumber, frameNumber, null);
-        }
-      };
-    }
-
-    public static ScopeHostParameter forFunction(final long functionHandle) {
-      return new ScopeHostParameter() {
-        @Override DebuggerMessage create(int scopeNumber) {
-          return new ScopeMessage(scopeNumber, null, functionHandle);
-        }
-      };
-    }
-  }
-
-  public static DebuggerMessage scope(int scopeNumber, ScopeHostParameter hostParameter) {
-    return hostParameter.create(scopeNumber);
-  }
-
   public static ContextlessDebuggerMessage version() {
     return new VersionMessage();
   }

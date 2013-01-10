@@ -28,6 +28,7 @@ public enum DebuggerCommand {
   SUSPEND("suspend"),
   VERSION("version"),
   FLAGS("flags"),
+  SETVARIABLEVALUE("setVariableValue"),
 
   // Events
   BREAK("break"),

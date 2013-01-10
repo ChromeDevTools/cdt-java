@@ -293,4 +293,20 @@ public class DebugSession {
       throw new InvalidContextException(e);
     }
   }
+
+  public RelayOk maybeRethrowContextException(ContextDismissedCheckedException e,
+      SyncCallback syncCallback) {
+    // TODO(peter.rybin): make some kind of option out of this
+    final boolean strictPolicy = true;
+    if (strictPolicy) {
+      throw new InvalidContextException(e);
+    } else {
+      if (syncCallback != null) {
+        syncCallback.callbackDone(new InvalidContextException(e));
+      }
+      return new RelayOk() {
+        // It's ok, we called SyncCallback alright.
+      };
+    }
+  }
 }
