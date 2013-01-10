@@ -5,7 +5,9 @@
 package org.chromium.debug.core.model;
 
 import java.util.AbstractList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallbackSemaphore;
@@ -21,6 +23,7 @@ import org.chromium.sdk.RelayOk;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
@@ -180,6 +183,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   public static class Real extends Variable {
     private final JsVariable jsVariable;
     private final ExpressionTracker.Node expressionTrackerNode;
+    private volatile ValueBase value;
 
     /**
      * Specifies whether this variable is internal property (__proto__ etc).
@@ -189,14 +193,18 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
 
     Real(EvaluateContext evaluateContext, JsVariable jsVariable, ValueBase value,
         boolean isInternalProperty, ExpressionTracker.Node expressionTrackerNode) {
-      super(evaluateContext, value);
+      super(evaluateContext);
       this.jsVariable = jsVariable;
+      this.value = value;
       this.isInternalProperty = isInternalProperty;
       this.expressionTrackerNode = expressionTrackerNode;
     }
 
     @Override public String getName() {
       return jsVariable.getName();
+    }
+    @Override public ValueBase getValue() {
+      return value;
     }
     @Override public String getReferenceTypeName() {
       return JAVASCRIPT_REFERENCE_TYPE_NAME;
@@ -207,6 +215,135 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     public JsVariable getJsVariable() {
       return jsVariable;
     }
+
+    @Override
+    public boolean verifyValue(IValue value) throws DebugException {
+      ValueBase valueBase = ValueBase.cast(value);
+      if (valueBase == null) {
+        return false;
+      }
+      Value realValue = valueBase.asRealValue();
+      if (realValue == null) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public boolean verifyValue(String expression) throws DebugException {
+      ResultOrException resultOrException = evaluateExpressionString(expression);
+      return resultOrException.accept(new ResultOrException.Visitor<Boolean>() {
+        @Override public Boolean visitResult(JsValue value) {
+          return true;
+        }
+        @Override public Boolean visitException(JsValue exception) {
+          return false;
+        }
+      });
+    }
+
+    @Override
+    public void setValue(IValue value) throws DebugException {
+      ValueBase valueBase = ValueBase.cast(value);
+      if (valueBase == null) {
+        throw new IllegalArgumentException("Unrecognized type of value");
+      }
+      Value realValue = valueBase.asRealValue();
+      if (realValue == null) {
+        throw new IllegalArgumentException("Not a real value");
+      }
+      JsValue jsValue = realValue.getJsValue();
+      setValue(jsValue);
+    }
+
+    public void setValue(String expression) throws DebugException {
+      // TODO: support setters explicitly.
+      ResultOrException newValueOrException = evaluateExpressionString(expression);
+      if (newValueOrException.getResult() == null) {
+        String message = getExceptionMessage(newValueOrException.getException(),
+            getEvaluateContext().getJsEvaluateContext());
+        Status status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+            DebugException.TARGET_REQUEST_FAILED,
+            "JavaScript compile exception: " + message, null);
+        throw new DebugException(status);
+      } else {
+        setValue(newValueOrException.getResult());
+      }
+    }
+
+    private ResultOrException evaluateExpressionString(String expression) throws DebugException {
+      class CallbackImpl implements JsEvaluateContext.EvaluateCallback {
+        ResultOrException resultOrException = null;
+        Exception cause = null;
+        @Override
+        public void success(ResultOrException resultOrException) {
+          this.resultOrException = resultOrException;
+        }
+
+        @Override public void failure(Exception cause) {
+          this.cause = cause;
+        }
+      }
+      CallbackImpl callback = new CallbackImpl();
+      JsEvaluateContext evaluateContext = getEvaluateContext().getJsEvaluateContext();
+      evaluateContext.evaluateSync(expression, null, callback);
+
+      if (callback.resultOrException != null) {
+        return callback.resultOrException;
+      }
+
+      Status status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+          DebugException.TARGET_REQUEST_FAILED, "Failed to execute remote command", callback.cause);
+      throw new DebugException(status);
+    }
+
+    private void setValue(JsValue newValue) throws DebugException {
+      class CallbackImpl implements JsVariable.SetValueCallback {
+        boolean successful = false;
+        JsValue exception = null;
+        Exception cause = null;
+        @Override public void success() {
+          successful = true;
+        }
+        @Override public void exceptionThrown(JsValue exception) {
+          this.exception = exception;
+        }
+        @Override public void failure(Exception cause) {
+          this.cause = cause;
+        }
+      }
+
+      CallbackImpl callback = new CallbackImpl();
+      CallbackSemaphore syncCallback = new CallbackSemaphore();
+
+      RelayOk relayOk = jsVariable.setValue(newValue, callback, syncCallback);
+      syncCallback.acquireDefault(relayOk);
+
+      if (!callback.successful) {
+        Status status;
+        if (callback.exception == null) {
+          status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+              DebugException.TARGET_REQUEST_FAILED, "Failed to execute remote command",
+              callback.cause);
+        } else {
+          String message = getExceptionMessage(callback.exception,
+              getEvaluateContext().getJsEvaluateContext());
+          status = new Status(IStatus.ERROR, ChromiumDebugPlugin.PLUGIN_ID,
+              DebugException.TARGET_REQUEST_FAILED, "JavaScript exception: " + message, null);
+        }
+        throw new DebugException(status);
+      }
+
+      value = Value.create(getEvaluateContext(), jsVariable.getValue(), expressionTrackerNode);
+
+      DebugEvent event = new DebugEvent(this, DebugEvent.CHANGE, DebugEvent.CONTENT);
+      DebugTargetImpl.fireDebugEvent(event);
+    }
+
+    public boolean supportsValueModification() {
+      return jsVariable.isMutable();
+    }
+
     @Override public String createWatchExpression() {
       return expressionTrackerNode.calculateQualifiedName();
     }
@@ -222,17 +359,22 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     private final String name;
     private final String referenceTypeName;
     private final String watchExpression;
+    private final ValueBase value;
 
     Virtual(EvaluateContext evaluateContext, String name, String referenceTypeName,
         ValueBase value, String watchExpression) {
-      super(evaluateContext, value);
+      super(evaluateContext);
       this.name = name;
+      this.value = value;
       this.referenceTypeName = referenceTypeName;
       this.watchExpression = watchExpression;
     }
 
     @Override public String getName() {
       return name;
+    }
+    @Override public ValueBase getValue() {
+      return value;
     }
     @Override public String getReferenceTypeName() {
       return referenceTypeName;
@@ -243,47 +385,36 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     @Override protected String createWatchExpression() {
       return watchExpression;
     }
+
+    @Override public boolean supportsValueModification() {
+      return false;
+    }
+    @Override public void setValue(String expression) throws DebugException {
+      throw new UnsupportedOperationException();
+    }
+    @Override public void setValue(IValue value) throws DebugException {
+      throw new UnsupportedOperationException();
+    }
+    @Override public boolean verifyValue(String expression) throws DebugException {
+      throw new UnsupportedOperationException();
+    }
+    @Override public boolean verifyValue(IValue value) throws DebugException {
+      throw new UnsupportedOperationException();
+    }
   }
 
-  private final ValueBase value;
-
-  protected Variable(EvaluateContext evaluateContext, ValueBase value) {
+  protected Variable(EvaluateContext evaluateContext) {
     super(evaluateContext);
-    this.value = value;
   }
 
   @Override public abstract String getName();
 
   @Override public abstract String getReferenceTypeName();
 
-  @Override public ValueBase getValue() {
-    return value;
-  }
+  @Override public abstract ValueBase getValue();
 
   @Override public boolean hasValueChanged() throws DebugException {
     return false;
-  }
-
-  public void setValue(String expression) throws DebugException {
-  }
-
-  public void setValue(IValue value) throws DebugException {
-  }
-
-  public boolean supportsValueModification() {
-    return false; // TODO(apavlov): fix once V8 supports it
-  }
-
-  public boolean verifyValue(IValue value) throws DebugException {
-    return verifyValue(value.getValueString());
-  }
-
-  public boolean verifyValue(String expression) {
-    return true;
-  }
-
-  public boolean verifyValue(JsValue value) {
-    return verifyValue(value.getValueString());
   }
 
   /**
@@ -319,4 +450,32 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
    * A type of JavaScript reference. All JavaScript references have no type.
    */
   private static final String JAVASCRIPT_REFERENCE_TYPE_NAME = "";
+
+  private static String getExceptionMessage(JsValue exception, JsEvaluateContext evaluateContext) {
+    String expression = "(e instanceof Error) ? e.message : String(e)";
+    Map<String, JsValue> context = Collections.singletonMap("e", exception);
+    class CallbackImpl implements JsEvaluateContext.EvaluateCallback {
+      String result = "<exception message not available>";
+      @Override
+      public void success(ResultOrException resultOrException) {
+        String message = resultOrException.accept(new ResultOrException.Visitor<String>() {
+          @Override public String visitResult(JsValue value) {
+            return value.getValueString();
+          }
+          @Override public String visitException(JsValue exception) {
+            return null;
+          }
+        });
+        if (message != null) {
+          result = message;
+        }
+      }
+
+      @Override public void failure(Exception cause) {
+      }
+    }
+    CallbackImpl callback = new CallbackImpl();
+    evaluateContext.evaluateSync(expression, context, callback);
+    return callback.result;
+  }
 }

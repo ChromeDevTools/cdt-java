@@ -17,7 +17,6 @@ import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.JsVariable;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.debug.ui.IValueDetailListener;
