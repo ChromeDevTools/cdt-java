@@ -303,7 +303,7 @@ public class ContextBuilder {
       }
 
       @Override
-      public JsEvaluateContext getGlobalEvaluateContext() {
+      public JsEvaluateContextImpl getGlobalEvaluateContext() {
         return evaluateContext;
       }
 
@@ -396,7 +396,7 @@ public class ContextBuilder {
         };
       }
 
-      private final JsEvaluateContext evaluateContext = new JsEvaluateContextImpl() {
+      private final JsEvaluateContextImpl evaluateContext = new JsEvaluateContextImpl() {
         @Override
         protected Integer getFrameIdentifier() {
           return null;

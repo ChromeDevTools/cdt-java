@@ -7,32 +7,35 @@ package org.chromium.sdk.internal.v8native.value;
 
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsFunction;
+import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsValue.Type;
-import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.JsEvaluateContextImpl;
 
 /**
  * A generic implementation of the JsVariable interface.
  */
 public abstract class JsVariableBase implements JsVariable {
 
-  /** The lazily constructed value of this variable. */
-  private final JsValueBase value;
+  private final Host host;
+
+  /** The value of this variable. */
+  private volatile JsValueBase value;
 
   /** Variable name. */
   private final Object rawName;
 
   /**
-   * Constructs a variable contained in the given context with the given
-   * value mirror.
-   *
+   * Constructs a variable contained in the given context with the given value mirror.
    * @param valueLoader that owns this variable
    * @param valueData for this variable
    */
-  public JsVariableBase(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+  public JsVariableBase(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+    this.host = host;
     this.rawName = rawName;
     this.value = createValue(valueLoader, valueData);
   }
@@ -75,7 +78,7 @@ public abstract class JsVariableBase implements JsVariable {
 
   @Override
   public boolean isMutable() {
-    return false; // TODO(apavlov): fix once V8 supports it
+    return host != null && host.isMutable();
   }
 
   @Override
@@ -85,10 +88,42 @@ public abstract class JsVariableBase implements JsVariable {
   }
 
   @Override
-  public synchronized void setValue(String newValue, SetValueCallback callback) {
-    // TODO(apavlov): currently V8 does not support it
-    if (!isMutable()) {
-      throw new UnsupportedOperationException();
+  public RelayOk setValue(JsValue newValue, final SetValueCallback userCallback,
+      SyncCallback syncCallback) throws UnsupportedOperationException {
+    JsValueBase jsValueBase = castValueArgument(newValue);
+    String variableName = rawName.toString();
+    JsEvaluateContextImpl.CallbackInternal hostCallback =
+        new JsEvaluateContextImpl.CallbackInternal() {
+      @Override
+      public void success(JsValueBase newValue) {
+        value = newValue;
+        if (userCallback != null) {
+          userCallback.success();
+        }
+      }
+
+      @Override
+      public void exception(JsValueBase exception) {
+        if (userCallback != null) {
+          userCallback.exceptionThrown(exception);
+        }
+      }
+
+      @Override
+      public void failure(Exception cause) {
+        if (userCallback != null) {
+          userCallback.failure(cause);
+        }
+      }
+    };
+    return host.setValue(variableName, jsValueBase, hostCallback, syncCallback);
+  }
+
+  private static JsValueBase castValueArgument(JsValue value) {
+    try {
+      return (JsValueBase) value;
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("Incorrect value argument", e);
     }
   }
 
@@ -104,11 +139,31 @@ public abstract class JsVariableBase implements JsVariable {
   }
 
   /**
+   * A host of variable. It's responsible for changing variable value.
+   */
+  static abstract class Host {
+    private final InternalContext internalContext;
+
+    protected Host(InternalContext internalContext) {
+      this.internalContext = internalContext;
+    }
+
+    InternalContext getInternalContext() {
+      return internalContext;
+    }
+
+    abstract boolean isMutable();
+
+    abstract RelayOk setValue(String variableName, JsValueBase jsValueBase,
+        JsEvaluateContextImpl.CallbackInternal callback, SyncCallback syncCallback);
+  }
+
+  /**
    * A non-abstract class that implements JsVariable.
    */
   public static class Impl extends JsVariableBase {
-    public Impl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-      super(valueLoader, valueData, rawName);
+    public Impl(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(host, valueLoader, valueData, rawName);
     }
 
     @Override public JsObjectProperty asObjectProperty() {
@@ -122,8 +177,8 @@ public abstract class JsVariableBase implements JsVariable {
    * TODO: properly support getters, setters etc. once supported by protocol.
    */
   static class Property extends JsVariableBase implements JsObjectProperty {
-    public Property(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-      super(valueLoader, valueData, rawName);
+    public Property(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(host, valueLoader, valueData, rawName);
     }
     @Override public JsObjectProperty asObjectProperty() {
       return this;

@@ -15,12 +15,23 @@ import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
+import org.chromium.sdk.RelayOk;
+import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.CallFrameImpl;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.v8native.JsEvaluateContextImpl;
+import org.chromium.sdk.internal.v8native.V8CommandCallbackBase;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeRef;
+import org.chromium.sdk.internal.v8native.protocol.input.SetVariableValueBody;
+import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ObjectValueHandle;
-import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
+import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.output.ScopeMessage;
+import org.chromium.sdk.internal.v8native.protocol.output.SetVariableValueMessage;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.AsyncFuture.SyncOperation;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -39,8 +50,8 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
         @Override InternalContext getInternalContext() {
           return callFrameImpl.getInternalContext();
         }
-        @Override DebuggerMessageFactory.ScopeHostParameter getFactoryParameter() {
-          return DebuggerMessageFactory.ScopeHostParameter.forFrame(callFrameImpl.getIdentifier());
+        @Override ScopeMessage.Host getProtocolParameter() {
+          return ScopeMessage.Host.createFrame(callFrameImpl.getIdentifier());
         }
       };
     }
@@ -50,15 +61,15 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
         @Override InternalContext getInternalContext() {
           return jsFunctionImpl.getInternalContext();
         }
-        @Override DebuggerMessageFactory.ScopeHostParameter getFactoryParameter() {
-          return DebuggerMessageFactory.ScopeHostParameter.forFunction(jsFunctionImpl.getRef());
+        @Override ScopeMessage.Host getProtocolParameter() {
+          return ScopeMessage.Host.createFunction(jsFunctionImpl.getRef());
         }
       };
     }
 
     abstract InternalContext getInternalContext();
 
-    abstract DebuggerMessageFactory.ScopeHostParameter getFactoryParameter();
+    abstract ScopeMessage.Host getProtocolParameter();
   }
 
   private final Host host;
@@ -85,6 +96,14 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
   @Override
   public Type getType() {
     return type;
+  }
+
+  protected int getScopeIndex() {
+    return scopeIndex;
+  }
+
+  protected Host getScopeHost() {
+    return host;
   }
 
   protected D getDeferredData() throws MethodIsBlockingException {
@@ -115,7 +134,8 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
 
   protected ObjectValueHandle loadScopeObject(ValueLoaderImpl valueLoader)
       throws MethodIsBlockingException {
-    return valueLoader.loadScopeFields(scopeIndex, host.getFactoryParameter());
+    ScopeMessage.Ref ref = new ScopeMessage.Ref(scopeIndex, host.getProtocolParameter());
+    return valueLoader.loadScopeFields(ref);
   }
 
   public static Type convertType(int typeCode) {
@@ -170,11 +190,17 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
 
       List<ValueMirror> propertyMirrors = valueLoader.getOrLoadValueFromRefs(propertyRefs);
 
+      ScopeMessage.Ref scopeRef =
+          new ScopeMessage.Ref(getScopeIndex(), getScopeHost().getProtocolParameter());
+      JsVariableBase.Host variableHost =
+          new VariableHost(getScopeHost().getInternalContext(), scopeRef);
+
       List<JsVariable> properties = new ArrayList<JsVariable>(propertyMirrors.size());
       for (int i = 0; i < propertyMirrors.size(); i++) {
         // This name should be string. We are making it string as a fall-back strategy.
         String varNameStr = propertyRefs.get(i).getName().toString();
-        properties.add(new JsVariableBase.Impl(valueLoader, propertyMirrors.get(i), varNameStr));
+        properties.add(new JsVariableBase.Impl(variableHost, valueLoader, propertyMirrors.get(i),
+            varNameStr));
       }
       return properties;
     }
@@ -189,6 +215,56 @@ public abstract class JsScopeImpl<D extends JsScopeImpl.DataBase> implements JsS
       }
       @Override boolean isCacheObsolete(int newCacheState) {
         return cacheState != newCacheState;
+      }
+    }
+
+    static class VariableHost extends JsVariableBase.Host {
+      private final ScopeMessage.Ref scopeRef;
+
+      VariableHost(InternalContext internalContext, ScopeMessage.Ref scopeRef) {
+        super(internalContext);
+        this.scopeRef = scopeRef;
+      }
+
+      @Override boolean isMutable() {
+        return true;
+      }
+
+      @Override
+      RelayOk setValue(String variableName, JsValueBase jsValueBase,
+          final JsEvaluateContextImpl.CallbackInternal callback, SyncCallback syncCallback) {
+        // TODO: check for host.
+        SetVariableValueMessage message = new SetVariableValueMessage(scopeRef, variableName,
+            jsValueBase.getJsonParam(getInternalContext()));
+
+        V8CommandCallbackBase innerCallback = new V8CommandCallbackBase() {
+          @Override
+          public void success(SuccessCommandResponse successResponse) {
+            SetVariableValueBody body;
+            try {
+              body = successResponse.body().asSetVariableValueBody();
+            } catch (JsonProtocolParseException e) {
+              throw new RuntimeException(e);
+            }
+            ValueHandle newValueHandle = body.newValue();
+            ValueLoaderImpl valueLoader = getInternalContext().getValueLoader();
+            ValueMirror mirror = valueLoader.addDataToMap(newValueHandle);
+            JsValueBase value = JsVariableBase.createValue(valueLoader, mirror);
+            callback.success(value);
+          }
+
+          @Override
+          public void failure(String message, FailedCommandResponse.ErrorDetails errorDetails) {
+            callback.failure(new Exception(message));
+          }
+        };
+        try {
+          return getInternalContext().sendV8CommandAsync(message, true,
+              innerCallback, syncCallback);
+        } catch (ContextDismissedCheckedException e) {
+          return getInternalContext().getDebugSession().maybeRethrowContextException(e,
+              syncCallback);
+        }
       }
     }
   }

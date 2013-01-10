@@ -4,6 +4,8 @@
 
 package org.chromium.sdk.internal.v8native.protocol.output;
 
+import java.util.Map;
+
 import org.chromium.sdk.internal.v8native.DebuggerCommand;
 
 /**
@@ -11,16 +13,42 @@ import org.chromium.sdk.internal.v8native.DebuggerCommand;
  */
 public class ScopeMessage extends DebuggerMessage {
 
-  public ScopeMessage(int scopeNumber, Integer frameNumber, Long functionHandle) {
+  public ScopeMessage(Ref scopeRef) {
     super(DebuggerCommand.SCOPE.value);
-    putArgument("number", scopeNumber);
-    if (frameNumber != null) {
-      putArgument("frameNumber", frameNumber);
-    }
-    if (functionHandle != null) {
-      putArgument("functionHandle", functionHandle);
-    }
+    scopeRef.fillJson(getArguments());
     putArgument("inlineRefs", true);
   }
 
+  public static class Ref {
+    private final int scopeNumber;
+    private final Host host;
+
+    public Ref(int scopeNumber, Host host) {
+      this.scopeNumber = scopeNumber;
+      this.host = host;
+    }
+    void fillJson(Map<? super String, ? super Object> object) {
+      object.put("number", scopeNumber);
+      host.fillJson(object);
+    }
+  }
+
+  public static abstract class Host {
+    public static Host createFrame(final int frameNumber) {
+      return new Host() {
+        @Override void fillJson(Map<? super String, ? super Object> object) {
+          object.put("frameNumber", frameNumber);
+        }
+      };
+    }
+    public static Host createFunction(final long functionHandle) {
+      return new Host() {
+        @Override void fillJson(Map<? super String, ? super Object> object) {
+          object.put("functionHandle", functionHandle);
+        }
+      };
+    }
+
+    abstract void fillJson(Map<? super String, ? super Object> object);
+  }
 }

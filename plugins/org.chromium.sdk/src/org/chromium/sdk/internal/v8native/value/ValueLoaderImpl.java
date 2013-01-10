@@ -24,10 +24,10 @@ import org.chromium.sdk.internal.JsonUtil;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.DebugSession;
 import org.chromium.sdk.internal.v8native.InternalContext;
+import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.V8BlockingCallback;
 import org.chromium.sdk.internal.v8native.V8CommandCallbackBase;
 import org.chromium.sdk.internal.v8native.V8Helper;
-import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
 import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse;
 import org.chromium.sdk.internal.v8native.protocol.input.ScopeBody;
 import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
@@ -40,6 +40,7 @@ import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.DebuggerMessageFactory;
 import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.internal.v8native.protocol.output.LookupMessage;
+import org.chromium.sdk.internal.v8native.protocol.output.ScopeMessage;
 import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.MethodIsBlockingException;
 import org.json.simple.JSONObject;
@@ -183,9 +184,9 @@ public class ValueLoaderImpl extends ValueLoader {
   /**
    * Looks up data for scope on remote in form of scope object handle.
    */
-  public ObjectValueHandle loadScopeFields(int scopeNumber,
-      DebuggerMessageFactory.ScopeHostParameter host) throws MethodIsBlockingException {
-    DebuggerMessage message = DebuggerMessageFactory.scope(scopeNumber, host);
+  public ObjectValueHandle loadScopeFields(ScopeMessage.Ref scopeRef)
+      throws MethodIsBlockingException {
+    DebuggerMessage message = new ScopeMessage(scopeRef);
 
     V8BlockingCallback<ObjectValueHandle> callback = new V8BlockingCallback<ObjectValueHandle>() {
       @Override

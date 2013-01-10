@@ -8,6 +8,7 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.chromium.sdk.JsValue;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
 import org.chromium.sdk.Version;
@@ -327,6 +328,14 @@ public class V8ProtocolUtil {
       return null;
     }
     return Version.parseString(versionString);
+  }
+
+  // This method extracts string message from exception value. The accurate way is to get
+  // message property, but since we currently don't have true exception values (we have only
+  // surrogate strings), the current approach is ok. Later this method may become
+  // asynchronous.
+  public static String getExceptionString(JsValue exception) {
+    return exception.getValueString();
   }
 
   private static String getNameOrInferred(JSONObject obj, V8Protocol nameProperty) {

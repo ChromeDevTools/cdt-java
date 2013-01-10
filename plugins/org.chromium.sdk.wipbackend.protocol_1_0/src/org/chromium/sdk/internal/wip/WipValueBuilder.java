@@ -668,8 +668,8 @@ class WipValueBuilder {
     }
 
     @Override
-    public void setValue(String newValue, SetValueCallback callback)
-        throws UnsupportedOperationException {
+    public RelayOk setValue(JsValue newValue, SetValueCallback callback,
+        SyncCallback syncCallback) throws UnsupportedOperationException {
       throw new UnsupportedOperationException();
     }
 
