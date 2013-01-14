@@ -385,7 +385,11 @@ public class ConnectedTargetData {
 
     @Override
     EvaluateContext getEvaluateContext() {
-      return getThread().getEvaluateContext();
+      JavascriptThread thread = getThread();
+      if (thread == null) {
+        return null;
+      }
+      return thread.getEvaluateContext();
     }
 
     @Override
