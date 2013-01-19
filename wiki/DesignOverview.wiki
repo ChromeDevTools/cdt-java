@@ -5,6 +5,6 @@
 == Components of the system ==
 The schema depicts how Debugger/SDK communicate with Chrome or standalone V8-based application. Note that the lower part of the picture describes design that is being [WipBackendDevelopment developed now].
 
-<img src="http://docs.google.com/drawings/d/1E12s1IBmH1MA5fLMQiAPiC9PrdcjRTFLik-bEi28OSE/pub?w=955&amp;h=769">
+<img src="https://docs.google.com/drawings/d/1E12s1IBmH1MA5fLMQiAPiC9PrdcjRTFLik-bEi28OSE/pub?w=955&amp;h=769">
 
 ([https://docs.google.com/drawings/edit?id=1E12s1IBmH1MA5fLMQiAPiC9PrdcjRTFLik-bEi28OSE picture source])
