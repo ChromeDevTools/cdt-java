@@ -9,6 +9,7 @@ import java.util.List;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditProtocolParserAccess;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
@@ -62,7 +63,9 @@ class WipScriptImpl extends ScriptBase<String> {
 
       @Override
       public void failure(Exception exception) {
-        updateCallback.failure(exception.getMessage());
+        // TODO: provide failure details when supported by protocol.
+        UpdatableScript.Failure failure = UpdatableScript.Failure.UNSPECIFIED;
+        updateCallback.failure(exception.getMessage(), failure);
       }
     };
 

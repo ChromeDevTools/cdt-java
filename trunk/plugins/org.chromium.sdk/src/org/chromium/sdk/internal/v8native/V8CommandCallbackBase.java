@@ -15,6 +15,11 @@ import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
 public abstract class V8CommandCallbackBase implements V8CommandProcessor.V8HandlerCallback {
   public abstract void success(SuccessCommandResponse successResponse);
 
+  @Override
+  final public void failure(String message) {
+    failure(message, null);
+  }
+
   public abstract void failure(String message, FailedCommandResponse.ErrorDetails errorDetails);
 
   @Override
@@ -26,10 +31,5 @@ public abstract class V8CommandCallbackBase implements V8CommandProcessor.V8Hand
     } else {
       success(successResponse);
     }
-  }
-
-  @Override
-  final public void failure(String message) {
-    failure(message, null);
   }
 }

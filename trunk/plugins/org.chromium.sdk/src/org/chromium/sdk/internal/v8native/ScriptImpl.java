@@ -8,6 +8,8 @@ import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.TextStreamPosition;
+import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.liveeditprotocol.LiveEditResult;
 import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
@@ -102,7 +104,61 @@ public class ScriptImpl extends ScriptBase<Long> {
 
       @Override
       public void failure(String message, ErrorDetails errorDetails) {
-        callback.failure(message);
+        UpdatableScript.Failure failure;
+        if (errorDetails == null) {
+          failure = UpdatableScript.Failure.UNSPECIFIED;
+        } else if (errorDetails.asChangeLiveCompileError() != null) {
+          final ChangeLiveBody.CompileErrorDetails compileErrorDetails =
+              errorDetails.asChangeLiveCompileError();
+          failure = new UpdatableScript.CompileErrorFailure() {
+            @Override public <R> R accept(Visitor<R> visitor) {
+              return visitor.visitCompileError(this);
+            }
+
+            @Override
+            public TextStreamPosition getStartPosition() {
+              ChangeLiveBody.CompileErrorDetails.PositionRange position =
+                  compileErrorDetails.position();
+              if (position == null) {
+                return null;
+              }
+              return wrapJson(position.start());
+            }
+
+            @Override
+            public TextStreamPosition getEndPosition() {
+              ChangeLiveBody.CompileErrorDetails.PositionRange position =
+                  compileErrorDetails.position();
+              if (position == null) {
+                return null;
+              }
+              return wrapJson(position.end());
+            }
+
+            @Override
+            public String getCompilerMessage() {
+              return compileErrorDetails.syntaxErrorMessage();
+            }
+
+            private TextStreamPosition wrapJson(
+                final ChangeLiveBody.CompileErrorDetails.Position pointPosition) {
+              return new TextStreamPosition() {
+                @Override public int getOffset() {
+                  return (int) pointPosition.position();
+                }
+                @Override public int getLine() {
+                  return (int) pointPosition.line();
+                }
+                @Override public int getColumn() {
+                  return (int) pointPosition.column();
+                }
+              };
+            }
+          };
+        } else {
+          failure = UpdatableScript.Failure.UNSPECIFIED;
+        }
+        callback.failure(message, failure);
       }
     };
   }

@@ -38,7 +38,7 @@ public interface UpdatableScript {
      *        to be applied; may be null if backend or VM does not support
      */
     void success(Object report, ChangeDescription changeDescription);
-    void failure(String message);
+    void failure(String message, Failure details);
   }
 
   /**
@@ -114,5 +114,39 @@ public interface UpdatableScript {
    * Represents a brand new function in the changed script, that has no corresponding old function.
    */
   interface NewFunctionNode extends FunctionNode<NewFunctionNode> {
+  }
+
+  /**
+   * Specifies failure type.
+   */
+  interface Failure {
+    <R> R accept(Visitor<R> visitor);
+
+    interface Visitor<R> {
+      R visitUnspecified();
+      R visitCompileError(CompileErrorFailure compileErrorFailure);
+    }
+
+    Failure UNSPECIFIED = new Failure() {
+      @Override public <R> R accept(Visitor<R> visitor) {
+        return visitor.visitUnspecified();
+      }
+    };
+  }
+
+  /**
+   * Describes failure caused by compile error.
+   */
+  interface CompileErrorFailure extends Failure {
+    /**
+     * A string message returned by JavaScript compiler.
+     */
+    String getCompilerMessage();
+
+    /** @return error start position in text. */
+    TextStreamPosition getStartPosition();
+
+    /** @return error end position in text. */
+    TextStreamPosition getEndPosition();
   }
 }

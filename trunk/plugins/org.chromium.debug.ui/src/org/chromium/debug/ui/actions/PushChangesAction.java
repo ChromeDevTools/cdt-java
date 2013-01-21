@@ -41,7 +41,7 @@ public class PushChangesAction extends V8ScriptAction {
       }
 
       @Override
-      public void failure(final String message) {
+      public void failure(final String message, UpdatableScript.Failure failure) {
         shell.getDisplay().asyncExec(new Runnable() {
           @Override
           public void run() {
