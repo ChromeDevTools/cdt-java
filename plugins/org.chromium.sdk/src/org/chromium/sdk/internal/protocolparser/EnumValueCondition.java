@@ -4,6 +4,7 @@
 
 package org.chromium.sdk.internal.protocolparser;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
@@ -15,6 +16,9 @@ public abstract class EnumValueCondition<T extends Enum<T>> implements JsonValue
   private final Set<T> allowedValues;
   protected EnumValueCondition(Set<T> allowedValues) {
     this.allowedValues = allowedValues;
+  }
+  protected EnumValueCondition(T singleAllowedValues) {
+    this.allowedValues = EnumSet.<T>of(singleAllowedValues);
   }
 
   public boolean conforms(T value) {

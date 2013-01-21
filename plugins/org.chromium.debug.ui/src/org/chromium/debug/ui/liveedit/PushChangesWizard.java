@@ -249,7 +249,7 @@ public class PushChangesWizard {
     final LiveEditResultDialog.SingleInput[] input = { null };
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
-      public void failure(String message) {
+      public void failure(String message, UpdatableScript.Failure failure) {
         String text = NLS.bind("Failure: {0}", message);
         input[0] = LiveEditResultDialog.createTextInput(text, changesPlan);
       }

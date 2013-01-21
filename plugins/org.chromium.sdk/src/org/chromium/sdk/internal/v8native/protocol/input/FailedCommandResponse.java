@@ -8,6 +8,7 @@ import org.chromium.sdk.internal.protocolparser.JsonField;
 import org.chromium.sdk.internal.protocolparser.JsonOptionalField;
 import org.chromium.sdk.internal.protocolparser.JsonOverrideField;
 import org.chromium.sdk.internal.protocolparser.JsonSubtype;
+import org.chromium.sdk.internal.protocolparser.JsonSubtypeCasting;
 import org.chromium.sdk.internal.protocolparser.JsonSubtypeConditionBoolValue;
 import org.chromium.sdk.internal.protocolparser.JsonType;
 
@@ -36,11 +37,12 @@ public interface FailedCommandResponse extends JsonSubtype<CommandResponse> {
   @JsonType
   interface ErrorDetails {
     Type type();
-    
-    // Add subtype cast methods here.
+
+    @JsonSubtypeCasting
+    ChangeLiveBody.CompileErrorDetails asChangeLiveCompileError();
 
     enum Type {
-      // Add error types here.
+      LIVEEDIT_COMPILE_ERROR
     }
   }
 }

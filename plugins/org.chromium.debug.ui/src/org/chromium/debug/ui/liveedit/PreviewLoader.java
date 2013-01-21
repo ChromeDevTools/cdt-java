@@ -64,7 +64,7 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
     updater.reportChanged(this);
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
-      public void failure(String message) {
+      public void failure(String message, UpdatableScript.Failure failure) {
         Optional<Data> error = createErrorOptional(
             new Message(NLS.bind(Messages.PreviewLoader_FAILED_TO_GET, message),
                 MessagePriority.WARNING));
