@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@140428
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -101,6 +101,12 @@ public interface NodeValue {
   String value();
 
   /**
+   Frame ID for frame owner elements.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  String/*See org.chromium.sdk.internal.wip.protocol.common.network.FrameIdTypedef*/ frameId();
+
+  /**
    Content document for frame owner elements.
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
@@ -111,5 +117,11 @@ public interface NodeValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   java.util.List<org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue> shadowRoots();
+
+  /**
+   Content document fragment for template elements
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue templateContent();
 
 }

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@135591
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@140428
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -209,6 +209,9 @@ public interface WipGeneratedParserRoot {
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.CanShowFPSCounterData parsePageCanShowFPSCounterData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.page.CaptureScreenshotData parsePageCaptureScreenshotData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData parsePageDomContentEventFiredEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
