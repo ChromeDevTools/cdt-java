@@ -2,16 +2,16 @@
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
 // Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@140428
 
-package org.chromium.sdk.internal.wip.protocol.input.network;
+package org.chromium.sdk.internal.wip.protocol.input.page;
 
 /**
- WebSocket request data.
+ Capture page screenshot.
  */
 @org.chromium.sdk.internal.protocolparser.JsonType
-public interface WebSocketRequestValue {
+public interface CaptureScreenshotData {
   /**
-   HTTP response headers.
+   Base64-encoded image data (PNG).
    */
-  org.chromium.sdk.internal.wip.protocol.input.network.HeadersValue headers();
+  String data();
 
 }

@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@98328
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@140428
 
 package org.chromium.sdk.internal.wip.protocol.output.page;
 
@@ -11,13 +11,17 @@ public class ReloadParams extends org.chromium.sdk.internal.wip.protocol.output.
   /**
    @param ignoreCacheOpt If true, browser cache is ignored (as if the user pressed Shift+refresh).
    @param scriptToEvaluateOnLoadOpt If set, the script will be injected into all frames of the inspected page after reload.
+   @param scriptPreprocessorOpt Script body that should evaluate to function that will preprocess all the scripts before their compilation.
    */
-  public ReloadParams(Boolean ignoreCacheOpt, String scriptToEvaluateOnLoadOpt) {
+  public ReloadParams(Boolean ignoreCacheOpt, String scriptToEvaluateOnLoadOpt, String scriptPreprocessorOpt) {
     if (ignoreCacheOpt != null) {
       this.put("ignoreCache", ignoreCacheOpt);
     }
     if (scriptToEvaluateOnLoadOpt != null) {
       this.put("scriptToEvaluateOnLoad", scriptToEvaluateOnLoadOpt);
+    }
+    if (scriptPreprocessorOpt != null) {
+      this.put("scriptPreprocessor", scriptPreprocessorOpt);
     }
   }
 
