@@ -41,8 +41,12 @@ import org.chromium.debug.ui.WizardUtils.WizardFinishController;
 import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.actions.ChooseVmControl;
+import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.Input;
 import org.chromium.debug.ui.liveedit.PushChangesWizard.FinisherDelegate;
+import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
+import org.chromium.sdk.UpdatableScript.CompileErrorFailure;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Creates Updater-based logic implementation of the wizard. It is responsible for proper data
@@ -116,7 +120,7 @@ class WizardLogicBuilder {
           } catch (RuntimeException e) {
             // TODO: have more specific exception types to catch.
             optionalPlan = createErrorOptional(new Message(
-                "Failed to get script source from a file. See log for details.",
+                Messages.WizardLogicBuilder_FAILED_TO_GET,
                 MessagePriority.BLOCKING_PROBLEM));
           }
           result.add(optionalPlan);
@@ -136,7 +140,7 @@ class WizardLogicBuilder {
         List<Optional<PushChangesPlan>> planList = selectedChangePlansValue.getValue();
         if (planList.isEmpty()) {
           return createErrorOptional(
-              new Message("Choose at least one VM", MessagePriority.BLOCKING_INFO));
+              new Message(Messages.WizardLogicBuilder_CHOOSE_VM, MessagePriority.BLOCKING_INFO));
         }
         List<Message> errorMessages = new LinkedList<Message>();
         List<PushChangesPlan> result = new ArrayList<PushChangesPlan>(planList.size());
@@ -283,23 +287,38 @@ class WizardLogicBuilder {
             @Calculate
             public Optional<? extends LiveEditDiffViewer.Input> calculate(
                 PreviewLoader.Data previewRawResultParam) {
-              PushChangesPlan changesPlan = singlePlanValue.getValue();
-              ChangeDescription changeDescription = previewRawResultParam.getChangeDescription();
-              Optional<LiveEditDiffViewer.Input> result;
-              if (changeDescription == null) {
-                result = createOptional(null);
-              } else {
-                try {
-                  LiveEditDiffViewer.Input viewerInput =
-                      PushResultParser.createViewerInput(changeDescription, changesPlan, true);
-                  result = createOptional(viewerInput);
-                } catch (RuntimeException e) {
-                  ChromiumDebugPlugin.log(e);
-                  result = createErrorOptional(new Message(
-                      "Error in getting preview: " + e.toString(), MessagePriority.WARNING));
+              final PushChangesPlan changesPlan = singlePlanValue.getValue();
+
+              return previewRawResultParam.accept(
+                  new PreviewLoader.Data.Visitor<Optional<LiveEditDiffViewer.Input>>() {
+                @Override
+                public Optional<LiveEditDiffViewer.Input> visitSuccess(
+                    ChangeDescription changeDescription) {
+                  if (changeDescription == null) {
+                    return createOptional(null);
+                  } else {
+                    try {
+                      LiveEditDiffViewer.Input viewerInput =
+                          PushResultParser.createViewerInput(changeDescription, changesPlan, true);
+                      return createOptional(viewerInput);
+                    } catch (RuntimeException e) {
+                      ChromiumDebugPlugin.log(e);
+                      String messageText =
+                          NLS.bind(Messages.WizardLogicBuilder_ERROR_GETTING_PREVIEW, e.toString());
+                      return createErrorOptional(
+                          new Message(messageText, MessagePriority.WARNING));
+                    }
+                  }
                 }
-              }
-              return result;
+
+                @Override
+                public Optional<Input> visitCompileError(CompileErrorFailure compileError) {
+                  LiveEditDiffViewer.Input viewerInput =
+                      PushResultParser.createCompileErrorViewerInput(compileError, changesPlan,
+                          true);
+                  return createOptional(viewerInput);
+                }
+              });
             }
             @DependencyGetter
             public ValueSource<Optional<PreviewLoader.Data>>
@@ -335,9 +354,23 @@ class WizardLogicBuilder {
     final ValueProcessor<Optional<Void>> warningValue = createProcessor(
         new Gettable<Optional<Void>>() {
       public Optional<Void> getValue() {
-        Optional<?> previewResult = previewValue.getValue();
+        Optional<PreviewLoader.Data> previewResult = previewRawResultValue.getValue();
         if (previewResult.isNormal()) {
-          return createOptional(null);
+          PreviewLoader.Data data = previewResult.getNormal();
+          return data.accept(new PreviewLoader.Data.Visitor<Optional<Void>>() {
+            @Override public Optional<Void> visitSuccess(ChangeDescription changeDescription) {
+              return createOptional(null);
+            }
+            @Override
+            public Optional<Void> visitCompileError(CompileErrorFailure compileError) {
+              TextStreamPosition start = compileError.getStartPosition();
+              String messageString = NLS.bind(Messages.WizardLogicBuilder_COMPILE_ERROR_AT,
+                  new Object[] { compileError.getCompilerMessage(),
+                  start.getLine(), start.getColumn() });
+              return createErrorOptional(
+                  new Message(messageString, MessagePriority.BLOCKING_PROBLEM));
+            }
+          });
         } else {
           return createErrorOptional(previewResult.errorMessages());
         }
@@ -345,7 +378,7 @@ class WizardLogicBuilder {
     });
     updater.addConsumer(scope, warningValue);
     updater.addSource(scope, warningValue);
-    updater.addDependency(warningValue, previewValue);
+    updater.addDependency(warningValue, previewRawResultValue);
 
     // A finisher delegate source, that does not actually depend on most of the code above.
     final ValueProcessor<? extends Optional<FinisherDelegate>> wizardFinisher =
@@ -392,7 +425,8 @@ class WizardLogicBuilder {
         createProcessor(handleErrors(new NormalExpression<FinisherDelegate>() {
           @Calculate
           public FinisherDelegate calculate(List<PushChangesPlan> selectedVm) {
-            return new PushChangesWizard.MultipleVmFinisher(selectedVmValue.getValue().getNormal());
+            return new PushChangesWizard.MultipleVmFinisher(
+                selectedVmValue.getValue().getNormal());
           }
           @DependencyGetter
           public ValueSource<? extends Optional<? extends List<PushChangesPlan>>>

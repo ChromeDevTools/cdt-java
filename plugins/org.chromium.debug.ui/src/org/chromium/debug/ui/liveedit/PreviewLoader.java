@@ -16,7 +16,7 @@ import org.chromium.debug.ui.DialogUtils.Updater;
 import org.chromium.debug.ui.DialogUtils.ValueConsumer;
 import org.chromium.debug.ui.DialogUtils.ValueSource;
 import org.chromium.sdk.UpdatableScript;
-import org.chromium.sdk.UpdatableScript.ChangeDescription;
+import org.chromium.sdk.UpdatableScript.CompileErrorFailure;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -35,7 +35,8 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
   private boolean active = false;
   private final Monitor dataMonitor = new Monitor();
 
-  PreviewLoader(Updater updater, ValueSource<PushChangesPlan> inputParameterSource) {
+  PreviewLoader(Updater updater,
+      ValueSource<PushChangesPlan> inputParameterSource) {
     this.updater = updater;
     this.inputParameterSource = inputParameterSource;
   }
@@ -64,11 +65,31 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
     updater.reportChanged(this);
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
-      public void failure(String message, UpdatableScript.Failure failure) {
-        Optional<Data> error = createErrorOptional(
-            new Message(NLS.bind(Messages.PreviewLoader_FAILED_TO_GET, message),
-                MessagePriority.WARNING));
-        done(error);
+      public void failure(final String message, UpdatableScript.Failure failure) {
+        Optional<Data> result = failure.accept(
+            new UpdatableScript.Failure.Visitor<Optional<Data>>() {
+          @Override
+          public Optional<Data> visitUnspecified() {
+            return createErrorOptional(
+                new Message(NLS.bind(Messages.PreviewLoader_FAILED_TO_GET, message),
+                    MessagePriority.WARNING));
+          }
+
+          @Override
+          public Optional<Data> visitCompileError(final CompileErrorFailure compileError) {
+            Data data = new Data() {
+              @Override
+              public <R> R accept(Visitor<R> visitor) {
+                return visitor.visitCompileError(compileError);
+              }
+              @Override public PushChangesPlan getChangesPlan() {
+                return plan;
+              }
+            };
+            return createOptional(data);
+          }
+        });
+        done(result);
       }
       public void success(Object report,
           final UpdatableScript.ChangeDescription changeDescription) {
@@ -80,8 +101,8 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
             @Override public PushChangesPlan getChangesPlan() {
               return plan;
             }
-            @Override public ChangeDescription getChangeDescription() {
-              return changeDescription;
+            @Override public <R> R accept(Visitor<R> visitor) {
+              return visitor.visitSuccess(changeDescription);
             }
           };
           result = createOptional(data);
@@ -101,7 +122,13 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
   }
 
   public interface Data {
-    UpdatableScript.ChangeDescription getChangeDescription();
+    interface Visitor<R> {
+      R visitSuccess(UpdatableScript.ChangeDescription changeDescription);
+      R visitCompileError(UpdatableScript.CompileErrorFailure compileError);
+    }
+
+    <R> R accept(Visitor<R> visitor);
+
     PushChangesPlan getChangesPlan();
   }
 

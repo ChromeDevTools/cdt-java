@@ -351,15 +351,11 @@ public class LiveEditDiffViewer {
       if (position == null) {
         return "."; //$NON-NLS-1$
       } else {
-        if (functionNode.getParent() == null) {
-          return Messages.LiveEditDiffViewer_SCRIPT;
+        String name = functionNode.getName();
+        if (name == null || name.trim().length() == 0) {
+          return Messages.LiveEditDiffViewer_UNNAMED;
         } else {
-          String name = functionNode.getName();
-          if (name == null || name.trim().length() == 0) {
-            return Messages.LiveEditDiffViewer_UNNAMED;
-          } else {
-            return name;
-          }
+          return name;
         }
       }
     }

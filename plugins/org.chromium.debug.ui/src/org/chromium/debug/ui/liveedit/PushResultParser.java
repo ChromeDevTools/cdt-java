@@ -5,6 +5,8 @@
 package org.chromium.debug.ui.liveedit;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.chromium.debug.core.model.PushChangesPlan;
@@ -65,35 +67,76 @@ public class PushResultParser {
     TreeBuilder builder = new TreeBuilder(previewMode, oldPositionOffset, newPositionOffset);
     final FunctionNode rootFunction = builder.build(changeDescription);
 
-    return new LiveEditDiffViewer.Input() {
-      public SourceText getNewSource() {
-        return new SourceText() {
-          public String getText() {
-            return newSource;
-          }
-          public String getTitle() {
-            return Messages.PushResultParser_LOCAL_FILE;
-          }
-        };
-      }
-      public SourceText getOldSource() {
-        return new SourceText() {
-          public String getText() {
-            return oldSource;
-          }
-          public String getTitle() {
-            return Messages.PushResultParser_SCRIPT_IN_VM;
-          }
-        };
-      }
-
-      public FunctionNode getRootFunction() {
+    return new InputBase(newSource, oldSource) {
+      @Override public FunctionNode getRootFunction() {
         return rootFunction;
       }
-
-      @Override
-      public TextualDiff getTextualDiff() {
+      @Override public TextualDiff getTextualDiff() {
         return textualDiff;
+      }
+    };
+  }
+
+  static LiveEditDiffViewer.Input createCompileErrorViewerInput(
+      final UpdatableScript.CompileErrorFailure compileError, PushChangesPlan changesPlan,
+      boolean previewMode) {
+
+    final String newSource = changesPlan.getNewSource();
+    final String oldSource = changesPlan.getScript().getSource();
+
+    final int startOffset = compileError.getStartPosition().getOffset();
+    final int endOffset;
+    if (compileError.getEndPosition() == null) {
+      endOffset = startOffset + 1;
+    } else {
+      endOffset = compileError.getEndPosition().getOffset();
+    }
+    final SourcePosition sourcePosition = new SourcePosition() {
+      @Override public int getStart() {
+        return startOffset;
+      }
+      @Override public int getEnd() {
+        return endOffset;
+      }
+    };
+
+    final TextualDiff fakeTextualDiff = new TextualDiff() {
+      @Override
+      public List<Long> getChunks() {
+        return Arrays.asList(
+            0L, (long) oldSource.length(), (long) newSource.length());
+      }
+    };
+
+    final FunctionNode fakeFunctionNode = new FunctionNode() {
+      @Override public String getName() {
+        return compileError.getCompilerMessage();
+      }
+      @Override public String getStatus() {
+        return Messages.PushResultParser_COMPILE_ERROR;
+      }
+      @Override public List<? extends FunctionNode> children() {
+        return Collections.emptyList();
+      }
+      @Override public SourcePosition getPosition(Side side) {
+        switch (side) {
+        case NEW:
+          return sourcePosition;
+        default:
+          return null;
+        }
+      }
+      @Override public FunctionNode getParent() {
+        return null;
+      }
+    };
+
+    return new InputBase(newSource, oldSource) {
+      @Override public FunctionNode getRootFunction() {
+        return fakeFunctionNode;
+      }
+      @Override public TextualDiff getTextualDiff() {
+        return fakeTextualDiff;
       }
     };
   }
@@ -116,13 +159,14 @@ public class PushResultParser {
     }
 
     public FunctionNode build(UpdatableScript.ChangeDescription changeDescription) {
-      return buildNode(changeDescription.getChangeTree());
+      return buildNode(changeDescription.getChangeTree(), Messages.PushResultParser_SCRIPT);
     }
 
-    private NodeImpl buildNode(UpdatableScript.OldFunctionNode oldFunction) {
+    private NodeImpl buildNode(UpdatableScript.OldFunctionNode oldFunction,
+        String predefinedFunctionName) {
       List<NodeImpl> childListFirst = new ArrayList<NodeImpl>();
       for (UpdatableScript.OldFunctionNode oldChild : oldFunction.children()) {
-        NodeImpl nodeImpl = buildNode(oldChild);
+        NodeImpl nodeImpl = buildNode(oldChild, null);
         childListFirst.add(nodeImpl);
       }
       List<NodeImpl> childListSecond = new ArrayList<NodeImpl>();
@@ -162,7 +206,8 @@ public class PushResultParser {
       }
       return new NodeImpl(oldFunction,
           createPosition(oldFunction.getPositions(), oldPositionOffset),
-          createPosition(oldFunction.getNewPositions(), newPositionOffset), childList);
+          createPosition(oldFunction.getNewPositions(), newPositionOffset), childList,
+          predefinedFunctionName);
     }
     private NodeImpl buildNode(UpdatableScript.NewFunctionNode newFunction,
         int newPositionOffset) {
@@ -172,7 +217,7 @@ public class PushResultParser {
         childList.add(nodeImpl);
       }
       return new NodeImpl(newFunction, null,
-          createPosition(newFunction.getPositions(), newPositionOffset), childList);
+          createPosition(newFunction.getPositions(), newPositionOffset), childList, null);
     }
 
     private static SourcePosition createPosition(
@@ -199,9 +244,14 @@ public class PushResultParser {
       private FunctionNode parent = null;
 
       private NodeImpl(UpdatableScript.FunctionNode<?> rawFunction, SourcePosition oldPosition,
-          SourcePosition newPosition, List<? extends NodeImpl> childList) {
+          SourcePosition newPosition, List<? extends NodeImpl> childList,
+          String predefinedFunctionName) {
         this.rawFunction = rawFunction;
-        this.name = rawFunction.getName();
+        if (predefinedFunctionName == null) {
+          this.name = rawFunction.getName();
+        } else {
+          this.name = predefinedFunctionName;
+        }
         this.oldPosition = oldPosition;
         this.newPosition = newPosition;
         this.childList = childList;
@@ -339,5 +389,36 @@ public class PushResultParser {
         return shiftedChunks;
       }
     };
+  }
+
+  private static abstract class InputBase implements LiveEditDiffViewer.Input {
+    private final String newSource;
+    private final String oldSource;
+
+    InputBase(String newSource, String oldSource) {
+      this.newSource = newSource;
+      this.oldSource = oldSource;
+    }
+
+    public SourceText getNewSource() {
+      return new SourceText() {
+        public String getText() {
+          return newSource;
+        }
+        public String getTitle() {
+          return Messages.PushResultParser_LOCAL_FILE;
+        }
+      };
+    }
+    public SourceText getOldSource() {
+      return new SourceText() {
+        public String getText() {
+          return oldSource;
+        }
+        public String getTitle() {
+          return Messages.PushResultParser_SCRIPT_IN_VM;
+        }
+      };
+    }
   }
 }
