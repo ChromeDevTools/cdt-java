@@ -22,6 +22,9 @@ public interface WipTabList {
 
     String thumbnailUrl();
 
+    // TODO: consider adding enum here
+    String type();
+
     @JsonOptionalField
     String devtoolsFrontendUrl();
 
