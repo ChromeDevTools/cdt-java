@@ -41,6 +41,7 @@ import org.chromium.debug.ui.WizardUtils.WizardFinishController;
 import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.actions.ChooseVmControl;
+import org.chromium.debug.ui.liveedit.LiveEditResultDialog.ErrorPositionHighlighter;
 import org.chromium.debug.ui.liveedit.LiveEditDiffViewer.Input;
 import org.chromium.debug.ui.liveedit.PushChangesWizard.FinisherDelegate;
 import org.chromium.sdk.TextStreamPosition;
@@ -71,7 +72,8 @@ class WizardLogicBuilder {
     updater = new Updater();
   }
 
-  WizardLogic create(final List<? extends ScriptTargetMapping> targetList) {
+  WizardLogic create(final List<? extends ScriptTargetMapping> targetList,
+      final ErrorPositionHighlighter positionHighlighter) {
     Scope scope = updater.rootScope();
 
     final boolean skipSingleTargetSelection = true;
@@ -193,7 +195,7 @@ class WizardLogicBuilder {
         createProcessor(handleErrors(new NormalExpression<WizardFinisher>() {
               @Calculate
               public WizardFinisher calculate(FinisherDelegate finisherDelegate) {
-                return new PushChangesWizard.FinisherImpl(finisherDelegate);
+                return new PushChangesWizard.FinisherImpl(finisherDelegate, positionHighlighter);
               }
               @DependencyGetter
               public ValueSource<? extends Optional<? extends FinisherDelegate>>

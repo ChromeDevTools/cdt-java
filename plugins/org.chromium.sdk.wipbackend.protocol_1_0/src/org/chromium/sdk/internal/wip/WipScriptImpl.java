@@ -62,7 +62,7 @@ class WipScriptImpl extends ScriptBase<String> {
 
       @Override
       public void failure(Exception exception) {
-        updateCallback.failure(exception.getMessage());
+        updateCallback.failure(exception.getMessage(), Failure.UNSPECIFIED);
       }
     };
 

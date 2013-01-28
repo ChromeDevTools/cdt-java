@@ -10,12 +10,14 @@ import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.model.PushChangesPlan;
 import org.chromium.debug.core.util.ScriptTargetMapping;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog;
+import org.chromium.debug.ui.liveedit.LiveEditResultDialog.SingleInput;
 import org.chromium.sdk.UpdatableScript;
 import org.chromium.sdk.UpdatableScript.ChangeDescription;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * The main action of LiveEdit feature. It gets the current state of a working file and pushes
@@ -25,12 +27,15 @@ public class PushChangesAction extends V8ScriptAction {
   @Override
   protected void execute(List<? extends ScriptTargetMapping> filePairList, Shell shell,
       IWorkbenchPart workbenchPart) {
+    LiveEditResultDialog.ErrorPositionHighlighter positionHighlighter =
+        createPositionHighlighter(workbenchPart);
     for (ScriptTargetMapping pair : filePairList) {
-      execute(pair, shell);
+      execute(pair, shell, positionHighlighter);
     }
   }
 
-  private void execute(final ScriptTargetMapping filePair, final Shell shell) {
+  private void execute(final ScriptTargetMapping filePair, final Shell shell,
+      final LiveEditResultDialog.ErrorPositionHighlighter positionHighlighter) {
     final PushChangesPlan plan = PushChangesPlan.create(filePair);
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
@@ -41,12 +46,14 @@ public class PushChangesAction extends V8ScriptAction {
       }
 
       @Override
-      public void failure(final String message, UpdatableScript.Failure failure) {
+      public void failure(final String message, final UpdatableScript.Failure failure) {
         shell.getDisplay().asyncExec(new Runnable() {
           @Override
           public void run() {
-            LiveEditResultDialog dialog = new LiveEditResultDialog(shell,
-                LiveEditResultDialog.createTextInput(message, plan));
+            SingleInput textInput = LiveEditResultDialog.createTextInput(message, plan,
+                failure);
+            LiveEditResultDialog dialog =
+                new LiveEditResultDialog(shell, textInput, positionHighlighter);
             dialog.open();
           }
         });
@@ -54,5 +61,19 @@ public class PushChangesAction extends V8ScriptAction {
     };
 
     plan.execute(false, callback, null);
+  }
+
+  public static LiveEditResultDialog.ErrorPositionHighlighter createPositionHighlighter(
+      IWorkbenchPart workbenchPart) {
+    if (workbenchPart instanceof ITextEditor == false) {
+      return null;
+    }
+    final ITextEditor textEditor = (ITextEditor) workbenchPart;
+    return new LiveEditResultDialog.ErrorPositionHighlighter() {
+      @Override
+      public void highlight(int offset, int length) {
+        textEditor.selectAndReveal(offset, length);
+      }
+    };
   }
 }

@@ -18,6 +18,7 @@ import org.chromium.debug.ui.WizardUtils.WizardFinisher;
 import org.chromium.debug.ui.WizardUtils.WizardLogic;
 import org.chromium.debug.ui.WizardUtils.WizardPageSet;
 import org.chromium.debug.ui.actions.ChooseVmControl;
+import org.chromium.debug.ui.liveedit.LiveEditResultDialog.ErrorPositionHighlighter;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.Input;
 import org.chromium.debug.ui.liveedit.LiveEditResultDialog.SingleInput;
 import org.chromium.sdk.CallbackSemaphore;
@@ -43,7 +44,8 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class PushChangesWizard {
 
-  public static void start(final List<? extends ScriptTargetMapping> filePairs, Shell shell) {
+  public static void start(final List<? extends ScriptTargetMapping> filePairs, Shell shell,
+      final ErrorPositionHighlighter positionHighlighter) {
     // Create pages.
     final PageImpl<ChooseVmPageElements> chooseVmPage = new PageImpl<ChooseVmPageElements>(
         "choose VM", //$NON-NLS-1$
@@ -78,7 +80,7 @@ public class PushChangesWizard {
       }
       public WizardLogic createLogic(final LogicBasedWizard wizardImpl) {
         WizardLogicBuilder logicBuilder = new WizardLogicBuilder(this, wizardImpl);
-        return logicBuilder.create(filePairs);
+        return logicBuilder.create(filePairs, positionHighlighter);
       }
     };
 
@@ -176,13 +178,15 @@ public class PushChangesWizard {
 
   static class FinisherImpl implements WizardFinisher {
     private final FinisherDelegate delegate;
-    FinisherImpl(FinisherDelegate delegate) {
+    private final ErrorPositionHighlighter positionHighlighter;
+    FinisherImpl(FinisherDelegate delegate, ErrorPositionHighlighter positionHighlighter) {
       this.delegate = delegate;
+      this.positionHighlighter = positionHighlighter;
     }
     public boolean performFinish(IWizard wizard, IProgressMonitor monitor) {
       LiveEditResultDialog.Input dialogInput = delegate.run(monitor);
-      LiveEditResultDialog dialog =
-          new LiveEditResultDialog(wizard.getContainer().getShell(), dialogInput);
+      LiveEditResultDialog dialog = new LiveEditResultDialog(wizard.getContainer().getShell(),
+          dialogInput, positionHighlighter);
       dialog.open();
       return true;
     }
@@ -251,7 +255,8 @@ public class PushChangesWizard {
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       public void failure(String message, UpdatableScript.Failure failure) {
         String text = NLS.bind("Failure: {0}", message);
-        input[0] = LiveEditResultDialog.createTextInput(text, changesPlan);
+        input[0] = LiveEditResultDialog.createTextInput(text, changesPlan,
+            failure);
       }
       public void success(Object report,
           final UpdatableScript.ChangeDescription changeDescription) {

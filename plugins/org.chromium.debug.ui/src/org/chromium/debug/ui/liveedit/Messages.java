@@ -7,9 +7,12 @@ public class Messages extends NLS {
   public static String PushResultParser_COMPILE_ERROR;
   public static String PushResultParser_SCRIPT;
   public static String LiveEditDiffViewer_UNNAMED;
+  public static String LiveEditResultDialog_COMPILE_ERROR;
   public static String LiveEditResultDialog_CURRENT_SCRIPT;
   public static String LiveEditResultDialog_FAILURE;
   public static String LiveEditResultDialog_FRAMES_DROPPED;
+  public static String LiveEditResultDialog_LINE_COLUMN;
+  public static String LiveEditResultDialog_SELECT_IN_EDITOR;
   public static String LiveEditResultDialog_OK;
   public static String LiveEditResultDialog_OLD_SCRIPT;
   public static String LiveEditResultDialog_SCRIPT_CREATED;
