@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@142888
 
 package org.chromium.sdk.internal.wip.protocol.input.dom;
 
@@ -45,5 +45,11 @@ public interface EventListenerValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String sourceName();
+
+  /**
+   Event handler function value.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue handler();
 
 }
