@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@140428
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@142888
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -90,24 +90,33 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketResponseValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketWillSendHandshakeRequestEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanContinuouslyPaintData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceOrientationData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideGeolocationData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.CanShowDebugBordersData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanShowFPSCounterData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CaptureScreenshotData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CookieValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.DomContentEventFiredEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameClearedScheduledNavigationEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameDetachedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameNavigatedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameResourceTreeValue.Resources.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameScheduledNavigationEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameStartedLoadingEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.FrameStoppedLoadingEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.FrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetCompositingBordersVisibleData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetCookiesData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceContentData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetResourceTreeData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.GetScriptExecutionStatusData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.JavascriptDialogClosedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.JavascriptDialogOpeningEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.LoadEventFiredEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.page.ScriptsEnabledEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchInResourcesData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.SearchMatchValue.class,
