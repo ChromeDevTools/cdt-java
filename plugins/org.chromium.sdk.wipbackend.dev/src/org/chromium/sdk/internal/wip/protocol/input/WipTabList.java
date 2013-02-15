@@ -16,6 +16,7 @@ public interface WipTabList {
   @JsonSubtypeCasting List<TabDescription> asTabList() throws JsonProtocolParseException;
 
   @JsonType interface TabDescription {
+    String id();
     String faviconUrl();
     String title();
     String url();
