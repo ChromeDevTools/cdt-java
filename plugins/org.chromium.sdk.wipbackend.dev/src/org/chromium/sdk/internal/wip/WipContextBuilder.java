@@ -329,9 +329,11 @@ class WipContextBuilder {
           public List<JsScope> construct() {
             final List<JsScope> scopes = new ArrayList<JsScope>(scopeDataList.size());
 
+            ScopeHolderParams holderParams = new ScopeHolderParams(id, null);
+
             for (int i = 0; i < scopeDataList.size(); i++) {
               ScopeValue scopeData = scopeDataList.get(i);
-              scopes.add(createScope(scopeData, valueLoader));
+              scopes.add(createScope(scopeData, valueLoader, holderParams, i));
             }
             return scopes;
           }
@@ -410,7 +412,7 @@ class WipContextBuilder {
       }
 
       private JsVariable createSimpleNameVariable(String name, RemoteObjectValue thisObjectData) {
-        return valueLoader.getValueBuilder().createVariable(thisObjectData, name);
+        return valueLoader.getValueBuilder().createVariable(thisObjectData, name, null);
       }
 
       private final WipEvaluateContextBase<?> evaluateContext =
@@ -563,7 +565,8 @@ class WipContextBuilder {
   };
 
 
-  static JsScope createScope(ScopeValue scopeData, WipValueLoader valueLoader) {
+  static JsScope createScope(ScopeValue scopeData, WipValueLoader valueLoader,
+      ScopeHolderParams holderParams, int scopeIndex) {
     JsScope.Type type = WIP_TO_SDK_SCOPE_TYPE.get(scopeData.type());
     if (type == null) {
       type = JsScope.Type.UNKNOWN;
@@ -571,7 +574,8 @@ class WipContextBuilder {
     if (type == JsScope.Type.WITH || type == JsScope.Type.GLOBAL) {
       return new ObjectScopeImpl(scopeData, type, valueLoader);
     } else {
-      return new DeclarativeScopeImpl(scopeData, type, valueLoader);
+      ScopeParams scopeParams = new ScopeParams(holderParams, scopeIndex);
+      return new DeclarativeScopeImpl(scopeData, scopeParams, type, valueLoader);
     }
   }
 
@@ -579,11 +583,14 @@ class WipContextBuilder {
     private final AsyncFutureRef<Getter<ScopeVariables>> propertiesRef =
         new AsyncFutureRef<Getter<ScopeVariables>>();
     private final String objectId;
+    private final ScopeParams scopeParams;
     private final Type type;
     private final WipValueLoader valueLoader;
 
-    public DeclarativeScopeImpl(ScopeValue scopeData, Type type, WipValueLoader valueLoader) {
+    public DeclarativeScopeImpl(ScopeValue scopeData, ScopeParams scopeParams, Type type,
+        WipValueLoader valueLoader) {
       this.type = type;
+      this.scopeParams = scopeParams;
       this.objectId = scopeData.object().objectId();
       this.valueLoader = valueLoader;
     }
@@ -641,12 +648,7 @@ class WipContextBuilder {
           for (PropertyDescriptorValue property : propertyList) {
             final String name = property.name();
 
-            JsVariable variable;
-            if (objectId == null) {
-              variable = valueBuilder.createVariable(property.value(), name);
-            } else {
-              variable = valueBuilder.createObjectProperty(property, objectId, name);
-            }
+            JsVariable variable = valueBuilder.createVariable(property.value(), name, scopeParams);
             properties.add(variable);
           }
           final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);
@@ -671,6 +673,35 @@ class WipContextBuilder {
       // This is blocking.
       valueLoader.loadPropertiesInFuture(objectId, processor, reload, currentCacheState,
           propertiesRef);
+    }
+  }
+
+  static class ScopeHolderParams {
+    private final String callFrameId;
+    private final String functionId;
+
+    ScopeHolderParams(String callFrameId, String functionId) {
+      this.callFrameId = callFrameId;
+      this.functionId = functionId;
+    }
+  }
+
+  static class ScopeParams {
+    private final ScopeHolderParams scopeHolder;
+    private final int scopeIndex;
+
+    private ScopeParams(ScopeHolderParams scopeHolder, int scopeIndex) {
+      this.scopeHolder = scopeHolder;
+      this.scopeIndex = scopeIndex;
+    }
+    String getCallFrameId() {
+      return scopeHolder.callFrameId;
+    }
+    String getFunctionId() {
+      return scopeHolder.functionId;
+    }
+    int getScopeNumber() {
+      return scopeIndex;
     }
   }
 
