@@ -33,13 +33,16 @@ import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.internal.wip.WipValueLoader.Getter;
 import org.chromium.sdk.internal.wip.WipValueLoader.ObjectProperties;
+import org.chromium.sdk.internal.wip.protocol.input.WipCommandResponse.Success;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.LocationValue;
 import org.chromium.sdk.internal.wip.protocol.input.debugger.ScopeValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.PropertyDescriptorValue;
 import org.chromium.sdk.internal.wip.protocol.input.runtime.RemoteObjectValue;
+import org.chromium.sdk.internal.wip.protocol.output.debugger.SetVariableValueParams;
 import org.chromium.sdk.internal.wip.protocol.output.runtime.CallArgumentParam;
 import org.chromium.sdk.util.AsyncFutureRef;
+import org.chromium.sdk.util.GenericCallback;
 import org.chromium.sdk.util.JavaScriptExpressionBuilder;
 import org.chromium.sdk.util.MethodIsBlockingException;
 
@@ -95,11 +98,15 @@ class WipValueBuilder {
       final String hostObjectRefId, String name) {
     JsValue jsValue = wrap(propertyDescriptor.value());
 
-    final JsValue getter = wrapPropertyDescriptorFunction(propertyDescriptor.get(), "getter");
+    final JsValue getter = wrap(propertyDescriptor.get());
 
-    final JsValue setter = wrapPropertyDescriptorFunction(propertyDescriptor.set(), "setter");
+    final JsValue setter = wrap(propertyDescriptor.set());
 
     return new ObjectPropertyBase(jsValue, name) {
+
+      @Override public boolean isMutable() {
+        return false;
+      }
       @Override public boolean isWritable() {
         return propertyDescriptor.writable();
       }
@@ -126,6 +133,12 @@ class WipValueBuilder {
       }
 
       @Override
+      public RelayOk setValue(JsValue newValue, SetValueCallback callback,
+          SyncCallback syncCallback) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
       public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
         WipContextBuilder.GlobalEvaluateContext evaluateContext =
             new WipContextBuilder.GlobalEvaluateContext(valueLoader);
@@ -149,13 +162,38 @@ class WipValueBuilder {
     };
   }
 
-  private JsValue wrapPropertyDescriptorFunction(RemoteObjectValue value, String symbolicName) {
-    return wrap(value);
-  }
-
-  public JsVariable createVariable(RemoteObjectValue valueData, String name) {
+  public JsVariable createVariable(RemoteObjectValue valueData, String name,
+      final WipContextBuilder.ScopeParams scopeParams) {
     JsValue jsValue = wrap(valueData);
-    return createVariable(jsValue, name);
+
+    VariableValueChanger valueChanger;
+    if (scopeParams == null) {
+      valueChanger = null;
+    } else {
+      valueChanger = new VariableValueChanger() {
+        @Override
+        RelayOk setValue(String variableName, JsValue newValue,
+            final GenericCallback<JsValue> callback, SyncCallback syncCallback)
+            throws UnsupportedOperationException {
+          final JsValueBase jsValueBase = JsValueBase.cast(newValue);
+          SetVariableValueParams params = new SetVariableValueParams(scopeParams.getScopeNumber(),
+              variableName, jsValueBase.createCallArgumentParam(), scopeParams.getCallFrameId(),
+              scopeParams.getFunctionId());
+          WipCommandCallback rawCallback = new WipCommandCallback.Default() {
+            @Override protected void onSuccess(Success success) {
+              callback.success(jsValueBase);
+            }
+            @Override protected void onError(String message) {
+              callback.failure(new Exception(message));
+            }
+          };
+          return valueLoader.getTabImpl().getCommandProcessor().send(params,
+              rawCallback, syncCallback);
+        }
+      };
+    }
+
+    return new VariableImpl(name, jsValue, valueChanger);
   }
 
   public JsValue wrap(RemoteObjectValue valueData) {
@@ -163,10 +201,6 @@ class WipValueBuilder {
       return null;
     }
     return getValueType(valueData).build(valueData, valueLoader);
-  }
-
-  public static JsVariable createVariable(JsValue jsValue, String name) {
-    return new VariableImpl(jsValue, name);
   }
 
   private static ValueType getValueType(RemoteObjectValue valueData) {
@@ -573,8 +607,12 @@ class WipValueBuilder {
           return Collections.emptyList();
         }
         List<JsScope> result = new ArrayList<JsScope>(data.size());
-        for (ScopeValue scopeValue : data) {
-          result.add(WipContextBuilder.createScope(scopeValue, getRemoteValueMapping()));
+        WipContextBuilder.ScopeHolderParams holderParams =
+            new WipContextBuilder.ScopeHolderParams(null, getRefId());
+        for (int i = 0; i < data.size(); i++) {
+          ScopeValue scopeValue = data.get(i);
+          result.add(WipContextBuilder.createScope(scopeValue, getRemoteValueMapping(),
+              holderParams, i));
         }
         return result;
       }
@@ -603,11 +641,9 @@ class WipValueBuilder {
   };
 
   private static abstract class VariableBase implements JsVariable {
-    private final JsValue jsValue;
     private final String name;
 
-    VariableBase(JsValue jsValue, String name) {
-      this.jsValue = jsValue;
+    VariableBase(String name) {
       this.name = name;
     }
 
@@ -617,43 +653,75 @@ class WipValueBuilder {
     }
 
     @Override
-    public JsValue getValue() {
-      return jsValue;
-    }
-
-    @Override
     public String getName() {
       return name;
-    }
-
-    @Override
-    public boolean isMutable() {
-      return false;
-    }
-
-    @Override
-    public RelayOk setValue(JsValue newValue, SetValueCallback callback,
-        SyncCallback syncCallback) throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
     }
   }
 
   private static class VariableImpl extends VariableBase {
-    VariableImpl(JsValue jsValue, String name) {
-      super(jsValue, name);
+    private final VariableValueChanger valueChanger;
+    private volatile JsValue jsValue;
+
+    VariableImpl(String name, JsValue jsValue, VariableValueChanger valueChanger) {
+      super(name);
+      this.jsValue = jsValue;
+      this.valueChanger = valueChanger;
     }
 
     @Override public JsObjectProperty asObjectProperty() {
       return null;
     }
+    @Override public boolean isMutable() {
+      return valueChanger != null;
+    }
+    @Override public JsValue getValue() {
+      return jsValue;
+    }
+
+    @Override
+    public RelayOk setValue(JsValue newValue, final SetValueCallback callback,
+        SyncCallback syncCallback) throws UnsupportedOperationException {
+      if (valueChanger == null) {
+        throw new UnsupportedOperationException();
+      }
+      GenericCallback<JsValue> rawCallback = new GenericCallback<JsValue>() {
+        @Override
+        public void success(JsValue value) {
+          VariableImpl.this.jsValue = value;
+          if (callback != null) {
+            callback.success();
+          }
+        }
+
+        @Override
+        public void failure(Exception exception) {
+          if (callback != null) {
+            callback.failure(exception);
+          }
+        }
+      };
+      return valueChanger.setValue(getName(), newValue, rawCallback, syncCallback);
+    }
+  }
+
+  static abstract class VariableValueChanger {
+    abstract RelayOk setValue(String variableName, JsValue newValue,
+        GenericCallback<JsValue> callback, SyncCallback syncCallback)
+        throws UnsupportedOperationException;
   }
 
   private static abstract class ObjectPropertyBase
       extends VariableBase implements JsObjectProperty {
+    private final JsValue jsValue;
+
     ObjectPropertyBase(JsValue jsValue, String name) {
-      super(jsValue, name);
+      super(name);
+      this.jsValue = jsValue;
     }
 
+    @Override public JsValue getValue() {
+      return jsValue;
+    }
     @Override public JsObjectProperty asObjectProperty() {
       return this;
     }

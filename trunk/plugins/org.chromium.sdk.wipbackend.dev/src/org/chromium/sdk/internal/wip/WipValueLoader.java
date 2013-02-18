@@ -169,7 +169,7 @@ public abstract class WipValueLoader implements RemoteValueMapping {
           String name = propertyDescriptor.name();
 
           JsVariable variable =
-              valueBuilder.createVariable(propertyDescriptor.value(), name);
+              valueBuilder.createVariable(propertyDescriptor.value(), name, null);
           internalProperties.add(variable);
         }
       }
