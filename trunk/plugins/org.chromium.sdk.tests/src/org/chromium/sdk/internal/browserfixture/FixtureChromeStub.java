@@ -189,7 +189,7 @@ public class FixtureChromeStub implements ChromeStub {
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
-    scriptManager.addScript(scriptsNormalBody, constructScriptRefsTyped());
+    ScriptImplTestGate.addScript(scriptManager, scriptsNormalBody, constructScriptRefsTyped());
   }
 
   public static int getNumber3Ref() {
@@ -605,7 +605,7 @@ public class FixtureChromeStub implements ChromeStub {
     } catch (JsonProtocolParseException e) {
       throw new RuntimeException(e);
     }
-    scriptManager.addScript(scriptsNormalBody, constructScriptRefsTyped());
+    ScriptImplTestGate.addScript(scriptManager, scriptsNormalBody, constructScriptRefsTyped());
 
     JSONObject scriptObject = getJsonObjectByRef(getCompiledScriptRef());
     scriptObject.remove("source");
