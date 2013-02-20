@@ -21,8 +21,11 @@ import org.chromium.sdk.ConnectionLogger.Factory;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsScope.Declarative;
+import org.chromium.sdk.JsScope.ObjectBased;
 import org.chromium.sdk.JsValue;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
@@ -108,7 +111,7 @@ public class Main {
       {
         // Check cache dropping.
         JsObject root = evaluateSync(context.getGlobalEvaluateContext(),
-            "(debug_value_1 = {a:2})").getValue().asObject();
+            "(debug_value_1 = {a:2})").asObject();
         if (root == null) {
           throw new RuntimeException();
         }
@@ -130,9 +133,8 @@ public class Main {
       {
         // Check literals.
         for (LiteralTestCase literal : TEST_LITERALS) {
-          JsVariable resultVar = evaluateSync(context.getGlobalEvaluateContext(),
+          JsValue resultValue = evaluateSync(context.getGlobalEvaluateContext(),
               literal.javaScriptExpression);
-          JsValue resultValue = resultVar.getValue();
           if (resultValue.getType() != literal.expectedType) {
             throw new SmokeException("Unexpected type of '" + literal.javaScriptExpression +
                 "': " + resultValue.getType());
@@ -298,7 +300,18 @@ public class Main {
   }
 
   private static JsVariable getVariable(JsScope scope, String name) throws SmokeException {
-    for (JsVariable var : scope.getVariables()) {
+    Collection<? extends JsVariable> variables = scope.accept(
+        new JsScope.Visitor<Collection<? extends JsVariable>>() {
+          @Override
+          public Collection<? extends JsVariable> visitDeclarative(Declarative declarativeScope) {
+            return declarativeScope.getVariables();
+          }
+          @Override
+          public Collection<? extends JsVariable> visitObject(ObjectBased objectScope) {
+            return objectScope.getScopeObject().getProperties();
+          }
+        });
+    for (JsVariable var : variables) {
       if (name.equals(var.getName())) {
         return var;
       }
@@ -310,18 +323,33 @@ public class Main {
    * Calls fibonacci expression in context for stack frame and checks the result value.
    */
   private static void checkExpression(CallFrame frame) throws SmokeException {
-    final ValueHolder<JsVariable> variableHolder = new ValueHolder<JsVariable>();
+    final ValueHolder<JsValue> variableHolder = new ValueHolder<JsValue>();
     JsEvaluateContext.EvaluateCallback callback = new JsEvaluateContext.EvaluateCallback() {
-      public void failure(String errorMessage) {
-        variableHolder.setException(new Exception(errorMessage));
+      @Override
+      public void success(ResultOrException result) {
+        result.accept(new ResultOrException.Visitor<Void>() {
+          @Override
+          public Void visitResult(JsValue value) {
+            variableHolder.setValue(value);
+            return null;
+          }
+
+          @Override
+          public Void visitException(JsValue exception) {
+            variableHolder.setException(
+                new Exception("Caught exception: " + exception.getValueString()));
+            return null;
+          }
+        });
       }
-      public void success(JsVariable variable) {
-        variableHolder.setValue(variable);
+
+      @Override public void failure(Exception cause) {
+        variableHolder.setException(new Exception(cause));
       }
     };
     frame.getEvaluateContext().evaluateSync(FIBONACCI_EXPRESSION, null, callback);
-    JsVariable variable = variableHolder.get();
-    String resString = variable.getValue().getValueString();
+    JsValue value = variableHolder.get();
+    String resString = value.getValueString();
     if (!"24".equals(resString)) {
       throw new SmokeException("Wrong expression value");
     }
@@ -528,26 +556,40 @@ public class Main {
   }
 
   static class EvalCallbackImpl implements JsEvaluateContext.EvaluateCallback {
-    JsVariable variable = null;
-    String failure = null;
-    @Override
-    public void success(JsVariable variable) {
-      this.variable = variable;
-    }
+    JsValue value = null;
+    Exception failure = null;
 
-    @Override
-    public void failure(String errorMessage) {
-      this.failure = errorMessage;
-    }
-    JsVariable get() {
+    JsValue get() {
       if (failure != null) {
         throw new RuntimeException("Failed to evaluate: " + failure);
       }
-      return variable;
+      return value;
+    }
+
+    @Override
+    public void success(ResultOrException result) {
+      result.accept(new ResultOrException.Visitor<Void>() {
+        @Override
+        public Void visitResult(JsValue value) {
+          EvalCallbackImpl.this.value = value;
+          return null;
+        }
+
+        @Override
+        public Void visitException(JsValue exception) {
+          failure = new Exception("JavaScript exception: " + exception.getValueString());
+          return null;
+        }
+      });
+    }
+
+    @Override
+    public void failure(Exception cause) {
+      this.failure = cause;
     }
   }
 
-  private static JsVariable evaluateSync(JsEvaluateContext evaluateContext, String expression) {
+  private static JsValue evaluateSync(JsEvaluateContext evaluateContext, String expression) {
     EvalCallbackImpl callbackImpl = new EvalCallbackImpl();
     evaluateContext.evaluateSync(expression, null, callbackImpl);
     return callbackImpl.get();

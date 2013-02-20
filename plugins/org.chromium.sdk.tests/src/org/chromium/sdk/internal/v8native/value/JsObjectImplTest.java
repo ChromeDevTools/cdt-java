@@ -98,14 +98,14 @@ public class JsObjectImplTest {
   @Test
   public void testObjectData() throws Exception {
     JsObjectBase<?> jsObject = new JsObjectBase.Impl(
-        callFrame.getInternalContext().getValueLoader(), "test_object", eventMirror);
+        callFrame.getInternalContext().getValueLoader(), eventMirror);
     assertNotNull(jsObject.asObject());
     assertNull(jsObject.asArray());
-    Collection<JsVariableImpl> variables = jsObject.getProperties();
+    Collection<JsVariableBase.Property> variables = jsObject.getProperties();
     assertEquals(2, variables.size()); // "x" and "y"
-    Iterator<JsVariableImpl> it = variables.iterator();
-    JsVariableImpl firstVar = it.next();
-    JsVariableImpl secondVar = it.next();
+    Iterator<JsVariableBase.Property> it = variables.iterator();
+    JsVariableBase.Property firstVar = it.next();
+    JsVariableBase.Property secondVar = it.next();
     Set<String> names = new HashSet<String>();
     names.add("x"); //$NON-NLS-1$
     names.add("y"); //$NON-NLS-1$
@@ -123,9 +123,7 @@ public class JsObjectImplTest {
 
     JsVariable xProperty = jsObject.getProperty("x");
     assertEquals("x", xProperty.getName()); //$NON-NLS-1$
-    assertEquals("test_object.x", xProperty.getFullyQualifiedName()); //$NON-NLS-1$
     JsVariable yProperty = jsObject.getProperty("y");
     assertEquals("y", yProperty.getName()); //$NON-NLS-1$
-    assertEquals("test_object.y", yProperty.getFullyQualifiedName()); //$NON-NLS-1$
   }
 }

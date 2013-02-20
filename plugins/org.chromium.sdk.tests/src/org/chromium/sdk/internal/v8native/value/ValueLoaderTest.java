@@ -37,7 +37,7 @@ public class ValueLoaderTest {
         new LoadableString.Immutable("20")));
     valueLoader.addValueDataRecursive(addressData);
 
-    JsObjectBase.Impl object = new JsObjectBase.Impl(valueLoader, "address",
+    JsObjectBase.Impl object = new JsObjectBase.Impl(valueLoader,
         FakeValueLoader.createMirrorFromData(addressData, false));
 
     String sizeBefore = object.getProperty("size").getValue().getValueString();

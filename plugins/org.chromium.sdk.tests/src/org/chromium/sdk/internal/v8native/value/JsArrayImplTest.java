@@ -59,6 +59,7 @@ public class JsArrayImplTest {
     String propertyRefText = "{'ref':" + FixtureChromeStub.getNumber3Ref() +
         ",'type':'number','value':3,'text':'3'}";
 
+    InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
     String valueHandleJsonText = (
             "{'protoObject':{'ref':55516,'className':'Array','type':'object'}," +
             "'text':'#<an Array>'," +
@@ -74,10 +75,16 @@ public class JsArrayImplTest {
     JSONObject valueHandleJson = (JSONObject) JSONValue.parse(valueHandleJsonText);
     ValueHandle valueHandle =
         V8ProtocolParserAccess.get().parseValueHandle(valueHandleJson);
-
-
-    InternalContext internalContext = ContextBuilder.getInternalContextForTests(debugContext);
     arrayMirror = internalContext.getValueLoader().addDataToMap(valueHandle);
+
+    String proptoHandleJsonText = (
+            "{'text':'#<an Object>', 'handle':55516,'className':'Object','type':'object'}"
+         ).replace('\'', '"');
+    JSONObject protoHandleJson = (JSONObject) JSONValue.parse(proptoHandleJsonText);
+    ValueHandle protoHandle = V8ProtocolParserAccess.get().parseValueHandle(protoHandleJson);
+    internalContext.getValueLoader().addDataToMap(protoHandle);
+
+
 
     FrameObject frameObject;
     {
@@ -105,25 +112,23 @@ public class JsArrayImplTest {
   @Test
   public void testArrayData() throws Exception {
     JsArrayImpl jsArray = new JsArrayImpl(callFrame.getInternalContext().getValueLoader(),
-        "test_array", arrayMirror);
+        arrayMirror);
     assertNotNull(jsArray.asArray());
-    Collection<JsVariableImpl> properties = jsArray.getProperties();
+    Collection<JsVariableBase.Property> properties = jsArray.getProperties();
     assertEquals(2 + 1, properties.size()); // 2 array element properties and one length property.
-    assertEquals(4, jsArray.length());
-    SortedMap<Integer, ? extends JsVariable> sparseArray = jsArray.toSparseArray();
+    assertEquals(4, jsArray.getLength());
+    SortedMap<Long, ? extends JsVariable> sparseArray = jsArray.toSparseArray();
     assertEquals(2, sparseArray.size());
-    JsVariable firstElement = sparseArray.get(1);
-    JsVariable thirdElement = sparseArray.get(3);
-    assertNull(jsArray.get(-1));
-    assertNull(jsArray.get(0));
-    assertEquals(firstElement, jsArray.get(1));
-    assertEquals("[1]", firstElement.getName());
-    assertEquals("test_array[1]", firstElement.getFullyQualifiedName());
-    assertNull(jsArray.get(2));
-    assertEquals(thirdElement, jsArray.get(3));
-    assertEquals("[3]", thirdElement.getName());
-    assertEquals("test_array[3]", thirdElement.getFullyQualifiedName());
-    assertNull(jsArray.get(10));
+    JsVariable firstElement = sparseArray.get(1L);
+    JsVariable thirdElement = sparseArray.get(3L);
+    assertNull(jsArray.get(-1L));
+    assertNull(jsArray.get(0L));
+    assertEquals(firstElement, jsArray.get(1L));
+    assertEquals("1", firstElement.getName());
+    assertNull(jsArray.get(2L));
+    assertEquals(thirdElement, jsArray.get(3L));
+    assertEquals("3", thirdElement.getName());
+    assertNull(jsArray.get(10L));
     checkElementData(firstElement);
     checkElementData(thirdElement);
   }

@@ -5,15 +5,13 @@
 package org.chromium.sdk.internal.v8native;
 
 import static org.junit.Assert.*;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.JsEvaluateContext;
-import org.chromium.sdk.JsObject;
+import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsValue;
-import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.internal.browserfixture.AbstractAttachedTest;
 import org.chromium.sdk.internal.transport.FakeConnection;
@@ -32,19 +30,31 @@ public class LoadValueTest extends AbstractAttachedTest<FakeConnection>{
       latch.await();
     }
 
-    final JsVariable [] expressionResult = { null };
+    final JsValue [] expressionResult = { null };
     JsEvaluateContext.EvaluateCallback evaluateCallback = new JsEvaluateContext.EvaluateCallback() {
-      public void success(JsVariable variable) {
-        expressionResult[0] = variable;
+      @Override
+      public void success(ResultOrException result) {
+        result.accept(new ResultOrException.Visitor<Void>() {
+          @Override
+          public Void visitResult(JsValue value) {
+            expressionResult[0] = value;
+            return null;
+          }
+
+          @Override public Void visitException(JsValue exception) {
+            return null;
+          }
+        });
       }
-      public void failure(String errorMessage) {
+      @Override
+      public void failure(Exception cause) {
       }
     };
 
     suspendContext.getGlobalEvaluateContext().evaluateSync("#long_value", null, evaluateCallback);
     assertNotNull(expressionResult[0]);
 
-    JsValue value = expressionResult[0].getValue();
+    JsValue value = expressionResult[0];
     assertTrue(value.isTruncated());
     String shortValue = value.getValueString();
 

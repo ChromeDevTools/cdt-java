@@ -16,7 +16,6 @@ import java.util.Map;
 
 import org.chromium.sdk.Script;
 import org.chromium.sdk.Script.Type;
-import org.chromium.sdk.internal.ScriptBase;
 import org.chromium.sdk.internal.ScriptBase.Descriptor;
 import org.chromium.sdk.internal.v8native.protocol.V8ProtocolUtil;
 import org.chromium.sdk.internal.v8native.protocol.input.data.ScriptHandle;
@@ -61,8 +60,15 @@ public class ScriptManager {
    *         a valid script JSON
    */
   public Script addScript(ScriptHandle scriptBody, List<SomeHandle> refs) {
-    ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
+    ScriptImpl theScript = addScriptImpl(scriptBody, refs);
+    if (theScript != null) {
+      debugSession.getSessionManager().getDebugEventListener().scriptLoaded(theScript);
+    }
+    return theScript;
+  }
 
+  ScriptImpl addScriptImpl(ScriptHandle scriptBody, List<SomeHandle> refs) {
+    ScriptImpl theScript = findById(V8ProtocolUtil.getScriptIdFromResponse(scriptBody));
     synchronized (this) {
       if (theScript == null) {
         Descriptor<Long> desc = createDescriptor(scriptBody, refs, contextFilter);
@@ -76,8 +82,6 @@ public class ScriptManager {
         setSourceCode(scriptBody, theScript);
       }
     }
-
-    debugSession.getSessionManager().getDebugEventListener().scriptLoaded(theScript);
     return theScript;
   }
 

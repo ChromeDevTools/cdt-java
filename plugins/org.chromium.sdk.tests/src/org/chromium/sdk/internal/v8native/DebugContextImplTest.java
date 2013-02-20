@@ -16,6 +16,8 @@ import java.util.concurrent.CountDownLatch;
 import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsScope;
+import org.chromium.sdk.JsScope.Declarative;
+import org.chromium.sdk.JsScope.ObjectBased;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.DebugContext.StepAction;
 import org.chromium.sdk.JavascriptVm.BreakpointCallback;
@@ -68,7 +70,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     List<? extends JsScope> variableScopes =
         suspendContext.getCallFrames().get(0).getVariableScopes();
 
-    Collection<? extends JsVariable> variables = variableScopes.get(0).getVariables();
+    Collection<? extends JsVariable> variables = getScopeVariables(variableScopes.get(0));
 
     // This call invalidates the debug context for the "lookup" operation that is invoked
     // inside "ensureProperties".
@@ -122,7 +124,7 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
     List<? extends JsScope> variableScopes =
         suspendContext.getCallFrames().get(0).getVariableScopes();
 
-    Collection<? extends JsVariable> variables = variableScopes.get(0).getVariables();
+    Collection<? extends JsVariable> variables = getScopeVariables(variableScopes.get(0));
 
     JsObject jsObject = variables.iterator().next().getValue().asObject();
     // This call should finish OK
@@ -132,5 +134,20 @@ public class DebugContextImplTest extends AbstractAttachedTest<FakeConnection>{
   @Override
   protected FakeConnection createConnection() {
     return new FakeConnection(messageResponder);
+  }
+
+  private static Collection<? extends JsVariable> getScopeVariables(JsScope scope) {
+    return scope.accept(new JsScope.Visitor<Collection<? extends JsVariable>>() {
+      @Override
+      public Collection<? extends JsVariable> visitDeclarative(Declarative declarativeScope) {
+        return declarativeScope.getVariables();
+      }
+
+      @Override
+      public Collection<? extends JsVariable> visitObject(ObjectBased objectScope) {
+        return objectScope.getScopeObject().getProperties();
+      }
+
+    });
   }
 }
