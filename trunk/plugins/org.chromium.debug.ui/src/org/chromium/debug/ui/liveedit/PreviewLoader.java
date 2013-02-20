@@ -91,7 +91,7 @@ class PreviewLoader implements ValueSource<Optional<PreviewLoader.Data>> {
         });
         done(result);
       }
-      public void success(Object report,
+      public void success(boolean resumed, Object report,
           final UpdatableScript.ChangeDescription changeDescription) {
         Optional<Data> result;
         if (changeDescription == null) {

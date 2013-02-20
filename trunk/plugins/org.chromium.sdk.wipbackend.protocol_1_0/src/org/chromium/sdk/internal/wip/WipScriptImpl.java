@@ -109,7 +109,7 @@ class WipScriptImpl extends ScriptBase<String> {
       }
       ChangeDescription wrappedChangeDescription =
           UpdateResultParser.wrapChangeDescription(liveEditResult);
-      updateCallback.success(null, wrappedChangeDescription);
+      updateCallback.success(false, null, wrappedChangeDescription);
     }
   }
 }
