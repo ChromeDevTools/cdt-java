@@ -11,11 +11,11 @@ import java.util.List;
  */
 public interface UpdatableScript {
   /**
-   * Demands that script text should be replaced with a new one if possible. VM may get resumed
-   * after this command (this is defined by {@link ChangeDescription#isStackModified()}). In this
-   * case a standard 'suspended' notification is expected in a moment.
+   * Demands that script text should be replaced with a new one if possible. A technical VM step may
+   * be automatically scheduled after this command (this is defined
+   * by {@link ChangeDescription#isStackModified()}), that is a technical requirement of V8.
+   * VM should pause back in a moment, standard 'suspended' notification will be visible.
    * @param newSource new text of script
-   * TODO: add an explicit output parameter about whether VM was resumed or not.
    */
   RelayOk setSourceOnRemote(String newSource, UpdateCallback callback, SyncCallback syncCallback);
 
@@ -32,12 +32,13 @@ public interface UpdatableScript {
      * {@link DebugEventListener#scriptContentChanged} will
      * be called additionally. Besides, a current context may be dismissed and recreated after this
      * event. The order of all listed event notifications is not currently specified.
+     * @param resumed true if VM has been resumed to make post-change technical step
      * @param report unspecified implementation-dependent report for debugging purposes;
      *        may be null
      * @param changeDescription describes live editing change that has been applied or is planned
      *        to be applied; may be null if backend or VM does not support
      */
-    void success(Object report, ChangeDescription changeDescription);
+    void success(boolean resumed, Object report, ChangeDescription changeDescription);
     void failure(String message, Failure details);
   }
 

@@ -56,6 +56,7 @@ class WipScriptImpl extends ScriptBase<String> {
         new GenericCallback<SetScriptSourceData>() {
       @Override
       public void success(SetScriptSourceData value) {
+        // TODO: support 'step in recommended' here.
         RelayOk relayOk =
             possiblyUpdateCallFrames(preview, value, updateCallback, guard.getRelay());
         guard.discharge(relayOk);
@@ -112,7 +113,7 @@ class WipScriptImpl extends ScriptBase<String> {
       }
       ChangeDescription wrappedChangeDescription =
           UpdateResultParser.wrapChangeDescription(liveEditResult);
-      updateCallback.success(null, wrappedChangeDescription);
+      updateCallback.success(false, null, wrappedChangeDescription);
     }
   }
 }

@@ -40,7 +40,7 @@ public class PushChangesAction extends V8ScriptAction {
 
     UpdatableScript.UpdateCallback callback = new UpdatableScript.UpdateCallback() {
       @Override
-      public void success(Object report, ChangeDescription changeDescription) {
+      public void success(boolean resumed, Object report, ChangeDescription changeDescription) {
         ChromiumDebugPlugin.log(new Status(IStatus.OK, ChromiumDebugPlugin.PLUGIN_ID,
             "Script has been successfully updated on remote: " + report)); //$NON-NLS-1$
       }

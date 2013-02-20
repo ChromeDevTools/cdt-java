@@ -258,7 +258,7 @@ public class PushChangesWizard {
         input[0] = LiveEditResultDialog.createTextInput(text, changesPlan,
             failure);
       }
-      public void success(Object report,
+      public void success(boolean resumed, Object report,
           final UpdatableScript.ChangeDescription changeDescription) {
         if (changeDescription == null) {
           input[0] = LiveEditResultDialog.createTextInput(

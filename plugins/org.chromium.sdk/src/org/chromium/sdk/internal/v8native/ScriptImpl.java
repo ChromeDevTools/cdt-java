@@ -62,6 +62,7 @@ public class ScriptImpl extends ScriptBase<Long> {
         }
 
         LiveEditResult resultDescription = body.getResultDescription();
+        boolean resumed = false;
         if (!previewOnly) {
           ScriptLoadCallback scriptCallback = new ScriptLoadCallback() {
             @Override
@@ -88,6 +89,7 @@ public class ScriptImpl extends ScriptBase<Long> {
               // was sent so the context was dropped. Ignore this case.
             } else {
               debugContext.continueVm(DebugContext.StepAction.IN, 0, null);
+              resumed = true;
             }
           } else {
             if (resultDescription != null && resultDescription.stack_modified()) {
@@ -97,7 +99,7 @@ public class ScriptImpl extends ScriptBase<Long> {
         }
 
         if (callback != null) {
-          callback.success(body.getChangeLog(),
+          callback.success(resumed, body.getChangeLog(),
               UpdateResultParser.wrapChangeDescription(resultDescription));
         }
       }
