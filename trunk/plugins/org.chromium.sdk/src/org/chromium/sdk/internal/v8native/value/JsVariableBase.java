@@ -6,6 +6,7 @@ package org.chromium.sdk.internal.v8native.value;
 
 
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
+import org.chromium.sdk.JsDeclarativeVariable;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObjectProperty;
 import org.chromium.sdk.JsValue;
@@ -13,16 +14,22 @@ import org.chromium.sdk.JsValue.Type;
 import org.chromium.sdk.JsVariable;
 import org.chromium.sdk.RelayOk;
 import org.chromium.sdk.SyncCallback;
+import org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.JsEvaluateContextImpl;
+import org.chromium.sdk.internal.v8native.V8CommandCallbackBase;
+import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
+import org.chromium.sdk.internal.v8native.protocol.input.FailedCommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.SetVariableValueBody;
+import org.chromium.sdk.internal.v8native.protocol.input.SuccessCommandResponse;
+import org.chromium.sdk.internal.v8native.protocol.input.data.ValueHandle;
+import org.chromium.sdk.internal.v8native.protocol.output.ScopeMessage;
+import org.chromium.sdk.internal.v8native.protocol.output.SetVariableValueMessage;
+import org.chromium.sdk.util.GenericCallback;
 
 /**
  * A generic implementation of the JsVariable interface.
  */
 public abstract class JsVariableBase implements JsVariable {
-
-  private final Host host;
-
   /** The value of this variable. */
   private volatile JsValueBase value;
 
@@ -34,8 +41,7 @@ public abstract class JsVariableBase implements JsVariable {
    * @param valueLoader that owns this variable
    * @param valueData for this variable
    */
-  public JsVariableBase(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-    this.host = host;
+  public JsVariableBase(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
     this.rawName = rawName;
     this.value = createValue(valueLoader, valueData);
   }
@@ -76,49 +82,6 @@ public abstract class JsVariableBase implements JsVariable {
     return this.rawName;
   }
 
-  @Override
-  public boolean isMutable() {
-    return host != null && host.isMutable();
-  }
-
-  @Override
-  public boolean isReadable() {
-    // TODO(apavlov): implement once the readability metadata are available
-    return true;
-  }
-
-  @Override
-  public RelayOk setValue(JsValue newValue, final SetValueCallback userCallback,
-      SyncCallback syncCallback) throws UnsupportedOperationException {
-    JsValueBase jsValueBase = castValueArgument(newValue);
-    String variableName = rawName.toString();
-    JsEvaluateContextImpl.CallbackInternal hostCallback =
-        new JsEvaluateContextImpl.CallbackInternal() {
-      @Override
-      public void success(JsValueBase newValue) {
-        value = newValue;
-        if (userCallback != null) {
-          userCallback.success();
-        }
-      }
-
-      @Override
-      public void exception(JsValueBase exception) {
-        if (userCallback != null) {
-          userCallback.exceptionThrown(exception);
-        }
-      }
-
-      @Override
-      public void failure(Exception cause) {
-        if (userCallback != null) {
-          userCallback.failure(cause);
-        }
-      }
-    };
-    return host.setValue(variableName, jsValueBase, hostCallback, syncCallback);
-  }
-
   private static JsValueBase castValueArgument(JsValue value) {
     try {
       return (JsValueBase) value;
@@ -139,35 +102,114 @@ public abstract class JsVariableBase implements JsVariable {
   }
 
   /**
-   * A host of variable. It's responsible for changing variable value.
-   */
-  static abstract class Host {
-    private final InternalContext internalContext;
-
-    protected Host(InternalContext internalContext) {
-      this.internalContext = internalContext;
-    }
-
-    InternalContext getInternalContext() {
-      return internalContext;
-    }
-
-    abstract boolean isMutable();
-
-    abstract RelayOk setValue(String variableName, JsValueBase jsValueBase,
-        JsEvaluateContextImpl.CallbackInternal callback, SyncCallback syncCallback);
-  }
-
-  /**
    * A non-abstract class that implements JsVariable.
    */
   public static class Impl extends JsVariableBase {
-    public Impl(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-      super(host, valueLoader, valueData, rawName);
+    public Impl(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(valueLoader, valueData, rawName);
+    }
+    @Override public JsObjectProperty asObjectProperty() {
+      return null;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return null;
+    }
+  }
+
+  public static class Declarative extends JsVariableBase implements JsDeclarativeVariable {
+    private final VariableChanger changer;
+
+    public Declarative(ValueLoader valueLoader, ValueMirror valueData, Object rawName,
+        VariableChanger changer) {
+      super(valueLoader, valueData, rawName);
+      this.changer = changer;
     }
 
     @Override public JsObjectProperty asObjectProperty() {
       return null;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return this;
+    }
+
+    @Override public boolean isMutable() {
+      return changer != null;
+    }
+
+    @Override
+    public RelayOk setValue(JsValue newValue, final SetValueCallback userCallback,
+        SyncCallback syncCallback) throws UnsupportedOperationException {
+      JsValueBase jsValueBase = castValueArgument(newValue);
+      String variableName = getName();
+      GenericCallback<JsValueBase> hostCallback =
+          new GenericCallback<JsValueBase>() {
+        @Override
+        public void success(JsValueBase newValue) {
+          JsVariableBase baseThis = Declarative.this;
+          // Access to private field of base class.
+          baseThis.value = newValue;
+          if (userCallback != null) {
+            userCallback.success();
+          }
+        }
+
+        @Override
+        public void failure(Exception cause) {
+          if (userCallback != null) {
+            userCallback.failure(cause);
+          }
+        }
+      };
+      return changer.setValue(variableName, jsValueBase, hostCallback, syncCallback);
+    }
+  }
+
+  /**
+   * Responsible for changing declarative variable value. Contains all necessary data.
+   */
+  public static class VariableChanger {
+    private final InternalContext internalContext;
+    private final ScopeMessage.Ref scopeRef;
+
+    VariableChanger(InternalContext internalContext, ScopeMessage.Ref scopeRef) {
+      this.internalContext = internalContext;
+      this.scopeRef = scopeRef;
+    }
+
+    RelayOk setValue(String variableName, JsValueBase jsValueBase,
+        final GenericCallback<JsValueBase> callback, SyncCallback syncCallback) {
+      // TODO: check for host.
+      SetVariableValueMessage message = new SetVariableValueMessage(scopeRef, variableName,
+          jsValueBase.getJsonParam(internalContext));
+
+      V8CommandCallbackBase innerCallback = new V8CommandCallbackBase() {
+        @Override
+        public void success(SuccessCommandResponse successResponse) {
+          SetVariableValueBody body;
+          try {
+            body = successResponse.body().asSetVariableValueBody();
+          } catch (JsonProtocolParseException e) {
+            throw new RuntimeException(e);
+          }
+          ValueHandle newValueHandle = body.newValue();
+          ValueLoaderImpl valueLoader = internalContext.getValueLoader();
+          ValueMirror mirror = valueLoader.addDataToMap(newValueHandle);
+          JsValueBase value = JsVariableBase.createValue(valueLoader, mirror);
+          callback.success(value);
+        }
+
+        @Override
+        public void failure(String message, FailedCommandResponse.ErrorDetails errorDetails) {
+          callback.failure(new Exception(message));
+        }
+      };
+      try {
+        return internalContext.sendV8CommandAsync(message, true,
+            innerCallback, syncCallback);
+      } catch (ContextDismissedCheckedException e) {
+        return internalContext.getDebugSession().maybeRethrowContextException(e,
+            syncCallback);
+      }
     }
   }
 
@@ -177,11 +219,14 @@ public abstract class JsVariableBase implements JsVariable {
    * TODO: properly support getters, setters etc. once supported by protocol.
    */
   static class Property extends JsVariableBase implements JsObjectProperty {
-    public Property(Host host, ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
-      super(host, valueLoader, valueData, rawName);
+    public Property(ValueLoader valueLoader, ValueMirror valueData, Object rawName) {
+      super(valueLoader, valueData, rawName);
     }
     @Override public JsObjectProperty asObjectProperty() {
       return this;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return null;
     }
     @Override public boolean isWritable() {
       return true;

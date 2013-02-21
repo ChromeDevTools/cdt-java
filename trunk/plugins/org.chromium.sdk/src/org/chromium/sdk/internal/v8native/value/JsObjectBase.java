@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,11 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
 import org.chromium.sdk.JsVariable;
-import org.chromium.sdk.RelayOk;
-import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.internal.v8native.InternalContext;
-import org.chromium.sdk.internal.v8native.InternalContext.ContextDismissedCheckedException;
-import org.chromium.sdk.internal.v8native.JsEvaluateContextImpl;
 import org.chromium.sdk.internal.v8native.protocol.output.EvaluateMessage;
 import org.chromium.sdk.util.AsyncFuture;
 import org.chromium.sdk.util.MethodIsBlockingException;
@@ -274,57 +269,13 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
   private <V> List<V> createPropertiesFromMirror(List<ValueMirror> mirrorProperties,
       List<? extends PropertyReference> propertyRefs, Long hostRef,
       PropertyMirrorParser<V> parser) {
-    JsVariableBase.Host host;
-    if (hostRef == null) {
-      host = null;
-    } else {
-      host = new VariableHost(getInternalContext(), hostRef);
-    }
-
     List<V> result = new ArrayList<V>(mirrorProperties.size());
     for (int i = 0; i < mirrorProperties.size(); i++) {
       ValueMirror mirror = mirrorProperties.get(i);
       Object varName = propertyRefs.get(i).getName();
-      result.add(parser.parse(host, valueLoader, mirror, varName));
+      result.add(parser.parse(valueLoader, mirror, varName));
     }
     return result;
-  }
-
-  private static class VariableHost extends JsVariableBase.Host {
-    private final long objectRef;
-
-    protected VariableHost(InternalContext internalContext, long objectRef) {
-      super(internalContext);
-      this.objectRef = objectRef;
-    }
-
-    @Override boolean isMutable() {
-      return true;
-    }
-
-    @Override
-    RelayOk setValue(String variableName, JsValueBase jsValueBase,
-        JsEvaluateContextImpl.CallbackInternal callback, SyncCallback syncCallback) {
-      InternalContext intContext = getInternalContext();
-      JsEvaluateContextImpl evaluateContext =
-          intContext.getUserContext().getGlobalEvaluateContext();
-
-      String expression = "object[name] = value";
-      Map<String, EvaluateMessage.Value> additionalContext =
-          new LinkedHashMap<String, EvaluateMessage.Value>();
-      additionalContext.put("object", EvaluateMessage.Value.createForId(objectRef));
-      additionalContext.put("name", EvaluateMessage.Value.createForValue(variableName));
-      additionalContext.put("value", jsValueBase.getJsonParam(intContext));
-
-      try {
-        return evaluateContext.evaluateAsyncInternal(expression,
-            new ArrayList<Map.Entry<String, EvaluateMessage.Value>>(
-                additionalContext.entrySet()),
-            callback, syncCallback);
-      } catch (ContextDismissedCheckedException e) {
-        return intContext.getDebugSession().maybeRethrowContextException(e, syncCallback);
-      }
-    }
   }
 
   /**
@@ -333,15 +284,15 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
    * @param <V> variable or property type
    */
   private static abstract class PropertyMirrorParser<V> {
-    abstract V parse(JsVariableBase.Host host, ValueLoader valueLoader, ValueMirror valueData,
+    abstract V parse(ValueLoader valueLoader, ValueMirror valueData,
         Object rawName);
 
     static final PropertyMirrorParser<JsVariableBase.Impl> VARIABLE =
         new PropertyMirrorParser<JsVariableBase.Impl>() {
           @Override
-          JsVariableBase.Impl parse(JsVariableBase.Host host, ValueLoader valueLoader,
+          JsVariableBase.Impl parse(ValueLoader valueLoader,
               ValueMirror valueData, Object rawName) {
-            return new JsVariableBase.Impl(host, valueLoader, valueData, rawName);
+            return new JsVariableBase.Impl(valueLoader, valueData, rawName);
           }
         };
 
@@ -350,9 +301,9 @@ public abstract class JsObjectBase<D> extends JsValueBase implements JsObject {
     static final PropertyMirrorParser<JsVariableBase.Property> PROPERTY =
         new PropertyMirrorParser<JsVariableBase.Property>() {
           @Override
-          JsVariableBase.Property parse(JsVariableBase.Host host, ValueLoader valueLoader,
+          JsVariableBase.Property parse(ValueLoader valueLoader,
               ValueMirror valueData, Object rawName) {
-            return new JsVariableBase.Property(host, valueLoader, valueData, rawName);
+            return new JsVariableBase.Property(valueLoader, valueData, rawName);
           }
         };
   }

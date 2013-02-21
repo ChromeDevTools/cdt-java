@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsDeclarativeVariable;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
@@ -101,6 +102,9 @@ class WipValueBuilder {
         qualifiedNameBuilder, "setter");
 
     return new ObjectPropertyBase(jsValue, nameBuilder) {
+      @Override public JsDeclarativeVariable asDeclarativeVariable() {
+        return null;
+      }
       @Override public boolean isWritable() {
         return propertyDescriptor.writable() == Boolean.TRUE;
       }
@@ -199,6 +203,18 @@ class WipValueBuilder {
     }
     JsValue jsValue = wrap(valueData, qualifiedNameBuilder);
     return createVariable(jsValue, nameBuilder);
+  }
+
+  public JsDeclarativeVariable createDeclarativeVariable(RemoteObjectValue valueData,
+      ValueNameBuilder nameBuilder) {
+    QualifiedNameBuilder qualifiedNameBuilder;
+    if (nameBuilder == null) {
+      qualifiedNameBuilder = null;
+    } else {
+      qualifiedNameBuilder = nameBuilder.getQualifiedNameBuilder();
+    }
+    JsValue jsValue = wrap(valueData, qualifiedNameBuilder);
+    return new DeclarativeVariable(jsValue, nameBuilder);
   }
 
   public JsValue wrap(RemoteObjectValue valueData, QualifiedNameBuilder nameBuilder) {
@@ -647,7 +663,6 @@ class WipValueBuilder {
       this.nameBuilder = nameBuilder;
     }
 
-    @Override
     public boolean isReadable() {
       return true;
     }
@@ -660,17 +675,6 @@ class WipValueBuilder {
     @Override
     public String getName() {
       return nameBuilder.getShortName();
-    }
-
-    @Override
-    public boolean isMutable() {
-      return false;
-    }
-
-    @Override
-    public RelayOk setValue(JsValue newValue, SetValueCallback callback,
-        SyncCallback syncCallback) throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
     }
 
     public String getFullyQualifiedName() {
@@ -696,6 +700,29 @@ class WipValueBuilder {
 
     @Override public JsObjectProperty asObjectProperty() {
       return null;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return null;
+    }
+  }
+
+  private static class DeclarativeVariable extends VariableImpl implements JsDeclarativeVariable {
+    DeclarativeVariable(JsValue jsValue, ValueNameBuilder nameBuilder) {
+      super(jsValue, nameBuilder);
+    }
+
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return this;
+    }
+
+    @Override public boolean isMutable() {
+      return false;
+    }
+
+    @Override
+    public RelayOk setValue(JsValue newValue, SetValueCallback callback,
+        SyncCallback syncCallback) throws UnsupportedOperationException {
+      throw new UnsupportedOperationException();
     }
   }
 
