@@ -22,10 +22,7 @@ import org.chromium.sdk.Breakpoint;
 import org.chromium.sdk.CallFrame;
 import org.chromium.sdk.DebugContext;
 import org.chromium.sdk.DebugContext.StepAction;
-import org.chromium.sdk.JsScope.Declarative;
-import org.chromium.sdk.JsScope.ObjectBased;
-import org.chromium.sdk.JsScope.Type;
-import org.chromium.sdk.JsScope.Visitor;
+import org.chromium.sdk.JsDeclarativeVariable;
 import org.chromium.sdk.ExceptionData;
 import org.chromium.sdk.JavascriptVm;
 import org.chromium.sdk.JsEvaluateContext;
@@ -486,7 +483,7 @@ class WipContextBuilder {
       }
 
       @Override
-      public List<? extends JsVariable> getVariables() throws MethodIsBlockingException {
+      public List<? extends JsDeclarativeVariable> getVariables() throws MethodIsBlockingException {
         int currentCacheState = valueLoader.getCacheState();
         if (propertiesRef.isInitialized()) {
           ScopeVariables result = propertiesRef.getSync().get();
@@ -515,7 +512,8 @@ class WipContextBuilder {
           @Override
           public Getter<ScopeVariables> process(
               List<? extends PropertyDescriptorValue> propertyList, int currentCacheState) {
-            final List<JsVariable> properties = new ArrayList<JsVariable>(propertyList.size());
+            final List<JsDeclarativeVariable> properties =
+                new ArrayList<JsDeclarativeVariable>(propertyList.size());
 
             WipValueBuilder valueBuilder = valueLoader.getValueBuilder();
             for (PropertyDescriptorValue property : propertyList) {
@@ -523,11 +521,12 @@ class WipContextBuilder {
 
               ValueNameBuilder valueNameBuilder =
                   WipExpressionBuilder.createRootName(name, false);
-              JsVariable variable =
-                  valueBuilder.createVariable(property.value(), valueNameBuilder);
+              JsDeclarativeVariable variable =
+                  valueBuilder.createDeclarativeVariable(property.value(), valueNameBuilder);
               properties.add(variable);
             }
-            final ScopeVariables scopeVariables = new ScopeVariables(properties, currentCacheState);
+            final ScopeVariables scopeVariables =
+                new ScopeVariables(properties, currentCacheState);
             return new Getter<ScopeVariables>() {
               @Override
               ScopeVariables get() {
@@ -631,10 +630,10 @@ class WipContextBuilder {
   }
 
   private static class ScopeVariables {
-    final List<JsVariable> variables;
+    final List<JsDeclarativeVariable> variables;
     final int cacheState;
 
-    ScopeVariables(List<JsVariable> variables, int cacheState) {
+    ScopeVariables(List<JsDeclarativeVariable> variables, int cacheState) {
       this.variables = variables;
       this.cacheState = cacheState;
     }
@@ -643,7 +642,7 @@ class WipContextBuilder {
   private final Getter<ScopeVariables> EMPTY_SCOPE_VARIABLES_OPTIONAL =
       new Getter<ScopeVariables>() {
         private final ScopeVariables value =
-          new ScopeVariables(Collections.<JsVariable>emptyList(), Integer.MAX_VALUE);
+          new ScopeVariables(Collections.<JsDeclarativeVariable>emptyList(), Integer.MAX_VALUE);
 
         @Override ScopeVariables get() {
           return value;

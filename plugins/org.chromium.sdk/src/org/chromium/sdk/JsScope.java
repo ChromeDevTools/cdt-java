@@ -55,7 +55,7 @@ public interface JsScope {
      * @return the variables known in this scope, in lexicographical order
      * @throws MethodIsBlockingException because it may need to load value from remote
      */
-    List<? extends JsVariable> getVariables() throws MethodIsBlockingException;
+    List<? extends JsDeclarativeVariable> getVariables() throws MethodIsBlockingException;
   }
 
   /**

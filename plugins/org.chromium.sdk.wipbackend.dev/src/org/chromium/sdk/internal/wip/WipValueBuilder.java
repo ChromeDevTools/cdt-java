@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 
 import org.chromium.sdk.FunctionScopeExtension;
 import org.chromium.sdk.JsArray;
+import org.chromium.sdk.JsDeclarativeVariable;
 import org.chromium.sdk.JsEvaluateContext.EvaluateCallback;
 import org.chromium.sdk.JsFunction;
 import org.chromium.sdk.JsObject;
@@ -103,10 +104,6 @@ class WipValueBuilder {
     final JsValue setter = wrap(propertyDescriptor.set());
 
     return new ObjectPropertyBase(jsValue, name) {
-
-      @Override public boolean isMutable() {
-        return false;
-      }
       @Override public boolean isWritable() {
         return propertyDescriptor.writable();
       }
@@ -133,12 +130,6 @@ class WipValueBuilder {
       }
 
       @Override
-      public RelayOk setValue(JsValue newValue, SetValueCallback callback,
-          SyncCallback syncCallback) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public RelayOk evaluateGet(EvaluateCallback callback, SyncCallback syncCallback) {
         WipContextBuilder.GlobalEvaluateContext evaluateContext =
             new WipContextBuilder.GlobalEvaluateContext(valueLoader);
@@ -162,38 +153,35 @@ class WipValueBuilder {
     };
   }
 
-  public JsVariable createVariable(RemoteObjectValue valueData, String name,
+  public JsVariable createVariable(RemoteObjectValue valueData, String name) {
+    return new VariableImpl(name, wrap(valueData));
+  }
+
+  public JsDeclarativeVariable createDeclarativeVariable(RemoteObjectValue valueData, String name,
       final WipContextBuilder.ScopeParams scopeParams) {
     JsValue jsValue = wrap(valueData);
-
-    VariableValueChanger valueChanger;
-    if (scopeParams == null) {
-      valueChanger = null;
-    } else {
-      valueChanger = new VariableValueChanger() {
-        @Override
-        RelayOk setValue(String variableName, JsValue newValue,
-            final GenericCallback<JsValue> callback, SyncCallback syncCallback)
-            throws UnsupportedOperationException {
-          final JsValueBase jsValueBase = JsValueBase.cast(newValue);
-          SetVariableValueParams params = new SetVariableValueParams(scopeParams.getScopeNumber(),
-              variableName, jsValueBase.createCallArgumentParam(), scopeParams.getCallFrameId(),
-              scopeParams.getFunctionId());
-          WipCommandCallback rawCallback = new WipCommandCallback.Default() {
-            @Override protected void onSuccess(Success success) {
-              callback.success(jsValueBase);
-            }
-            @Override protected void onError(String message) {
-              callback.failure(new Exception(message));
-            }
-          };
-          return valueLoader.getTabImpl().getCommandProcessor().send(params,
-              rawCallback, syncCallback);
-        }
-      };
-    }
-
-    return new VariableImpl(name, jsValue, valueChanger);
+    VariableValueChanger valueChanger = new VariableValueChanger() {
+          @Override
+          RelayOk setValue(String variableName, JsValue newValue,
+              final GenericCallback<JsValue> callback, SyncCallback syncCallback)
+                  throws UnsupportedOperationException {
+            final JsValueBase jsValueBase = JsValueBase.cast(newValue);
+            SetVariableValueParams params = new SetVariableValueParams(scopeParams.getScopeNumber(),
+                variableName, jsValueBase.createCallArgumentParam(), scopeParams.getCallFrameId(),
+                scopeParams.getFunctionId());
+            WipCommandCallback rawCallback = new WipCommandCallback.Default() {
+              @Override protected void onSuccess(Success success) {
+                callback.success(jsValueBase);
+              }
+              @Override protected void onError(String message) {
+                callback.failure(new Exception(message));
+              }
+            };
+            return valueLoader.getTabImpl().getCommandProcessor().send(params,
+                rawCallback, syncCallback);
+          }
+        };
+    return new DeclarativeVariable(name, jsValue, valueChanger);
   }
 
   public JsValue wrap(RemoteObjectValue valueData) {
@@ -647,22 +635,35 @@ class WipValueBuilder {
       this.name = name;
     }
 
-    @Override
-    public boolean isReadable() {
-      return true;
-    }
-
-    @Override
-    public String getName() {
+    @Override public String getName() {
       return name;
     }
   }
 
   private static class VariableImpl extends VariableBase {
+    private final JsValue jsValue;
+
+    VariableImpl(String name, JsValue jsValue) {
+      super(name);
+      this.jsValue = jsValue;
+    }
+
+    @Override public JsObjectProperty asObjectProperty() {
+      return null;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return null;
+    }
+    @Override public JsValue getValue() {
+      return jsValue;
+    }
+  }
+
+  private static class DeclarativeVariable extends VariableBase implements JsDeclarativeVariable {
     private final VariableValueChanger valueChanger;
     private volatile JsValue jsValue;
 
-    VariableImpl(String name, JsValue jsValue, VariableValueChanger valueChanger) {
+    DeclarativeVariable(String name, JsValue jsValue, VariableValueChanger valueChanger) {
       super(name);
       this.jsValue = jsValue;
       this.valueChanger = valueChanger;
@@ -670,6 +671,9 @@ class WipValueBuilder {
 
     @Override public JsObjectProperty asObjectProperty() {
       return null;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return this;
     }
     @Override public boolean isMutable() {
       return valueChanger != null;
@@ -687,7 +691,7 @@ class WipValueBuilder {
       GenericCallback<JsValue> rawCallback = new GenericCallback<JsValue>() {
         @Override
         public void success(JsValue value) {
-          VariableImpl.this.jsValue = value;
+          DeclarativeVariable.this.jsValue = value;
           if (callback != null) {
             callback.success();
           }
@@ -724,6 +728,9 @@ class WipValueBuilder {
     }
     @Override public JsObjectProperty asObjectProperty() {
       return this;
+    }
+    @Override public JsDeclarativeVariable asDeclarativeVariable() {
+      return null;
     }
   }
 

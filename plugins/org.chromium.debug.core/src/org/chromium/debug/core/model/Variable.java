@@ -12,6 +12,7 @@ import java.util.Map;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.sdk.CallbackSemaphore;
 import org.chromium.sdk.FunctionScopeExtension;
+import org.chromium.sdk.JsDeclarativeVariable;
 import org.chromium.sdk.JsEvaluateContext;
 import org.chromium.sdk.JsEvaluateContext.ResultOrException;
 import org.chromium.sdk.JsFunction;
@@ -42,26 +43,22 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
   public static Variable forRealValue(EvaluateContext evaluateContext, JsVariable jsVariable,
       boolean isInternalProperty, ExpressionTracker.Node trackerNode) {
     ValueBase value;
-    if (jsVariable.isReadable()) {
-      JsValue jsValue = jsVariable.getValue();
-      if (jsValue == null) {
-        JsObjectProperty objectProperty = jsVariable.asObjectProperty();
-        if (objectProperty == null) {
-          value = new ValueBase.ErrorMessageValue(evaluateContext,
-              "Variable value is unavailable");
-        } else {
-          // This is blocking. Consider making this call async and the entire method async
-          // to parallel if for several properties.
-          value = calculateAccessorPropertyBlocking(objectProperty, evaluateContext, trackerNode);
-          if (value == null) {
-            value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable object property");
-          }
-        }
+    JsValue jsValue = jsVariable.getValue();
+    if (jsValue == null) {
+      JsObjectProperty objectProperty = jsVariable.asObjectProperty();
+      if (objectProperty == null) {
+        value = new ValueBase.ErrorMessageValue(evaluateContext,
+            "Variable value is unavailable");
       } else {
-        value = Value.create(evaluateContext, jsValue, trackerNode);
+        // This is blocking. Consider making this call async and the entire method async
+        // to parallelize it for several properties.
+        value = calculateAccessorPropertyBlocking(objectProperty, evaluateContext, trackerNode);
+        if (value == null) {
+          value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable object property");
+        }
       }
     } else {
-      value = new ValueBase.ErrorMessageValue(evaluateContext, "Unreadable variable");
+      value = Value.create(evaluateContext, jsValue, trackerNode);
     }
 
     return new Real(evaluateContext, jsVariable, value, isInternalProperty, trackerNode);
@@ -298,25 +295,16 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     }
 
     private void setValue(JsValue newValue) throws DebugException {
-      class CallbackImpl implements JsVariable.SetValueCallback {
-        boolean successful = false;
-        JsValue exception = null;
-        Exception cause = null;
-        @Override public void success() {
-          successful = true;
-        }
-        @Override public void exceptionThrown(JsValue exception) {
-          this.exception = exception;
-        }
-        @Override public void failure(Exception cause) {
-          this.cause = cause;
-        }
+      ValueChanger changer = createValueChanger();
+      if (changer == null) {
+        throw new UnsupportedOperationException();
       }
 
-      CallbackImpl callback = new CallbackImpl();
+      ValueChanger.Callback callback = new ValueChanger.Callback();
       CallbackSemaphore syncCallback = new CallbackSemaphore();
 
-      RelayOk relayOk = jsVariable.setValue(newValue, callback, syncCallback);
+      RelayOk relayOk = changer.setValue(newValue, callback, syncCallback);
+
       syncCallback.acquireDefault(relayOk);
 
       if (!callback.successful) {
@@ -341,7 +329,7 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     }
 
     public boolean supportsValueModification() {
-      return jsVariable.isMutable();
+      return createValueChanger() != null;
     }
 
     @Override public String createWatchExpression() {
@@ -349,6 +337,58 @@ public abstract class Variable extends DebugElementImpl.WithEvaluate implements 
     }
     public String createHolderWatchExpression() {
       return expressionTrackerNode.calculateParentQualifiedName();
+    }
+
+    private ValueChanger createValueChanger() {
+      final JsDeclarativeVariable declarative = jsVariable.asDeclarativeVariable();
+      if (declarative != null) {
+        if (!declarative.isMutable()) {
+          return null;
+        }
+        return new ValueChanger() {
+          @Override
+          RelayOk setValue(JsValue newValue,
+              final Callback callback, CallbackSemaphore syncCallback) {
+            JsDeclarativeVariable.SetValueCallback rawCallback =
+                new JsDeclarativeVariable.SetValueCallback() {
+              @Override public void success() {
+                callback.success();
+              }
+              @Override public void failure(Exception cause) {
+                callback.failure(cause);
+              }
+            };
+            return declarative.setValue(newValue, rawCallback, syncCallback);
+          }
+        };
+      }
+      JsObjectProperty property = jsVariable.asObjectProperty();
+      if (property != null) {
+        // TODO: implement object property setting with brute-force property assignment.
+        //       Note, that correct object instance is required (not a proto object instance).
+        return null;
+      }
+      return null;
+    }
+
+    private static abstract class ValueChanger {
+      abstract RelayOk setValue(JsValue newValue,
+          Callback callback, CallbackSemaphore syncCallback);
+
+      static class Callback {
+        boolean successful = false;
+        JsValue exception = null;
+        Exception cause = null;
+        void success() {
+          successful = true;
+        }
+        void exceptionThrown(JsValue exception) {
+          this.exception = exception;
+        }
+        void failure(Exception cause) {
+          this.cause = cause;
+        }
+      }
     }
   }
 
