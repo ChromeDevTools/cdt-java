@@ -6,7 +6,7 @@ package org.chromium.sdk.internal;
 
 import java.net.SocketAddress;
 
-import org.chromium.sdk.BrowserFactory;
+import org.chromium.sdk.JavascriptVmFactory;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.StandaloneVm;
 import org.chromium.sdk.internal.standalonev8.StandaloneVmImpl;
@@ -18,9 +18,9 @@ import org.chromium.sdk.internal.transport.SocketConnection;
  * A default implementation of the BrowserFactory interface.
  * TODO: rename it somehow. It's not only a browser factory.
  */
-public class BrowserFactoryImpl extends BrowserFactory {
+public class JavascriptVmFactoryImpl extends JavascriptVmFactory {
 
-  public static final BrowserFactoryImpl INSTANCE = new BrowserFactoryImpl();
+  public static final JavascriptVmFactoryImpl INSTANCE = new JavascriptVmFactoryImpl();
 
   private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 1000;
 

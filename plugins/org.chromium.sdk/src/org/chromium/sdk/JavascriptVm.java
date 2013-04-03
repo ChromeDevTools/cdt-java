@@ -13,7 +13,7 @@ import org.chromium.sdk.util.MethodIsBlockingException;
  * Abstraction of a remote JavaScript virtual machine. Clients can use it to
  * conduct debugging process.
  * @see Browser.TabConnector#attach
- * @see BrowserFactory#createStandalone
+ * @see JavascriptVmFactory#createStandalone
  * @see org.chromium.sdk.wip.WipBrowser.WipTabConnector#attach(TabDebugEventListener)
  */
 public interface JavascriptVm {

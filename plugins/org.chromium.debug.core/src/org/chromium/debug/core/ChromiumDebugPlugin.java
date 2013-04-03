@@ -18,7 +18,7 @@ import org.chromium.debug.core.model.ConnectedTargetData;
 import org.chromium.debug.core.model.DebugTargetImpl;
 import org.chromium.debug.core.model.VmResource;
 import org.chromium.debug.core.util.ScriptTargetMapping;
-import org.chromium.sdk.BrowserFactory;
+import org.chromium.sdk.JavascriptVmFactory;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterManager;
@@ -58,12 +58,12 @@ public class ChromiumDebugPlugin extends Plugin {
     manager.registerAdapters(breakpointWorkbenchAdapterFactory, ChromiumLineBreakpoint.class);
     plugin = this;
 
-    BrowserFactory.getRootLogger().addHandler(SDK_LOG_HANDLER);
+    JavascriptVmFactory.getRootLogger().addHandler(SDK_LOG_HANDLER);
   }
 
   @Override
   public void stop(BundleContext context) throws Exception {
-    BrowserFactory.getRootLogger().removeHandler(SDK_LOG_HANDLER);
+    JavascriptVmFactory.getRootLogger().removeHandler(SDK_LOG_HANDLER);
     plugin = null;
     IAdapterManager manager = Platform.getAdapterManager();
     manager.unregisterAdapters(breakpointWorkbenchAdapterFactory);

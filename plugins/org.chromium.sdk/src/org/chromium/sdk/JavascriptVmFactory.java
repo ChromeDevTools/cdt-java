@@ -7,22 +7,24 @@ package org.chromium.sdk;
 import java.net.SocketAddress;
 import java.util.logging.Logger;
 
-import org.chromium.sdk.internal.BrowserFactoryImpl;
+import org.chromium.sdk.internal.JavascriptVmFactoryImpl;
+import org.chromium.sdk.wip.WipBrowser;
+import org.chromium.sdk.wip.WipBrowserFactory;
 
 /**
- * A factory for Browser instances.
- * TODO: reflect that it only creates standalone client, no browser.
+ * A factory for {@link JavascriptVm} instances. Note that {@link WipBrowser} instances are
+ * created in a specialized class {@link WipBrowserFactory}.
  */
-public abstract class BrowserFactory {
+public abstract class JavascriptVmFactory {
   /**
-   * Gets a {@link BrowserFactory} instance. This method should be overridden by
+   * Gets a {@link JavascriptVmFactory} instance. This method should be overridden by
    * implementations that want to construct other implementations of
    * {@link Browser}.
    *
-   * @return a BrowserFactory singleton instance
+   * @return a {@link JavascriptVmFactory} singleton instance
    */
-  public static BrowserFactory getInstance() {
-    return BrowserFactoryImpl.INSTANCE;
+  public static JavascriptVmFactory getInstance() {
+    return JavascriptVmFactoryImpl.INSTANCE;
   }
 
   /**
