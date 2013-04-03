@@ -18,7 +18,7 @@ import java.util.List;
 import org.chromium.debug.core.ChromiumDebugPlugin;
 import org.chromium.debug.core.ScriptNameManipulator;
 import org.chromium.debug.core.util.JavaScriptRegExpSupport;
-import org.chromium.sdk.BrowserFactory;
+import org.chromium.sdk.JavascriptVmFactory;
 import org.chromium.sdk.ConnectionLogger;
 import org.chromium.sdk.DebugEventListener;
 import org.chromium.sdk.JavascriptVm;
@@ -191,7 +191,7 @@ public class JavascriptVmEmbedderFactory {
     SocketAddress address = new InetSocketAddress(host, port);
     ConnectionLogger connectionLogger =
       connectionLoggerFactory.createLogger(address.toString());
-    final StandaloneVm standaloneVm = BrowserFactory.getInstance().createStandalone(address,
+    final StandaloneVm standaloneVm = JavascriptVmFactory.getInstance().createStandalone(address,
         connectionLogger);
 
     return new JavascriptVmEmbedder.ConnectionToRemote() {
