@@ -27,6 +27,9 @@ public interface WipTabList {
     String type();
 
     @JsonOptionalField
+    String description();
+
+    @JsonOptionalField
     String devtoolsFrontendUrl();
 
     @JsonOptionalField
