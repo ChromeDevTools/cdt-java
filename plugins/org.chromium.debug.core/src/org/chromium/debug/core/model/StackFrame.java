@@ -25,6 +25,7 @@ import org.chromium.sdk.Script;
 import org.chromium.sdk.SyncCallback;
 import org.chromium.sdk.TextStreamPosition;
 import org.chromium.sdk.util.GenericCallback;
+import org.chromium.sdk.util.JavaScriptExpressionBuilder;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
@@ -242,9 +243,9 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
     // Get property name as String or Long.
     private Object getNameObject(Variable var) {
       String name = var.getName();
-      int len = name.length();
-      if (len >= 3 && name.charAt(0) == '[' && name.charAt(len-1) == ']') {
-        return Long.valueOf(name.substring(1, len - 1));
+      Long num = JavaScriptExpressionBuilder.parsePropertyNameAsArrayIndex(name);
+      if (num != null) {
+        return num;
       }
       return name;
     }
@@ -256,7 +257,7 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
           Long n2 = (Long) nameObj2;
           return n1.compareTo(n2);
         } else {
-          return COMPARE_INT_WITH_STRING;
+          return COMPARE_LONG_WITH_STRING;
         }
       } else {
         String s1 = (String) nameObj1;
@@ -264,12 +265,12 @@ public class StackFrame extends StackFrameBase implements IDropToFrame {
           String s2 = (String) nameObj2;
           return s1.compareTo(s2);
         } else {
-          return -COMPARE_INT_WITH_STRING;
+          return -COMPARE_LONG_WITH_STRING;
         }
       }
     }
     // Strings go before numbers.
-    private static final int COMPARE_INT_WITH_STRING = 1;
+    private static final int COMPARE_LONG_WITH_STRING = 1;
   };
 
   private SourcePosition getUserPosition() {
