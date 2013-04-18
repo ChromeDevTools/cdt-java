@@ -70,7 +70,8 @@ public class ArrayValue extends Value implements IIndexedValue {
 
   @Override
   public boolean hasVariables() throws DebugException {
-    return getElements().length > 0;
+    // Being optimistic. Too complicated to check accurately.
+    return true;
   }
 
   private static final Set<String> ARRAY_HIDDEN_PROPERTY_NAMES = Collections.singleton("length");
