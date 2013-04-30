@@ -392,15 +392,32 @@ public class BreakpointSynchronizer {
   private static class PlannedTaskHelper implements SyncCallback {
     private final StatusBuilder statusBuilder;
     private volatile Exception exception = null;
+    private boolean registerCalled = false;
+    private boolean doneCallDeferred = false;
     PlannedTaskHelper(StatusBuilder statusBuilder) {
       this.statusBuilder = statusBuilder;
     }
     void registerSelf(RelayOk relayOk) {
       statusBuilder.plan(relayOk);
+      boolean needCallDeferred;
+      synchronized (this) {
+        registerCalled = true;
+        needCallDeferred = doneCallDeferred;
+      }
+      if (needCallDeferred) {
+        statusBuilder.done(exception);
+      }
     }
     public void callbackDone(RuntimeException e) {
       if (e != null) {
         exception = e;
+      }
+      synchronized (this) {
+        if (!registerCalled) {
+          // Defer until helper is registered.
+          doneCallDeferred = true;
+          return;
+        }
       }
       statusBuilder.done(exception);
     }
@@ -410,7 +427,7 @@ public class BreakpointSynchronizer {
   }
 
   /**
-   * A class that contains several conunters.
+   * A class that contains several counters.
    */
   private static class ReportBuilder {
     enum Property {
