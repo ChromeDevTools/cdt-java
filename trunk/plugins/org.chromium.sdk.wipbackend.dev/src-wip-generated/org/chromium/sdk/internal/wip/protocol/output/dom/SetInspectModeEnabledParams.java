@@ -5,7 +5,7 @@
 package org.chromium.sdk.internal.wip.protocol.output.dom;
 
 /**
-Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted. Backend then generates 'inspect' command upon element selection.
+Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted. Backend then generates 'inspectNodeRequested' event upon element selection.
  */
 public class SetInspectModeEnabledParams extends org.chromium.sdk.internal.wip.protocol.output.WipParams {
   /**

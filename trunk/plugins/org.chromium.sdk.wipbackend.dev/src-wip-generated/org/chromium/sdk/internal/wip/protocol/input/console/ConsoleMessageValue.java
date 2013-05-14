@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@136521
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -70,19 +70,22 @@ public interface ConsoleMessageValue {
    Message source.
    */
   public enum Source {
-    HTML,
-    WML,
     XML,
     JAVASCRIPT,
     NETWORK,
     CONSOLE_API,
+    STORAGE,
+    APPCACHE,
+    RENDERING,
+    CSS,
+    SECURITY,
     OTHER,
+    DEPRECATION,
   }
   /**
    Message severity.
    */
   public enum Level {
-    TIP,
     LOG,
     WARNING,
     ERROR,
@@ -95,6 +98,7 @@ public interface ConsoleMessageValue {
     LOG,
     DIR,
     DIRXML,
+    TABLE,
     TRACE,
     CLEAR,
     STARTGROUP,
@@ -102,5 +106,7 @@ public interface ConsoleMessageValue {
     ENDGROUP,
     ASSERT,
     TIMING,
+    PROFILE,
+    PROFILEEND,
   }
 }
