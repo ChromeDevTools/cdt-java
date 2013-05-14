@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
+// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@150309 with change #14672031
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
