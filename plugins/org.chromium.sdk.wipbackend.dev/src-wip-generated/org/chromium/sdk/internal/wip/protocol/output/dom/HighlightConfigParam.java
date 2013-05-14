@@ -14,8 +14,9 @@ public class HighlightConfigParam extends org.json.simple.JSONObject {
    @param paddingColorOpt The padding highlight fill color (default: transparent).
    @param borderColorOpt The border highlight fill color (default: transparent).
    @param marginColorOpt The margin highlight fill color (default: transparent).
+   @param eventTargetColorOpt The event target element highlight fill color (default: transparent).
    */
-  public HighlightConfigParam(Boolean showInfoOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam paddingColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam borderColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam marginColorOpt) {
+  public HighlightConfigParam(Boolean showInfoOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam contentColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam paddingColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam borderColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam marginColorOpt, org.chromium.sdk.internal.wip.protocol.output.dom.RGBAParam eventTargetColorOpt) {
     if (showInfoOpt != null) {
       this.put("showInfo", showInfoOpt);
     }
@@ -30,6 +31,9 @@ public class HighlightConfigParam extends org.json.simple.JSONObject {
     }
     if (marginColorOpt != null) {
       this.put("marginColor", marginColorOpt);
+    }
+    if (eventTargetColorOpt != null) {
+      this.put("eventTargetColor", eventTargetColorOpt);
     }
   }
 

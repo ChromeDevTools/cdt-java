@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@142888
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -14,7 +14,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.BreakpointResolvedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CallFrameValue.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CanSetScriptSourceData.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.CausesRecompilationData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.CompileScriptData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.EvaluateOnCallFrameData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.FunctionDetailsValue.class,
@@ -36,7 +35,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetBreakpointData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.class,
     org.chromium.sdk.internal.wip.protocol.input.debugger.SetScriptSourceData.Result.class,
-    org.chromium.sdk.internal.wip.protocol.input.debugger.SupportsSeparateScriptCompilationAndExecutionData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.AttributeModifiedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.AttributeRemovedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.CharacterDataModifiedEventData.class,
@@ -51,9 +49,11 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.dom.GetOuterHTMLData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.GetSearchResultsData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.InlineStyleInvalidatedEventData.class,
+    org.chromium.sdk.internal.wip.protocol.input.dom.InspectNodeRequestedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.MoveToData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.NodeValue.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.PerformSearchData.class,
+    org.chromium.sdk.internal.wip.protocol.input.dom.PushNodeByBackendIdToFrontendData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.PushNodeByPathToFrontendData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.QuerySelectorAllData.class,
     org.chromium.sdk.internal.wip.protocol.input.dom.QuerySelectorData.class,
@@ -91,10 +91,6 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.WebSocketWillSendHandshakeRequestEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.AddScriptToEvaluateOnLoadData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanContinuouslyPaintData.class,
-    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceMetricsData.class,
-    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideDeviceOrientationData.class,
-    org.chromium.sdk.internal.wip.protocol.input.page.CanOverrideGeolocationData.class,
-    org.chromium.sdk.internal.wip.protocol.input.page.CanShowDebugBordersData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CanShowFPSCounterData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CaptureScreenshotData.class,
     org.chromium.sdk.internal.wip.protocol.input.page.CookieValue.class,

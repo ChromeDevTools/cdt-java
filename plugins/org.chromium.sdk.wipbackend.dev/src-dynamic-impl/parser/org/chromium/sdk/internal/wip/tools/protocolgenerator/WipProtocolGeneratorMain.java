@@ -167,6 +167,7 @@ public class WipProtocolGeneratorMain {
     private static final Pattern REVISION_PATTERN = Pattern.compile("^\"([\\d]+)//");
   }
 
+  // Additional URL syntax for a specific revision is ".../blink/!svn/bc/NNNNN/trunk/..."
   private static final ModelResourceLocation JSON_MODEL_FILE_URL = new RemoteSvnLocation(
-      "http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json");
+      "http://src.chromium.org/blink/trunk/Source/devtools/protocol.json");
 }

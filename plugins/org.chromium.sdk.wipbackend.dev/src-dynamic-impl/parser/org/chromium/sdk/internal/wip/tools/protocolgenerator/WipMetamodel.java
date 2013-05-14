@@ -108,8 +108,10 @@ public interface WipMetamodel {
     @JsonOptionalField
     List<String> getEnum();
 
-    @JsonOptionalField
-    ArrayItemType items();
+    @JsonOptionalField ArrayItemType items();
+
+    @JsonOptionalField Long minItems();
+    @JsonOptionalField Long maxItems();
   }
 
   @JsonType interface ObjectProperty {

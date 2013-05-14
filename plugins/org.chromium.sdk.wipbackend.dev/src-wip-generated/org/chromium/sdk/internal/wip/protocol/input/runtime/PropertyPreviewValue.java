@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@96703
 
 package org.chromium.sdk.internal.wip.protocol.input.runtime;
 
@@ -21,6 +21,12 @@ public interface PropertyPreviewValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String value();
+
+  /**
+   Nested value preview.
+   */
+  @org.chromium.sdk.internal.protocolparser.JsonOptionalField
+  org.chromium.sdk.internal.wip.protocol.input.runtime.ObjectPreviewValue valuePreview();
 
   /**
    Object subtype hint. Specified for <code>object</code> type values only.
