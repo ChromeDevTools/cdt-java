@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@150309 with change #14672031
+// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@<unknown>
 
 package org.chromium.sdk.internal.wip.protocol.input.console;
 
@@ -65,6 +65,11 @@ public interface ConsoleMessageValue {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   String/*See org.chromium.sdk.internal.wip.protocol.common.network.RequestIdTypedef*/ networkRequestId();
+
+  /**
+   Timestamp, when this message was fired.
+   */
+  Number/*See org.chromium.sdk.internal.wip.protocol.common.console.TimestampTypedef*/ timestamp();
 
   /**
    Message source.

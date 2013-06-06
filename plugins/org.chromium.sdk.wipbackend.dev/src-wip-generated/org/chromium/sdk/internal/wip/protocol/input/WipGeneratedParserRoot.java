@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@150309 with change #14672031
+// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@<unknown>
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -155,6 +155,9 @@ public interface WipGeneratedParserRoot {
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.network.GetResponseBodyData parseNetworkGetResponseBodyData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
+
+  @org.chromium.sdk.internal.protocolparser.JsonParseMethod
+  org.chromium.sdk.internal.wip.protocol.input.network.LoadResourceForFrontendData parseNetworkLoadResourceForFrontendData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;
 
   @org.chromium.sdk.internal.protocolparser.JsonParseMethod
   org.chromium.sdk.internal.wip.protocol.input.network.LoadingFailedEventData parseNetworkLoadingFailedEventData(org.json.simple.JSONObject obj) throws org.chromium.sdk.internal.protocolparser.JsonProtocolParseException;

@@ -170,6 +170,8 @@ public class WipBreakpointManager {
   /**
    * Breakpoint data-base. Keeps track of all instances and their protocol-id -> instance mapping.
    * The name implies that it doesn't manage anything, only stores data.
+   *
+   * TODO: This is probably not needed anymore, as protocol not reports hit breakpoints.
    */
   static class Db {
     // Accessed from any thread.

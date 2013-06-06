@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://svn.webkit.org/repository/webkit/trunk/Source/WebCore/inspector/Inspector.json@130398
+// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@<unknown>
 
 package org.chromium.sdk.internal.wip.protocol.input.debugger;
 
@@ -24,6 +24,11 @@ public interface PausedEventData {
    */
   @org.chromium.sdk.internal.protocolparser.JsonOptionalField
   Data data();
+
+  /**
+   Hit breakpoints IDs
+   */
+  java.util.List<String> hitBreakpoints();
 
   public static final org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData> TYPE
       = new org.chromium.sdk.internal.wip.protocol.input.WipEventType<org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData>("Debugger.paused", org.chromium.sdk.internal.wip.protocol.input.debugger.PausedEventData.class) {
