@@ -1,6 +1,6 @@
 // Generated source.
 // Generator: org.chromium.sdk.internal.wip.tools.protocolgenerator.Generator
-// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@150309 with change #14672031
+// Origin: http://src.chromium.org/blink/trunk/Source/devtools/protocol.json@<unknown>
 
 package org.chromium.sdk.internal.wip.protocol.input;
 
@@ -70,6 +70,7 @@ public class GeneratedParserInterfaceList {
     org.chromium.sdk.internal.wip.protocol.input.network.GetResponseBodyData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.HeadersValue.class,
     org.chromium.sdk.internal.wip.protocol.input.network.InitiatorValue.class,
+    org.chromium.sdk.internal.wip.protocol.input.network.LoadResourceForFrontendData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.LoadingFailedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.LoadingFinishedEventData.class,
     org.chromium.sdk.internal.wip.protocol.input.network.RequestServedFromCacheEventData.class,
