@@ -1,14 +1,16 @@
 #!/usr/bin/python
 
-#  Copyright (c) 2012 The Chromium Authors. All rights reserved.
-#  Use of this source code is governed by a BSD-style license that can be
-#  found in the LICENSE file.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# This program and the accompanying materials are made available
+# under the terms of the Eclipse Public License v1.0 which accompanies
+# this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
 
-#  A script that helps Ant build system to recognize current plugin versions numbers --
-#  a task that Ant can't seem to do itself. Input: built chromedevtools plugins
-#  and features. Output: .properties file that has version numbers extracted.
-#  These numbers are going to be used to generate additional zip/tar deployment (standalone
-#  libraries and update site zip).
+# A script that helps Ant build system to recognize current plugin versions numbers --
+# a task that Ant can't seem to do itself. Input: built chromedevtools plugins
+# and features. Output: .properties file that has version numbers extracted.
+# These numbers are going to be used to generate additional zip/tar deployment (standalone
+# libraries and update site zip).
 
 import sys
 import os
