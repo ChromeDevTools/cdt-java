@@ -14,7 +14,7 @@ import java.nio.charset.Charset;
 
 
 /**
- * Contains commonly used code snippets related to streams from java.io.
+ * Utility wrappers around java.io.
  */
 class StreamUtil {
   static String readStringFromStream(InputStream stream, Charset charset) throws IOException {
