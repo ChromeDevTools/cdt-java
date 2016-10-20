@@ -6,7 +6,10 @@ The project has been discontinued
 
 This project provides debugging tools for developers writing applications that run on Google Chrome or its open-source version [Chromium] or any V8-based application. The tools enable you to debug JavaScript inside these browsers over the TCP/IP protocol. If you are looking for information on the Google Chrome browser built-in Developer Tools, please have a look at this [official primer].
 
-This project comprises: \* A ChromeDevTools SDK that provides a Java API that enables a debugging application to communicate with a Google Chrome browser from the localhost using the TCP/IP-based Google Chrome Developer Tools Protocol or WebKit Remote Debugging Protocol. \* An Eclipse debugger that uses the SDK. This debugger enables you to debug JavaScript running inside Google Chrome tabs from the Eclipse IDE.
+This project comprises: 
+
+* A ChromeDevTools SDK that provides a Java API that enables a debugging application to communicate with a Google Chrome browser from the localhost using the TCP/IP-based Google Chrome Developer Tools Protocol or WebKit Remote Debugging Protocol. 
+* An Eclipse debugger that uses the SDK. This debugger enables you to debug JavaScript running inside Google Chrome tabs from the Eclipse IDE.
 
 As the SDK and Eclipse debugger are written in Java, this project is of most benefit to developers who use Java tools for debugging web applications inside Google Chrome. You can use the SDK to write your own debugger that uses the protocol to communicate with Google Chrome.
 
